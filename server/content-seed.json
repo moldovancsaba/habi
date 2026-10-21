@@ -1276,8 +1276,8 @@
         "helpSeeking": "communication"
       }
     },
-    "guided_chat_v1": {
-      "version": 1,
+    "guided_chat_v2": {
+      "version": 2,
       "labels": {
         "title": "Miről beszélgessünk?",
         "input": "Írd le, mi foglalkoztat most.",
@@ -1297,7 +1297,8 @@
         "summaryIntro": "Erről szeretnék beszélgetni veled.",
         "summaryOpening": "Ez foglalkoztat:",
         "summaryAction": "Ebben kérnék segítséget:",
-        "fallback": "Segítek megtalálni, miről lenne jó beszélgetnünk. Melyik áll hozzád a legközelebb?"
+        "fallback": "Segítek megtalálni, miről lenne jó beszélgetnünk. Melyik áll hozzád a legközelebb?",
+        "summaryRequest": "Kérlek, hallgass meg, és segíts kitalálni egy következő lépést, ami most belefér nekem."
       },
       "categories": [
         {
@@ -1402,7 +1403,9 @@
             [
               "foci",
               "soccer",
-              "football"
+              "football",
+              "focista",
+              "focis"
             ],
             [
               "csapat",

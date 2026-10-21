@@ -1,6 +1,6 @@
 # HABI conversation authoring
 
-The runtime catalog is `habi_content` → `active` → `data.guided_chat_v1` in MongoDB. `server/content-seed.json` supplies missing keys on deployment; it never replaces existing database edits. This version has three trees, seven discoverable categories and seven endings in every tree. Hungarian interface copy also accepts English keyword synonyms.
+The runtime catalog is `habi_content` → `active` → `data.guided_chat_v2` in MongoDB. `server/content-seed.json` supplies missing keys on deployment; it never replaces existing database edits. This version has three trees, seven discoverable categories and seven endings in every tree. Hungarian interface copy also accepts English keyword synonyms.
 
 ## Fill out a module
 
