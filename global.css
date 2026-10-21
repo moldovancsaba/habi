@@ -114,3 +114,17 @@ input,select{font:inherit}
 
 .sync-note{max-width:var(--content-width);margin:var(--space-4) auto;padding:var(--space-4);background:var(--surface-soft);border:1px solid var(--border);border-radius:var(--radius-md)}
 .sync-note p{color:var(--text);margin:0}
+
+/* HABI situation guides and small goals use the existing visual system. */
+.journey-card .habi-speaker{margin-bottom:var(--space-3)}
+.journey-card .btn{margin-top:var(--space-3)}
+.journey-card h3{font-size:var(--font-body);margin:var(--space-4) 0 var(--space-2)}
+.journey-card select{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-3);width:100%;min-height:var(--control-height)}
+.journey-card .text-input{margin-bottom:var(--space-3)}
+.journey-example,.journey-explanation{background:var(--surface-soft);border-radius:var(--radius-md);padding:var(--space-4);margin:var(--space-4) 0}
+.journey-explanation summary,.journey-card summary{cursor:pointer;color:var(--primary);font-weight:700;overflow-wrap:anywhere}
+.journey-check{display:flex;align-items:flex-start;gap:var(--space-3);padding:var(--space-3) 0}
+.journey-check input{flex:none;margin-top:var(--space-1);accent-color:var(--primary)}
+.journey-card textarea,.journey-card input,.journey-card select{max-width:100%;min-width:0}
+.journey-card input:focus-visible,.journey-card select:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
+.journey-card p,.journey-card h3{overflow-wrap:anywhere}

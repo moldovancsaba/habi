@@ -885,6 +885,395 @@
           2
         ]
       ]
+    },
+    "journey_content_v1": {
+      "labels": {
+        "ey": "Egy kis segítség",
+        "situations": "Mi történt veled?",
+        "situationsIntro": "Válaszd azt, ami most közel áll hozzád. Együtt keresünk egy könnyebben megtehető dolgot.",
+        "situationLink": "Egy konkrét helyzetről beszélnék",
+        "back": "Vissza",
+        "robot": "HABI",
+        "you": "Te",
+        "understand": "Értsük meg együtt",
+        "try": "Kipróbálom",
+        "talk": "Beszéljük át HABI-val",
+        "learn": "Mi segíthet ebben?",
+        "sport": "Sportolás közben",
+        "everyday": "A hétköznapokban",
+        "neutral": "Egyszerű példa",
+        "exampleLabel": "Melyik példa áll közelebb hozzád?",
+        "examples": "A hozzám illő példák",
+        "examplesIntro": "Bármelyik példát választhatod. Nem kell hozzá felszerelés.",
+        "how": "Hogyan?",
+        "what": "Mit próbálj ki?",
+        "feedback": "Milyen volt kipróbálni?",
+        "skip": "Most kihagyom",
+        "goalTitle": "Ezt próbálom ki",
+        "goalIntro": "Egyetlen apró vállalás is elég. Átírhatod, vagy most elengedheted.",
+        "goalText": "Mit szeretnél kipróbálni?",
+        "goalWhen": "Mikor férne bele?",
+        "goalDays": "Mikor nézzünk rá újra?",
+        "goalSave": "Ezt választom",
+        "goalCancel": "Most nem választok vállalást",
+        "goalEmpty": "Írj egy kis, kipróbálható dolgot.",
+        "conflictTitle": "Melyik vállalásodat vinnéd tovább?",
+        "conflictIntro": "Már van egy választott kis célod. Megtarthatod, vagy lecserélheted erre.",
+        "keepOld": "Megtartom a mostanit",
+        "replace": "Az újat választom helyette",
+        "current": "A mostani vállalásod",
+        "proposed": "Az új ötleted",
+        "goalOffer": "Ezt szeretném kipróbálni a következő napokban",
+        "goalOpen": "Megnézem a vállalásomat",
+        "goalDo": "Kipróbálok hozzá egy gyakorlatot",
+        "goalReview": "Nézzük meg, mi segített",
+        "goalDue": "Visszatérhetünk arra, amit kipróbáltál.",
+        "goalNotDue": "Nem kell minden nap teljesítened. Figyeld meg, mikor fér bele.",
+        "reviewDate": "Ekkor nézünk rá újra: ",
+        "reviewIntro": "A próbálkozásaidból azt érdemes megtartani, ami neked segített. Változtatni is lehet.",
+        "reviewKeep": "Megtartom, és később ránézek",
+        "reviewSmall": "Kisebbre alakítom",
+        "reviewPause": "Most félreteszem",
+        "reviewFinish": "Ezt most lezárom",
+        "reviewReflect": "Átgondolom, mi segített",
+        "reviewNone": "Még nem jegyeztél fel próbálkozást ehhez. Attól még elmondhatod, hogyan élted meg.",
+        "reviewHelp": "A kapcsolódó gyakorlatot segítőnek érezted.",
+        "reviewPartial": "A kapcsolódó gyakorlat egy kicsit segített.",
+        "reviewNotHelp": "A kapcsolódó gyakorlat most nem segített. Választhatunk másik megoldást.",
+        "history": "Amit kipróbáltál",
+        "historyEmpty": "Ide visszatérhetünk ahhoz, amit választasz, és ahhoz, amit közben észreveszel.",
+        "historyNote": "A saját gondolataid",
+        "historyReview": "A visszatekintésed",
+        "historyTried": "Kipróbáltad: ",
+        "historyChosen": "Ezt választottad: ",
+        "historyKeep": "Ezt szeretnéd tovább próbálni: ",
+        "historyPaused": "Ezt most félretetted: ",
+        "historyFinished": "Ezt lezártad: ",
+        "historyReplaced": "Ezt másik vállalásra cserélted: ",
+        "historyHabit": "Ezt szokásként folytatod: ",
+        "resume": "Innen folytathatjuk",
+        "resumePractice": "A megkezdett gyakorlatod vár rád.",
+        "resumeChat": "Folytathatjuk a beszélgetésünket.",
+        "resumeGoal": "A választott kis vállalásodat még alakíthatod.",
+        "continue": "Folytatom",
+        "progressTitle": "Ami neked segített",
+        "progressIntro": "A saját próbálkozásaidhoz és gondolataidhoz térünk vissza.",
+        "newChat": "Másik helyzetről beszélek",
+        "endTitle": "A következő kis lehetőséged",
+        "endReflect": "Most elég lehetett átgondolnod. Később is visszatérhetsz ehhez.",
+        "endReflectHow": "Ha szeretnéd, elmondhatod valakinek, akiben megbízol, mi volt nehéz. Nem kell rögtön vállalást választanod.",
+        "endAsk": "Mondd el, milyen segítség esne jól.",
+        "endAskHow": "Így is kezdheted egy szülődnél vagy más megbízható felnőttnél: „Szeretnék elmondani valamit. Először jólesne, ha meghallgatnál.”",
+        "chatNote": "Mit tennél hozzá?",
+        "habitConvert": "Szokásként szeretném folytatni",
+        "export": "Leírom magamnak",
+        "exportTitle": "A saját kis emlékeztetőm",
+        "exportIntro": "Válaszd ki, mi kerüljön a letölthető összefoglalódba.",
+        "exportAttempts": "A kapcsolódó próbálkozásaim is",
+        "exportNotes": "A hozzá kapcsolódó saját gondolataim is",
+        "exportDownload": "Összefoglaló letöltése",
+        "preferencesSave": "Ezt a példát választom",
+        "monthlyGoal": "A havi vállalásommal folytatom",
+        "goalStatusActive": "Most ezt próbálod",
+        "goalStatusPaused": "Most félretetted",
+        "goalStatusFinished": "Lezártad",
+        "goalStatusReplaced": "Másikat választottál",
+        "goalStatusHabit": "Szokásként folytatod",
+        "singleTry": "Egy alkalom is elég lehet.",
+        "homeTitle": "Van valami, amit átbeszélnél?",
+        "homeIntro": "Indulhatunk abból, ami veled történt.",
+        "reviewLink": "Visszatérünk ahhoz, amit választottál.",
+        "sourceDaily": "A mai napodból",
+        "sourceMonthly": "A havi beszélgetésünkből",
+        "sourceChat": "A beszélgetésünkből",
+        "sourcePractice": "A gyakorlatodból",
+        "noGoal": "Most nincs választott vállalásod.",
+        "exportWhen": "Amikor belefér: ",
+        "exportReview": "Újra ránézek: ",
+        "exportHeading": "HABI · A saját vállalásom",
+        "practiceOffer": "Ebből választok egy kis vállalást",
+        "emptyNotes": "",
+        "goalNoteLabel": "A vállalásodhoz kapcsolódó gondolat",
+        "goalHistoryOpen": "Megnézem",
+        "practiceEnd": "Ezt most kipróbáltad.",
+        "notHelpful": "Keressünk másik kapaszkodót.",
+        "practiceEndText": "Érdemes észrevenned, mi esett jól, és mit alakítanál másképp.",
+        "notHelpfulText": "Nem kell ugyanazt erőltetned. Választhatsz másik gyakorlatot, vagy beszélgethetünk róla."
+      },
+      "durations": [
+        [
+          7,
+          "Egy hét múlva"
+        ],
+        [
+          14,
+          "Két hét múlva"
+        ],
+        [
+          28,
+          "Négy hét múlva"
+        ]
+      ],
+      "defaultDays": 7,
+      "topics": {
+        "ready": {
+          "title": "Ráhangolódom",
+          "text": "Néha idő kell, hogy megérkezz egy feladathoz. Nem kell gyorsabbnak lenned: először azt keresd meg, mire figyelnél.",
+          "neutral": "Kezdés előtt nézz körül, és nevezd meg, mi lesz az első dolgod.",
+          "sport": "Egy ismerős mozdulat előtt figyelj meg egy fontos jelet vagy helyet.",
+          "everyday": "Tanulás előtt keresd meg azt az egy kérdést, amivel elkezded.",
+          "practice": "focus"
+        },
+        "pause": {
+          "title": "Adok magamnak egy pillanatot",
+          "text": "Ha valami felkavar, nehéz lehet rögtön választani. Egy kis megállás segíthet észrevenni, mire van most szükséged.",
+          "neutral": "Válaszadás előtt tarts egy rövid szünetet.",
+          "sport": "Egy hiba után nézz körül, mielőtt a következő feladatba kezdesz.",
+          "everyday": "Egy vita közben mondhatod: „Egy kis időt kérek.”",
+          "practice": "pause"
+        },
+        "focus": {
+          "title": "Egy dologra figyelek",
+          "text": "Nem kell egyszerre mindenre figyelned. Választhatsz egy kapaszkodót, amihez visszatérsz, ha elkalandozol.",
+          "neutral": "Nevezd meg a következő kis részfeladatodat.",
+          "sport": "Egy mozdulat előtt nézz meg egy fontos dolgot: például a szabad helyet vagy a célpontodat.",
+          "everyday": "A házi feladatból először csak egy rövid részt válassz.",
+          "practice": "focus"
+        },
+        "instructions": {
+          "title": "Kisebb részekben könnyebb",
+          "text": "Ha sok kérés érkezik egyszerre, elveszítheted a fonalat. Kérhetsz ismétlést vagy bemutatást. Ettől nem vagy kevésbé ügyes.",
+          "neutral": "Kérd az első egy-két részt, majd mondd el a saját szavaiddal.",
+          "sport": "Egy új gyakorlatnál kérdezheted: „Megmutatnád az első részt?”",
+          "everyday": "A holnapi készülődésből válassz két dolgot, és azokkal kezdd.",
+          "practice": "instructions"
+        },
+        "confidence": {
+          "title": "Kipróbálhatok valami újat",
+          "text": "Nem kell biztosnak lenned a sikerben. Választhatsz egy kicsi, kényelmes próbát, vagy dönthetsz úgy is, hogy ma más fér bele.",
+          "neutral": "Egy ismerős feladatban próbálj ki egy apró változtatást.",
+          "sport": "Egy már ismert gyakorlatból válassz egy olyan részletet, amit szívesen kipróbálnál.",
+          "everyday": "Egy feladatra keress egy másik, egyszerű megoldási utat.",
+          "practice": "selfTalk"
+        },
+        "options": {
+          "title": "Megnézek két lehetőséget",
+          "text": "Ha valami megváltozik, nem kell rögtön tudnod a választ. Átgondolhatsz két lehetőséget, és kiválaszthatod azt, amelyik most kezelhetőbb.",
+          "neutral": "Mondd el, mi változott, majd nevezz meg két következő lépést.",
+          "sport": "Ha egy játékhelyzet másképp alakul, gondolj két ismerős megoldásra.",
+          "everyday": "Ha változik a napi terved, keress két módot arra, hogyan folytathatnád.",
+          "practice": "options"
+        },
+        "selfTalk": {
+          "title": "A saját oldalamon állok",
+          "text": "Egy nehéz pillanatban számít, hogyan szólsz magadhoz. Egy ítélet helyett választhatsz egy mondatot, ami segít a következő próbánál.",
+          "neutral": "„Még gyakorlom. Most az első kis részre figyelek.”",
+          "sport": "Egy elrontott mozdulat után nevezd meg, mit próbálsz legközelebb.",
+          "everyday": "Beszélj magaddal úgy, ahogy egy barátoddal tennéd ugyanebben a helyzetben.",
+          "practice": "selfTalk"
+        },
+        "communication": {
+          "title": "Elmondom, mi segítene",
+          "text": "Mások nem mindig tudják, mire van szükséged. Egy rövid, konkrét kérés segíthet megmutatni.",
+          "neutral": "„Most jólesne, ha először meghallgatnál.”",
+          "sport": "Egy társadnak elmondhatod, melyik rövid jelzés segít, és melyik zavar.",
+          "everyday": "Ha egy iskolai feladat nem világos, kérhetsz egy példát.",
+          "practice": "communication"
+        },
+        "restart": {
+          "title": "Újrakezdhetem",
+          "text": "Egy hiba nem mond el mindent rólad. Nem kell rögtön kijavítanod mindent: egy következő kis próbálkozás is elég.",
+          "neutral": "Állj meg, nézz körül, és nevezd meg az első kis lépést.",
+          "sport": "Egy elrontott helyzet után válassz egy rövid kapaszkodót a következő mozdulathoz.",
+          "everyday": "Ha nem sikerült egy feladat, kezdd újra egy kisebb részével.",
+          "practice": "restart"
+        },
+        "pressure": {
+          "title": "Ami most rajtam múlik",
+          "text": "A sok elvárás között segíthet különválasztani azt, ami rajtad múlik, attól, amit nem tudsz irányítani.",
+          "neutral": "Válassz egy most megtehető, kis dolgot.",
+          "sport": "Az eredmény helyett nevezd meg, mire szeretnél figyelni a következő feladatnál.",
+          "everyday": "Egy zsúfolt napon döntsd el, mi legyen az első, valóban beleférő teendőd.",
+          "practice": "pressure"
+        },
+        "sleep": {
+          "title": "Helyet adok a pihenésnek",
+          "text": "Nem kell kiérdemelned a pihenést. Kereshetsz egy nyugodtabb esti kapaszkodót, amit könnyű megtartani.",
+          "neutral": "Válassz egy csendes dolgot a nap végére.",
+          "sport": "Sportolás után adj időt a lelassulásnak.",
+          "everyday": "Készítsd össze a holnapi dolgaidat, majd válassz nyugodt elfoglaltságot.",
+          "practice": "sleep"
+        }
+      },
+      "practices": {
+        "focus": {
+          "title": "Egy figyelmi kapaszkodó",
+          "what": "Válassz egy dolgot, amire a következő feladatnál figyelsz.",
+          "how": "Nevezd meg az első kis feladatot. Válassz hozzá egy rövid szót, például „körülnézek”. Ha elkalandozol, térj vissza ehhez. Egy próbálkozás is elég.",
+          "topic": "focus"
+        },
+        "restart": {
+          "title": "Újrakezdés egy hiba után",
+          "what": "Keress egy kapaszkodót a következő próbálkozáshoz.",
+          "how": "Állj meg egy pillanatra. Ha jólesik, fújd ki nyugodtan a levegőt; ha nem, nézz egy ismerős tárgyra. Nézz körül, majd fejezd be: „Most először arra figyelek, hogy…”",
+          "topic": "restart"
+        },
+        "pressure": {
+          "title": "Ami most rajtam múlik",
+          "what": "Válassz egy kezelhető lépést az elvárások közül.",
+          "how": "Nevezz meg egy dolgot, ami aggaszt. Válaszd külön attól, amit most meg tudsz tenni. Válassz egy apró teendőt. Ha továbbra is soknak érzed, elmondhatod egy felnőttnek, akiben megbízol.",
+          "topic": "pressure"
+        },
+        "pause": {
+          "title": "Egy rövid megálló",
+          "what": "Adj magadnak egy kis időt, mielőtt folytatod.",
+          "how": "Állj meg kényelmesen, vagy ülj le. Vedd észre, mi van körülötted. Ha jólesik, figyeld a saját ritmusú légzésedet. Ezután választhatsz egy következő lépést, még egy kis szünetet vagy beszélgetést.",
+          "topic": "pause"
+        },
+        "instructions": {
+          "title": "Két kis részben",
+          "what": "Kérd kisebb részekben azt, amit követned kell.",
+          "how": "Mondd: „Elmondanád az első egy-két részt?” Ismételd el a saját szavaiddal. Ha még nem világos, kérj egy példát vagy bemutatást. Először csak az első részt próbáld ki.",
+          "topic": "instructions"
+        },
+        "options": {
+          "title": "Két lehetőség közül",
+          "what": "Nézz meg két egyszerű módot a folytatásra.",
+          "how": "Mondd el egy mondatban, mi változott. Nevezz meg két lehetséges következő lépést. Válaszd azt, ami most kényelmesebb és megtehető. Utána észreveheted, mi segített benne.",
+          "topic": "options"
+        },
+        "selfTalk": {
+          "title": "Segítő mondatom",
+          "what": "Válassz egy mondatot, ami a következő próbánál melléd áll.",
+          "how": "Vedd észre, ha bántóan szólsz magadhoz. Kérdezd meg: „Mit mondanék egy barátomnak?” Válassz egy konkrét mondatot, például: „Még gyakorlom. Most az első kis részre figyelek.”",
+          "topic": "selfTalk"
+        },
+        "communication": {
+          "title": "Elmondom, mi segítene",
+          "what": "Fogalmazz meg egy rövid kérést valakinek, akiben megbízol.",
+          "how": "Mondd el, mi történt, és mire lenne szükséged. Például: „Sok minden jár a fejemben. Először meghallgatnál?” Egy társadtól is kérhetsz egy konkrét, segítő jelzést. Ha nem figyelnek rád, kereshetsz másik megbízható felnőttet.",
+          "topic": "communication"
+        }
+      },
+      "practiceTopics": {
+        "focus": "focus",
+        "sleep": "sleep",
+        "restart": "restart",
+        "pressure": "pressure",
+        "pause": "pause",
+        "instructions": "instructions",
+        "options": "options",
+        "selfTalk": "selfTalk",
+        "communication": "communication"
+      },
+      "situations": [
+        {
+          "id": "after-mistake",
+          "opening": "Hibáztam, és utána csak kapkodtam.",
+          "topic": "restart",
+          "practice": "restart",
+          "intro": "Egy hiba után sok minden összesűrűsödhet. Nézzük meg, mi volt neked a legnehezebb.",
+          "question": "Mi zavart meg leginkább?",
+          "options": [
+            "Maga a hiba.",
+            "Az, hogy mit gondolnak mások.",
+            "Az, hogy rögtön folytatnom kellett."
+          ],
+          "replies": [
+            "Egy hiba után is kezdhetsz egy kisebb, következő lépéssel.",
+            "Mások gondolatait nehéz kitalálni. Most arra figyelhetünk, mire lenne neked szükséged.",
+            "Ha túl gyors volt a folytatás, egy rövid megállás is lehet kapaszkodó."
+          ],
+          "action": "Egy hiba után megállok egy pillanatra, és megnevezem a következő kis lépést."
+        },
+        {
+          "id": "too-fast",
+          "opening": "Olyan gyorsan történik minden, hogy nem tudom, mire figyeljek.",
+          "topic": "focus",
+          "practice": "focus",
+          "intro": "Amikor sok minden történik egyszerre, nehéz kiválasztani a fontos dolgot. Nem kell mindent egyszerre követned.",
+          "question": "Mi volt ebből most a legnehezebb?",
+          "options": [
+            "Túl sok minden vonta el a figyelmemet.",
+            "Nem tudtam, mi legyen az első.",
+            "Attól féltem, hogy lemaradok."
+          ],
+          "replies": [
+            "Kereshetünk egyetlen jelet, amihez visszatérhetsz.",
+            "Elég lehet az első kis feladatot tisztázni.",
+            "A sietség helyett most választhatunk egy könnyebben követhető kapaszkodót."
+          ],
+          "action": "A következő feladat előtt kiválasztok egy dolgot, amire figyelek."
+        },
+        {
+          "id": "too-many-instructions",
+          "opening": "Túl sok mindent mondtak egyszerre, és elvesztettem a fonalat.",
+          "topic": "instructions",
+          "practice": "instructions",
+          "intro": "Sok kérés egyszerre bárkinek nehéz lehet. Kérhetsz kisebb részeket vagy egy bemutatást.",
+          "question": "Mi segítene most leginkább megérteni?",
+          "options": [
+            "Ha kevesebb dolgot mondanának egyszerre.",
+            "Ha megmutatnák az első részt.",
+            "Ha lenne időm visszakérdezni."
+          ],
+          "replies": [
+            "Kezdhetünk egy vagy két rövid résszel.",
+            "Egy példa sokat tisztázhat. Megfogalmazhatjuk, hogyan kérnéd.",
+            "Visszakérdezni rendben van. Nem kell úgy tenned, mintha minden világos lenne."
+          ],
+          "action": "Ha sok az instrukció, elkérem az első egy-két részt, és elmondom a saját szavaimmal."
+        },
+        {
+          "id": "afraid-to-try",
+          "opening": "Szeretném megpróbálni, de félek, hogy elrontom.",
+          "topic": "confidence",
+          "practice": "selfTalk",
+          "intro": "Nem kell biztosnak lenned a sikerben. Kereshetünk egy apró próbát, ami neked még kényelmes.",
+          "question": "Mi teszi most nehézzé?",
+          "options": [
+            "Félek attól, mit gondolnak mások.",
+            "Túl nagy lépésnek érzem.",
+            "Bántó dolgokat mondok magamnak."
+          ],
+          "replies": [
+            "Mások reakcióját nem tudod irányítani. A saját kis próbádat viszont megválaszthatod.",
+            "Kisebbre is vehetjük. Attól még számít, hogy megpróbálod.",
+            "Választhatunk egy mondatot, ami nem bánt, hanem segít a következő kis próbánál."
+          ],
+          "action": "Egy ismerős feladatban kipróbálok egy kényelmes, apró változtatást."
+        }
+      ],
+      "chat": {
+        "question": "Milyen kapaszkodó esne jól?",
+        "options": [
+          "Egy kis, kipróbálható ötlet.",
+          "Megfogalmaznám, hogyan kérjek segítséget.",
+          "Most inkább csak átgondolnám."
+        ],
+        "replies": [
+          "Választhatsz egy dolgot, amitől könnyebb lehet a következő próbád.",
+          "Nem kell egyedül megoldanod. Egy rövid, konkrét kérés is elég lehet.",
+          "Rendben van, ha most még nem akarsz cselekedni. A saját tempódban haladhatsz."
+        ],
+        "lastQuestion": "Mi férne bele most?",
+        "askChoice": "Elmondom valakinek, milyen segítség esne jól.",
+        "reflectChoice": "Most nem választok teendőt.",
+        "goalAsk": "Elmondom egy megbízható felnőttnek, milyen segítség esne jól."
+      },
+      "dailySituations": {
+        "focus": "too-fast",
+        "restart": "after-mistake",
+        "pressure": "afraid-to-try"
+      },
+      "monthlyPracticeMap": {
+        "focus": "focus",
+        "resilience": "restart",
+        "selfTalk": "selfTalk",
+        "confidence": "selfTalk",
+        "selfRegulation": "pause",
+        "helpSeeking": "communication"
+      }
     }
   }
 }
