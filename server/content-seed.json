@@ -998,7 +998,8 @@
         "practiceEnd": "Ezt most kipróbáltad.",
         "notHelpful": "Keressünk másik kapaszkodót.",
         "practiceEndText": "Érdemes észrevenned, mi esett jól, és mit alakítanál másképp.",
-        "notHelpfulText": "Nem kell ugyanazt erőltetned. Választhatsz másik gyakorlatot, vagy beszélgethetünk róla."
+        "notHelpfulText": "Nem kell ugyanazt erőltetned. Választhatsz másik gyakorlatot, vagy beszélgethetünk róla.",
+        "goalAdjust": "Átalakítom vagy lezárom a vállalásomat"
       },
       "durations": [
         [
