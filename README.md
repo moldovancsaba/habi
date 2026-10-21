@@ -1,228 +1,167 @@
-# Habigoal
+# HABI
 
-Habigoal is an independent white-label habitbuilder for any signed-in person. Athletes can use it to record part of their daily routine, trainers and staff can use it for their own habits, and general users can use it as a personal routine app. Athlete IQ is the separate professional workspace for teams, coaches, academies, and advanced performance operations.
+A Hungarian-language support prototype for child athletes, with practical HABI feedback, personal notes, guided reflection, and historical results.
 
-## Current Product Surface
+Live application: https://habi.doneisbetter.com/
 
-- Public landing page at `/{locale}` with explicit product entry cards for Habigoal and Athlete IQ.
-- Product surfaces:
-  - Habigoal at `/{locale}/habigoal` for white-label personal habit tracking, wellbeing status capture, and lightweight guidance.
-  - Athlete IQ at `/{locale}/athlete-iq` for coaches, academies, professional dashboards, and advanced services.
-- Public news and release notes at `/{locale}/news`.
-- Public partner business logic contracts at `/{locale}/contracts`.
-- Public legal pages at `/{locale}/legal/gtc` and `/{locale}/legal/privacy`.
-- Athlete app at `/{locale}/athletes` and `/{locale}/athletes/[id]`.
-- Trainer dashboard at `/{locale}/dashboard`.
-- Daily check-in flow at `/{locale}/dashboard/assessment`.
-- Athlete management and athlete detail views at `/{locale}/dashboard/athletes`.
-- Check-in record list and record detail views at `/{locale}/dashboard/records`.
-- Weekly session planning at `/{locale}/dashboard/planning`.
-- Admin settings, users, teams, restore bin, and governance views at `/{locale}/dashboard/settings`.
+Vercel project: `habi` (`prj_2a7wlyOX1Iasat3qhRsUn0Wu7QMk`).
 
-## Shipped Capabilities
+## Required implementation standard
 
-- Daily athlete check-in with nine readiness signals across physical readiness, mental balance, and sport brain.
-- Athlete profiles with longitudinal history, readiness trends, habits, training load, memory summaries, and weekly operating summaries.
-- Persisted habit records through the `habit_records` collection and `/api/athletes/:id/habits`, with optional weighted summaries via `summary=true`.
-- Training-load capture in check-ins plus standalone `/api/athletes/:id/training-load` ledger records with weekly load zones.
-- Coach command center with priority athletes, missed check-ins, readiness buckets, next-best-action recommendations, session blueprints, escalation digest, and coach action tracking.
-- Persisted coach action status through the `coach_actions` collection and `/api/coach-actions`.
-- Weekly session planning through `/dashboard/planning`, persisted in `session_plans`, and reflected on athlete detail pages.
-- PDF/report export surfaces for athlete and check-in records.
-- Phase 1 product split between independent Habigoal and professional Athlete IQ with a shared function registry exposed via `/api/product-surfaces`.
-- Shared Baseline route and API compatibility preserved while splitting runtime UI surfaces.
-- Public weekly news surface backed by `content/news/posts.json`, with locale-specific fail-closed rendering.
-- DoneIsBetter SSO integration with local user authorization.
-- Role model: `athlete`, `trainer`, and `admin`.
-- Athlete users are scoped to their linked athlete profile.
-- Trainer users are scoped through team membership.
-- Empty athlete surfaces use role-aware `StateBlock` guidance and must not rely on sample/demo fallback data.
-- Admin users manage users, teams, settings, restore workflows, and governance data.
-- Team management through the `teams` collection and `/api/teams`.
-- Soft-delete and restore workflows for athletes and check-ins.
-- Multilingual UI for `en`, `hu`, `es`, `de`, `ar`, and `he`, including RTL layout support for Arabic and Hebrew.
-- Critical athlete check-in copy is message-catalog driven and covered by the i18n audit hardcoded-copy gate.
-- Trust & insight engines: every derived figure carries an honest data-confidence band, operating status is explained with a versioned input → rule → output catalog, and reports can be exported as privacy-respecting parent-safe summaries. See [Trust & Insight Engines](docs/trust-and-insights.md).
+These are the user's explicit requirements. Apply them to every affected screen and state. Do not make the user repeat a correction.
 
-## Documentation
+### Visual identity and CSS
 
-- [API Reference](docs/api.md)
-- [Architecture](docs/architecture.md)
-- [API Access Registry](docs/api-access-registry.md)
-- [Persona Boundary Release Gate](docs/persona-boundary-release-gate.md)
-- [Business Logic Audit](docs/business-logic-audit-2026-07-07.md)
-- [Trust & Insight Engines](docs/trust-and-insights.md)
-- [GDS Gold-Athlete Theme & Component Brief](docs/gds-gold-athlete-theme-brief.md)
-- [Input Copy Research & Variant Model](docs/input-copy-research.md)
-- [GDS Hardcoded-Style Audit](docs/gds-hardcoded-style-audit.md)
-- [Deep Language Audit](docs/language-audit-2026-06-30.md) — run `npm run i18n:audit:deep` to recheck for untranslated/mixed-language leakage anytime.
-- [Athlete IQ Gap Inventory](docs/aiq-gap-inventory.md) — prioritized trainer/athlete missing functions & business logic (P0–P3).
-- [Deployment](docs/deployment.md)
-- [Design System](docs/design-system.md)
-- [General Design System Adoption](docs/gds-adoption.md)
-- [GDS Verification Matrix](docs/gds-verification-matrix.md)
-- [GDS Adoption Manifest](gds-adoption.json)
-- [Definition of Done](docs/dod.md)
-- [User Guide](docs/user-guide.md)
-- [Settings Guide](docs/settings-guide.md)
-- [Onboarding Architecture](docs/onboarding-architecture.md)
-- [AthleteIQ Module Maturity Registry](docs/athleteiq-module-registry.md)
-- [AthleteIQ Adaptive Check-In Contract](docs/athleteiq-check-in-contract.md)
-- [AthleteIQ Daily IQ Composite Contract](docs/athleteiq-daily-iq-contract.md)
-- [AthleteIQ Mental Edge Contract](docs/athleteiq-mental-edge-contract.md)
-- [AthleteIQ Pain Safety Contract](docs/athleteiq-pain-safety-contract.md)
-- [AthleteIQ Daily Plan Contract](docs/athleteiq-daily-plan-contract.md)
-- [AthleteIQ Readiness Route Contract](docs/athleteiq-readiness-route-contract.md)
-- [AthleteIQ Digital Athlete Twin Projection Contract](docs/athleteiq-twin-projection-contract.md)
-- [AthleteIQ Session Lifecycle Contract](docs/athleteiq-session-lifecycle-contract.md)
-- [AthleteIQ Daily Reality Map Contract](docs/athleteiq-calendar-contract.md)
-- [AthleteIQ Reflection Memory Contract](docs/athleteiq-reflection-contract.md)
-- [AthleteIQ Stakeholder Projection Contract](docs/athleteiq-stakeholder-projection-contract.md)
-- [AthleteIQ Active-Module Daily Report Contract](docs/athleteiq-daily-report-contract.md)
-- [AthleteIQ Lite Module Gateway Contract](docs/athleteiq-lite-module-gateway-contract.md)
-- [AthleteIQ Cognitive Lite and CogLeague Boundary Contract](docs/athleteiq-cognitive-cogleague-boundary-contract.md)
-- [AthleteIQ GameFlow Future Boundary Contract](docs/athleteiq-gameflow-future-boundary-contract.md)
-- [Legal and Company Info](docs/legal.md)
-- [SSO Setup](docs/sso-setup.md)
-- [Product Roadmap](ROADMAP.md)
-- [Analytics Charts Research (simple-math, high-impact)](docs/analytics-charts-research-2026-06-30.md)
-- [Athlete IQ Gap Analysis](docs/athlete-iq-gap-analysis-2026-05-25.md)
-- [I18n Audit](docs/i18n-audit-2026-05-12.md)
+Preserve the accepted visual identity: blue primary actions, pale page and card surfaces, dark text, rounded cards, and the established typography and spacing. Do not redesign the application while fixing a component.
 
-## Technology
+Use `global.css` as the canonical styling source. Keep shared colours, spacing, typography, sizing, radii, and state rules in CSS tokens and component classes. Do not put inline styles or hardcoded presentation values into HTML templates or application logic. SVG geometry and data values may remain in rendering logic; presentation belongs in CSS.
 
-Package ranges are defined in `package.json`; the active lockfile currently resolves to:
+Use reusable components. Primary/action buttons must fill their card's content width, including the previous-results button. Give navigation, tabs, answer cards, and back controls consistent shared styles. Fix all instances of a component rather than patching one screenshot. Remove obsolete and conflicting rules.
 
-- Next.js: `15.5.19`
-- React: `19.2.5`
-- TypeScript: `5.9.3`
-- MongoDB driver: `6.21.0`
-- next-intl: `4.9.2`
-- Mantine: `8.3.18`
-- General Design System: runtime package is `@sovereignsquad/gds`, with `@sovereignsquad/gds-eslint-config` and `@sovereignsquad/gds-compliance` for governance. Habigoal currently consumes the live npm package line at `^3.4.7`.
-- Node.js: `22.x`
-- App version: `0.5.1`
+### Five consistent rating visuals
 
-## Local Development
+There are **five** metrics, always in this order:
 
-```bash
-cp .env.example .env
-npm install
-npm run db:ping
-npm run db:setup
-npm run db:seed-showcase
-npm run dev
-```
+| Metric | Visual | Canonical colour |
+| --- | --- | --- |
+| Erőnlétem | Upright battery with changing fill | `--energy: #20a281` |
+| Alvásom | One moon with changing phase | `--sleep: #9567d9` |
+| Koncentrációm | Signal-strength bars | `--focus: #3869dc` |
+| Hangulatom | Changing facial expression | `--mood: #e5a13d` |
+| Edzésterhelésem | Compact 2×2 load indicator | `--load: #e96e7c` |
 
-The default Next.js dev server runs on `http://localhost:3000`.
+All visuals must fit identical square bounding boxes, with consistent optical size and no clipping or overflow. Reuse the same icon/value mapping in assessment choices, daily results, charts, and history. A metric's colour must match its chart line, legend, detail view, and result icon. Never show repeated moons as a rating.
 
-## Required Environment Variables
+Daily results and history show all five visuals in one row with **no visible text labels underneath**. Keep accessible metric/value names for assistive technology.
 
-```txt
-MONGODB_URI=
-MONGODB_DB=habigoal
-MONGODB_APP_NAME=habigoal
-IMGBB_API_KEY=
+### Daily result and personal summary
 
-APP_URL=https://habigoal.com
-SSO_CLIENT_ID=
-SSO_CLIENT_SECRET=
-SSO_BASE_URL=https://sso.doneisbetter.com
-SSO_REDIRECT_URI=https://habigoal.com/api/oauth/callback
-SSO_LOGOUT_URL=
-AUTH_SECRET=
-HABIGOAL_ENFORCE_AUTH=true
-```
+Render the completed assessment in this order:
 
-`HABIGOAL_ENFORCE_AUTH=false` is useful for local open-mode development. Production should run with `HABIGOAL_ENFORCE_AUTH=true`.
+1. Short, understandable interpretation of the athlete's answers.
+2. One concrete daily suggestion: what to improve today and how to do it.
+3. All five visual results in one horizontal row.
+4. The athlete's own comment field.
+5. A full-width action for the personal summary.
 
-### Product Surfaces
+Do not substitute a data dump or a generic heading for useful daily help. Preserve the interpretation, suggestion, values, and athlete's words together in the personal summary record. Keep submission status truthful and prevent duplicate records.
 
-- Habigoal: `/{locale}/habigoal`
-- Athlete IQ: `/{locale}/athlete-iq`
-- Partner business logic contracts: `/{locale}/contracts`
-- Product registry endpoint: `/api/product-surfaces`
-- AthleteIQ session lifecycle endpoints: `/api/athleteiq/sessions`, `/api/athleteiq/sessions/from-plan`, `/api/athleteiq/sessions/:id/state`, and `/api/athleteiq/sessions/:id/debrief`
-- AthleteIQ daily reality map endpoints: `/api/athleteiq/calendar/day`, `/api/athleteiq/calendar/entries`, and `/api/athleteiq/calendar/entries/:id`
-- AthleteIQ readiness route endpoints: `/api/athleteiq/readiness-route/today` and `/api/athleteiq/readiness-route/recalculate`
-- AthleteIQ reflection memory endpoints: `/api/athleteiq/reflections`, `/api/athleteiq/reflections/day`, `/api/athleteiq/reflections/:id/visibility`, and `/api/athleteiq/memory-handoff`
-- AthleteIQ stakeholder projection endpoints: `/api/athleteiq/coach/dashboard`, `/api/athleteiq/parents/summary`, `/api/athleteiq/team/overview`, and `/api/athleteiq/coach/alerts/:id/actions`
-- AthleteIQ daily report endpoints: `/api/athleteiq/reports/daily/generate`, `/api/athleteiq/reports/daily`, and `/api/athleteiq/reports/daily/:id/export.json`
-- AthleteIQ lite/manual module endpoints: `/api/athleteiq/lite-modules`, `/api/athleteiq/recovery-lite/entries`, `/api/athleteiq/fuel-lite/entries`, `/api/athleteiq/learning/progress`, and `/api/athleteiq/wearables/manual-entry`
-- AthleteIQ cognitive boundary endpoints: `/api/athleteiq/cognitive-lite/results` and `/api/athleteiq/cogleague/tournaments`
-- AthleteIQ GameFlow future boundary endpoint: `/api/athleteiq/gameflow/matches/:id/timeline`
+Do not display implementation explanations or prototype disclaimers in the product. In particular, do not reintroduce the removed explanation about results entering a demo view or notifications not being real. Essential delivery limitations belong in the developer conversation and must not be repeated once acknowledged.
 
-## Validation Commands
+### Historical fidelity
 
-```bash
-npm run lint
-npm run test
-npm run api-access:audit
-npm run persona-boundary:audit
-npm run gds:audit
-npm run gds:compliance
-npm run i18n:audit
-npm run version:audit
-npm run build
-npm run typecheck
-npm run db:ping
-```
+Use the same shared content component and styling in daily results and history. A historical entry must show its original evaluation, daily suggestion, the same five icons, the athlete’s own thoughts and the saved HABI feedback.
 
-`npm run api-access:audit` verifies that every API route is classified in the access registry. `npm run persona-boundary:audit` writes a machine-readable report under `.audit-reports/` and fails on role spoofing, direct Athlete IQ auth bypasses, token/state leakage, health-sync exposure, raw athlete-id logs, missing consent projection, or missing GDS/persona boundary gates. `npm run i18n:audit` is required when UI copy, reports, public news, or locale files change. It checks catalog key parity, ICU placeholder parity, public news locale completeness, known legacy copy leaks, and hardcoded critical UI copy in the athlete check-in and brand surfaces. It also enforces a must-translate gate over high-visibility namespaces (`ProductSurfaces.athleteIq.athleteWorkspace.panels`/`sections`, `ProductSurfaces.athleteIq.nav.modules`, `athleteiq`, `CoachHub`, `AthleteIntelligence`, `ProductSurfaces.habigoal.progress`/`reasons`/`navigation`, and `Reports`): in each non-English locale every key in those namespaces must differ from English, except an explicit `IDENTICAL_OK` allowlist for units, brand/metric names, ICU-only format strings, and genuine loanwords. `npm run version:audit` is a CI release gate that verifies app-version truth across `package.json`, `package-lock.json`, `lib/app-version.ts`, README, legal docs, dashboard footer binding, and legal-page runtime bindings while reporting API version metadata as informational. `npm run semantic:audit` is a targeted design-system cleanup check. `npm run gds:audit` is the strict GDS-only readiness check and must pass with the manifest set to `governed`. `npm run gds:compliance` runs the shared GDS compliance package and is a release gate. `npm run typecheck` is the standalone TypeScript validation path. `npm run build` also performs Next.js compile and type validation.
+Persist a feedback snapshot when the assessment completes. Associate messages and decisions with the exact assessment ID. Do not regenerate historical advice from changed rules, display a different day's message, or discard raw submissions. Show exactly one daily result per date: use that date’s latest assessment in both history and charts. Keep older same-day submissions in storage; do not stack them inside the daily card. Show dates with no check-in as empty days, with no invented values. For older records lacking a snapshot, prefer an existing submitted report; reconstruct only from that record's saved answers and preserve the reconstruction thereafter. Never invent a historical message, response, or missing day's result.
 
-Design authority lives in `/Users/Shared/Projects/general-design-system`. Habigoal-local design docs describe only adapter details, migration state, validation commands, and approved exceptions.
+### Completion and verification
 
-## Data Collections
+Check the complete journey: home → all seven questions → useful daily feedback → athlete note → saved personal summary record → history. Also inspect task views, charts, tabs, pending/completed states, and empty history as relevant to the change.
 
-- `children`: athlete profiles. This is a compatibility collection name; product-facing code and docs should say athlete.
-- `assessments`: daily check-ins and legacy-compatible records. This is a compatibility collection name; product-facing code and docs should say check-in.
-- `habit_records`: athlete habit adherence records.
-- `coach_actions`: trainer acknowledgements and applied recommendation records.
-- `session_plans`: persisted weekly planning records.
-- `weekly_snapshots`: versioned, reproducible weekly athlete snapshots (one per athlete + week) with the scorer/report/insight versions and source counts that produced them.
-- `teams`: team membership for trainers and athletes.
-- `users`: local authorization records linked to SSO identity.
-- `settings`: global settings, company/legal profile, alerting thresholds, and restore/governance state.
+Inspect actual mobile/narrow layouts and desktop layouts. Check square icons, all five icons on one row, consistent colours, full-width action buttons, accessible controls, safe rendering of comments, saved snapshots, and duplicate prevention. Do not claim verification that was not performed.
 
-## Authentication And Access
+Complete authorised work through saving, publishing when authorised, and checking the live result. Do not stop at an acknowledgement or ask the user again for an action already authorised. Give a concise delivery response with the result link.
 
-SSO identifies the person. The app authorizes the person through the local `users` collection and separate product entitlements.
+## Source map
 
-- Habigoal users land in the personal habitbuilder and can access only their own routine profile, history, habits, and check-ins.
-- Athlete IQ athletes land in their professional athlete workspace when Athlete IQ entitlement exists.
-- Athlete IQ trainers land in the trainer dashboard and manage athletes through team membership.
-- Admins land in settings and manage users, teams, global settings, restore workflows, and governance views.
-- Selecting a trainer persona on the Habigoal surface does not grant Athlete IQ access; Athlete IQ entitlement is granted only through the Athlete IQ surface or explicit professional authorization.
+- `index.html`: application shell.
+- `app.js`: assessment logic, shared result rendering and daily history.
+- `bootstrap.js` / `cloud.js`: database bootstrap, content access, state synchronisation and recovery.
+- `api/` / `server/`: server-only MongoDB access, session isolation and content catalog.
+- `global.css`: canonical tokens and component presentation.
+- `manifest.webmanifest`: PWA metadata.
+- `sw.js`: service-worker lifecycle.
+- `support.js`: contextual conversations, exercises, reflections, habits, daily rhythm and their history.
 
-Middleware protects personal-data pages when `HABIGOAL_ENFORCE_AUTH=true`. Public pages are limited to the landing page, news, and legal pages.
+Use `reportContent()` and `resultIcons()` for the shared daily/history result, and `reportMessages()` for stored athlete messages and HABI feedback. Preserve saved feedback when changing future suggestion rules.
 
-## Delivery Workflow
+## Current integration boundary
 
-- GitHub stores source control, issues, pull requests, and project state.
-- Changes are delivered through feature branches and pull requests; CI (`CI / web`) and human review gate merge.
-- Direct pushes to `main` are reserved for explicit human-directed work; no force pushes or shared-history rewrites.
+The client loads its business content, questions, choices, feedback rules, default settings and starting history configuration through `/api/app` from MongoDB. User state (daily/monthly records, conversations, exercises, habits, notes, drafts and settings) is persisted through the same API. Local storage is a recovery buffer and supports importing existing browser data; it is not confirmation of remote persistence.
 
-## Documentation Maintenance Rules
+Each browser receives an opaque HttpOnly, Secure, SameSite session cookie. Its hash scopes the database document. There is no account login or cross-device identity yet. Never expose another browser's state, database credentials or raw database errors. No notification service is connected. These implementation details stay out of the athlete interface.
 
-- Product-facing documentation uses `athlete`, `trainer`, `admin`, `team`, `check-in`, and `report`.
-- Legacy terms such as `child`, `assessment`, `conductor`, `observer`, `survey`, and `kidex` are documented only when explaining compatibility layers, migration helpers, or persisted collection names.
-- User-facing UI copy belongs in `messages/*.json` or structured localized content.
-- Public news posts must remain locale-specific and fail closed when a locale is missing.
+## HABI guided conversation
 
-## GitHub Project Bootstrap
+The HABI menu uses a friendly CSS-styled SVG robot and a Hungarian, choice-led conversation about mental pressure in sport. It starts with one of three randomly selected, already-sent athlete messages. Six opening choices feed a six-decision tree: concern → context → inner thought → small practical action → trusted person → requested support. Responses and the final suggested conversation reflect those choices.
 
-The repository includes scripts and config for creating or syncing a project board:
+The final message recommends a concrete next step and provides words the athlete can use with their selected parent, trusted adult, or psychologist. It offers supportive reflection rather than diagnosis or a promise of treatment. No external message is sent by this flow.
 
-```bash
-./scripts/bootstrap-gh-project-board.sh moldovancsaba habigoal.com
-```
+`habi.js` owns the decision tree and browser-local conversation state (`habi-chat-v1`). All visual rules stay in `global.css`. The conversation survives menu changes and reloads; a new random opening is selected only for a new conversation. Verify all six stages, the three starters, all branch endings, restart, keyboard controls, mobile fit, and existing navigation when changing this feature.
 
-The board definition lives in `config/gh-project-board.json`.
+## Shared sample history
 
-## Background job queue
+The user explicitly requested populated previous days matching the existing graph. Initialise 42 calendar days of sample assessments only where no saved assessment exists. Mark generated records internally with `source: sample`, preserve actual submissions, and never change their dates. Include the feedback snapshot, five values, athlete note and HABI feedback in each generated record. Use `dailyEntry(date)` as the common source for charts and daily history; do not generate a second set of graph-only values. Real submissions take precedence over samples on the same date. Reinitialisation must be idempotent. Keep sample metadata out of the athlete interface.
 
-Enqueued jobs (twin rebuilds, media/vision processing, etc.) are drained by a scheduled endpoint:
+HABI is presented as a conversation: never show step counters, stage numbers, progress indicators or decision-tree implementation details in the chat.
 
-- `GET /api/cron/queue` runs `runQueueWorkerLoop`. It is gated by `CRON_SECRET` (returns 503 when unset, 401 on a bad/missing `Authorization: Bearer <CRON_SECRET>`), and is idempotent/overlap-safe because the queue claims jobs atomically.
-- Vercel Cron triggers it on the schedule in `vercel.json` (default `0 3 * * *`, daily — safe on all plans). On Pro, tighten to e.g. `*/10 * * * *` for near-real-time draining. Vercel automatically sends the `CRON_SECRET` bearer.
-- Manual admin drain remains available via `POST /api/admin/queue/process` (admin-only). The admin queue list (`GET /api/admin/queue`) and per-job retry (`POST /api/admin/queue/:jobId/retry`) are now admin-authenticated.
+After every HABI response and when reopening the conversation, scroll the current reply choices into view above the fixed navigation. Wait for layout with animation frames, use CSS scroll margins and the safe-area inset, and focus the new question without allowing focus to undo the scroll. Show the conclusion when no reply choices remain.
+
+Do not show a global app-name header or top branding bar. Start each view directly with its content.
+
+## HABI identity
+
+Use HABI as the sole product name in page titles, install metadata, documentation and deliverable names. Preserve the existing colour palette and shared CSS. Do not restore the removed top bar. Use `habi-app-v1` and `habi-chat-v1` for current browser storage. Legacy identifiers are confined to `storage-migration.js` to preserve existing assessments and conversations without displaying previous branding.
+
+Use the exact summary submission button label: “Összefoglaló beküldése”.
+
+Keep the application focused on the child athlete and HABI. Preserve submitted summaries and their messages in daily history.
+
+## Immediate HABI feedback
+
+The current product flow gives immediate support directly through HABI. Submitting a summary immediately saves HABI feedback with explicit “Mit csinálj?” and “Hogyan?” content. Use the same feedback snapshot in daily results, task views and history. Label athlete input neutrally as their own thoughts. Preserve existing stored records without displaying legacy workflow fields. The independent HABI conversation may still suggest speaking with a trusted person where appropriate.
+
+For the pain-related suggestion, use “Írd meg Habinak a fájdalom részleteit”. Ask for location, onset, triggering movement and whether pain is also present at rest.
+
+A beküldés után ne jelenjen meg külön mentési visszaigazolás vagy sikerüzenet-doboz; a HABI visszajelzés legyen az eredmény.
+
+## Child athlete support
+
+HABI supports child athletes generally: wellbeing, emotions, habits, school/sport pressure, rest and small daily goals. Remove all trainer-centred wording from generated interface content, conversation branches and conclusions. When human support is appropriate, offer a parent, another trusted adult, or a suitable professional. Keep the three contact choices distinct. Preserve personal notes and raw stored records; do not expose obsolete workflow metadata. Existing generated HABI feedback with obsolete recipient wording is migrated to the current model. Preserve the accepted HABI visual identity and shared CSS.
+
+The bottom navigation uses matching line icons above its retained labels: home, checklist, progress chart and the existing HABI robot. Keep icon size, colour and layout in global.css. Active state applies to both icon and text; identify the current page accessibly.
+
+## Integrated support journeys
+
+HABI keeps the four existing navigation items and its established CSS identity. `support.js` adds contextual conversations from exact daily assessment IDs, five short practical exercises with optional feedback, evening and weekly reflections, one self-chosen habit, and optional in-app morning/evening reminders. No external notifications or human messages are sent. Reminders appear after the chosen local time when HABI is open; users can disable or dismiss them.
+
+New assessments use schema 2: mood distinguishes low mood from low energy; an explicit no-training answer sets load to none and bypasses the irrelevant load question. Every question may be skipped. Null means missing, never a default score: render a neutral icon, accessible missing label, and a gap in chart lines. Do not infer wellbeing from skipped answers. Preserve older schema snapshots and raw submissions.
+
+Results offer a contextual HABI conversation and a relevant exercise. Context persists across navigation/reload; saved conversations preserve the original prompts, chosen answers, generated guidance and optional personal note. Pain conversations collect location, duration and circumstances and guide the child to a trusted adult for appropriate help, without diagnosis. Starting a contextual conversation is an explicit action; ordinary HABI conversations retain their three random openings.
+
+Reflections have optional fields and browser-local drafts. Evening reflections ask what was hard and what helped; weekly reflections add one next-week experiment. Store all submissions, show the latest reflection of each type within each date, and retain the original feedback. Do not analyse arbitrary free text as if a model had understood it. Exercises store their exact instructions and a helped/partly/not-helped response. Habits remain optional and can be made smaller; no streaks or pressure. History groups records by their actual local calendar date alongside the original daily summary, icons and thoughts. Never fabricate reflections, habit completions or conversation records for sample days.
+
+Verification covers skip-all/partial data, explicit no-training, original and contextual conversation endings, pain guidance, saved drafts, exact-entry linkage, escaping, duplicate exercise/habit completion, dated history, reminder settings, and persisted reload state. Keep implementation and notification limitations out of the main result flow.
+
+## Descriptive development support
+
+`trends.js` uses the exact canonical daily entries and selected 14/28/42-day period used by the charts. An overview highlights up to three observations; every metric has its own direction, near-term experiment and longer-term focus under the detail chart. At least three answered days in each half are required for direction. A difference of 0.5 response categories in the descriptive mean separates increasing/decreasing from similar; this is a display rule, not a validated clinical threshold. Repeated lower wellbeing answers or higher load means at least half of a set with three or more answered days. Missing answers are excluded and never converted to zero. Load direction is described neutrally, never as improved/worse athletic progress. Explain the date range and actual counts. Keep sample provenance as internal metadata. Do not insert sample-data explanations, prototype disclaimers or calculation-method footnotes into the product interface. Do not claim causes, treatment effects, diagnoses, predictions or athletic readiness. Stored original daily feedback is unchanged by these period-specific observations.
+
+Never restore the removed “mintanap” explanation, causal disclaimer or first-half/second-half calculation footnote. Development support must contain useful observations and practical guidance, with provenance and calculation details confined to internal documentation.
+
+HABI development feedback speaks directly to the child, in warm, short, practical Hungarian sentences. Never render report phrases such as “jelenik meg a válaszokban”, “értékelhető nap”, category-count recitations or method descriptions. Internal direction/coverage calculations remain available to logic and tests; the product shows an understandable observation and useful support. Avoid praise for scores, pressure to improve, and certainty about causes.
+
+## Monthly HABI reflection
+
+`monthly.js` implements a voluntary monthly reflection with 16 stable prompts referring to the past four weeks. Six mental-support themes have two questions each: focus, restarting after difficulty, self-talk, confidence, emotional regulation, and asking for help. Four separate environment questions cover enjoyment, belonging, voice and safety. These are HABI adaptations inspired by KIDEX; do not present them as a validated psychological test or professional observation battery. No SKI, cross-perspective average, risk score, diagnosis or performance rating appears. The current five daily metrics remain unchanged.
+
+The five frequency choices have explicit labels. “Nem volt ilyen helyzet” and “Most kihagyom” are separate non-scored reasons. Both theme answers are required before comparing that theme with the preceding same-version monthly record; missing values never become a midpoint or zero. A descriptive difference of one frequency category indicates easier/harder; this is an internal display rule rather than a clinical threshold. Saved results contain question and answer-label snapshots plus the exact feedback and chosen goal, so historical wording is not regenerated. Environment support remains separate from mental theme scores. A reported lack of safety prompts immediate trusted-adult support without implying that a message was sent. Asking for help is never counted as risk.
+
+First entry is available from home/tasks and from the monthly section in development history. A versioned browser-local draft resumes at its exact question, including the separate review of the previous goal and the optional personal note. The goal review never affects skill scores. Finish explicitly saves one immutable monthly record and clears the draft; repeated submission is ignored. The child may select a suggested goal or decline to choose one. Current goal is accessible from home/tasks and the completed result. Monthly records have their own dated history in Fejlődésem, separate from daily chart periods.
+
+The next invitation is one calendar month after completion, clamping to the last day of shorter months. Allow a three-day deferral and manual earlier return after deferral; do not manufacture missed monthly assessments. An existing completed record opens read-only until the next monthly due date. A meaningful schema change archives an incompatible draft and prevents cross-version comparisons. No extra notification service, adult dashboard or automatic sharing is introduced.
+
+Verify full first and follow-up flows, all-skipped results, non-applicable choices, partial themes, prior-goal review, comparison snapshots, text escaping, draft resume across reload/navigation, duplicate final actions, month-end/leap-year due dates, deferral, four-tab navigation and existing daily/support flows. Product copy stays in HABI’s direct supportive voice; technical details remain here.
+
+
+## MongoDB deployment and configuration
+
+Set `habi_mongodb_uri` as a server-only Vercel environment variable. Optional `MONGODB_DB` selects the database (default `habi`). Never prefix credentials with public client environment names, commit them, print them or bundle them into the static output. Redeploy after configuration changes.
+
+`habi_content` contains one document with `_id: active`, `messages` and `data`. The first successful request inserts `server/content-seed.json`; subsequent requests fill missing keys while preserving database edits. Content includes all question sets, response options, chat branches, exercise instructions, supportive texts, monthly domains, starting data and runtime defaults. Update existing catalog keys in MongoDB to change those values without rebuilding the UI. Retain keys used by the application. Structural algorithms, storage schema, identifiers, SVG geometry and CSS remain in source control; the database does not supply executable JavaScript. Connection failure never silently substitutes embedded business content.
+
+`habi_states` stores one browser-owned document with revision, payload, creation and update times. Payload holds all application and chat records including immutable historical feedback. Writes validate bounded JSON and use optimistic revisions. Conflicting writes merge distinct records and remote-only changes before retrying. Existing local state imports on first successful connection; unsent changes remain recoverable locally and show a retry action. A successful connection does not imply a successful save: verify the actual write and reload path.
+
+Run `npm ci`, `npm test`, then `npm run build`. The build outputs static client files to `public`; Vercel deploys `api/*.js` separately with the server-only MongoDB driver and content seed. Never serve the repository root as the static output.
+
+Verify `/api/health` and the complete browser → API → MongoDB → reload journey before promoting a database-backed release. A DNS failure requires checking the MongoDB connection hostname and cluster availability; never publish a broken replacement or weaken database access to disguise a failed connection. Keep the last working public release until this verification succeeds.

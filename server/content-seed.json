@@ -1,0 +1,890 @@
+{
+  "version": 1,
+  "messages": {
+    "cad88a84d8997de40": "A korábbi hibámon sokat gondolkodtam. A következő edzésen szeretnék egy konkrét feladatra figyelni.",
+    "c2959a1fe288c2bd6": "A mai terhelést soknak éreztem. Szeretném átbeszélni, mire figyeljek a következő edzésen.",
+    "cf4b19758698e4ab7": "Ma könnyebb volt figyelnem. Szeretném megtartani az edzés előtti rövid felkészülést.",
+    "cba399e8e1ef07f0a": "Ma egy technikai részletet gyakoroltam tudatosan. Jó lenne visszajelzést kapni róla.",
+    "c99560afb05ef0b24": "<svg class=\"plot\" viewBox=\"0 0 560 300\" preserveAspectRatio=\"xMidYMid meet\" role=\"img\" aria-label=\"Napi állapotok négy válaszkategóriában\">",
+    "c803593b8c7b75aa0": "kevés energiát",
+    "c3ff05d8585e1698e": "kevésbé pihentető alvást",
+    "c541a95cde6db735b": "nehezebb koncentrációt",
+    "c1ea7ef748314dc9c": "lehangoltságot",
+    "cfb0c57dd233ad134": "fáradtságot",
+    "cbb092b16cdcbf95c": "feszültséget",
+    "c8cf331679806e095": " jeleztél.",
+    "cabe7b7730a2b66e6": "A megadott válaszaidból most nem emeltél ki külön nehézséget.",
+    "c08f6a8583e615b83": "Ma nem adtál meg állapotválaszokat.",
+    "c17292bf3c620db79": " A kihagyott kérdésekből nem következtetek az állapotodra.",
+    "c3e3a060bff532ee2": " Az edzésterhelésed is magas volt.",
+    "cea317e81de887294": " Az edzésed nem mindenben alakult úgy, ahogy szeretted volna.",
+    "c20d6f0540d455234": " Fájdalmat is jeleztél.",
+    "cefc94d93c9106efe": "<div class=\"result-icons\" aria-label=\"Az öt állapotmutatód\">",
+    "c2699f00a4d2171ec": "nincs válasz",
+    "c287a36e4c081c274": "<div class=\"daily-advice habi-feedback\" role=\"region\" aria-label=\"HABI visszajelzése\"><div class=\"habi-speaker\">",
+    "c29f793e8d5ff99cc": " HABI visszajelzése</div><h2>Mit csinálj?</h2><p>",
+    "cbe404fee60d7e202": "<div class=\"report-messages\"><h2>A saját gondolataid</h2><p class=\"athlete-note\">",
+    "c156a2b4505adc44a": "Nem adtál meg megjegyzést.",
+    "ccfceda40023a58f6": "<section class=\"card result-card\"><div class=\"ey\">Mai visszajelzésed</div><h1>A mai napod</h1>",
+    "c46ef44875e4932fd": "<label class=\"field-label\" for=\"athlete-note\">Mit tennél hozzá a saját szavaiddal?</label><textarea id=\"athlete-note\" maxlength=\"2000\" placeholder=\"Mi befolyásolta a mai napodat? Miben kérsz segítséget?\" oninput=\"saveDraft('report-",
+    "c6dfe6ff8c5b1b1e8": "</textarea><button class=\"btn\" onclick=\"submitReport()\">Összefoglaló beküldése</button>",
+    "c40acee234a1f450e": " · ",
+    "ce7cecae7e4f27903": "Napi állapot",
+    "c89b3e281647ab201": "Nincs felmérés",
+    "ce83eae0b76faa7dd": "<p class=\"muted\">Ezen a napon nem készült felmérés.</p>",
+    "c85d108c353b4880b": "</strong><div class=\"status\">Tervezett edzés</div></div>",
+    "c3e9eb480010e97b5": "<section class=\"card\"><div class=\"ey\">A te napod</div><h1>Hogy érzed magad ma?</h1><p>Válaszolj hét rövid kérdésre, és megmutatjuk a következő lépésed.</p><button class=\"btn\" onclick=\"start()\">Napi felmérés indítása →</button></section><section class=\"card\"><div class=\"ey\">Fejlődésed</div><h2>Korábbi eredményeid</h2><button class=\"btn\" onclick=\"go('history')\">Fejlődési műszerfal →</button></section>",
+    "c3237c52b3a7476db": "<div class=\"ey\">Napi felmérés · ",
+    "cf4303970a1692d32": "\" aria-label=\"Felmérés előrehaladása\"></progress><h1>",
+    "c76e6d71d0f1814b4": "</div><button class=\"btn habi-choice skip-answer\" onclick=\"choose(null)\">Most nem szeretnék válaszolni</button></section><button class=\"back-link\" onclick=\"",
+    "cc22e9c91b6771a79": "\">← Vissza</button>",
+    "c63217fdf48c539e9": "Először végezd el a napi felmérést.",
+    "c79a5186bc73c83c1": "Teljesítve ✓",
+    "c26e687cb7b322008": "Elvégeztem ezt a feladatot",
+    "c6748d372e36fe713": "</button><button class=\"btn\" onclick=\"go('result')\">Mai összefoglalóm →</button>",
+    "c6204bb31430cb3dc": "<button class=\"btn\" onclick=\"start()\">Felmérés indítása</button>",
+    "c12fc82059977a412": "<div class=\"ey\">Fejlődési műszerfal</div><h1>Így alakult az állapotod</h1><div class=\"tabs\">",
+    "ce772dd5539ebed46": "</div><section class=\"card\"><div class=\"ey\">Összesített fejlődés</div><h2>Az elmúlt ",
+    "cb14b51dde12138cb": "<section class=\"card\"><div class=\"ey\">Részletes fejlődés</div><h2>",
+    "c05f9eebf88f35115": "</section><section class=\"card\"><div class=\"ey\">Eredmények</div><div class=\"count\"><div>Felmért napok<strong>",
+    "c512f2371832a6d42": "</strong></div><div>Teljesített feladatok<strong>",
+    "cb2a7249391c30593": "</strong></div></div><h2>Korábbi napok</h2>",
+    "cf6c8f68b36caa248": "Mi áll most a legközelebb ahhoz, amit érzel?",
+    "c151cb9c15fd5691e": "Mikor a legerősebb ez az érzés?",
+    "c6fb64ea90a4e8c8f": "Melyik gondolat szokott ilyenkor megjelenni?",
+    "cc0c5b547221279a6": "Melyik kis lépést próbálnád ki ma?",
+    "c1c79743fa452c9b3": "Kivel lenne most a legkönnyebb megbeszélni?",
+    "c9b63068ffe391f61": "Mit szeretnél elsősorban kérni tőle?",
+    "ca14d74a6c65584a9": "Szeretnék beszélni veled, mert ",
+    "cbd9c53f0918d33d3": "</div><div><div class=\"ey\">HABI</div><h1>Beszéljük át.</h1><p>Egy kis lépés a nyugodtabb felkészüléshez.</p></div></section><section class=\"habi-thread\" aria-label=\"Beszélgetés HABI-val\"><div class=\"habi-message habi-athlete\"><span class=\"habi-speaker\">Te</span><p>",
+    "c4c2439c159be9518": " HABI</span><p>",
+    "cf7ce6765b66572a0": "<div class=\"habi-choices\" id=\"habi-replies\" aria-label=\"Válassz egy választ\">",
+    "c9e21aeb9a0523904": " HABI</span><h2>A következő kis lépésed</h2><p>",
+    "cf59d08d0d8179e58": ", mi foglalkoztat. Így is elkezdheted:</p><blockquote class=\"habi-takeaway\">",
+    "cebfe31f6a32cba83": "</blockquote><p>Ha ez visszatérően megnehezíti a napjaidat, kérj segítséget egy megbízható felnőttől vagy pszichológustól is.</p></div><button class=\"btn\" onclick=\"habiRestart()\">Új beszélgetés HABI-val →</button>",
+    "cd40856df76f0f196": ")\">Beszéljük át HABI-val</button>",
+    "c837ddab110441093": ")\">Kipróbálok egy rövid gyakorlatot</button>",
+    "c38f3fc269226e0dc": "Hol érzed a fájdalmat?",
+    "c7011eab22f20d43f": "Mire lenne most a leginkább szükséged?",
+    "c0330e1a28b82ebc3": "Kivel tudnád megosztani, ha támogatásra lenne szükséged?",
+    "c0bafc7db9f8f4406": "Válassz egy kicsi, vállalható célt.",
+    "c6aa9018e0771cab0": "Fejezd be ezt a mondatot: Ma annyit próbálok ki, hogy… Válassz egyetlen konkrét cselekvést.",
+    "cfe4b18e6071029da": "Kezdj egy rövid beszélgetést.",
+    "c4d30b68554e3245a": "Válassz egy apró, kipróbálható teendőt.",
+    "c92afed09fbf933e5": "Ha támogatásra van szükséged, jelezd ",
+    "ca1d6874acf327bcc": "Most nehéznek érzem ezt a helyzetet. ",
+    "ccf154d08d46b1fc7": "<section class=\"card\"><h1>Beszéljük át.</h1><button class=\"btn\" onclick=\"habiRestart()\">Új beszélgetés</button></section>",
+    "c177438ef9a389a36": "<section class=\"habi-thread\" aria-label=\"Beszélgetés a napi állapotodról\"><div class=\"habi-message habi-athlete\"><span class=\"habi-speaker\">Te</span><p>",
+    "cc4cf70ea2e09612b": " HABI</span><h2>",
+    "c5a2d66d029b548b1": "<label class=\"field-label\" for=\"context-note\">Mit írnál még hozzá? <span class=\"muted\">Nem kötelező</span></label><textarea id=\"context-note\" maxlength=\"2000\" oninput=\"saveDraft('context','note',this.value)\">",
+    "c171689c296437694": "</textarea><button class=\"btn\" onclick=\"saveContext()\">Beszélgetés lezárása</button>",
+    "cbc2abd9690a7b852": "<p class=\"muted\">Ezt a beszélgetést megtalálod a napi előzményeidnél.</p>",
+    "c51a7b770fb20f87d": ")\">Kipróbálom a gyakorlatot</button>",
+    "c1ef549e130478896": "<button class=\"btn habi-choice\" onclick=\"habiRestart()\">Másról beszélnék HABI-val</button></div>",
+    "cc6423279b6bc873f": "<section class=\"card\"><div class=\"ey\">Egy kis segítség</div><h1>",
+    "c51a2e7a3576dc919": "</h1><div class=\"daily-advice\"><h2>Mit próbálj ki?</h2><p>",
+    "cf210b6a60a8fd779": "</p></div><h2>Milyen volt kipróbálni?</h2><div class=\"habi-choices\">",
+    "c2c417466bd1f06a0": "A napod lezárása",
+    "c219fc60f2c625006": "Nézzünk vissza a hetedre.",
+    "c6d61fa3a5d275b3b": "Mi maradt meg a mai napból?",
+    "c78f5eccb4d24de33": "</h1><p>Bármelyik kérdést kihagyhatod.</p>",
+    "c8e76d894c080d363": "Mi segített ezen a héten?",
+    "c43ec071a34113db4": "Mi volt sok vagy nehéz?",
+    "cfd9c0e54ab8da759": "Mit próbálnál ki jövő héten?",
+    "c7d38df7187249cfd": "Mi volt ma nehéz?",
+    "c634af79e9c6978bb": "Mi segített?",
+    "c83f6f469ff759da8": "<button class=\"btn\" onclick=\"finishReflection()\">Visszatekintés befejezése</button><button class=\"back-link\" onclick=\"go('home')\">Vissza</button></section>",
+    "c4a2ea0b800b2ccfb": "Most nem írtál választ. Akkor térj vissza, amikor jólesik.",
+    "c24bef420a0dfd96b": "A következő hétre válassz egyetlen vállalható dolgot. Ha valami túl sok volt, beszélj róla egy felnőttel, akiben megbízol.",
+    "cb69523b0cb499012": "Amit leírtál, most félreteheted. Ha valami nehéz maradt, kérhetsz meghallgatást egy felnőttől, akiben megbízol.",
+    "c181e65d9bb7760ed": "<section class=\"card\"><div class=\"ey\">Egy apró szokás</div><h2>",
+    "caa21d29ec5d89254": "Mi férne bele a napodba?",
+    "c61a6ef56c5c2f256": "Ma kipróbáltad ✓",
+    "c96bbf3e67fac200a": "Ma kipróbáltam",
+    "c8f8a370cae3ec8a4": "<p>Egy kis vállalás is elég. Például este összekészítem a holnapi dolgaimat.</p>",
+    "cd3a8a88ee6fe4a74": "Átalakítom a szokásomat",
+    "c412a366516e142b6": "Kiválasztom a szokásomat",
+    "ca2e2bed091b31464": "Mit szeretnél kipróbálni?",
+    "c193dd8205abe50d9": "Mikor vagy mi után?",
+    "ca6d4f65c90dd3245": "<button class=\"btn\" onclick=\"setHabit()\">Ezt próbálom ki</button><p class=\"muted\" id=\"habit-error\" role=\"status\"></p></details></section>",
+    "ceac82338a2217606": "Írj egy apró vállalást.",
+    "c3512b1a8fe99ac36": "Akkor próbálom ki, amikor belefér.",
+    "c81e75b432529820f": "Megtarthatod ezt a méretet, ha továbbra is belefér.",
+    "c849bdd5e2c1b555c": "Egyszerűsítsd: válaszd a vállalásod legkisebb részét. Az Átalakítom a szokásomat alatt átírhatod.",
+    "c86930e8e256578e9": "<section class=\"card\"><div class=\"ey\">A saját ritmusod</div><h2>Mikor esne jól megállni?</h2><p>A beállított időpont után, amikor megnyitod HABI-t, megjelenik a napi emlékeztetőd.</p><label class=\"check-label\"><input type=\"checkbox\" ",
+    "c2be8f8e018a680eb": " onchange=\"setRhythm('enabled',this.checked)\"> Kérek emlékeztetőt</label><div class=\"rhythm-times\"><label class=\"field-label\">Napi felmérés<input class=\"text-input\" type=\"time\" value=\"",
+    "ce99e1d20aa173b87": "\" onchange=\"setRhythm('morning',this.value)\"></label><label class=\"field-label\">Esti visszatekintés<input class=\"text-input\" type=\"time\" value=\"",
+    "cce838b80b9c89ab5": "Lezárnád a mai napodat?",
+    "c883b4d03c795e155": "Hogy vagy ma?",
+    "ccd2f5607ff82a034": "Esti visszatekintés",
+    "c0041a687cf7313df": "Napi felmérés",
+    "c1e9b2ee62d3a8eae": "')\">Ma inkább kihagyom</button></section>",
+    "cff849918a4dfb97d": "<section class=\"card\"><div class=\"ey\">Egy pillanat magadra</div><h2>Beszéljük át a napodat.</h2><button class=\"btn\" onclick=\"openReflection('evening')\">Esti visszatekintés</button><button class=\"btn habi-choice\" onclick=\"openReflection('weekly')\">Heti visszatekintés</button></section>",
+    "c971d1be3f039f344": "<section class=\"card\"><div class=\"ey\">Rövid gyakorlatok</div><h2>Válaszd, ami most segíthet.</h2>",
+    "c336e3d2c9bce7f77": "Heti visszatekintés",
+    "c86e033edc5d7a591": "Ami nehéz volt",
+    "ce483d20513009a3e": "Ami segített",
+    "cd5c7897eabc93942": "A következő vállalásom",
+    "c42928e6b1053941d": "HABI",
+    "c0c344fa7bd4434be": "<details class=\"saved-support\"><summary>Beszélgetésem HABI-val</summary>",
+    "c63e41a0ab505b8b1": "A saját gondolataim",
+    "c7b7f78ba51dba3f1": "HABI javaslata",
+    "c06a1bafd602e9e07": "Hogyan?",
+    "c6a112c06c58353a6": "Így is elmondhatod",
+    "cb90b6d285900a33f": "<p class=\"athlete-note\">Kipróbáltam: ",
+    "c29527f28dbc27afb": " HABI</div><h1>",
+    "c35c14ed06a1d7ce2": "Választhatsz más segítséget.",
+    "ca35ecda8a991f50d": "Érdemes megjegyezni, mi segített.",
+    "c7ff6098853242eb7": "Nem kell erőltetned ezt a gyakorlatot. Kipróbálhatsz másikat, vagy beszélhetsz egy felnőttel, akiben megbízol.",
+    "c45f4ea439ffe6a1d": "Később visszatérhetsz ehhez a gyakorlathoz. Akkor használd, amikor jólesik.",
+    "c3ea5eb292b939b80": "</p><button class=\"btn\" onclick=\"go('tasks')\">Vissza a segítségekhez</button></section>",
+    "c2d298a02a184420a": " HABI</div><h1>Egy kis lezárás</h1><p>",
+    "cb3d473b07a154dbc": "</p><button class=\"btn\" onclick=\"go('history')\">Visszanézem a napomat</button><button class=\"btn habi-choice\" onclick=\"go('tasks')\">Választok egy apró szokást</button></section>",
+    "ca8274be89d16fe1b": "Nézzük meg együtt, mire van most szükséged.",
+    "c0531b59ac33377cc": "Mesélj majd arról is, hogyan alakulnak a következő napjaid. Addig is választhatsz egy apró dolgot, ami most jólesne.",
+    "cc47689cd10dcf512": "A következő hetekben időnként jelezd, hogyan vagy. Írd mellé azt is, mi történt aznap; ebből később könnyebb lesz észrevenni a visszatérő helyzeteket.",
+    "c4cbd714589e7a80d": " HABI</div><h2>Ezt vettem észre mostanában.</h2>",
+    "ceed0ef53acb916b3": "<section class=\"daily-advice trend-detail\" aria-label=\"HABI szöveges támogatása: ",
+    "c0dd632e0da53dc77": " HABI</div><h3>",
+    "c5cfbf24e864d7ed1": "</p><h3>Mit próbálj ki a következő napokban?</h3><p>",
+    "c49de7484d317301a": "</p><h3>Mire figyelj hosszabb távon?</h3><p>",
+    "c272c0b724d743a6c": "',null)\">Kipróbálok egy kapcsolódó gyakorlatot</button></section>",
+    "cb64445e768c11e7c": " HABI</div><h2>Nézzünk vissza a hónapodra.</h2><p>",
+    "cc05bd48ba3135129": "Nézzük meg együtt, mi ment könnyebben, és miben esne jól egy kis segítség.",
+    "cd6ec1f0465a91564": "A következő havi beszélgetésed: ",
+    "cadbbb5156ffc3239": " Addig is kipróbálhatod a választott apró vállalásodat.",
+    "cdc8a3eaa23fd481b": "Folytatom a havi visszatekintést",
+    "c149c706f002f04f0": "Elkezdjük a havi visszatekintést",
+    "c0e436b29b91723bd": "<button class=\"back-link\" onclick=\"deferMonthly()\">Inkább később</button>",
+    "c31a1432e558f3f2a": "<p class=\"muted\">Akkor térj vissza, amikor jólesik.</p><button class=\"btn habi-choice\" onclick=\"openMonthly()\">Mégis most beszélnék róla</button>",
+    "c918dcb46d0eb24ca": "<div class=\"daily-advice\"><h3>A választott kis vállalásod</h3><p>",
+    "c4f63ef468f404986": ")\">Legutóbbi havi visszatekintésem</button>",
+    "c719f7e1b5a4ced0e": "Ha szeretnéd, erről egy másik alkalommal is beszélhetünk.",
+    "c58cdc0c5a1a930b5": "Ezt most könnyebbnek érzed, mint legutóbb. ",
+    "cd0a9f9841a05d8cc": "Ez most nehezebbnek érződik, mint legutóbb. ",
+    "cd73a9a441cb65a3e": "Néha könnyebb, néha nehezebb. ",
+    "c14a3568260b0d553": "Most annyit osztottál meg, amennyi jólesett. Akkor is választhatsz egy kis segítséget, ha a kérdésekre most nem szeretnél válaszolni.",
+    "c51923680d00e9273": "A nap végén megnevezek egy dolgot, ami segített.",
+    "ce3ad3ea56a5c700f": "Elmondom egy megbízható felnőttnek, mire lenne szükségem.",
+    "ccbce8abc96cd3bc5": "<section class=\"card\"><h1>Havi visszatekintés</h1><button class=\"btn\" onclick=\"openMonthly()\">Beszéljük át</button></section>",
+    "cecbf7042512349d0": " HABI</div><h1>Hogy ment a kis vállalásod?</h1><p>Legutóbb ezt választottad:</p><blockquote class=\"habi-takeaway\">",
+    "cea251a48f8b2d479": "</blockquote><p>Mennyire fért bele a napjaidba?</p><div class=\"habi-choices\">",
+    "c221994f62da9ea65": "</div><button class=\"back-link\" onclick=\"go('home')\">Később folytatom</button></section>",
+    "ccd872135d763ba15": " HABI</div><h1>Ezt viszem magammal a hónapodból.</h1><p class=\"assessment-summary\">",
+    "c33d26bb9da1dab00": "</p><h2>Melyik apró dolgot próbálnád ki?</h2><div class=\"habi-choices\">",
+    "c622cbe92a6485dca": "\" onclick=\"monthlySetGoal(-1)\">Most nem választok vállalást.</button></div><label class=\"field-label\" for=\"monthly-note\">Mit tennél hozzá a saját szavaiddal?</label><textarea id=\"monthly-note\" maxlength=\"2000\" oninput=\"monthlyNote(this.value)\">",
+    "cf31ab6ab17f42126": "</textarea><button class=\"btn\" onclick=\"completeMonthly()\">Havi visszatekintés befejezése</button><button class=\"back-link\" onclick=\"monthlyBack()\">Vissza az utolsó kérdéshez</button></section>",
+    "ced9187c708fb15ac": " HABI · ",
+    "cc192cd7bac2d6ff9": "Ahogy a sportban érzed magad",
+    "c69b80f5858af6397": "\" aria-label=\"Havi visszatekintés előrehaladása\"></progress><p>Gondolj az elmúlt négy hétre.</p><h1>",
+    "c3bfe8ed3eb92b118": "<button class=\"btn habi-choice\" onclick=\"monthlyAnswer('not_applicable')\">Nem volt ilyen helyzet.</button><button class=\"btn habi-choice\" onclick=\"monthlyAnswer('skip')\">Most kihagyom.</button></div><button class=\"back-link\" onclick=\"monthlyBack()\">Vissza</button><button class=\"back-link\" onclick=\"go('home')\">Később folytatom</button></section>",
+    "ce2815a8086c79eae": "Nem volt ilyen helyzet.",
+    "c9a0927b539d7c746": "Most kihagytad.",
+    "c9933f37ccc287f98": " HABI</div><p class=\"assessment-summary\">",
+    "c2ac750cc41ca2eb9": "<h2>A korábbi vállalásod</h2><p class=\"athlete-note\">",
+    "cea2643084480c5a8": "<div class=\"daily-advice\"><h2>Ezt próbálom ki</h2><p>",
+    "c92abaab4de26f88c": "<h2>A saját gondolataid</h2><p class=\"athlete-note\">",
+    "c4d906ac2eec4750b": "<details class=\"monthly-answers\"><summary>Visszanézem, amiről beszéltünk</summary>",
+    "c84392bd45c5c2f51": "</div><h1>A havi beszélgetésünk</h1>",
+    "c0318cef0f9f33e19": "',null)\">Kipróbálok egy kapcsolódó gyakorlatot</button><button class=\"btn habi-choice\" onclick=\"go('history')\">Korábbi hónapjaim</button></section>",
+    "c6b056360c64bd616": "<section class=\"card monthly-history\"><div class=\"ey\">Hónapról hónapra</div><h2>A havi beszélgetéseink</h2>",
+    "cb8071552849f062a": "<p>Nézzünk vissza együtt az elmúlt négy hetedre. Később ide térhetünk vissza ahhoz, amit most megosztasz.</p><button class=\"btn\" onclick=\"openMonthly()\">Elkezdjük a havi visszatekintést</button>"
+  },
+  "data": {
+    "app_names": [
+      "Erőnlétem",
+      "Alvásom",
+      "Koncentrációm",
+      "Hangulatom",
+      "Edzésterhelésem"
+    ],
+    "app_questions": [
+      [
+        "mood",
+        "Hogy érzed magad?",
+        [
+          "Nagyon jól",
+          "Jól",
+          "Lehangoltan",
+          "Feszült"
+        ]
+      ],
+      [
+        "sleep",
+        "Hogyan aludtál?",
+        [
+          "Kiválóan",
+          "Jól",
+          "Keveset",
+          "Rosszul"
+        ]
+      ],
+      [
+        "energy",
+        "Mennyi energiád van?",
+        [
+          "Sok",
+          "Megfelelő",
+          "Kevés",
+          "Kimerültem"
+        ]
+      ],
+      [
+        "focus",
+        "Mennyire tudsz figyelni?",
+        [
+          "Nagyon jól",
+          "Jól",
+          "Nehezen",
+          "Alig"
+        ]
+      ],
+      [
+        "result",
+        "Hogy ment az edzés?",
+        [
+          "Nagyon jól",
+          "Jól",
+          "Vegyesen",
+          "Rosszul"
+        ]
+      ],
+      [
+        "load",
+        "Mennyit edzettél?",
+        [
+          "Nem edzettem",
+          "Keveset",
+          "Közepesen",
+          "Sokat"
+        ]
+      ],
+      [
+        "pain",
+        "Van fájdalmad?",
+        [
+          "Nincs",
+          "Enyhe",
+          "Igen",
+          "Erős"
+        ]
+      ]
+    ],
+    "app_sessions": [
+      [
+        "Erőnléti edzés",
+        "Ma · 17:30",
+        0
+      ],
+      [
+        "Reggeli technikai edzés",
+        "Holnap · 08:00",
+        1
+      ],
+      [
+        "Csapatedzés",
+        "Holnap · 17:30",
+        1
+      ],
+      [
+        "Technikai csapatedzés",
+        "Két nap múlva · 17:30",
+        2
+      ],
+      [
+        "Regenerációs foglalkozás",
+        "Három nap múlva · 10:00",
+        3
+      ]
+    ],
+    "c2113ae1c4c25fce6": {
+      "what": "Írd meg Habinak a fájdalom részleteit",
+      "how": "Írd le, hol fáj, mióta érzed, és melyik mozdulatnál jelentkezik. Írd hozzá, hogy pihenés közben is érzed-e. A fájdalmas mozdulatot ne ismételd csak azért, hogy teljesítsd a feladatot."
+    },
+    "c5180058275a249a6": {
+      "what": "Válassz egyetlen, kicsi és teljesíthető célt mára.",
+      "how": "Írd le egy mondatban, mire szeretnél figyelni a következő gyakorlatnál. A végén jegyezz fel egy dolgot, ami sikerült; ma ezt hasonlítsd a saját előző próbálkozásodhoz."
+    },
+    "ca866f222bafccfba": {
+      "what": "Készíts egy egyszerű esti rutint.",
+      "how": "Jelölj ki egy lefekvési időpontot. Előtte fél órával tedd félre a telefont, és készítsd össze a holnapi felszerelésedet, hogy nyugodtabban zárd a napot."
+    },
+    "c47a2c564ed45832a": {
+      "what": "Adj egyetlen kapaszkodót a figyelmednek.",
+      "how": "A következő gyakorlat előtt nevezd meg azt az egy mozdulatot, amire figyelni fogsz. Ha elkalandozol, mondd magadban: „a következő mozdulat”, és térj vissza hozzá."
+    },
+    "caaf8d6c83a027467": {
+      "what": "Válaszd külön az aggodalmat attól, amire van ráhatásod.",
+      "how": "Írj le egy mondatot arról, mi feszít. Mellé írj egy apró dolgot, amit ma meg tudsz tenni. Kezdd ezzel, és utána figyeld meg, változott-e az érzésed."
+    },
+    "c0f652d86f43b86ad": {
+      "what": "Tarts egy rövid szünetet, és szűkítsd le a mai célodat.",
+      "how": "Tedd félre egy percre a telefont, ülj le kényelmesen, és figyeld a saját ritmusú légzésedet. Utána válassz egyetlen konkrét feladatot; a végén írd le, mi ment könnyebben vagy nehezebben."
+    },
+    "ce10f3ad25f4e2e2f": {
+      "what": "Keress egy javítható részletet a korábbi hibában.",
+      "how": "Írd le röviden, mi történt, majd fejezd be ezt a mondatot: „Legközelebb arra figyelek, hogy…”. Válassz egy megfigyelhető mozdulatot, ne általános elvárást."
+    },
+    "cfefb4105804c5f31": {
+      "what": "Válassz egy dolgot, amiben most segítséget szeretnél.",
+      "how": "A Beszéljük át gombbal elmondhatod Habinak, mi foglalkoztat. Akkor is kérhetsz támogatást, ha most nem szeretnél kérdésekre válaszolni."
+    },
+    "c32ebc054f6db0ef6": {
+      "what": "Tartsd meg, ami működik, és válassz egy konkrét edzéscélt.",
+      "how": "Írd le, melyik technikai részletet szeretnéd tudatosan gyakorolni. Edzés után egy mondatban rögzítsd, mi sikerült, és mit próbálsz ki legközelebb."
+    },
+    "ce6e42895c650766f": [
+      [
+        "home",
+        "Kezdőlap"
+      ],
+      [
+        "tasks",
+        "Feladataim"
+      ],
+      [
+        "history",
+        "Fejlődésem"
+      ],
+      [
+        "habi",
+        "HABI"
+      ]
+    ],
+    "c104f8b75a0cfb163": [
+      "Nem volt edzésem"
+    ],
+    "c244008c8449565b1": [
+      [
+        14,
+        "2 hét"
+      ],
+      [
+        28,
+        "4 hét"
+      ],
+      [
+        42,
+        "6 hét"
+      ]
+    ],
+    "habi_HABI_STARTERS": [
+      "Edzés előtt már azon izgulok, hogy el fogok rontani valamit.",
+      "A legutóbbi hibám még mindig a fejemben van. Nehéz újra magabiztosan kezdeni.",
+      "Szeretnék jól teljesíteni, de most túl sokat agyalok azon, mit várnak tőlem."
+    ],
+    "habi_themes": [
+      "a hibázástól való félelem",
+      "a mások elvárásai miatti nyomás",
+      "a másokhoz hasonlítgatás",
+      "egy korábbi hiba újrajátszása",
+      "a motiváció hiánya",
+      "a lelki fáradtság"
+    ],
+    "cdb6cf5443d29b327": [
+      "Köszönöm, hogy leírtad. Nézzük meg együtt, mi nehezíti meg most a kezdést. Nem kell mindent egyszerre megoldanod.",
+      "Egy hiba után nehéz lehet továbblépni. Válasszuk külön azt, ami történt, attól, amire most van ráhatásod.",
+      "Ha sok elvárás jár a fejedben, nehéz a következő lépésre figyelni. Keressünk egy kisebb, kezelhető kapaszkodót."
+    ],
+    "c4cca2937317259c7": [
+      "Attól félek, hogy hibázni fogok.",
+      "Nyomaszt, hogy meg kell felelnem másoknak.",
+      "Folyton a többiekhez mérem magam.",
+      "Újra és újra egy korábbi hibára gondolok.",
+      "Most nehezen találok kedvet az edzéshez.",
+      "Fejben elfáradtam, túl sok minden van rajtam."
+    ],
+    "habi_responses": [
+      "A hibázástól való félelem elviheti a figyelmedet a feladatról. A mai célod lehet egy gyakorolható lépés is, nem kell hibátlanságot várnod magadtól.",
+      "Könnyű úgy érezni, hogy mindenki eredményt vár. Segíthet kimondani, mi az, amit te szeretnél ma gyakorolni, és rákérdezni, mit várnak valójában.",
+      "A másik sportoló teljesítménye nem mutatja meg a te teljes utadat. Keressünk inkább valamit, amit a saját korábbi próbálkozásodhoz tudsz mérni.",
+      "A korábbi hibát már nem tudod megváltoztatni. Azt viszont megválaszthatod, mire figyelsz a következő próbálkozásnál.",
+      "Nem kell magadra erőltetni a lelkesedést. Kezdhetjük azzal, hogy mi venne le egy kis terhet a mai napról.",
+      "A lelki fáradtságot is érdemes elmondani. Nem kell egyedül kitalálnod, hogyan férjen bele minden a napodba."
+    ],
+    "ce1384f8b62d5137d": [
+      "Amikor újra felidézem a történteket.",
+      "Amikor hasonló feladat következik.",
+      "Edzés után, amikor értékelem magam."
+    ],
+    "c384f5319f6a1ff72": [
+      "Már az edzés előtt.",
+      "Edzés közben, amikor valami nem sikerül.",
+      "Edzés után, amikor értékelem magam."
+    ],
+    "c2777eab3e6d1fbed": [
+      "A kezdés előtti percekre érdemes egy egyszerű kapaszkodót választani.",
+      "A nehéz pillanatban egy rövid újrakezdés is számít.",
+      "Az edzés vége ne csak a hibák felsorolásáról szóljon."
+    ],
+    "c5cf4489993443e03": [
+      "„Ha nem sikerül, csalódást okozok.”",
+      "„Másoknak ez sokkal jobban megy.”",
+      "„Nem tudom, hogyan kezdjek bele újra.”"
+    ],
+    "c6f024fbbaa94d11f": [
+      "Azt gondolod, hogy csalódást okozhatsz — ez egy félelem, nem biztos tény. Választhatsz egy apró célt, amit ma ki tudsz próbálni.",
+      "Mások egy pillanatát látod, a saját bizonytalanságodat viszont belülről éled át. Ma elég lehet a saját következő lépésedre figyelni.",
+      "Az újrakezdés lehet egészen kicsi. Nem az egész edzést kell most fejben megoldanod, csak az első lépést."
+    ],
+    "c096e4c085f59e36a": [
+      "Választok egyetlen, gyakorolható célt.",
+      "Megállok egy percre, és nyugodtan figyelem a légzésemet.",
+      "Előbb beszélek valakivel arról, ami nehéz."
+    ],
+    "c9269b568dc604f33": [
+      "Jó kapaszkodó lehet például: „A következő gyakorlatnál erre az egy mozdulatra figyelek.” Ha szeretnéd, egy megbízható felnőttel is átgondolhatod a célodat.",
+      "Ha kényelmes, tarts egy rövid szünetet, lélegezz a saját ritmusodban, majd nevezd meg a következő feladatot. Ha ez nem esik jól, választhatsz inkább beszélgetést.",
+      "Rendben van segítséget kérni még azelőtt, hogy egyedül próbálnád rendezni az egészet. Egy rövid mondat is elég lehet a kezdéshez."
+    ],
+    "c19bb97a704998719": [
+      "Az egyik szülőmmel.",
+      "Egy másik felnőttel, akiben megbízom.",
+      "Sportpszichológussal vagy iskolapszichológussal."
+    ],
+    "c8931934f9e9f7863": [
+      "Egyik szülődnek elmondhatod, mi nehéz most, és milyen segítség esne jól. Nem kell rögtön mindent megmagyaráznod.",
+      "Egy megbízható felnőtt meghallgathat, és segíthet átgondolni, mire lenne most szükséged.",
+      "Pszichológussal azt is átbeszélheted, hogyan térnek vissza ezek a gondolatok. A segítségkéréshez nem kell megvárnod, hogy nagyobb legyen a gond."
+    ],
+    "ca5d2a4990324c525": [
+      "Hallgasson meg, mielőtt tanácsot ad.",
+      "Segítsen egy reális, kis célt találni a mai napra.",
+      "Beszéljünk meg egy rövid, rendszeres bejelentkezést."
+    ],
+    "cd9aff5d661c5d33d": [
+      "félek a hibázástól",
+      "nyomasztanak mások elvárásai",
+      "gyakran a többiekhez hasonlítom magam",
+      "sokat gondolok egy korábbi hibámra",
+      "most nehezen találok kedvet az edzéshez",
+      "fejben elfáradtam, túl sok minden van rajtam"
+    ],
+    "c665accba3d43f921": [
+      "az egyik szülődnek",
+      "egy felnőttnek, akiben megbízol",
+      "sportpszichológusnak vagy iskolapszichológusnak"
+    ],
+    "c758e12fee00537d0": [
+      "Először azt szeretném, hogy meghallgass.",
+      "Segítenél egy reális, kis célt találni mára?",
+      "Megbeszélhetünk egy rövid, rendszeres bejelentkezést?"
+    ],
+    "c52e91ca2ad1cd69c": [
+      "Válassz egyetlen, gyakorolható célt a következő edzésre.",
+      "Ha jólesik, tarts egy perc nyugodt szünetet a következő feladat előtt.",
+      "A következő edzés előtt kezdd el a beszélgetést a választott személlyel."
+    ],
+    "support_practices": {
+      "focus": {
+        "title": "Egy figyelmi kapaszkodó",
+        "what": "Válassz egyetlen dolgot a következő feladathoz.",
+        "how": "Nézz körül, majd nevezd meg azt az egy mozdulatot vagy részfeladatot, amivel kezdesz. Ha elkalandozol, térj vissza ehhez a mondathoz: „Most csak a következő feladat.”"
+      },
+      "sleep": {
+        "title": "Nyugodtabb este",
+        "what": "Készíts helyet a pihenésnek.",
+        "how": "Válassz egy esti időpontot a lelassulásra. Készítsd össze a holnapi dolgaidat, majd válassz egy csendes elfoglaltságot. Figyeld meg, melyik része esett jól."
+      },
+      "restart": {
+        "title": "Újrakezdés egy hiba után",
+        "what": "Válaszd külön a történteket attól, ahogyan magadról gondolkodsz.",
+        "how": "Mondd el egy mondatban, mi történt. Utána fejezd be: „A következő próbálkozásnál arra figyelek, hogy…” Egy apró, kipróbálható dolgot válassz."
+      },
+      "pressure": {
+        "title": "Ami most rajtam múlik",
+        "what": "Válassz egy kezelhető teendőt a sok elvárás helyett.",
+        "how": "Nevezz meg egy dolgot, ami aggaszt, majd egyet, amit most meg tudsz tenni. Kezdd azzal. Ha továbbra is soknak érzed, mondd el egy felnőttnek, akiben megbízol."
+      },
+      "pause": {
+        "title": "Egy rövid megálló",
+        "what": "Adj magadnak egy nyugodt percet.",
+        "how": "Ülj le kényelmesen, és vedd észre, mi van körülötted. Ha jólesik, figyeld a saját ritmusú légzésedet. Ha ez kellemetlen, nézz inkább egy tárgyat, vagy beszélj valakivel."
+      }
+    },
+    "support_intro": {
+      "pain": "Fájdalmat jeleztél. Segítek összeszedni, mit érzel, hogy el tudd mondani egy megbízható felnőttnek.",
+      "sleep": "A felmérésben azt jelezted, hogy az alvásod nem volt pihentető. Nézzük meg, mi segíthet ma este.",
+      "energy": "Kevés energiát jeleztél. Keressünk egy kisebb, vállalható feladatot mára.",
+      "focus": "Azt jelezted, hogy nehéz figyelned. Keressünk egy kapaszkodót a következő feladathoz.",
+      "pressure": "A hangulatod most nehezebbnek tűnik a válaszod alapján. Nézzük meg, mire lenne szükséged.",
+      "restart": "Az edzésed vegyesen vagy nehezen alakult. Egy konkrét pillanatból induljunk ki.",
+      "general": "Nézzük meg, miben szeretnél ma támogatást. Te döntöd el, miről beszélünk."
+    },
+    "ca64fcaa26a6ba535": [
+      "A lábamban vagy a lábfejemben.",
+      "A karomban vagy a vállamban.",
+      "Máshol, vagy nehéz megmondanom."
+    ],
+    "c12b7fa2225ae41fb": {
+      "response": "Köszönöm. A saját szavaiddal is hozzáírhatod a pontos helyét.",
+      "question": "Mióta érzed?",
+      "options": [
+        "Most kezdődött.",
+        "Ma már korábban is éreztem.",
+        "Több napja visszatér."
+      ]
+    },
+    "c8715d1b43153dc92": {
+      "response": "Ezt is érdemes elmondanod annak, akitől segítséget kérsz.",
+      "question": "Mikor jelentkezik?",
+      "options": [
+        "Egy bizonyos mozdulatnál.",
+        "Mozgás közben többféle helyzetben.",
+        "Pihenés közben is, vagy nehéz megmondani."
+      ]
+    },
+    "c0ed7ed10ffa5a1ae": [
+      "Kipróbálnék egy rövid gyakorlatot.",
+      "Elmondanám valakinek, ami nehéz.",
+      "Egy kisebb célt szeretnék találni."
+    ],
+    "c903051356bf9f6c7": [
+      "Rendben. Olyan gyakorlatot választunk, amiben egy dolgot kell kipróbálnod.",
+      "Segítek elkezdeni a beszélgetést. Te választhatod meg, kivel érzed biztonságosnak.",
+      "Elég egy olyan dolog, ami ma belefér. Nem kell mindent egyszerre megoldanod."
+    ],
+    "c50d4576e6d58e72e": [
+      "Az egyik szülőmmel.",
+      "Egy másik felnőttel, akiben megbízom.",
+      "Pszichológussal vagy iskolapszichológussal."
+    ],
+    "cfa1a5d83d12018ab": {
+      "response": "Elmondhatod azt is, milyen segítséget szeretnél. Nem kell tökéletesen megfogalmaznod.",
+      "question": "Mi esne most jól?",
+      "options": [
+        "Először csak hallgasson meg.",
+        "Gondoljunk ki együtt egy kis teendőt.",
+        "Kérdezze meg később is, hogyan vagyok."
+      ]
+    },
+    "c402fd8eda98fbdfa": {
+      "what": "Mondd el egy megbízható felnőttnek a fájdalom részleteit.",
+      "how": "Mutasd meg, hol érzed, mióta tart és mikor jelentkezik. A fájdalmas mozdulatot ne erőltesd. A felnőtt segíthet eldönteni, szükséges-e egészségügyi segítség. Ha erős vagy rosszabbodik, most kérj segítséget.",
+      "message": ""
+    },
+    "ccae0705badb5fc6d": [
+      "az egyik szülődnek",
+      "egy felnőttnek, akiben megbízol",
+      "pszichológusnak vagy iskolapszichológusnak"
+    ],
+    "c7525b0ce2389ce06": [
+      "Először azt szeretném, hogy meghallgass.",
+      "Segítenél kiválasztani egy kicsi, vállalható teendőt?",
+      "Megkérdeznéd később is, hogyan vagyok?"
+    ],
+    "cf037b7e20268a0b1": [
+      "Segített.",
+      "Kicsit segített.",
+      "Most nem segített."
+    ],
+    "c54c3589d9cdfc507": [
+      "Belefért",
+      "Túl nagy volt"
+    ],
+    "trends_titles": [
+      [
+        "Mostanában több energiád van.",
+        "Mostanában kevesebb az energiád.",
+        "Az energiád mostanában hasonlóan alakul."
+      ],
+      [
+        "Mostanában pihentetőbbnek érzed az alvásodat.",
+        "Mostanában kevésbé érzed pihentetőnek az alvásodat.",
+        "Az alvásodban most nem látszik nagyobb változás."
+      ],
+      [
+        "Mostanában könnyebb odafigyelned.",
+        "Mostanában nehezebb odafigyelned.",
+        "A figyelmed mostanában hasonlóan alakul."
+      ],
+      [
+        "Mostanában jobban érzed magad.",
+        "Mostanában többször érzed nehéznek a napjaidat.",
+        "A hangulatod mostanában hasonlóan alakul."
+      ],
+      [
+        "Mostanában több edzést jelzel.",
+        "Mostanában kevesebb edzést jelzel.",
+        "Az edzéseid terhelése mostanában hasonló."
+      ]
+    ],
+    "trends_supportive": [
+      [
+        "Érdemes észrevenned, mi segít feltöltődni. Nem kell minden nap ugyanannyit vállalnod.",
+        "Többször jeleztél kevés energiát. Ma egy kisebb vállalás is elég lehet; a pihenésnek is legyen helye."
+      ],
+      [
+        "Figyeld meg, mi segít este lelassulni, és tartsd meg azt, ami beválik. Egy nehezebb éjszaka után is újrakezdheted.",
+        "Többször jelezted, hogy nem pihentél jól. Nem kell most az egész estédet átszervezned: kezdj egy apró, tartható szokással."
+      ],
+      [
+        "Vedd észre, melyik feladatnál könnyebb jelen lenned. Ami ott segít, azt máskor is kipróbálhatod.",
+        "Többször jelezted, hogy nehéz figyelned. Ne várd magadtól, hogy egyszerre mindenre figyelj; válassz egyetlen kapaszkodót."
+      ],
+      [
+        "Érdemes megjegyezned, kik mellett és milyen helyzetekben érzed jól magad. Ezekhez később is visszatérhetsz.",
+        "Többször jelezted, hogy nehezebb a hangulatod. Nem kell ezt egyedül cipelned: elmondhatod valakinek, akiben megbízol."
+      ],
+      [
+        "Az a fontos, hogyan érzed magad a mozgás mellett. Figyeld meg, marad-e energiád az iskolára, a barátaidra és a pihenésre is.",
+        "Többször jeleztél nagyobb terhelést. Figyeld meg, mennyire tudsz utána feltöltődni; nem kell mindig többet vállalnod."
+      ]
+    ],
+    "trends_next": [
+      "Válassz egy tartható pihenési szokást, és a következő napokban figyeld meg, mikor érzed magad energikusabbnak. Egy zsúfolt iskolai napot is érdemes feljegyezni.",
+      "Próbálj ki egy egyszerű esti rutint. A visszatekintésben jegyezd fel, mi segítette vagy zavarta a pihenést; később ezeket a napokat nézd meg együtt az alvásválaszaiddal.",
+      "A következő feladat előtt válassz egyetlen figyelmi kapaszkodót. Utána írd le, segített-e, és milyen helyzetben volt könnyebb vagy nehezebb figyelni.",
+      "A nap végén írd le, mi volt nehéz és mi segített. Így a változó hangulat mellett a számodra fontos helyzetek is visszanézhetők.",
+      "A terhelési napokat az energia- és alvásválaszokkal együtt nézd. Jegyezd fel, hogyan érezted magad a következő napon; a több edzés önmagában nem jelenti azt, hogy jobban fejlődsz."
+    ],
+    "trends_sustained": [
+      "Ha több héten át gyakran jelzel kevés energiát, mondd el egy szülőnek vagy megbízható felnőttnek. Együtt átnézhetitek, hogyan fér el az iskola, a sport és a pihenés.",
+      "Ha több héten át visszatér a rossz alvás, beszélj róla egy szülővel vagy megbízható felnőttel. Ne csak egyetlen éjszakából induljatok ki.",
+      "Ha a figyelmi nehézség több héten át az iskolában és a sportban is megjelenik, kérj támogatást egy megbízható felnőttől. Mondd el, milyen helyzetekben nehéz.",
+      "Ha a nehéz hangulat tartósan visszatér, vagy megnehezíti a napjaidat, mondd el egy megbízható felnőttnek vagy pszichológusnak. Nem kell megvárnod, amíg rosszabb lesz.",
+      "Ha a nagyobb terhelés mellett rendszeresen kevés energiát vagy rossz alvást jelzel, beszélj egy szülővel vagy megbízható felnőttel a napirendedről."
+    ],
+    "trends_maintain": [
+      "Érdemes megtartani a jól tartható napi ritmusodat. Nézd meg, mely napokon volt több energiád, és mi történt akkor.",
+      "Őrizd meg azt az esti szokást, amelyet tarthatónak érzel. Egy-egy nehezebb éjszaka miatt nem kell az egész rutinodat megváltoztatnod.",
+      "Tartsd meg a bevált figyelmi kapaszkodót, és próbáld ki más feladatnál is. Saját korábbi napjaidhoz viszonyíts.",
+      "Vedd észre azokat a helyzeteket és kapcsolatokat, amelyek mellett jobban érzed magad. Ezeket a saját szavaiddal is rögzítheted.",
+      "Figyeld az egyensúlyt a mozgás, az iskola és a pihenés között. A kisebb terhelés sem jelent automatikusan visszaesést."
+    ],
+    "monthly_monthlyDomains": [
+      {
+        "key": "focus",
+        "name": "Figyelem",
+        "questions": [
+          "Amikor elkalandozott a figyelmed, vissza tudtál térni a feladathoz?",
+          "Ki tudtad választani, mire figyelj először?"
+        ],
+        "positive": "Vissza tudsz találni ahhoz, amivel éppen foglalkozol.",
+        "support": "Amikor sok minden elvonja a figyelmedet, elég egyetlen feladattal kezdened.",
+        "goal": "A következő feladat előtt kiválasztok egy dolgot, amire figyelek.",
+        "practice": "focus"
+      },
+      {
+        "key": "resilience",
+        "name": "Újrakezdés",
+        "questions": [
+          "Egy hiba után újra meg tudtad próbálni?",
+          "Egy nehéz nap után találtál valamit, ami segített továbblépni?"
+        ],
+        "positive": "Egy nehéz pillanat után is találsz lehetőséget az újrakezdésre.",
+        "support": "Egy hiba után nem kell rögtön mindent helyrehoznod. Egy új próbálkozás is elég lehet.",
+        "goal": "Egy hiba után megnevezem, mit próbálok másképp legközelebb.",
+        "practice": "restart"
+      },
+      {
+        "key": "selfTalk",
+        "name": "Ahogy magaddal beszélsz",
+        "questions": [
+          "Tudtál magaddal kedvesen beszélni, amikor valami nem sikerült?",
+          "Találtál olyan mondatot, ami segített a következő próbálkozásban?"
+        ],
+        "positive": "A saját oldaladon tudsz állni, amikor valami nehéz.",
+        "support": "Próbáld meg azt mondani magadnak, amit egy barátodnak mondanál ugyanebben a helyzetben.",
+        "goal": "Egy nehéz pillanatban úgy szólok magamhoz, mint egy barátomhoz.",
+        "practice": "restart"
+      },
+      {
+        "key": "confidence",
+        "name": "Önbizalom",
+        "questions": [
+          "Észrevetted, amikor valamiben ügyesedtél?",
+          "Mertél olyasmit is kipróbálni, amiben még bizonytalan voltál?"
+        ],
+        "positive": "Észreveszed a saját próbálkozásaidat, és mersz új dolgok felé indulni.",
+        "support": "Nem kell biztosnak lenned a sikerben ahhoz, hogy kipróbálj valamit. A próbálkozásodat is érdemes észrevenned.",
+        "goal": "A nap végén megnevezek egy próbálkozást, amire jó érzéssel gondolok.",
+        "practice": "restart"
+      },
+      {
+        "key": "selfRegulation",
+        "name": "Az érzéseid kezelése",
+        "questions": [
+          "Amikor feszült vagy dühös lettél, találtál valamit, ami segített megnyugodni?",
+          "Felismerted, amikor szünetre volt szükséged?"
+        ],
+        "positive": "Észreveszed, mikor van szükséged egy kis megállásra.",
+        "support": "Az érzéseidet nem kell elnyomnod. Próbáld meg észrevenni, mikor esne jól egy szünet vagy egy beszélgetés.",
+        "goal": "Amikor feszültté válok, tartok egy rövid megállót.",
+        "practice": "pause"
+      },
+      {
+        "key": "helpSeeking",
+        "name": "Segítségkérés",
+        "questions": [
+          "El tudtad mondani valakinek, amikor nehéz volt?",
+          "Meg tudtad mondani, milyen segítség esne jól?"
+        ],
+        "positive": "Meg tudod mutatni másoknak, amikor támogatásra van szükséged.",
+        "support": "Nem kell mindent egyedül megoldanod. Kezdheted ennyivel: „Most jólesne, ha meghallgatnál.”",
+        "goal": "Elmondom egy megbízható felnőttnek, milyen segítség esne jól.",
+        "practice": "pressure"
+      }
+    ],
+    "monthly_monthlyEnvironment": [
+      {
+        "key": "enjoyment",
+        "name": "Öröm a sportban",
+        "question": "Volt örömöd a sportban?",
+        "positive": "Jó, hogy a sportban örömet is találsz. Vedd észre, melyik része esik igazán jól.",
+        "support": "Most kevesebb örömöt találtál a sportban. Mesélhetsz arról, mi hiányzik belőle, és mi tenne egy kicsit könnyebbé egy alkalmat."
+      },
+      {
+        "key": "belonging",
+        "name": "Odatartozás",
+        "question": "Úgy érezted, hogy a többiek közé tartozol?",
+        "positive": "Fontos kapaszkodó, ha úgy érzed, van helyed a többiek között.",
+        "support": "Ha kívülállónak érzed magad, nem kell egyedül maradnod ezzel. Mondd el egy felnőttnek, akiben megbízol, mi történt."
+      },
+      {
+        "key": "voice",
+        "name": "Meghallgatás",
+        "question": "Elmondhattad, ha valami sok volt neked?",
+        "positive": "Jó, ha elmondhatod, amikor valami sok, és figyelnek rád.",
+        "support": "Jogod van elmondani, ha valami sok neked. Ha valaki nem figyel rád, kereshetsz másik megbízható felnőttet."
+      },
+      {
+        "key": "safety",
+        "name": "Biztonság",
+        "question": "Biztonságban érezted magad azok között, akikkel sportoltál?",
+        "positive": "Fontos, hogy biztonságban érezhesd magad sportolás közben is.",
+        "support": "Ha most nem érzed magad biztonságban, keress egy megbízható felnőttet, és mondd el neki, mi történt. Ha az első ember nem segít, szólj másnak is."
+      }
+    ],
+    "monthly_monthlyChoices": [
+      "Szinte soha",
+      "Ritkán",
+      "Néha",
+      "Gyakran",
+      "Szinte mindig"
+    ],
+    "c5701e71b38a484d8": [
+      [
+        "easy",
+        "Jól belefért."
+      ],
+      [
+        "some",
+        "Néha belefért."
+      ],
+      [
+        "hard",
+        "Most túl nagy vállalás volt."
+      ],
+      [
+        "skip",
+        "Most inkább kihagyom."
+      ]
+    ],
+    "monthly_reviewLabels": {
+      "easy": "Jól belefért.",
+      "some": "Néha belefért.",
+      "hard": "Most túl nagy vállalás volt.",
+      "skip": "Most kihagytad."
+    },
+    "runtime_defaults": {
+      "period": 14,
+      "rhythm": {
+        "enabled": false,
+        "morning": "08:00",
+        "evening": "20:00",
+        "dismissed": {}
+      },
+      "monthlyDeferralDays": 3,
+      "trendMinimumDays": 3,
+      "trendDirectionDelta": 0.5,
+      "monthlyDirectionDelta": 1,
+      "monthlyLowThreshold": 2.5
+    },
+    "sample_history": {
+      "days": 42,
+      "sequences": [
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          2,
+          2,
+          2
+        ]
+      ]
+    }
+  }
+}
