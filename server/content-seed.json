@@ -1298,7 +1298,8 @@
         "summaryOpening": "Ez foglalkoztat:",
         "summaryAction": "Ebben kérnék segítséget:",
         "fallback": "Segítek megtalálni, miről lenne jó beszélgetnünk. Melyik áll hozzád a legközelebb?",
-        "summaryRequest": "Kérlek, hallgass meg, és segíts kitalálni egy következő lépést, ami most belefér nekem."
+        "summaryRequest": "Kérlek, hallgass meg, és segíts kitalálni egy következő lépést, ami most belefér nekem.",
+        "starterIntro": "Hoztam néhány témát, amiből választhatsz beszélgetésindítónak."
       },
       "categories": [
         {
