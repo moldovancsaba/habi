@@ -1,11 +1,12 @@
 import { readFile } from 'node:fs/promises';
+import { missingCatalogKeys } from '../server/content.js';
 import { database,safeDatabaseError } from '../server/database.js';
 import { ownerSession,validPayload,readState,writeState } from '../server/store.js';
 let seedPromise;
 async function content(db){
  const seed=await (seedPromise||=(readFile(new URL('../server/content-seed.json',import.meta.url),'utf8').then(JSON.parse)));
  const col=db.collection('habi_content');await col.updateOne({_id:'active'},{$setOnInsert:{...seed,createdAt:new Date()}},{upsert:true});
- let doc=await col.findOne({_id:'active'},{projection:{_id:0,createdAt:0}});const missing={};for(const section of ['messages','data'])for(const [key,value]of Object.entries(seed[section]))if(doc[section]?.[key]===undefined)missing[section+'.'+key]=value;
+ let doc=await col.findOne({_id:'active'},{projection:{_id:0,createdAt:0}});const missing={...missingCatalogKeys(seed.messages,doc.messages,'messages'),...missingCatalogKeys(seed.data,doc.data,'data')};
  if(Object.keys(missing).length){await col.updateOne({_id:'active'},{$set:missing});doc=await col.findOne({_id:'active'},{projection:{_id:0,createdAt:0}})}
  return doc;
 }
