@@ -128,3 +128,6 @@ input,select{font:inherit}
 .journey-card textarea,.journey-card input,.journey-card select{max-width:100%;min-width:0}
 .journey-card input:focus-visible,.journey-card select:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
 .journey-card p,.journey-card h3{overflow-wrap:anywhere}
+
+.guided-summary summary{cursor:pointer;font-weight:650;color:var(--primary);padding-block:var(--space-3)}
+.guided-summary .athlete-note{white-space:pre-wrap;overflow-wrap:anywhere}

@@ -1275,6 +1275,1830 @@
         "selfRegulation": "pause",
         "helpSeeking": "communication"
       }
+    },
+    "guided_chat_v1": {
+      "version": 1,
+      "labels": {
+        "title": "Miről beszélgessünk?",
+        "input": "Írd le, mi foglalkoztat most.",
+        "placeholder": "Például: szeretnék jobb lenni, de félek, hogy nem sikerül.",
+        "send": "Beszélgessünk →",
+        "new": "Új beszélgetés",
+        "you": "Te",
+        "robot": "HABI",
+        "summary": "Összefoglalom magamnak",
+        "summaryTitle": "Ezt mondhatod el",
+        "download": "Letöltöm az összefoglalót",
+        "action": "Ezt próbálhatod most",
+        "practice": "Kipróbálom a gyakorlatot",
+        "retry": "Más témát választok",
+        "other": "Más is foglalkoztat",
+        "draft": "Folytatom a beszélgetést",
+        "summaryIntro": "Erről szeretnék beszélgetni veled.",
+        "summaryOpening": "Ez foglalkoztat:",
+        "summaryAction": "Ebben kérnék segítséget:",
+        "fallback": "Segítek megtalálni, miről lenne jó beszélgetnünk. Melyik áll hozzád a legközelebb?"
+      },
+      "categories": [
+        {
+          "id": "dreams",
+          "tree": "dreams",
+          "variants": [
+            "Az álmaim és a jövőm",
+            "Amit el szeretnék érni",
+            "A jövőmmel kapcsolatos álmaim",
+            "A céljaim és a vágyaim",
+            "Ahogyan a jövőmet elképzelem",
+            "A terveim és a reményeim",
+            "Amiről nagyot álmodom"
+          ],
+          "keywords": [
+            [
+              "álom",
+              "álmaim",
+              "dream",
+              "dreams"
+            ],
+            [
+              "jövő",
+              "future"
+            ],
+            [
+              "szeretnék",
+              "akarok",
+              "want",
+              "desire"
+            ],
+            [
+              "cél",
+              "goal",
+              "ambition"
+            ],
+            [
+              "legjobb",
+              "best",
+              "siker",
+              "success"
+            ]
+          ]
+        },
+        {
+          "id": "competition",
+          "tree": "dreams",
+          "variants": [
+            "A versenyzés és az elvárások",
+            "Amikor nyerni szeretnék",
+            "A versenyhelyzetek",
+            "Hogyan élem meg a versenyt",
+            "A teljesítményem körüli nyomás",
+            "Amikor eredményt várok magamtól",
+            "A győzelem és a vereség"
+          ],
+          "keywords": [
+            [
+              "verseny",
+              "competition",
+              "compete"
+            ],
+            [
+              "nyerni",
+              "win",
+              "winning"
+            ],
+            [
+              "vereség",
+              "lose",
+              "losing"
+            ],
+            [
+              "eredmény",
+              "result"
+            ],
+            [
+              "meccs",
+              "match",
+              "tournament"
+            ]
+          ]
+        },
+        {
+          "id": "sport",
+          "tree": "connection",
+          "variants": [
+            "Én és a sport",
+            "A helyem a sportban",
+            "Ahogy sportolás közben érzem magam",
+            "A kapcsolatom a sporttal",
+            "A csapatom és én",
+            "A sport öröme és nehézségei",
+            "Ami a sportban most foglalkoztat"
+          ],
+          "keywords": [
+            [
+              "sport",
+              "athlete",
+              "sportoló"
+            ],
+            [
+              "foci",
+              "soccer",
+              "football"
+            ],
+            [
+              "csapat",
+              "team"
+            ],
+            [
+              "edzés",
+              "training",
+              "practice"
+            ],
+            [
+              "kosárlabda",
+              "basketball",
+              "úszás",
+              "swimming",
+              "tenisz",
+              "tennis"
+            ]
+          ]
+        },
+        {
+          "id": "pressure",
+          "tree": "pressure",
+          "variants": [
+            "A félelmeim és a feszültség",
+            "Ami miatt most aggódom",
+            "Amikor sok a nyomás",
+            "A nehéz érzéseim",
+            "A szorongás és az izgalom",
+            "Ami most nyugtalanít",
+            "Amikor nehéz megnyugodni"
+          ],
+          "keywords": [
+            [
+              "félek",
+              "félelem",
+              "fear",
+              "afraid",
+              "scared"
+            ],
+            [
+              "aggódom",
+              "worry",
+              "worried"
+            ],
+            [
+              "szorong",
+              "anxious",
+              "anxiety"
+            ],
+            [
+              "stressz",
+              "stress",
+              "pressure"
+            ],
+            [
+              "szomorú",
+              "sad",
+              "miserable",
+              "hopeless"
+            ]
+          ]
+        },
+        {
+          "id": "focus",
+          "tree": "pressure",
+          "variants": [
+            "Amikor nehéz figyelnem",
+            "A figyelmem és a kapkodás",
+            "Amikor elvesztem a fonalat",
+            "A koncentrációm",
+            "Amikor túl sok minden történik",
+            "Ahogyan a feladatra figyelek",
+            "A zavaró gondolataim"
+          ],
+          "keywords": [
+            [
+              "figyelem",
+              "figyelni",
+              "focus"
+            ],
+            [
+              "koncentr",
+              "concentrate"
+            ],
+            [
+              "kapkod",
+              "rushing"
+            ],
+            [
+              "elkalandoz",
+              "distracted"
+            ],
+            [
+              "utasítás",
+              "instructions",
+              "confused"
+            ]
+          ]
+        },
+        {
+          "id": "habits",
+          "tree": "pressure",
+          "variants": [
+            "A szokásaim és a pihenésem",
+            "Amikor elfáradok",
+            "A mindennapi ritmusom",
+            "A pihenés és a feltöltődés",
+            "Ami a napjaimat nehezíti",
+            "Az alvásom és az energiám",
+            "A szokások, amelyeken változtatnék"
+          ],
+          "keywords": [
+            [
+              "alvás",
+              "aludni",
+              "sleep"
+            ],
+            [
+              "fáradt",
+              "tired",
+              "exhausted"
+            ],
+            [
+              "szokás",
+              "habit",
+              "routine"
+            ],
+            [
+              "pihen",
+              "rest"
+            ],
+            [
+              "energia",
+              "energy",
+              "motiváció",
+              "motivation"
+            ]
+          ]
+        },
+        {
+          "id": "support",
+          "tree": "connection",
+          "variants": [
+            "A kapcsolataim és a segítségkérés",
+            "Akikkel megoszthatom, mi bánt",
+            "Amikor egyedül érzem magam",
+            "A helyem a többiek között",
+            "Ahogyan segítséget kérek",
+            "Ami másokkal kapcsolatban nehéz",
+            "Amikor jó lenne valakivel beszélni"
+          ],
+          "keywords": [
+            [
+              "segíts",
+              "help",
+              "support"
+            ],
+            [
+              "egyedül",
+              "lonely",
+              "alone"
+            ],
+            [
+              "barát",
+              "friend",
+              "parent",
+              "szülő"
+            ],
+            [
+              "kiközös",
+              "bully",
+              "bánt",
+              "hurt"
+            ],
+            [
+              "beszél",
+              "talk",
+              "kapcsolat",
+              "relationship"
+            ]
+          ]
+        }
+      ],
+      "trees": {
+        "dreams": {
+          "id": "dreams",
+          "title": "A jövőm és a céljaim",
+          "start": "emotion",
+          "nodes": {
+            "frequency": {
+              "response": [
+                "Köszönöm, hogy elmondtad. Nem kell rögtön megoldanod mindent.",
+                "Jó, hogy szavakat találtál arra, ami benned van.",
+                "Maradhatunk egy kicsit ennél az érzésnél.",
+                "Figyelek rád. Nézzük meg, hogyan van jelen ez a napjaidban.",
+                "Értem. Segíthet, ha körüljárjuk, mikor találkozol ezzel.",
+                "Beszélhetünk erről a saját tempódban.",
+                "Köszönöm a válaszod. Most jobban értem, merre induljunk."
+              ],
+              "question": [
+                "Milyen gyakran érzed ezt mostanában?",
+                "Mennyire szokott visszatérni ez az érzés?",
+                "Az utóbbi időben milyen sűrűn történik ez veled?",
+                "Új érzés ez, vagy már ismerős neked?",
+                "Milyen gyakran jut ez most eszedbe?",
+                "Sok napodat kíséri ez az érzés, vagy inkább ritkán bukkan fel?",
+                "Hogyan van jelen ez az érzés a mindennapjaidban?"
+              ],
+              "options": [
+                {
+                  "id": "daily",
+                  "variants": [
+                    "Szinte minden nap.",
+                    "Majdnem naponta előjön.",
+                    "A legtöbb nap érzem.",
+                    "Alig telik el nap nélküle.",
+                    "Nap mint nap visszatér.",
+                    "Mostanában majdnem mindennapos.",
+                    "Szinte naponta találkozom vele."
+                  ],
+                  "next": "support"
+                },
+                {
+                  "id": "sometimes",
+                  "variants": [
+                    "Néha, de nem minden nap.",
+                    "Időnként visszatér.",
+                    "Van, hogy érzem, aztán elmúlik.",
+                    "Csak néhány alkalommal.",
+                    "Alkalmanként szokott előjönni.",
+                    "Némelyik nap igen, máskor nem.",
+                    "Néha felbukkan bennem."
+                  ],
+                  "next": "support"
+                },
+                {
+                  "id": "new",
+                  "variants": [
+                    "Ez most új nekem.",
+                    "Most érzem először így.",
+                    "Még nem igazán találkoztam ezzel.",
+                    "Nem szoktam ezt érezni.",
+                    "Mostanában jelent meg először.",
+                    "Eddig ez nem volt jellemző rám.",
+                    "Újdonság nekem ez az érzés."
+                  ],
+                  "next": "support"
+                }
+              ]
+            },
+            "support": {
+              "response": [
+                "Nem kell egyedül kitalálnod a folytatást.",
+                "A segítségkérés is lehet egy kis következő lépés.",
+                "Jó lehet, ha van valaki, aki meghallgat.",
+                "Te döntheted el, kivel kezdesz beszélgetni.",
+                "Elég lehet egy embernek elmondani, mi foglalkoztat.",
+                "Beszélhetünk arról is, ki tudna melletted lenni.",
+                "Nem kell mindent egyedül cipelned."
+              ],
+              "question": [
+                "Beszéltél már erről valakivel?",
+                "Megosztottad ezt már valakivel?",
+                "Tud valaki arról, amit most elmondtál?",
+                "Volt már, akinek meséltél erről?",
+                "Kértél már valakitől támogatást ebben?",
+                "Van valaki, akivel ezt már átbeszélted?",
+                "Mondtad már valakinek, hogy ez foglalkoztat?"
+              ],
+              "options": [
+                {
+                  "id": "parent",
+                  "variants": [
+                    "Az egyik szülőmmel már beszéltem.",
+                    "Már elmondtam egy szülőmnek.",
+                    "A szülőm már tud róla.",
+                    "Otthon már meséltem róla a szülőmnek.",
+                    "Beszélgettünk erről az egyik szülőmmel.",
+                    "Már megosztottam a szülőmmel.",
+                    "Az egyik szülőmnek már jeleztem."
+                  ],
+                  "next": "next"
+                },
+                {
+                  "id": "adult",
+                  "variants": [
+                    "Egy másik megbízható felnőttnek mondtam el.",
+                    "Már beszéltem egy felnőttel, akiben bízom.",
+                    "Egy hozzám közel álló felnőtt már tudja.",
+                    "Megosztottam egy megbízható felnőttel.",
+                    "Egy biztonságot adó felnőttnek már meséltem.",
+                    "Egy másik felnőtt már meghallgatott.",
+                    "Elmondtam egy felnőttnek, aki figyel rám."
+                  ],
+                  "next": "next"
+                },
+                {
+                  "id": "nobody",
+                  "variants": [
+                    "Még nem beszéltem róla.",
+                    "Eddig magamban tartottam.",
+                    "Most mondom el először.",
+                    "Még senkinek nem meséltem erről.",
+                    "Egyelőre nem osztottam meg mással.",
+                    "Még nem találtam rá alkalmat.",
+                    "Eddig nem tudtam, hogyan kezdjem el."
+                  ],
+                  "next": "next"
+                }
+              ],
+              "context": {
+                "daily": [
+                  "Ha ez majdnem mindennap jelen van, jó lehet valakivel megosztani.",
+                  "Ami naponta foglalkoztat, arról is lehet beszélgetni.",
+                  "Értem, ez sok napodat kíséri. Lehet hozzá társad a gondolkodásban.",
+                  "Ha gyakran visszatér, segíthet valakivel együtt ránézni.",
+                  "Köszönöm, így már tudom, hogy ez rendszeresen jelen van.",
+                  "A gyakran megjelenő érzéseidnek is lehet helye egy beszélgetésben.",
+                  "Ha szinte naponta eszedbe jut, megoszthatod valakivel, akiben bízol."
+                ],
+                "new": [
+                  "Attól, hogy új neked ez az érzés, még beszélhetsz róla.",
+                  "Új érzésnél is kérhetsz kapaszkodót.",
+                  "Nem kell megvárnod, hogy régóta tartson, ahhoz, hogy megoszd.",
+                  "Az új érzéseket is lehet valakivel együtt megérteni.",
+                  "Ha ez új neked, jó lehet elmondanod valakinek.",
+                  "Egy most megjelent érzéshez is járhat támogatás.",
+                  "Akkor is beszélhetsz róla, ha most találkozol vele először."
+                ]
+              }
+            },
+            "next": {
+              "response": [
+                "Keressünk egy olyan folytatást, ami most belefér neked.",
+                "Választhatsz egy kicsi, megvalósítható következő lépést.",
+                "Nem kell nagy változtatással kezdened.",
+                "Olyan lépést keressünk, amit nem teher kipróbálni.",
+                "A folytatásban is van választásod.",
+                "Elég most egyetlen dologra gondolnunk.",
+                "Induljunk abból, mire lenne most szükséged."
+              ],
+              "question": [
+                "Mi segítene most a legtöbbet?",
+                "Melyik folytatás áll most közel hozzád?",
+                "Mit választanál következő kis lépésnek?",
+                "Hogyan lenne neked könnyebb továbbmenni?",
+                "Mivel kezdenél a felsoroltak közül?",
+                "Milyen támogatás esne most jól?",
+                "Mi lenne számodra most vállalható?"
+              ],
+              "options": [
+                {
+                  "id": "today",
+                  "variants": [
+                    "Ma beszélnék egy megbízható felnőttel.",
+                    "Jó lenne ezt ma elmondanom valakinek.",
+                    "Még ma megkeresnék egy felnőttet, akiben bízom.",
+                    "Ma kérnék segítséget egy felnőttől.",
+                    "Szeretném, ha ma valaki meghallgatna.",
+                    "Ma megosztanám ezt egy biztonságot adó felnőttel.",
+                    "A mai napon beszélnék valakivel, akire számíthatok."
+                  ],
+                  "next": "adult-today"
+                },
+                {
+                  "id": "professional",
+                  "variants": [
+                    "Pszichológus segítségét kérném.",
+                    "Szakemberrel szeretnék beszélni.",
+                    "Jó lenne pszichológussal átbeszélni.",
+                    "Pszichológusi támogatást keresnék.",
+                    "Egy segítő szakembert vonnék be.",
+                    "Szeretnék segítséget kérni pszichológushoz fordulni.",
+                    "Olyan szakemberrel beszélnék, aki ebben segít."
+                  ],
+                  "next": "professional"
+                },
+                {
+                  "id": "summary",
+                  "variants": [
+                    "Adj egy összefoglalót, amit elmondhatok.",
+                    "Segíts megfogalmazni, mit mondjak egy felnőttnek.",
+                    "Egy rövid összefoglalóval kezdenék.",
+                    "Leírnám, amit aztán megoszthatok valakivel.",
+                    "Jó lenne pár mondat, amivel beszélgetést kezdhetek.",
+                    "Foglaljuk össze, amit szeretnék elmondani.",
+                    "Kérek segítséget az első mondatokhoz."
+                  ],
+                  "next": "summary"
+                },
+                {
+                  "id": "small",
+                  "variants": [
+                    "Egy apró dolgot próbálnék ki.",
+                    "Most egy kis önálló lépéssel kezdenék.",
+                    "Egy könnyű próbát választanék.",
+                    "Valami kicsit és megvalósíthatót tennék.",
+                    "Egyetlen apró változtatást vállalnék.",
+                    "Kipróbálnék egy kicsi új megoldást.",
+                    "Most egy egyszerű próbára van erőm."
+                  ],
+                  "next": "small-step"
+                },
+                {
+                  "id": "practice",
+                  "variants": [
+                    "Egy rövid gyakorlatot szeretnék.",
+                    "Próbáljunk ki egy segítő gyakorlatot.",
+                    "Most egy kis gyakorlás esne jól.",
+                    "Egy egyszerű gyakorlatot választanék.",
+                    "Gyakorlatban is kipróbálnék valamit.",
+                    "Jó lenne valami rövid, amit megcsinálhatok.",
+                    "Most egy vezetett gyakorlat segítene."
+                  ],
+                  "next": "practice"
+                },
+                {
+                  "id": "later",
+                  "variants": [
+                    "Később visszanézném, hogy érzem magam.",
+                    "Választanék egy időpontot, amikor újra ránézek.",
+                    "Most lezárnám, és később visszatérnék rá.",
+                    "Egy későbbi rövid átgondolást vállalnék.",
+                    "Visszanézném ma este, változott-e valami.",
+                    "Később újra megfogalmaznám, mi van bennem.",
+                    "Adnék magamnak időt, aztán visszagondolnék rá."
+                  ],
+                  "next": "check-in"
+                }
+              ],
+              "context": {
+                "nobody": [
+                  "Köszönöm, hogy itt elkezdted elmondani. Segíthetek az első mondatokkal.",
+                  "Ha eddig magadban tartottad, elég lehet egy rövid mondattal kezdeni.",
+                  "Nem kell mindent egyszerre elmesélned valakinek.",
+                  "Lehet, hogy az első beszélgetés kezdete a legnehezebb; abban is segíthetek.",
+                  "Most már megfogalmaztál valamit abból, ami foglalkoztat.",
+                  "Amit itt elmondtál, abból készíthetünk egy rövid kapaszkodót.",
+                  "Kezdheted egyetlen emberrel, és csak annyit mondj el, amennyit szeretnél."
+                ]
+              }
+            },
+            "safety": {
+              "response": [
+                "Fontos, amit írtál. Most először a biztonságodra figyeljünk.",
+                "Köszönöm, hogy szóltál. Nézzük meg először, biztonságban vagy-e.",
+                "Amit írtál, annál most a biztonságod az első.",
+                "Most előbb arra figyeljünk, hogy legyen melletted segítség.",
+                "Szeretném, hogy biztonságban legyél. Ezzel kezdjük.",
+                "Először azt tisztázzuk, szükséged van-e most azonnali segítségre.",
+                "Jó, hogy jelezted. Kezdjük azzal, biztonságban érzed-e magad."
+              ],
+              "question": [
+                "Biztonságban vagy most?",
+                "Most biztonságos helyen vagy?",
+                "Jelenleg biztonságban érzed magad?",
+                "Van most közvetlen veszély körülötted?",
+                "Most biztonságos neked ott, ahol vagy?",
+                "Ebben a pillanatban biztonságban vagy?",
+                "El tudod mondani, most biztonságban vagy-e?"
+              ],
+              "options": [
+                {
+                  "id": "unsafe",
+                  "variants": [
+                    "Most nem érzem magam biztonságban.",
+                    "Most olyan helyzetben vagyok, ahol nem vagyok biztonságban.",
+                    "Jelenleg nem érzem magam biztonságban.",
+                    "A mostani helyzetem nem biztonságos nekem.",
+                    "Most segítség kell, hogy biztonságban legyek.",
+                    "Most nincs meg a biztonságérzetem.",
+                    "Nem érzem, hogy most biztonságban lennék."
+                  ],
+                  "next": "immediate-adult"
+                },
+                {
+                  "id": "safe",
+                  "variants": [
+                    "Biztonságban vagyok, de beszélnék róla.",
+                    "Most biztonságos helyen vagyok, és szeretném átbeszélni.",
+                    "Most nincs közvetlen veszély, de foglalkoztat.",
+                    "Jelenleg biztonságban érzem magam, beszélgessünk.",
+                    "Most biztonságban vagyok, segíts átgondolni.",
+                    "Ebben a pillanatban biztonságban vagyok, de van mit elmondanom.",
+                    "Most nincs veszély körülöttem, szeretnék tovább beszélni."
+                  ],
+                  "next": "adult-today"
+                },
+                {
+                  "id": "unsure",
+                  "variants": [
+                    "Nem tudom biztosan.",
+                    "Nem vagyok benne biztos.",
+                    "Ezt most nehéz eldöntenem.",
+                    "Bizonytalan vagyok benne.",
+                    "Nem tudok erre biztos igent mondani.",
+                    "Nem vagyok biztos abban, hogy biztonságos.",
+                    "Most nem tudom megítélni."
+                  ],
+                  "next": "immediate-adult"
+                }
+              ]
+            },
+            "emotion": {
+              "response": [
+                "Érdekel, hogyan képzeled el a jövődet. Nem kell ma mindent eldöntened.",
+                "Jó, hogy mesélsz arról, ami fontos neked. Nézzük meg, mit érzel közben.",
+                "Beszélhetünk a céljaidról anélkül, hogy most bizonyítanod kellene.",
+                "Az álmaidnak is lehet helye itt, a hozzájuk kapcsolódó érzésekkel együtt.",
+                "Kezdjük azzal, mit jelent neked az, amit el szeretnél érni.",
+                "Nem kell kész tervednek lennie ahhoz, hogy a jövődről beszélgessünk.",
+                "Figyeljünk arra is, milyen érzés neked a céljaidra gondolni."
+              ],
+              "question": [
+                "Mit érzel, amikor a célodra vagy a jövődre gondolsz?",
+                "Milyen érzés elképzelned azt, amit el szeretnél érni?",
+                "Mi jelenik meg benned, amikor a jövődet képzeled el?",
+                "Hogyan érzed magad, amikor az álmaidra gondolsz?",
+                "Milyen érzéseket hoznak elő a terveid?",
+                "Mi történik benned, amikor arra gondolsz, hová szeretnél eljutni?",
+                "Milyen érzéssel gondolsz most arra, ami előtted áll?"
+              ],
+              "options": [
+                {
+                  "id": "first",
+                  "variants": [
+                    "Reménykedem, és kíváncsi vagyok.",
+                    "Bizakodva gondolok rá.",
+                    "Reményt ad, ha elképzelem.",
+                    "Érdeklődve várom, mi lehet belőle.",
+                    "Van bennem remény és kíváncsiság.",
+                    "Biztatónak érzem a lehetőségeimet.",
+                    "Kíváncsian és reménykedve nézek előre."
+                  ],
+                  "next": "frequency"
+                },
+                {
+                  "id": "second",
+                  "variants": [
+                    "Félek, hogy nem sikerül.",
+                    "Aggódom, hogy nem érem el.",
+                    "Tartok attól, hogy nem jön össze.",
+                    "Félelmet érzek, ha a sikerre gondolok.",
+                    "Bizonytalan vagyok, hogy képes leszek-e rá.",
+                    "Attól félek, hogy nem jutok el odáig.",
+                    "Ijesztő, hogy talán nem sikerül."
+                  ],
+                  "next": "frequency"
+                },
+                {
+                  "id": "third",
+                  "variants": [
+                    "Elszomorít, vagy túl nagynak érzem.",
+                    "Nehéznek és távolinak tűnik.",
+                    "Inkább elkeserít a gondolata.",
+                    "Úgy érzem, ez túl nagy nekem.",
+                    "Elszomorodom, ha erre gondolok.",
+                    "Nagyon távolinak érzem az álmomat.",
+                    "Most inkább nyomaszt a célom."
+                  ],
+                  "next": "frequency"
+                },
+                {
+                  "id": "unsafe",
+                  "variants": [
+                    "Most nem érzem magam biztonságban.",
+                    "Most olyan helyzetben vagyok, ahol nem vagyok biztonságban.",
+                    "Jelenleg nem érzem magam biztonságban.",
+                    "A mostani helyzetem nem biztonságos nekem.",
+                    "Most segítség kell, hogy biztonságban legyek.",
+                    "Most nincs meg a biztonságérzetem.",
+                    "Nem érzem, hogy most biztonságban lennék."
+                  ],
+                  "next": "immediate-adult"
+                }
+              ]
+            }
+          },
+          "outcomes": {
+            "immediate-adult": {
+              "id": "immediate-adult",
+              "variants": [
+                "Most rögtön menj egy szülődhöz vagy más megbízható felnőtthöz. Mondd: „Nem érzem magam biztonságban, kérlek, maradj velem és segíts.”",
+                "Kérj azonnal segítséget egy elérhető szülőtől vagy megbízható felnőttől. Mondd el, hogy most nem vagy biztonságban, és kérd, hogy maradjon melletted.",
+                "Most keress egy biztonságot adó felnőttet, például az egyik szülődet. Mondd: „Most szükségem van rád, nem érzem magam biztonságban.”",
+                "Menj most egy szülőhöz vagy olyan felnőtthöz, akiben bízol. Kérd meg, hogy legyen veled, és segítsen biztonságba kerülni.",
+                "Ezzel most ne maradj egyedül. Szólj rögtön egy szülőnek vagy megbízható felnőttnek, és kérj tőle azonnali segítséget.",
+                "Most az a következő lépés, hogy megkeresel egy szülőt vagy megbízható felnőttet. Mondd el neki, hogy segítség kell a biztonságodhoz.",
+                "Kérlek, most azonnal szólj egy elérhető, megbízható felnőttnek. Kérd, hogy maradjon veled, mert most nem érzed magad biztonságban."
+              ],
+              "practice": null,
+              "context": "a jövőddel és a céljaiddal kapcsolatos érzéseidet"
+            },
+            "adult-today": {
+              "id": "adult-today",
+              "variants": [
+                "Válassz ma egy nyugodt pillanatot egy szülőddel vagy megbízható felnőttel. Kezdd így: „Van valami, amiről szeretnék beszélni. Most meg tudsz hallgatni?”",
+                "Ma keress meg egy felnőttet, akiben bízol. Kérj tőle néhány nyugodt percet, és mondd el, mi foglalkoztat.",
+                "Beszélj ma egy szülővel vagy más megbízható felnőttel. Elég ennyivel kezdened: „Jól jönne, ha most meghallgatnál.”",
+                "A mai nap folyamán kérj egy kis időt valakitől, aki biztonságot ad. Mondd el neki, hogy szeretnél megosztani valamit.",
+                "Keress ma egy alkalmat, amikor egy megbízható felnőtt rád tud figyelni. Kezdd azzal, mit érzel, és kérd, hogy hallgasson meg.",
+                "Ma fordulj egy szülődhöz vagy más megbízható felnőtthöz. Kérdezd meg: „Tudnánk egy kicsit beszélgetni arról, ami bennem van?”",
+                "Még ma kezdeményezz egy rövid beszélgetést egy felnőttel, akiben bízol. Nem kell kész megoldással érkezned."
+              ],
+              "practice": null,
+              "context": "a jövőddel és a céljaiddal kapcsolatos érzéseidet"
+            },
+            "professional": {
+              "id": "professional",
+              "variants": [
+                "Kérj meg egy szülőt vagy megbízható felnőttet, hogy segítsen pszichológust találni, akivel beszélhetsz. Az összefoglalót is megmutathatod neki.",
+                "Mondd el egy megbízható felnőttnek, hogy pszichológussal szeretnél beszélni. Kérj segítséget az első alkalom megszervezéséhez.",
+                "Kezdd azzal egy szülőnél vagy más megbízható felnőttnél: „Szeretnék pszichológusi segítséget kérni. Segítesz elindulni?”",
+                "Kérj támogatást egy megbízható felnőttől ahhoz, hogy elérj egy pszichológust. Nem kell egyedül intézned.",
+                "Beszélj egy szülővel vagy biztonságot adó felnőttel arról, hogy szakembert szeretnél bevonni. Kérj segítséget pszichológust keresni.",
+                "Vidd magaddal az összefoglalódat egy megbízható felnőtthöz, és kérd meg, hogy segítsen pszichológussal kapcsolatot találni.",
+                "Kérj meg egy hozzád közel álló, megbízható felnőttet, hogy támogasson a pszichológusi segítség elérésében."
+              ],
+              "practice": null,
+              "context": "a jövőddel és a céljaiddal kapcsolatos érzéseidet"
+            },
+            "summary": {
+              "id": "summary",
+              "variants": [
+                "Nyisd meg az összefoglalót, és válassz ki egy mondatot, amivel beszélgetést kezdesz egy megbízható felnőttel. Át is írhatod a saját szavaidra.",
+                "Nézd át az összefoglalót, majd mutasd meg egy szülőnek vagy megbízható felnőttnek. Kezdheted azzal: „Erről szeretnék mesélni.”",
+                "Az összefoglalóból elég egy részletet felolvasnod annak a felnőttnek, akiben bízol. A többit a saját tempódban mondhatod el.",
+                "Vidd magaddal a rövid összefoglalót egy megbízható felnőtthöz. Kérd meg, hogy hallgasson meg, mielőtt megoldást kerestek.",
+                "Olvasd el az összefoglalót, és használd kapaszkodónak egy beszélgetéshez. Te választod ki, melyik megbízható felnőttnek mutatod meg.",
+                "Válassz egy nyugodt pillanatot, és az összefoglaló segítségével mondd el egy felnőttnek, mi foglalkoztat. Saját szavaidat is hozzáteheted.",
+                "Nyisd meg a beszélgetésünk összefoglalóját. Egy szülőnek vagy megbízható felnőttnek megmutatva könnyebb lehet elkezdened, amit elmondanál."
+              ],
+              "practice": null,
+              "context": "a jövőddel és a céljaiddal kapcsolatos érzéseidet"
+            },
+            "small-step": {
+              "id": "small-step",
+              "variants": [
+                "Írj le egy olyan apró dolgot, amit a következő alkalommal kipróbálhatsz. A próbálkozásra figyelj, ne arra, hogy máris a legjobb legyél.",
+                "Fogalmazz meg egy olyan apró dolgot, amit a következő alkalommal kipróbálhatsz. A próbálkozásra figyelj, ne arra, hogy máris a legjobb legyél. Elég egyetlen próbát tenned.",
+                "Kezdheted ezzel: Írj le egy olyan apró dolgot, amit a következő alkalommal kipróbálhatsz. A próbálkozásra figyelj, ne arra, hogy máris a legjobb legyél.",
+                "Egy apró próba lehet a következő: Írj le egy olyan apró dolgot, amit a következő alkalommal kipróbálhatsz. A próbálkozásra figyelj, ne arra, hogy máris a legjobb legyél.",
+                "Ha belefér neked, ezt próbáld ki: Írj le egy olyan apró dolgot, amit a következő alkalommal kipróbálhatsz. A próbálkozásra figyelj, ne arra, hogy máris a legjobb legyél.",
+                "A következő alkalomra ezt viheted magaddal: Írj le egy olyan apró dolgot, amit a következő alkalommal kipróbálhatsz. A próbálkozásra figyelj, ne arra, hogy máris a legjobb legyél.",
+                "Most ennyi is elég lehet: Írj le egy olyan apró dolgot, amit a következő alkalommal kipróbálhatsz. A próbálkozásra figyelj, ne arra, hogy máris a legjobb legyél."
+              ],
+              "practice": null,
+              "context": "a jövőddel és a céljaiddal kapcsolatos érzéseidet"
+            },
+            "practice": {
+              "id": "practice",
+              "variants": [
+                "Nyisd meg a rövid gyakorlatot, és próbáld ki a saját tempódban. A végén jelezheted, hogy segített-e; ha nem esik jól, abbahagyhatod.",
+                "Válaszd a gyakorlatot, és csak annyit próbálj belőle, amennyi kényelmes. Utána elmondhatod, milyen volt neked.",
+                "Kezdd a rövid gyakorlattal. Nem kell jól teljesítened benne; azt figyeld, ad-e most egy kis kapaszkodót.",
+                "Próbáld ki a felkínált gyakorlatot, ha most belefér. A végén jelezheted azt is, ha nem segített.",
+                "Menj a rövid gyakorlathoz, és haladj a saját ritmusodban. Bármikor megállhatsz, ha nem esik jól.",
+                "A gyakorlat megnyitása lehet a következő kis lépés. Utána magad döntöd el, hasznos volt-e most neked.",
+                "Nyisd meg a gyakorlatot, és adj neki egy kényelmes próbát. Nem kell végigcsinálnod, ha most nem jó neked."
+              ],
+              "practice": "selfTalk",
+              "context": "a jövőddel és a céljaiddal kapcsolatos érzéseidet"
+            },
+            "check-in": {
+              "id": "check-in",
+              "variants": [
+                "Válassz egy mai időpontot, például az estét. Akkor írj le egy mondatot arról, hogyan érzed magad; ha nehezebb lett, szólj egy megbízható felnőttnek.",
+                "Ma este állj meg egy pillanatra, és fogalmazd meg, mi változott benned. Ha rosszabbul vagy, kérj támogatást egy felnőttől, akiben bízol.",
+                "Jelölj ki magadnak egy rövid visszanézést mára. Egy mondat is elég az érzéseidről; nehezebb helyzetben vonj be egy megbízható felnőttet.",
+                "Később ma kérdezd meg magadtól: „Most hogy vagyok ezzel?” Írj le egy választ, és ha rosszabb lett, beszélj egy biztonságot adó felnőttel.",
+                "Térj vissza a mai nap végén egyetlen mondat erejéig ahhoz, amit érzel. Ha megterhelőbb lett, ne maradj vele egyedül, szólj egy felnőttnek.",
+                "Válassz ma egy nyugodt percet az érzéseid újragondolására. Ha nehezebbnek érzed, mint most, keress egy megbízható felnőttet.",
+                "A mai nap egy későbbi pontján jegyezd fel röviden, hogy vagy. Ha a helyzet rosszabbodott, kérj segítséget egy felnőttől, akire számíthatsz."
+              ],
+              "practice": null,
+              "context": "a jövőddel és a céljaiddal kapcsolatos érzéseidet"
+            }
+          }
+        },
+        "pressure": {
+          "id": "pressure",
+          "title": "A nehéz érzéseim és a ritmusom",
+          "start": "emotion",
+          "nodes": {
+            "frequency": {
+              "response": [
+                "Köszönöm, hogy elmondtad. Nem kell rögtön megoldanod mindent.",
+                "Jó, hogy szavakat találtál arra, ami benned van.",
+                "Maradhatunk egy kicsit ennél az érzésnél.",
+                "Figyelek rád. Nézzük meg, hogyan van jelen ez a napjaidban.",
+                "Értem. Segíthet, ha körüljárjuk, mikor találkozol ezzel.",
+                "Beszélhetünk erről a saját tempódban.",
+                "Köszönöm a válaszod. Most jobban értem, merre induljunk."
+              ],
+              "question": [
+                "Milyen gyakran érzed ezt mostanában?",
+                "Mennyire szokott visszatérni ez az érzés?",
+                "Az utóbbi időben milyen sűrűn történik ez veled?",
+                "Új érzés ez, vagy már ismerős neked?",
+                "Milyen gyakran jut ez most eszedbe?",
+                "Sok napodat kíséri ez az érzés, vagy inkább ritkán bukkan fel?",
+                "Hogyan van jelen ez az érzés a mindennapjaidban?"
+              ],
+              "options": [
+                {
+                  "id": "daily",
+                  "variants": [
+                    "Szinte minden nap.",
+                    "Majdnem naponta előjön.",
+                    "A legtöbb nap érzem.",
+                    "Alig telik el nap nélküle.",
+                    "Nap mint nap visszatér.",
+                    "Mostanában majdnem mindennapos.",
+                    "Szinte naponta találkozom vele."
+                  ],
+                  "next": "support"
+                },
+                {
+                  "id": "sometimes",
+                  "variants": [
+                    "Néha, de nem minden nap.",
+                    "Időnként visszatér.",
+                    "Van, hogy érzem, aztán elmúlik.",
+                    "Csak néhány alkalommal.",
+                    "Alkalmanként szokott előjönni.",
+                    "Némelyik nap igen, máskor nem.",
+                    "Néha felbukkan bennem."
+                  ],
+                  "next": "support"
+                },
+                {
+                  "id": "new",
+                  "variants": [
+                    "Ez most új nekem.",
+                    "Most érzem először így.",
+                    "Még nem igazán találkoztam ezzel.",
+                    "Nem szoktam ezt érezni.",
+                    "Mostanában jelent meg először.",
+                    "Eddig ez nem volt jellemző rám.",
+                    "Újdonság nekem ez az érzés."
+                  ],
+                  "next": "support"
+                }
+              ]
+            },
+            "support": {
+              "response": [
+                "Nem kell egyedül kitalálnod a folytatást.",
+                "A segítségkérés is lehet egy kis következő lépés.",
+                "Jó lehet, ha van valaki, aki meghallgat.",
+                "Te döntheted el, kivel kezdesz beszélgetni.",
+                "Elég lehet egy embernek elmondani, mi foglalkoztat.",
+                "Beszélhetünk arról is, ki tudna melletted lenni.",
+                "Nem kell mindent egyedül cipelned."
+              ],
+              "question": [
+                "Beszéltél már erről valakivel?",
+                "Megosztottad ezt már valakivel?",
+                "Tud valaki arról, amit most elmondtál?",
+                "Volt már, akinek meséltél erről?",
+                "Kértél már valakitől támogatást ebben?",
+                "Van valaki, akivel ezt már átbeszélted?",
+                "Mondtad már valakinek, hogy ez foglalkoztat?"
+              ],
+              "options": [
+                {
+                  "id": "parent",
+                  "variants": [
+                    "Az egyik szülőmmel már beszéltem.",
+                    "Már elmondtam egy szülőmnek.",
+                    "A szülőm már tud róla.",
+                    "Otthon már meséltem róla a szülőmnek.",
+                    "Beszélgettünk erről az egyik szülőmmel.",
+                    "Már megosztottam a szülőmmel.",
+                    "Az egyik szülőmnek már jeleztem."
+                  ],
+                  "next": "next"
+                },
+                {
+                  "id": "adult",
+                  "variants": [
+                    "Egy másik megbízható felnőttnek mondtam el.",
+                    "Már beszéltem egy felnőttel, akiben bízom.",
+                    "Egy hozzám közel álló felnőtt már tudja.",
+                    "Megosztottam egy megbízható felnőttel.",
+                    "Egy biztonságot adó felnőttnek már meséltem.",
+                    "Egy másik felnőtt már meghallgatott.",
+                    "Elmondtam egy felnőttnek, aki figyel rám."
+                  ],
+                  "next": "next"
+                },
+                {
+                  "id": "nobody",
+                  "variants": [
+                    "Még nem beszéltem róla.",
+                    "Eddig magamban tartottam.",
+                    "Most mondom el először.",
+                    "Még senkinek nem meséltem erről.",
+                    "Egyelőre nem osztottam meg mással.",
+                    "Még nem találtam rá alkalmat.",
+                    "Eddig nem tudtam, hogyan kezdjem el."
+                  ],
+                  "next": "next"
+                }
+              ],
+              "context": {
+                "daily": [
+                  "Ha ez majdnem mindennap jelen van, jó lehet valakivel megosztani.",
+                  "Ami naponta foglalkoztat, arról is lehet beszélgetni.",
+                  "Értem, ez sok napodat kíséri. Lehet hozzá társad a gondolkodásban.",
+                  "Ha gyakran visszatér, segíthet valakivel együtt ránézni.",
+                  "Köszönöm, így már tudom, hogy ez rendszeresen jelen van.",
+                  "A gyakran megjelenő érzéseidnek is lehet helye egy beszélgetésben.",
+                  "Ha szinte naponta eszedbe jut, megoszthatod valakivel, akiben bízol."
+                ],
+                "new": [
+                  "Attól, hogy új neked ez az érzés, még beszélhetsz róla.",
+                  "Új érzésnél is kérhetsz kapaszkodót.",
+                  "Nem kell megvárnod, hogy régóta tartson, ahhoz, hogy megoszd.",
+                  "Az új érzéseket is lehet valakivel együtt megérteni.",
+                  "Ha ez új neked, jó lehet elmondanod valakinek.",
+                  "Egy most megjelent érzéshez is járhat támogatás.",
+                  "Akkor is beszélhetsz róla, ha most találkozol vele először."
+                ]
+              }
+            },
+            "next": {
+              "response": [
+                "Keressünk egy olyan folytatást, ami most belefér neked.",
+                "Választhatsz egy kicsi, megvalósítható következő lépést.",
+                "Nem kell nagy változtatással kezdened.",
+                "Olyan lépést keressünk, amit nem teher kipróbálni.",
+                "A folytatásban is van választásod.",
+                "Elég most egyetlen dologra gondolnunk.",
+                "Induljunk abból, mire lenne most szükséged."
+              ],
+              "question": [
+                "Mi segítene most a legtöbbet?",
+                "Melyik folytatás áll most közel hozzád?",
+                "Mit választanál következő kis lépésnek?",
+                "Hogyan lenne neked könnyebb továbbmenni?",
+                "Mivel kezdenél a felsoroltak közül?",
+                "Milyen támogatás esne most jól?",
+                "Mi lenne számodra most vállalható?"
+              ],
+              "options": [
+                {
+                  "id": "today",
+                  "variants": [
+                    "Ma beszélnék egy megbízható felnőttel.",
+                    "Jó lenne ezt ma elmondanom valakinek.",
+                    "Még ma megkeresnék egy felnőttet, akiben bízom.",
+                    "Ma kérnék segítséget egy felnőttől.",
+                    "Szeretném, ha ma valaki meghallgatna.",
+                    "Ma megosztanám ezt egy biztonságot adó felnőttel.",
+                    "A mai napon beszélnék valakivel, akire számíthatok."
+                  ],
+                  "next": "adult-today"
+                },
+                {
+                  "id": "professional",
+                  "variants": [
+                    "Pszichológus segítségét kérném.",
+                    "Szakemberrel szeretnék beszélni.",
+                    "Jó lenne pszichológussal átbeszélni.",
+                    "Pszichológusi támogatást keresnék.",
+                    "Egy segítő szakembert vonnék be.",
+                    "Szeretnék segítséget kérni pszichológushoz fordulni.",
+                    "Olyan szakemberrel beszélnék, aki ebben segít."
+                  ],
+                  "next": "professional"
+                },
+                {
+                  "id": "summary",
+                  "variants": [
+                    "Adj egy összefoglalót, amit elmondhatok.",
+                    "Segíts megfogalmazni, mit mondjak egy felnőttnek.",
+                    "Egy rövid összefoglalóval kezdenék.",
+                    "Leírnám, amit aztán megoszthatok valakivel.",
+                    "Jó lenne pár mondat, amivel beszélgetést kezdhetek.",
+                    "Foglaljuk össze, amit szeretnék elmondani.",
+                    "Kérek segítséget az első mondatokhoz."
+                  ],
+                  "next": "summary"
+                },
+                {
+                  "id": "small",
+                  "variants": [
+                    "Egy apró dolgot próbálnék ki.",
+                    "Most egy kis önálló lépéssel kezdenék.",
+                    "Egy könnyű próbát választanék.",
+                    "Valami kicsit és megvalósíthatót tennék.",
+                    "Egyetlen apró változtatást vállalnék.",
+                    "Kipróbálnék egy kicsi új megoldást.",
+                    "Most egy egyszerű próbára van erőm."
+                  ],
+                  "next": "small-step"
+                },
+                {
+                  "id": "practice",
+                  "variants": [
+                    "Egy rövid gyakorlatot szeretnék.",
+                    "Próbáljunk ki egy segítő gyakorlatot.",
+                    "Most egy kis gyakorlás esne jól.",
+                    "Egy egyszerű gyakorlatot választanék.",
+                    "Gyakorlatban is kipróbálnék valamit.",
+                    "Jó lenne valami rövid, amit megcsinálhatok.",
+                    "Most egy vezetett gyakorlat segítene."
+                  ],
+                  "next": "practice"
+                },
+                {
+                  "id": "later",
+                  "variants": [
+                    "Később visszanézném, hogy érzem magam.",
+                    "Választanék egy időpontot, amikor újra ránézek.",
+                    "Most lezárnám, és később visszatérnék rá.",
+                    "Egy későbbi rövid átgondolást vállalnék.",
+                    "Visszanézném ma este, változott-e valami.",
+                    "Később újra megfogalmaznám, mi van bennem.",
+                    "Adnék magamnak időt, aztán visszagondolnék rá."
+                  ],
+                  "next": "check-in"
+                }
+              ],
+              "context": {
+                "nobody": [
+                  "Köszönöm, hogy itt elkezdted elmondani. Segíthetek az első mondatokkal.",
+                  "Ha eddig magadban tartottad, elég lehet egy rövid mondattal kezdeni.",
+                  "Nem kell mindent egyszerre elmesélned valakinek.",
+                  "Lehet, hogy az első beszélgetés kezdete a legnehezebb; abban is segíthetek.",
+                  "Most már megfogalmaztál valamit abból, ami foglalkoztat.",
+                  "Amit itt elmondtál, abból készíthetünk egy rövid kapaszkodót.",
+                  "Kezdheted egyetlen emberrel, és csak annyit mondj el, amennyit szeretnél."
+                ]
+              }
+            },
+            "safety": {
+              "response": [
+                "Fontos, amit írtál. Most először a biztonságodra figyeljünk.",
+                "Köszönöm, hogy szóltál. Nézzük meg először, biztonságban vagy-e.",
+                "Amit írtál, annál most a biztonságod az első.",
+                "Most előbb arra figyeljünk, hogy legyen melletted segítség.",
+                "Szeretném, hogy biztonságban legyél. Ezzel kezdjük.",
+                "Először azt tisztázzuk, szükséged van-e most azonnali segítségre.",
+                "Jó, hogy jelezted. Kezdjük azzal, biztonságban érzed-e magad."
+              ],
+              "question": [
+                "Biztonságban vagy most?",
+                "Most biztonságos helyen vagy?",
+                "Jelenleg biztonságban érzed magad?",
+                "Van most közvetlen veszély körülötted?",
+                "Most biztonságos neked ott, ahol vagy?",
+                "Ebben a pillanatban biztonságban vagy?",
+                "El tudod mondani, most biztonságban vagy-e?"
+              ],
+              "options": [
+                {
+                  "id": "unsafe",
+                  "variants": [
+                    "Most nem érzem magam biztonságban.",
+                    "Most olyan helyzetben vagyok, ahol nem vagyok biztonságban.",
+                    "Jelenleg nem érzem magam biztonságban.",
+                    "A mostani helyzetem nem biztonságos nekem.",
+                    "Most segítség kell, hogy biztonságban legyek.",
+                    "Most nincs meg a biztonságérzetem.",
+                    "Nem érzem, hogy most biztonságban lennék."
+                  ],
+                  "next": "immediate-adult"
+                },
+                {
+                  "id": "safe",
+                  "variants": [
+                    "Biztonságban vagyok, de beszélnék róla.",
+                    "Most biztonságos helyen vagyok, és szeretném átbeszélni.",
+                    "Most nincs közvetlen veszély, de foglalkoztat.",
+                    "Jelenleg biztonságban érzem magam, beszélgessünk.",
+                    "Most biztonságban vagyok, segíts átgondolni.",
+                    "Ebben a pillanatban biztonságban vagyok, de van mit elmondanom.",
+                    "Most nincs veszély körülöttem, szeretnék tovább beszélni."
+                  ],
+                  "next": "adult-today"
+                },
+                {
+                  "id": "unsure",
+                  "variants": [
+                    "Nem tudom biztosan.",
+                    "Nem vagyok benne biztos.",
+                    "Ezt most nehéz eldöntenem.",
+                    "Bizonytalan vagyok benne.",
+                    "Nem tudok erre biztos igent mondani.",
+                    "Nem vagyok biztos abban, hogy biztonságos.",
+                    "Most nem tudom megítélni."
+                  ],
+                  "next": "immediate-adult"
+                }
+              ]
+            },
+            "emotion": {
+              "response": [
+                "Ha sok minden nehezedik rád, elég egyetlen dologgal kezdenünk.",
+                "Nem kell magadra erőltetned, hogy minden rendben legyen.",
+                "Beszélhetünk arról, mi nehéz most, a saját tempódban.",
+                "Most nem kell teljesítened. Nézzük meg, mi foglalkoztat.",
+                "Lehet helye annak is, ha elfáradtál vagy aggódsz.",
+                "Kezdhetjük azzal, ami most a leginkább jelen van benned.",
+                "Figyelek rád. Keressünk egy kis kapaszkodót a mai naphoz."
+              ],
+              "question": [
+                "Melyik írja le legjobban, amit most érzel?",
+                "Mi áll most legközelebb ahhoz, ami benned van?",
+                "Milyen érzéssel a legnehezebb most együtt lenned?",
+                "Hogyan tudnád leírni, mi történik benned?",
+                "Mi jellemzi most leginkább a közérzetedet?",
+                "Melyik érzés foglal most sok helyet benned?",
+                "Mi az, ami most a legerősebben jelen van?"
+              ],
+              "options": [
+                {
+                  "id": "first",
+                  "variants": [
+                    "Feszült vagyok, nehéz megnyugodnom.",
+                    "Sok bennem a feszültség.",
+                    "Nyugtalan vagyok, nehezen lazítok.",
+                    "Most nehezen találok nyugalmat.",
+                    "Belül nagyon feszültnek érzem magam.",
+                    "A feszültségem most erős.",
+                    "Nehezemre esik megnyugodni."
+                  ],
+                  "next": "frequency"
+                },
+                {
+                  "id": "second",
+                  "variants": [
+                    "Elfáradtam, és nehéz figyelnem.",
+                    "Kevés az energiám a figyeléshez.",
+                    "Fáradtnak és szétszórtnak érzem magam.",
+                    "Nehéz összeszednem magam a fáradtságtól.",
+                    "A fáradtság miatt elkalandozom.",
+                    "Most fáradt vagyok és nehezen koncentrálok.",
+                    "Elfogyott az erőm, nehezen figyelek."
+                  ],
+                  "next": "frequency"
+                },
+                {
+                  "id": "third",
+                  "variants": [
+                    "Félek, hogy hibázom vagy csalódást okozok.",
+                    "Aggódom, hogy valamit elrontok.",
+                    "Attól tartok, hogy csalódnak bennem.",
+                    "Ijesztő, hogy esetleg nem sikerül.",
+                    "Szorongok attól, hogy hibát vétek.",
+                    "Félek, hogy nem felelek meg.",
+                    "Tartok a hibázástól és mások reakciójától."
+                  ],
+                  "next": "frequency"
+                },
+                {
+                  "id": "unsafe",
+                  "variants": [
+                    "Most nem érzem magam biztonságban.",
+                    "Most olyan helyzetben vagyok, ahol nem vagyok biztonságban.",
+                    "Jelenleg nem érzem magam biztonságban.",
+                    "A mostani helyzetem nem biztonságos nekem.",
+                    "Most segítség kell, hogy biztonságban legyek.",
+                    "Most nincs meg a biztonságérzetem.",
+                    "Nem érzem, hogy most biztonságban lennék."
+                  ],
+                  "next": "immediate-adult"
+                }
+              ]
+            }
+          },
+          "outcomes": {
+            "immediate-adult": {
+              "id": "immediate-adult",
+              "variants": [
+                "Most rögtön menj egy szülődhöz vagy más megbízható felnőtthöz. Mondd: „Nem érzem magam biztonságban, kérlek, maradj velem és segíts.”",
+                "Kérj azonnal segítséget egy elérhető szülőtől vagy megbízható felnőttől. Mondd el, hogy most nem vagy biztonságban, és kérd, hogy maradjon melletted.",
+                "Most keress egy biztonságot adó felnőttet, például az egyik szülődet. Mondd: „Most szükségem van rád, nem érzem magam biztonságban.”",
+                "Menj most egy szülőhöz vagy olyan felnőtthöz, akiben bízol. Kérd meg, hogy legyen veled, és segítsen biztonságba kerülni.",
+                "Ezzel most ne maradj egyedül. Szólj rögtön egy szülőnek vagy megbízható felnőttnek, és kérj tőle azonnali segítséget.",
+                "Most az a következő lépés, hogy megkeresel egy szülőt vagy megbízható felnőttet. Mondd el neki, hogy segítség kell a biztonságodhoz.",
+                "Kérlek, most azonnal szólj egy elérhető, megbízható felnőttnek. Kérd, hogy maradjon veled, mert most nem érzed magad biztonságban."
+              ],
+              "practice": null,
+              "context": "azt, ami most megterhel"
+            },
+            "adult-today": {
+              "id": "adult-today",
+              "variants": [
+                "Válassz ma egy nyugodt pillanatot egy szülőddel vagy megbízható felnőttel. Kezdd így: „Van valami, amiről szeretnék beszélni. Most meg tudsz hallgatni?”",
+                "Ma keress meg egy felnőttet, akiben bízol. Kérj tőle néhány nyugodt percet, és mondd el, mi foglalkoztat.",
+                "Beszélj ma egy szülővel vagy más megbízható felnőttel. Elég ennyivel kezdened: „Jól jönne, ha most meghallgatnál.”",
+                "A mai nap folyamán kérj egy kis időt valakitől, aki biztonságot ad. Mondd el neki, hogy szeretnél megosztani valamit.",
+                "Keress ma egy alkalmat, amikor egy megbízható felnőtt rád tud figyelni. Kezdd azzal, mit érzel, és kérd, hogy hallgasson meg.",
+                "Ma fordulj egy szülődhöz vagy más megbízható felnőtthöz. Kérdezd meg: „Tudnánk egy kicsit beszélgetni arról, ami bennem van?”",
+                "Még ma kezdeményezz egy rövid beszélgetést egy felnőttel, akiben bízol. Nem kell kész megoldással érkezned."
+              ],
+              "practice": null,
+              "context": "azt, ami most megterhel"
+            },
+            "professional": {
+              "id": "professional",
+              "variants": [
+                "Kérj meg egy szülőt vagy megbízható felnőttet, hogy segítsen pszichológust találni, akivel beszélhetsz. Az összefoglalót is megmutathatod neki.",
+                "Mondd el egy megbízható felnőttnek, hogy pszichológussal szeretnél beszélni. Kérj segítséget az első alkalom megszervezéséhez.",
+                "Kezdd azzal egy szülőnél vagy más megbízható felnőttnél: „Szeretnék pszichológusi segítséget kérni. Segítesz elindulni?”",
+                "Kérj támogatást egy megbízható felnőttől ahhoz, hogy elérj egy pszichológust. Nem kell egyedül intézned.",
+                "Beszélj egy szülővel vagy biztonságot adó felnőttel arról, hogy szakembert szeretnél bevonni. Kérj segítséget pszichológust keresni.",
+                "Vidd magaddal az összefoglalódat egy megbízható felnőtthöz, és kérd meg, hogy segítsen pszichológussal kapcsolatot találni.",
+                "Kérj meg egy hozzád közel álló, megbízható felnőttet, hogy támogasson a pszichológusi segítség elérésében."
+              ],
+              "practice": null,
+              "context": "azt, ami most megterhel"
+            },
+            "summary": {
+              "id": "summary",
+              "variants": [
+                "Nyisd meg az összefoglalót, és válassz ki egy mondatot, amivel beszélgetést kezdesz egy megbízható felnőttel. Át is írhatod a saját szavaidra.",
+                "Nézd át az összefoglalót, majd mutasd meg egy szülőnek vagy megbízható felnőttnek. Kezdheted azzal: „Erről szeretnék mesélni.”",
+                "Az összefoglalóból elég egy részletet felolvasnod annak a felnőttnek, akiben bízol. A többit a saját tempódban mondhatod el.",
+                "Vidd magaddal a rövid összefoglalót egy megbízható felnőtthöz. Kérd meg, hogy hallgasson meg, mielőtt megoldást kerestek.",
+                "Olvasd el az összefoglalót, és használd kapaszkodónak egy beszélgetéshez. Te választod ki, melyik megbízható felnőttnek mutatod meg.",
+                "Válassz egy nyugodt pillanatot, és az összefoglaló segítségével mondd el egy felnőttnek, mi foglalkoztat. Saját szavaidat is hozzáteheted.",
+                "Nyisd meg a beszélgetésünk összefoglalóját. Egy szülőnek vagy megbízható felnőttnek megmutatva könnyebb lehet elkezdened, amit elmondanál."
+              ],
+              "practice": null,
+              "context": "azt, ami most megterhel"
+            },
+            "small-step": {
+              "id": "small-step",
+              "variants": [
+                "Válassz egy rövid szünetet a következő feladat előtt. Utána nevezz meg egyetlen dolgot, amire figyelni fogsz; a többit most elengedheted.",
+                "Keress egy rövid szünetet a következő feladat előtt. Utána nevezz meg egyetlen dolgot, amire figyelni fogsz; a többit most elengedheted. Elég egyetlen próbát tenned.",
+                "Kezdheted ezzel: Válassz egy rövid szünetet a következő feladat előtt. Utána nevezz meg egyetlen dolgot, amire figyelni fogsz; a többit most elengedheted.",
+                "Egy apró próba lehet a következő: Válassz egy rövid szünetet a következő feladat előtt. Utána nevezz meg egyetlen dolgot, amire figyelni fogsz; a többit most elengedheted.",
+                "Ha belefér neked, ezt próbáld ki: Válassz egy rövid szünetet a következő feladat előtt. Utána nevezz meg egyetlen dolgot, amire figyelni fogsz; a többit most elengedheted.",
+                "A következő alkalomra ezt viheted magaddal: Válassz egy rövid szünetet a következő feladat előtt. Utána nevezz meg egyetlen dolgot, amire figyelni fogsz; a többit most elengedheted.",
+                "Most ennyi is elég lehet: Válassz egy rövid szünetet a következő feladat előtt. Utána nevezz meg egyetlen dolgot, amire figyelni fogsz; a többit most elengedheted."
+              ],
+              "practice": null,
+              "context": "azt, ami most megterhel"
+            },
+            "practice": {
+              "id": "practice",
+              "variants": [
+                "Nyisd meg a rövid gyakorlatot, és próbáld ki a saját tempódban. A végén jelezheted, hogy segített-e; ha nem esik jól, abbahagyhatod.",
+                "Válaszd a gyakorlatot, és csak annyit próbálj belőle, amennyi kényelmes. Utána elmondhatod, milyen volt neked.",
+                "Kezdd a rövid gyakorlattal. Nem kell jól teljesítened benne; azt figyeld, ad-e most egy kis kapaszkodót.",
+                "Próbáld ki a felkínált gyakorlatot, ha most belefér. A végén jelezheted azt is, ha nem segített.",
+                "Menj a rövid gyakorlathoz, és haladj a saját ritmusodban. Bármikor megállhatsz, ha nem esik jól.",
+                "A gyakorlat megnyitása lehet a következő kis lépés. Utána magad döntöd el, hasznos volt-e most neked.",
+                "Nyisd meg a gyakorlatot, és adj neki egy kényelmes próbát. Nem kell végigcsinálnod, ha most nem jó neked."
+              ],
+              "practice": "pause",
+              "context": "azt, ami most megterhel"
+            },
+            "check-in": {
+              "id": "check-in",
+              "variants": [
+                "Válassz egy mai időpontot, például az estét. Akkor írj le egy mondatot arról, hogyan érzed magad; ha nehezebb lett, szólj egy megbízható felnőttnek.",
+                "Ma este állj meg egy pillanatra, és fogalmazd meg, mi változott benned. Ha rosszabbul vagy, kérj támogatást egy felnőttől, akiben bízol.",
+                "Jelölj ki magadnak egy rövid visszanézést mára. Egy mondat is elég az érzéseidről; nehezebb helyzetben vonj be egy megbízható felnőttet.",
+                "Később ma kérdezd meg magadtól: „Most hogy vagyok ezzel?” Írj le egy választ, és ha rosszabb lett, beszélj egy biztonságot adó felnőttel.",
+                "Térj vissza a mai nap végén egyetlen mondat erejéig ahhoz, amit érzel. Ha megterhelőbb lett, ne maradj vele egyedül, szólj egy felnőttnek.",
+                "Válassz ma egy nyugodt percet az érzéseid újragondolására. Ha nehezebbnek érzed, mint most, keress egy megbízható felnőttet.",
+                "A mai nap egy későbbi pontján jegyezd fel röviden, hogy vagy. Ha a helyzet rosszabbodott, kérj segítséget egy felnőttől, akire számíthatsz."
+              ],
+              "practice": null,
+              "context": "azt, ami most megterhel"
+            }
+          }
+        },
+        "connection": {
+          "id": "connection",
+          "title": "A kapcsolataim és a helyem",
+          "start": "emotion",
+          "nodes": {
+            "frequency": {
+              "response": [
+                "Köszönöm, hogy elmondtad. Nem kell rögtön megoldanod mindent.",
+                "Jó, hogy szavakat találtál arra, ami benned van.",
+                "Maradhatunk egy kicsit ennél az érzésnél.",
+                "Figyelek rád. Nézzük meg, hogyan van jelen ez a napjaidban.",
+                "Értem. Segíthet, ha körüljárjuk, mikor találkozol ezzel.",
+                "Beszélhetünk erről a saját tempódban.",
+                "Köszönöm a válaszod. Most jobban értem, merre induljunk."
+              ],
+              "question": [
+                "Milyen gyakran érzed ezt mostanában?",
+                "Mennyire szokott visszatérni ez az érzés?",
+                "Az utóbbi időben milyen sűrűn történik ez veled?",
+                "Új érzés ez, vagy már ismerős neked?",
+                "Milyen gyakran jut ez most eszedbe?",
+                "Sok napodat kíséri ez az érzés, vagy inkább ritkán bukkan fel?",
+                "Hogyan van jelen ez az érzés a mindennapjaidban?"
+              ],
+              "options": [
+                {
+                  "id": "daily",
+                  "variants": [
+                    "Szinte minden nap.",
+                    "Majdnem naponta előjön.",
+                    "A legtöbb nap érzem.",
+                    "Alig telik el nap nélküle.",
+                    "Nap mint nap visszatér.",
+                    "Mostanában majdnem mindennapos.",
+                    "Szinte naponta találkozom vele."
+                  ],
+                  "next": "support"
+                },
+                {
+                  "id": "sometimes",
+                  "variants": [
+                    "Néha, de nem minden nap.",
+                    "Időnként visszatér.",
+                    "Van, hogy érzem, aztán elmúlik.",
+                    "Csak néhány alkalommal.",
+                    "Alkalmanként szokott előjönni.",
+                    "Némelyik nap igen, máskor nem.",
+                    "Néha felbukkan bennem."
+                  ],
+                  "next": "support"
+                },
+                {
+                  "id": "new",
+                  "variants": [
+                    "Ez most új nekem.",
+                    "Most érzem először így.",
+                    "Még nem igazán találkoztam ezzel.",
+                    "Nem szoktam ezt érezni.",
+                    "Mostanában jelent meg először.",
+                    "Eddig ez nem volt jellemző rám.",
+                    "Újdonság nekem ez az érzés."
+                  ],
+                  "next": "support"
+                }
+              ]
+            },
+            "support": {
+              "response": [
+                "Nem kell egyedül kitalálnod a folytatást.",
+                "A segítségkérés is lehet egy kis következő lépés.",
+                "Jó lehet, ha van valaki, aki meghallgat.",
+                "Te döntheted el, kivel kezdesz beszélgetni.",
+                "Elég lehet egy embernek elmondani, mi foglalkoztat.",
+                "Beszélhetünk arról is, ki tudna melletted lenni.",
+                "Nem kell mindent egyedül cipelned."
+              ],
+              "question": [
+                "Beszéltél már erről valakivel?",
+                "Megosztottad ezt már valakivel?",
+                "Tud valaki arról, amit most elmondtál?",
+                "Volt már, akinek meséltél erről?",
+                "Kértél már valakitől támogatást ebben?",
+                "Van valaki, akivel ezt már átbeszélted?",
+                "Mondtad már valakinek, hogy ez foglalkoztat?"
+              ],
+              "options": [
+                {
+                  "id": "parent",
+                  "variants": [
+                    "Az egyik szülőmmel már beszéltem.",
+                    "Már elmondtam egy szülőmnek.",
+                    "A szülőm már tud róla.",
+                    "Otthon már meséltem róla a szülőmnek.",
+                    "Beszélgettünk erről az egyik szülőmmel.",
+                    "Már megosztottam a szülőmmel.",
+                    "Az egyik szülőmnek már jeleztem."
+                  ],
+                  "next": "next"
+                },
+                {
+                  "id": "adult",
+                  "variants": [
+                    "Egy másik megbízható felnőttnek mondtam el.",
+                    "Már beszéltem egy felnőttel, akiben bízom.",
+                    "Egy hozzám közel álló felnőtt már tudja.",
+                    "Megosztottam egy megbízható felnőttel.",
+                    "Egy biztonságot adó felnőttnek már meséltem.",
+                    "Egy másik felnőtt már meghallgatott.",
+                    "Elmondtam egy felnőttnek, aki figyel rám."
+                  ],
+                  "next": "next"
+                },
+                {
+                  "id": "nobody",
+                  "variants": [
+                    "Még nem beszéltem róla.",
+                    "Eddig magamban tartottam.",
+                    "Most mondom el először.",
+                    "Még senkinek nem meséltem erről.",
+                    "Egyelőre nem osztottam meg mással.",
+                    "Még nem találtam rá alkalmat.",
+                    "Eddig nem tudtam, hogyan kezdjem el."
+                  ],
+                  "next": "next"
+                }
+              ],
+              "context": {
+                "daily": [
+                  "Ha ez majdnem mindennap jelen van, jó lehet valakivel megosztani.",
+                  "Ami naponta foglalkoztat, arról is lehet beszélgetni.",
+                  "Értem, ez sok napodat kíséri. Lehet hozzá társad a gondolkodásban.",
+                  "Ha gyakran visszatér, segíthet valakivel együtt ránézni.",
+                  "Köszönöm, így már tudom, hogy ez rendszeresen jelen van.",
+                  "A gyakran megjelenő érzéseidnek is lehet helye egy beszélgetésben.",
+                  "Ha szinte naponta eszedbe jut, megoszthatod valakivel, akiben bízol."
+                ],
+                "new": [
+                  "Attól, hogy új neked ez az érzés, még beszélhetsz róla.",
+                  "Új érzésnél is kérhetsz kapaszkodót.",
+                  "Nem kell megvárnod, hogy régóta tartson, ahhoz, hogy megoszd.",
+                  "Az új érzéseket is lehet valakivel együtt megérteni.",
+                  "Ha ez új neked, jó lehet elmondanod valakinek.",
+                  "Egy most megjelent érzéshez is járhat támogatás.",
+                  "Akkor is beszélhetsz róla, ha most találkozol vele először."
+                ]
+              }
+            },
+            "next": {
+              "response": [
+                "Keressünk egy olyan folytatást, ami most belefér neked.",
+                "Választhatsz egy kicsi, megvalósítható következő lépést.",
+                "Nem kell nagy változtatással kezdened.",
+                "Olyan lépést keressünk, amit nem teher kipróbálni.",
+                "A folytatásban is van választásod.",
+                "Elég most egyetlen dologra gondolnunk.",
+                "Induljunk abból, mire lenne most szükséged."
+              ],
+              "question": [
+                "Mi segítene most a legtöbbet?",
+                "Melyik folytatás áll most közel hozzád?",
+                "Mit választanál következő kis lépésnek?",
+                "Hogyan lenne neked könnyebb továbbmenni?",
+                "Mivel kezdenél a felsoroltak közül?",
+                "Milyen támogatás esne most jól?",
+                "Mi lenne számodra most vállalható?"
+              ],
+              "options": [
+                {
+                  "id": "today",
+                  "variants": [
+                    "Ma beszélnék egy megbízható felnőttel.",
+                    "Jó lenne ezt ma elmondanom valakinek.",
+                    "Még ma megkeresnék egy felnőttet, akiben bízom.",
+                    "Ma kérnék segítséget egy felnőttől.",
+                    "Szeretném, ha ma valaki meghallgatna.",
+                    "Ma megosztanám ezt egy biztonságot adó felnőttel.",
+                    "A mai napon beszélnék valakivel, akire számíthatok."
+                  ],
+                  "next": "adult-today"
+                },
+                {
+                  "id": "professional",
+                  "variants": [
+                    "Pszichológus segítségét kérném.",
+                    "Szakemberrel szeretnék beszélni.",
+                    "Jó lenne pszichológussal átbeszélni.",
+                    "Pszichológusi támogatást keresnék.",
+                    "Egy segítő szakembert vonnék be.",
+                    "Szeretnék segítséget kérni pszichológushoz fordulni.",
+                    "Olyan szakemberrel beszélnék, aki ebben segít."
+                  ],
+                  "next": "professional"
+                },
+                {
+                  "id": "summary",
+                  "variants": [
+                    "Adj egy összefoglalót, amit elmondhatok.",
+                    "Segíts megfogalmazni, mit mondjak egy felnőttnek.",
+                    "Egy rövid összefoglalóval kezdenék.",
+                    "Leírnám, amit aztán megoszthatok valakivel.",
+                    "Jó lenne pár mondat, amivel beszélgetést kezdhetek.",
+                    "Foglaljuk össze, amit szeretnék elmondani.",
+                    "Kérek segítséget az első mondatokhoz."
+                  ],
+                  "next": "summary"
+                },
+                {
+                  "id": "small",
+                  "variants": [
+                    "Egy apró dolgot próbálnék ki.",
+                    "Most egy kis önálló lépéssel kezdenék.",
+                    "Egy könnyű próbát választanék.",
+                    "Valami kicsit és megvalósíthatót tennék.",
+                    "Egyetlen apró változtatást vállalnék.",
+                    "Kipróbálnék egy kicsi új megoldást.",
+                    "Most egy egyszerű próbára van erőm."
+                  ],
+                  "next": "small-step"
+                },
+                {
+                  "id": "practice",
+                  "variants": [
+                    "Egy rövid gyakorlatot szeretnék.",
+                    "Próbáljunk ki egy segítő gyakorlatot.",
+                    "Most egy kis gyakorlás esne jól.",
+                    "Egy egyszerű gyakorlatot választanék.",
+                    "Gyakorlatban is kipróbálnék valamit.",
+                    "Jó lenne valami rövid, amit megcsinálhatok.",
+                    "Most egy vezetett gyakorlat segítene."
+                  ],
+                  "next": "practice"
+                },
+                {
+                  "id": "later",
+                  "variants": [
+                    "Később visszanézném, hogy érzem magam.",
+                    "Választanék egy időpontot, amikor újra ránézek.",
+                    "Most lezárnám, és később visszatérnék rá.",
+                    "Egy későbbi rövid átgondolást vállalnék.",
+                    "Visszanézném ma este, változott-e valami.",
+                    "Később újra megfogalmaznám, mi van bennem.",
+                    "Adnék magamnak időt, aztán visszagondolnék rá."
+                  ],
+                  "next": "check-in"
+                }
+              ],
+              "context": {
+                "nobody": [
+                  "Köszönöm, hogy itt elkezdted elmondani. Segíthetek az első mondatokkal.",
+                  "Ha eddig magadban tartottad, elég lehet egy rövid mondattal kezdeni.",
+                  "Nem kell mindent egyszerre elmesélned valakinek.",
+                  "Lehet, hogy az első beszélgetés kezdete a legnehezebb; abban is segíthetek.",
+                  "Most már megfogalmaztál valamit abból, ami foglalkoztat.",
+                  "Amit itt elmondtál, abból készíthetünk egy rövid kapaszkodót.",
+                  "Kezdheted egyetlen emberrel, és csak annyit mondj el, amennyit szeretnél."
+                ]
+              }
+            },
+            "safety": {
+              "response": [
+                "Fontos, amit írtál. Most először a biztonságodra figyeljünk.",
+                "Köszönöm, hogy szóltál. Nézzük meg először, biztonságban vagy-e.",
+                "Amit írtál, annál most a biztonságod az első.",
+                "Most előbb arra figyeljünk, hogy legyen melletted segítség.",
+                "Szeretném, hogy biztonságban legyél. Ezzel kezdjük.",
+                "Először azt tisztázzuk, szükséged van-e most azonnali segítségre.",
+                "Jó, hogy jelezted. Kezdjük azzal, biztonságban érzed-e magad."
+              ],
+              "question": [
+                "Biztonságban vagy most?",
+                "Most biztonságos helyen vagy?",
+                "Jelenleg biztonságban érzed magad?",
+                "Van most közvetlen veszély körülötted?",
+                "Most biztonságos neked ott, ahol vagy?",
+                "Ebben a pillanatban biztonságban vagy?",
+                "El tudod mondani, most biztonságban vagy-e?"
+              ],
+              "options": [
+                {
+                  "id": "unsafe",
+                  "variants": [
+                    "Most nem érzem magam biztonságban.",
+                    "Most olyan helyzetben vagyok, ahol nem vagyok biztonságban.",
+                    "Jelenleg nem érzem magam biztonságban.",
+                    "A mostani helyzetem nem biztonságos nekem.",
+                    "Most segítség kell, hogy biztonságban legyek.",
+                    "Most nincs meg a biztonságérzetem.",
+                    "Nem érzem, hogy most biztonságban lennék."
+                  ],
+                  "next": "immediate-adult"
+                },
+                {
+                  "id": "safe",
+                  "variants": [
+                    "Biztonságban vagyok, de beszélnék róla.",
+                    "Most biztonságos helyen vagyok, és szeretném átbeszélni.",
+                    "Most nincs közvetlen veszély, de foglalkoztat.",
+                    "Jelenleg biztonságban érzem magam, beszélgessünk.",
+                    "Most biztonságban vagyok, segíts átgondolni.",
+                    "Ebben a pillanatban biztonságban vagyok, de van mit elmondanom.",
+                    "Most nincs veszély körülöttem, szeretnék tovább beszélni."
+                  ],
+                  "next": "adult-today"
+                },
+                {
+                  "id": "unsure",
+                  "variants": [
+                    "Nem tudom biztosan.",
+                    "Nem vagyok benne biztos.",
+                    "Ezt most nehéz eldöntenem.",
+                    "Bizonytalan vagyok benne.",
+                    "Nem tudok erre biztos igent mondani.",
+                    "Nem vagyok biztos abban, hogy biztonságos.",
+                    "Most nem tudom megítélni."
+                  ],
+                  "next": "immediate-adult"
+                }
+              ]
+            },
+            "emotion": {
+              "response": [
+                "Fontos, hogy legyen helye annak, hogyan érzed magad mások között.",
+                "Beszélhetünk arról, mi ad neked biztonságot és mi nehéz a kapcsolataidban.",
+                "Jó, hogy jelzed, ha valami nem esik jól a többiekkel.",
+                "Nem kell egyedül megoldanod mindent, ami másokkal kapcsolatban nehéz.",
+                "Kezdjük azzal, hogyan érzed magad a közösségedben.",
+                "Figyelek arra, amit a helyedről és a kapcsolataidról mesélsz.",
+                "Nézzük meg, mi segítene abban, hogy jobban érezd magad mások között."
+              ],
+              "question": [
+                "Hogyan érzed most magad a többiek között?",
+                "Milyen érzés most a közösségedben lenned?",
+                "Mi jellemzi most a kapcsolataidat?",
+                "Melyik áll közel ahhoz, amit mások között érzel?",
+                "Hogyan éled meg most a helyed a többiek között?",
+                "Milyen érzéssel vagy most mások társaságában?",
+                "Mi írja le legjobban a mostani helyzetedet másokkal?"
+              ],
+              "options": [
+                {
+                  "id": "first",
+                  "variants": [
+                    "Szeretnék kapcsolódni, de nehéz elkezdenem.",
+                    "Jó lenne közelebb kerülni másokhoz.",
+                    "Nehezen találom az első mondatot.",
+                    "Szeretnék beszélgetni, de bizonytalan vagyok.",
+                    "Kapcsolódnék, csak nem tudom, hogyan kezdjem.",
+                    "Keresem, hogyan nyithatnék mások felé.",
+                    "Szívesen közelednék, de még nehéz."
+                  ],
+                  "next": "frequency"
+                },
+                {
+                  "id": "second",
+                  "variants": [
+                    "Egyedül érzem magam, vagy kimaradok.",
+                    "Úgy érzem, nem tartozom közéjük.",
+                    "Néha kívülállónak érzem magam.",
+                    "Magányos vagyok a többiek között.",
+                    "Azt érzem, hogy kihagynak.",
+                    "Nehéz megtalálnom a helyem közöttük.",
+                    "Most inkább egyedül érzem magam."
+                  ],
+                  "next": "frequency"
+                },
+                {
+                  "id": "third",
+                  "variants": [
+                    "Valaki bántóan beszél velem vagy bánik velem.",
+                    "Van, aki megbánt azzal, ahogyan bánik velem.",
+                    "Bántó dolgokat mondanak vagy tesznek velem.",
+                    "Rosszul esik, ahogyan valaki viselkedik velem.",
+                    "Valaki úgy bánik velem, hogy az fáj.",
+                    "Bántó viselkedéssel találkozom.",
+                    "Valakinek a szavai vagy tettei bántanak."
+                  ],
+                  "next": "safety"
+                },
+                {
+                  "id": "unsafe",
+                  "variants": [
+                    "Most nem érzem magam biztonságban.",
+                    "Most olyan helyzetben vagyok, ahol nem vagyok biztonságban.",
+                    "Jelenleg nem érzem magam biztonságban.",
+                    "A mostani helyzetem nem biztonságos nekem.",
+                    "Most segítség kell, hogy biztonságban legyek.",
+                    "Most nincs meg a biztonságérzetem.",
+                    "Nem érzem, hogy most biztonságban lennék."
+                  ],
+                  "next": "immediate-adult"
+                }
+              ]
+            }
+          },
+          "outcomes": {
+            "immediate-adult": {
+              "id": "immediate-adult",
+              "variants": [
+                "Most rögtön menj egy szülődhöz vagy más megbízható felnőtthöz. Mondd: „Nem érzem magam biztonságban, kérlek, maradj velem és segíts.”",
+                "Kérj azonnal segítséget egy elérhető szülőtől vagy megbízható felnőttől. Mondd el, hogy most nem vagy biztonságban, és kérd, hogy maradjon melletted.",
+                "Most keress egy biztonságot adó felnőttet, például az egyik szülődet. Mondd: „Most szükségem van rád, nem érzem magam biztonságban.”",
+                "Menj most egy szülőhöz vagy olyan felnőtthöz, akiben bízol. Kérd meg, hogy legyen veled, és segítsen biztonságba kerülni.",
+                "Ezzel most ne maradj egyedül. Szólj rögtön egy szülőnek vagy megbízható felnőttnek, és kérj tőle azonnali segítséget.",
+                "Most az a következő lépés, hogy megkeresel egy szülőt vagy megbízható felnőttet. Mondd el neki, hogy segítség kell a biztonságodhoz.",
+                "Kérlek, most azonnal szólj egy elérhető, megbízható felnőttnek. Kérd, hogy maradjon veled, mert most nem érzed magad biztonságban."
+              ],
+              "practice": null,
+              "context": "azt, ahogyan a kapcsolataidban érzed magad"
+            },
+            "adult-today": {
+              "id": "adult-today",
+              "variants": [
+                "Válassz ma egy nyugodt pillanatot egy szülőddel vagy megbízható felnőttel. Kezdd így: „Van valami, amiről szeretnék beszélni. Most meg tudsz hallgatni?”",
+                "Ma keress meg egy felnőttet, akiben bízol. Kérj tőle néhány nyugodt percet, és mondd el, mi foglalkoztat.",
+                "Beszélj ma egy szülővel vagy más megbízható felnőttel. Elég ennyivel kezdened: „Jól jönne, ha most meghallgatnál.”",
+                "A mai nap folyamán kérj egy kis időt valakitől, aki biztonságot ad. Mondd el neki, hogy szeretnél megosztani valamit.",
+                "Keress ma egy alkalmat, amikor egy megbízható felnőtt rád tud figyelni. Kezdd azzal, mit érzel, és kérd, hogy hallgasson meg.",
+                "Ma fordulj egy szülődhöz vagy más megbízható felnőtthöz. Kérdezd meg: „Tudnánk egy kicsit beszélgetni arról, ami bennem van?”",
+                "Még ma kezdeményezz egy rövid beszélgetést egy felnőttel, akiben bízol. Nem kell kész megoldással érkezned."
+              ],
+              "practice": null,
+              "context": "azt, ahogyan a kapcsolataidban érzed magad"
+            },
+            "professional": {
+              "id": "professional",
+              "variants": [
+                "Kérj meg egy szülőt vagy megbízható felnőttet, hogy segítsen pszichológust találni, akivel beszélhetsz. Az összefoglalót is megmutathatod neki.",
+                "Mondd el egy megbízható felnőttnek, hogy pszichológussal szeretnél beszélni. Kérj segítséget az első alkalom megszervezéséhez.",
+                "Kezdd azzal egy szülőnél vagy más megbízható felnőttnél: „Szeretnék pszichológusi segítséget kérni. Segítesz elindulni?”",
+                "Kérj támogatást egy megbízható felnőttől ahhoz, hogy elérj egy pszichológust. Nem kell egyedül intézned.",
+                "Beszélj egy szülővel vagy biztonságot adó felnőttel arról, hogy szakembert szeretnél bevonni. Kérj segítséget pszichológust keresni.",
+                "Vidd magaddal az összefoglalódat egy megbízható felnőtthöz, és kérd meg, hogy segítsen pszichológussal kapcsolatot találni.",
+                "Kérj meg egy hozzád közel álló, megbízható felnőttet, hogy támogasson a pszichológusi segítség elérésében."
+              ],
+              "practice": null,
+              "context": "azt, ahogyan a kapcsolataidban érzed magad"
+            },
+            "summary": {
+              "id": "summary",
+              "variants": [
+                "Nyisd meg az összefoglalót, és válassz ki egy mondatot, amivel beszélgetést kezdesz egy megbízható felnőttel. Át is írhatod a saját szavaidra.",
+                "Nézd át az összefoglalót, majd mutasd meg egy szülőnek vagy megbízható felnőttnek. Kezdheted azzal: „Erről szeretnék mesélni.”",
+                "Az összefoglalóból elég egy részletet felolvasnod annak a felnőttnek, akiben bízol. A többit a saját tempódban mondhatod el.",
+                "Vidd magaddal a rövid összefoglalót egy megbízható felnőtthöz. Kérd meg, hogy hallgasson meg, mielőtt megoldást kerestek.",
+                "Olvasd el az összefoglalót, és használd kapaszkodónak egy beszélgetéshez. Te választod ki, melyik megbízható felnőttnek mutatod meg.",
+                "Válassz egy nyugodt pillanatot, és az összefoglaló segítségével mondd el egy felnőttnek, mi foglalkoztat. Saját szavaidat is hozzáteheted.",
+                "Nyisd meg a beszélgetésünk összefoglalóját. Egy szülőnek vagy megbízható felnőttnek megmutatva könnyebb lehet elkezdened, amit elmondanál."
+              ],
+              "practice": null,
+              "context": "azt, ahogyan a kapcsolataidban érzed magad"
+            },
+            "small-step": {
+              "id": "small-step",
+              "variants": [
+                "Válassz egy olyan embert, akinek a közelében jól érzed magad. Egy egyszerű kérdéssel vagy köszönéssel is kezdhetsz; bántó helyzetet nem kell egyedül megoldanod.",
+                "Keress egy olyan embert, akinek a közelében jól érzed magad. Egy rövid kérdéssel vagy köszönéssel is kezdhetsz; bántó helyzetet nem kell egyedül megoldanod. Elég egyetlen próbát tenned.",
+                "Kezdheted ezzel: Válassz egy olyan embert, akinek a közelében jól érzed magad. Egy egyszerű kérdéssel vagy köszönéssel is kezdhetsz; bántó helyzetet nem kell egyedül megoldanod.",
+                "Egy apró próba lehet a következő: Válassz egy olyan embert, akinek a közelében jól érzed magad. Egy egyszerű kérdéssel vagy köszönéssel is kezdhetsz; bántó helyzetet nem kell egyedül megoldanod.",
+                "Ha belefér neked, ezt próbáld ki: Válassz egy olyan embert, akinek a közelében jól érzed magad. Egy egyszerű kérdéssel vagy köszönéssel is kezdhetsz; bántó helyzetet nem kell egyedül megoldanod.",
+                "A következő alkalomra ezt viheted magaddal: Válassz egy olyan embert, akinek a közelében jól érzed magad. Egy egyszerű kérdéssel vagy köszönéssel is kezdhetsz; bántó helyzetet nem kell egyedül megoldanod.",
+                "Most ennyi is elég lehet: Válassz egy olyan embert, akinek a közelében jól érzed magad. Egy egyszerű kérdéssel vagy köszönéssel is kezdhetsz; bántó helyzetet nem kell egyedül megoldanod."
+              ],
+              "practice": null,
+              "context": "azt, ahogyan a kapcsolataidban érzed magad"
+            },
+            "practice": {
+              "id": "practice",
+              "variants": [
+                "Nyisd meg a rövid gyakorlatot, és próbáld ki a saját tempódban. A végén jelezheted, hogy segített-e; ha nem esik jól, abbahagyhatod.",
+                "Válaszd a gyakorlatot, és csak annyit próbálj belőle, amennyi kényelmes. Utána elmondhatod, milyen volt neked.",
+                "Kezdd a rövid gyakorlattal. Nem kell jól teljesítened benne; azt figyeld, ad-e most egy kis kapaszkodót.",
+                "Próbáld ki a felkínált gyakorlatot, ha most belefér. A végén jelezheted azt is, ha nem segített.",
+                "Menj a rövid gyakorlathoz, és haladj a saját ritmusodban. Bármikor megállhatsz, ha nem esik jól.",
+                "A gyakorlat megnyitása lehet a következő kis lépés. Utána magad döntöd el, hasznos volt-e most neked.",
+                "Nyisd meg a gyakorlatot, és adj neki egy kényelmes próbát. Nem kell végigcsinálnod, ha most nem jó neked."
+              ],
+              "practice": "communication",
+              "context": "azt, ahogyan a kapcsolataidban érzed magad"
+            },
+            "check-in": {
+              "id": "check-in",
+              "variants": [
+                "Válassz egy mai időpontot, például az estét. Akkor írj le egy mondatot arról, hogyan érzed magad; ha nehezebb lett, szólj egy megbízható felnőttnek.",
+                "Ma este állj meg egy pillanatra, és fogalmazd meg, mi változott benned. Ha rosszabbul vagy, kérj támogatást egy felnőttől, akiben bízol.",
+                "Jelölj ki magadnak egy rövid visszanézést mára. Egy mondat is elég az érzéseidről; nehezebb helyzetben vonj be egy megbízható felnőttet.",
+                "Később ma kérdezd meg magadtól: „Most hogy vagyok ezzel?” Írj le egy választ, és ha rosszabb lett, beszélj egy biztonságot adó felnőttel.",
+                "Térj vissza a mai nap végén egyetlen mondat erejéig ahhoz, amit érzel. Ha megterhelőbb lett, ne maradj vele egyedül, szólj egy felnőttnek.",
+                "Válassz ma egy nyugodt percet az érzéseid újragondolására. Ha nehezebbnek érzed, mint most, keress egy megbízható felnőttet.",
+                "A mai nap egy későbbi pontján jegyezd fel röviden, hogy vagy. Ha a helyzet rosszabbodott, kérj segítséget egy felnőttől, akire számíthatsz."
+              ],
+              "practice": null,
+              "context": "azt, ahogyan a kapcsolataidban érzed magad"
+            }
+          }
+        }
+      },
+      "safetyKeywords": [
+        "nem vagyok biztonságban",
+        "nem érzem magam biztonságban",
+        "bántanak",
+        "megüt",
+        "bántom magam",
+        "bántani magam",
+        "ártani magamnak",
+        "nem akarok élni",
+        "meg akarok halni",
+        "hurt myself",
+        "kill myself",
+        "not safe",
+        "being hurt",
+        "being bullied"
+      ],
+      "openers": [
+        "Segítek körüljárni. Melyik irányról beszélgessünk?",
+        "Nézzük meg együtt, mi foglalkoztat. Melyik áll hozzád közel?",
+        "Több irányba is indulhatunk. Melyikről szeretnél mesélni?",
+        "Kezdhetjük azzal, ami neked most fontos. Melyiket választod?",
+        "Segítek megtalálni a beszélgetésünk irányát. Mi illik ide legjobban?",
+        "Induljunk onnan, ami most a leginkább foglalkoztat. Melyik legyen?",
+        "Beszélhetünk erről. Melyik témában lenne most jó elmélyednünk?"
+      ]
     }
   }
 }

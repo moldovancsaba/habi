@@ -1,7 +1,7 @@
 // Shared child-centred support flows. Presentation lives in global.css.
 function today(){return new Date().toLocaleDateString('hu-HU')}
 function weekKey(){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.toLocaleDateString('hu-HU')}
-function supportInit(){monthlyInit();journeyInit();for(const key of ['reflections','practice','conversations','habitLog'])if(!Array.isArray(db[key]))db[key]=[];db.drafts=db.drafts||{};db.rhythm=db.rhythm||habiData('runtime_defaults').rhythm;db.rhythm.dismissed=db.rhythm.dismissed||{};save()}
+function supportInit(){monthlyInit();journeyInit();for(const key of ['reflections','practice','conversations','habitLog'])if(!Array.isArray(db[key]))db[key]=[];db.drafts=db.drafts||{};db.rhythm=db.rhythm||habiData('runtime_defaults').rhythm;db.rhythm.dismissed=db.rhythm.dismissed||{};guidedInit();save()}
 const practices=habiData("support_practices");
 let supportPage=null;
 function concern(e){const a=e?.answers||{};return a.pain>=1?'pain':a.sleep>=2?'sleep':a.energy>=2?'energy':a.focus>=2?'focus':a.mood>=2?'pressure':a.result>=2&&a.result<4?'restart':'general'}
