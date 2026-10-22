@@ -1,5 +1,5 @@
 // Reference-only examples. Real helpers and global.css, no application state or database writes.
-document.getElementById('ds-buttons').innerHTML=uiButton('Elsődleges művelet',null)+uiButton('Másodlagos művelet',null,{secondary:true});
+document.getElementById('ds-buttons').innerHTML=uiButton('Elsődleges művelet',null)+uiButton('Másodlagos művelet',null,{secondary:true})+uiControl('Vissza',null)+uiControl('Később folytatom',null)+uiChoice('Nem volt ilyen helyzet.',null);
 document.getElementById('ds-chat').innerHTML='<div class="habi-thread"><div class="habi-message habi-assistant">'+uiSpeaker()+'<p>Kezdhetjük azzal, ami most a leginkább foglalkoztat.</p><p class="habi-question">Melyik kis lépést választanád?</p></div><div class="habi-message habi-athlete"><span class="habi-speaker">Te</span><p>Elmondanám valakinek, hogyan érzem magam.</p></div><div class="habi-choices">'+uiChoice('Kérek egy összefoglalót.',null)+'</div></div>';
 const metricNames=['Erőnlétem','Alvásom','Koncentrációm','Hangulatom','Edzésterhelésem'];
 function referenceMetrics(value){return '<div class="result-icons">'+metricNames.map((name,i)=>'<div class="result-metric" role="img" aria-label="'+name+': '+(value===null?'nincs válasz':value+'/4')+'">'+visual(i,value)+'</div>').join('')+'</div>'}
@@ -10,3 +10,5 @@ document.getElementById('ds-metric-tabs').innerHTML=metricNames.map((name,i)=>'<
 document.getElementById('ds-navigation').innerHTML=[['home','Kezdőlap'],['tasks','Feladataim'],['history','Fejlődésem'],['habi','HABI']].map(([id,label],i)=>uiNavItem(id,label,i===0,null)).join('');
 document.querySelectorAll('[data-speaker]').forEach(el=>el.innerHTML=habiRobot()+'HABI');
 document.addEventListener('click',event=>{const button=event.target.closest('button');if(!button||button.disabled)return;const group=button.closest('[data-choice-group]');if(group)group.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));if(button.closest('#ds-navigation'))document.querySelectorAll('#ds-navigation button').forEach(b=>{b.classList.toggle('active',b===button);if(b===button)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});if(button.closest('#ds-buttons')||button.hasAttribute('data-demo-action'))document.getElementById('ds-action-status').textContent='A műveletet kiválasztottad.'});
+
+document.getElementById('ds-control').innerHTML=uiControl('Vissza',null);

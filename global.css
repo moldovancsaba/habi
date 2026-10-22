@@ -68,6 +68,11 @@ p { color:var(--text); margin:var(--space-4) 0; }
 .back-link:disabled { color:var(--text-muted); }
 .habi-choices,.support-actions { display:grid; gap:var(--space-2); min-width:0; margin-top:var(--space-4); }
 .habi-choices>.btn,.support-actions>.btn { margin:0; }
+.flow-controls { display:grid; gap:var(--space-2); margin-block-start:var(--space-4); }
+.flow-controls>.btn { margin:0; }
+.btn.flow-control { background:var(--surface-soft); border-color:transparent; color:var(--primary); text-align:center; justify-content:center; }
+.btn.flow-control:hover:enabled { background:var(--primary-soft); }
+
 :where(.habi-choices,.support-actions)>.field-label { margin-bottom:0; }
 /* Assessment answer cards are the icon-rich choice variant, not action buttons. */
 .choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-4); }
@@ -86,7 +91,7 @@ p { color:var(--text); margin:var(--space-4) 0; }
 .tabs button:has(.metric-icon) { display:flex; align-items:center; justify-content:center; aspect-ratio:1; padding:var(--space-1); }
 .tabs button .metric-icon { width:100%; height:auto; max-width:var(--icon-tab); flex-basis:auto; }
 .nav { position:fixed; z-index:var(--nav-layer); bottom:0; left:0; right:0; background:var(--surface); border-top:var(--border-width) solid var(--border); display:flex; justify-content:center; padding:var(--space-2) var(--space-1) max(var(--space-4),var(--safe-bottom)); }
-.nav button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--space-1); font-size:var(--font-small); line-height:var(--line-control); flex:1; min-width:0; max-width:var(--nav-item-width); min-height:var(--control-height); background:transparent; border:var(--border-width) solid transparent; border-radius:var(--radius-sm); color:var(--text-muted); padding:var(--space-3) var(--space-1); font-weight:var(--weight-strong); }
+.nav button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--space-1); font-size:var(--font-small); line-height:var(--line-control); text-align:center; flex:1; min-width:0; max-width:var(--nav-item-width); min-height:var(--control-height); background:transparent; border:var(--border-width) solid transparent; border-radius:var(--radius-sm); color:var(--text-muted); padding:var(--space-3) var(--space-1); font-weight:var(--weight-strong); }
 .nav button:hover { background:var(--surface-soft); }
 .nav button:is(.active,[aria-current="page"]) { background:var(--primary-soft); color:var(--primary); }
 .nav-visual { display:flex; align-items:center; justify-content:center; width:var(--nav-icon-size); height:var(--nav-icon-size); }

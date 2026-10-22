@@ -17,3 +17,6 @@ function uiCard(title,body,{heading=2,label='HABI'}={}){const level=[1,2,3].incl
 function uiNavItem(id,label,current,action){return '<button type="button"'+(current?' class="active" aria-current="page"':'')+(action?' onclick="'+escapeHTML(action)+'"':'')+'><span class="nav-visual">'+navIcon(id)+'</span><span class="nav-label">'+escapeHTML(label)+'</span></button>'}
 
 function uiChoice(label,action,options={}){return uiButton(label,action,{...options,choice:true})}
+
+function uiControl(label,action){return '<button type="button" class="btn flow-control"'+(action?' onclick="'+escapeHTML(action)+'"':'')+'>'+escapeHTML(label)+'</button>'}
+function uiFlowControls({skip=null,back=null,later=null,daily=false}={}){const copy=habiData('assessment_controls_v1');return '<div class="flow-controls" role="group" aria-label="'+escapeHTML(copy.label)+'">'+(skip?uiControl(daily?copy.dailySkip:copy.skip,skip):'')+(back?uiControl(copy.back,back):'')+(later?uiControl(copy.later,later):'')+'</div>'}

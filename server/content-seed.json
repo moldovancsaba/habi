@@ -3741,6 +3741,19 @@
           "message": "Egyedül érzem magam, és segítséget szeretnék kérni."
         }
       ]
+    },
+    "assessment_controls_v1": {
+      "skip": "Most kihagyom.",
+      "dailySkip": "Most nem szeretnék válaszolni",
+      "back": "Vissza",
+      "later": "Később folytatom",
+      "label": "Felmérés vezérlése"
+    },
+    "interaction_labels_v1": {
+      "monthlyFinish": "Havi visszatekintés befejezése",
+      "monthlyLast": "Vissza az utolsó kérdéshez",
+      "otherChat": "Másról beszélnék HABI-val",
+      "legacyHelp": "Ha ez visszatérően megnehezíti a napjaidat, kérj segítséget egy megbízható felnőttől vagy pszichológustól is."
     }
   }
 }
