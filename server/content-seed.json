@@ -3197,6 +3197,522 @@
         "diary",
         "monthly"
       ]
+    },
+    "support_loop_v1": {
+      "revision": "support-loop-1",
+      "labels": {
+        "prepare": "Segíts elmondani",
+        "prepareIntro": "Megfogalmazhatjuk együtt, mi történt, és milyen segítség esne jól. Te döntöd el, mit mondasz el.",
+        "person": "Kivel beszélnél?",
+        "need": "Mi esne jól tőle?",
+        "context": "Mi történt?",
+        "contextHint": "Annyit írj, amennyit most szeretnél.",
+        "message": "Ezzel kezdhetnéd",
+        "build": "Segíts megfogalmazni",
+        "savePreparation": "Ezt szeretném elmondani",
+        "download": "Letöltöm a saját összefoglalómat",
+        "returnOffer": "Később visszanéznék rá",
+        "returnTitle": "Térjünk vissza arra, ami fontos neked",
+        "returnWhen": "Mikor esne jól visszatérni?",
+        "returnDate": "Visszatérés napja",
+        "returnTime": "Időpont",
+        "returnSave": "Akkor visszatérek rá",
+        "returnOpen": "Visszanézek rá",
+        "returnQuestion": "Hogyan alakult azóta?",
+        "returnHelpful": "Kaptam olyan segítséget, ami jólesett.",
+        "returnDifferent": "Más segítségre lenne szükségem.",
+        "returnNotYet": "Még nem jutottam el odáig.",
+        "returnStop": "Most elengedem.",
+        "returnDone": "Azt tarthatod meg, ami neked segít. Ha nem azt kaptad, amire szükséged volt, megpróbálhatod másképp elmondani, vagy kereshetsz másik megbízható felnőttet.",
+        "pendingReturn": "Van valami, amire szerettél volna visszanézni.",
+        "pendingPrepare": "Folytathatjuk a mondatot, amit el szeretnél mondani.",
+        "pendingDaily": "A megkezdett napi válaszaidhoz térhetünk vissza.",
+        "resumeDaily": "Folytatom a napi felmérést",
+        "newDaily": "Új felmérést kezdek",
+        "saveAction": "Ezt próbálnám ki",
+        "reflectPractice": "Átgondolom, milyen volt",
+        "reflectExtra": "Másra is visszanéznék",
+        "success": "Egy próbálkozás, amire jó érzéssel gondolok",
+        "lesson": "Amit ebből tanultam",
+        "tomorrow": "Amit legközelebb kipróbálnék",
+        "roleModel": "Egy viselkedés, amit szívesen kipróbálnék valakitől",
+        "optional": "Csak ahhoz írj, ami most fontos neked.",
+        "event": "Valami előtt vagy után",
+        "eventIntro": "Visszanézhetünk egy sportos vagy hétköznapi alkalomra, vagy felkészülhetünk rá. Nem kell hozzá újabb felmérést kitöltened.",
+        "eventName": "Milyen alkalomra gondolsz?",
+        "eventDate": "Az alkalom napja",
+        "eventPhase": "Mikor vagy most hozzá képest?",
+        "eventBefore": "Előtte",
+        "eventAfter": "Utána",
+        "eventContinue": "Beszéljünk erről",
+        "eventNameDefault": "Egy fontos alkalom",
+        "beforeHard": "Mi foglalkoztat előtte?",
+        "beforeHelp": "Mi segítene nyugodtabban nekikezdeni?",
+        "afterHard": "Mi volt benne nehéz?",
+        "afterHelp": "Mi segített közben vagy utána?",
+        "eventSaved": "Amit ebből megtartanék",
+        "otherEntrances": "Egy konkrét helyzethez kérek segítséget",
+        "returnSummary": "A választott következő lépésem",
+        "insufficient": "Most nem kell következtetést levonnunk. Választhatsz egy témát, vagy visszatérhetsz akkor, amikor jólesik.",
+        "monthlyChoice": "Megfigyelem, mi esik jól a következő napokban.",
+        "monthlyNoPractice": "Választok egy gyakorlatot",
+        "monthlyTalk": "Beszélgetnék róla HABI-val",
+        "changedQuestions": "Most a jelenlegi válaszaidból indulunk ki.",
+        "practiceEvidence": "Amit te mondtál a próbálkozásaidról",
+        "evidenceMixed": "Volt, ami segített, és volt, ami kevésbé. Megtartanád a hasznos részét, vagy változtatnál rajta?",
+        "evidenceHelpful": "Volt olyan próbálkozás, amiről azt mondtad, hogy segített. Szeretnéd még kipróbálni, vagy most más esne jól?",
+        "evidenceNotHelpful": "Azt jelezted, hogy ez most nem segített. Nyugodtan választhatsz másik lehetőséget vagy beszélgetést.",
+        "evidenceNone": "A próbálkozásaidból később azt is visszanézhetjük, mi esett jól neked.",
+        "habitDraft": "A választott lépésemből szokást alakítok",
+        "notesTalk": "Ha a saját gondolatodról beszélgetnél, választhatsz hozzá egy témát.",
+        "contextOwn": "A saját szavaimról beszélgetnék",
+        "adults": "Kérlek, keress egy megbízható felnőttet, aki most meghallgat. Ha az első ember nem segít, szólhatsz másnak is.",
+        "sourcePractice": "Egy kipróbált gyakorlatról",
+        "sourceEvent": "Egy fontos alkalomról",
+        "followupLabel": "Visszanéztünk rá",
+        "preparationLabel": "Amit el szeretnék mondani",
+        "eventBeforeTitle": "Ráhangolódom az alkalomra",
+        "eventAfterTitle": "Visszanézek az alkalomra",
+        "back": "Vissza",
+        "saveReflection": "Visszatekintés befejezése",
+        "returnEmpty": "Most nincs megnyitandó visszatérésed.",
+        "practicalQuestion": "Mi segítene egy kicsit ebben a helyzetben?",
+        "ownNeed": "Megmutatnád újra, kisebb részekben?",
+        "boundary": "Szeretném, ha nyugodtabban beszélnénk egymással.",
+        "listen": "Most az segítene, ha először meghallgatnál.",
+        "support": "Segítenél olyan felnőttet találni, akivel ezt átbeszélhetem?",
+        "introSentence": "Van valami, amiről szeretnék veled beszélni.",
+        "contextPrefix": "Ez történt: ",
+        "returnNote": "Mit szeretnél ebből megőrizni?",
+        "reflectionEnd": "Egy kis lezárás",
+        "newTopic": "Más témát választok",
+        "finishNow": "Most ennyit szeretnék.",
+        "evidenceQuestion": "Megtartanád ezt, vagy inkább változtatnál rajta?",
+        "emptyObservation": "Még ismerkedünk azzal, mi segít neked. Választhatsz egy apró próbát, vagy mesélhetsz arról, ami most fontos.",
+        "reportedTitle": "Így írtad le mostanában",
+        "upPrefix": "Az újabb válaszaidban gyakrabban jelzed: ",
+        "downPrefix": "Az újabb válaszaidban nehezebbnek írod le: ",
+        "samePrefix": "A válaszaidban hasonlóan jelenik meg: ",
+        "unknownPrefix": "Amit most megosztottál: ",
+        "pendingEvent": "Folytathatjuk a fontos alkalomról indított visszatekintést.",
+        "pendingReturnPlan": "Kiválaszthatod, mikor térjünk vissza erre.",
+        "eventNameError": "Adj meg egy érvényes napot.",
+        "reflectionSource": "Erről gondolkodunk most:",
+        "contextHelp": "Mi illik leginkább ahhoz, amit leírtál?",
+        "contextChoices": "Válassz egy témát a saját gondolatodhoz.",
+        "uncertainTrend": "Megnézhetjük együtt, mi esett jól neked, és mi volt nehezebb.",
+        "ownNotes": "A saját szavaiddal is hozzáadhatod, mi fontos neked.",
+        "feltHelpful": "Volt, ami segített.",
+        "feltMixed": "Más helyzetben mást éltél meg.",
+        "messageError": "Írj egy rövid mondatot, vagy térj vissza az előző lehetőséghez.",
+        "preparationEntrances": "Beszélgetésre vagy alkalomra készülnék",
+        "hard": "Ami nehéz volt",
+        "help": "Ami segített",
+        "next": "A következő kis lépésem"
+      },
+      "people": [
+        [
+          "parent",
+          "Egy szülőmmel"
+        ],
+        [
+          "adult",
+          "Egy megbízható felnőttel"
+        ],
+        [
+          "peer",
+          "Egy társammal"
+        ]
+      ],
+      "needs": [
+        [
+          "listen",
+          "Meghallgatást szeretnék."
+        ],
+        [
+          "clarity",
+          "Szeretném jobban érteni, mit kérnek."
+        ],
+        [
+          "boundary",
+          "Elmondanám, mi nem esik jól."
+        ],
+        [
+          "support",
+          "Segítséget keresnék."
+        ]
+      ],
+      "needSentences": {
+        "listen": "Most az segítene, ha először meghallgatnál.",
+        "clarity": "Megmutatnád újra, kisebb részekben, mit kérsz tőlem?",
+        "boundary": "Szeretném, ha nyugodtan és bántó szavak nélkül beszélnénk.",
+        "support": "Segítenél olyan megbízható felnőttet találni, akivel ezt átbeszélhetem?"
+      },
+      "reflectionPrompts": [
+        "success",
+        "lesson",
+        "tomorrow",
+        "roleModel"
+      ],
+      "defaultReturnDays": 1,
+      "defaultReturnTime": "18:00",
+      "monthlyRevision": "monthly-six-domains-v1",
+      "practice": {
+        "title": "Fejben kipróbálom",
+        "what": "Gondolj egy ismerős helyzetre, és válassz benne egyetlen kezelhető első lépést.",
+        "how": "Ha jólesik, képzeld el röviden az ismerős helyzetet: hol vagy, mi az első kis dolgod, és milyen segítő mondatot mondanál magadnak. Nem kell sikeres befejezést elképzelned. Ha a képzelődés nem kényelmes, írd le a lépést, mondd ki, vagy válassz inkább beszélgetést. Bármikor abbahagyhatod."
+      },
+      "topic": {
+        "title": "Előre kipróbálhatom fejben",
+        "text": "Néha könnyebb elkezdeni valamit, ha előbb egy kis részét átgondolod. Nem kell tökéletes képet készítened.",
+        "neutral": "Válassz egy ismerős helyzetből egy könnyű első lépést.",
+        "sport": "Képzeld el egy már ismert mozdulatod előtti nyugodt kezdést.",
+        "everyday": "Gondold át, hogyan kérnél szót vagy segítséget egy iskolai feladatnál.",
+        "practice": "rehearsal"
+      },
+      "situations": [
+        {
+          "id": "disagreement",
+          "opening": "Nem értettünk egyet, és most nehéz kapcsolódnom.",
+          "topic": "communication",
+          "practice": "communication",
+          "intro": "Egy nézeteltérés után is elmondhatod, mi esne jól. Nem kell mindent egyedül helyrehoznod.",
+          "question": "Mi volt neked a legnehezebb?",
+          "options": [
+            "A bántó szavak.",
+            "Nem értettük egymást.",
+            "Nem mertem elmondani, mit szeretnék."
+          ],
+          "replies": [
+            "Megnézhetjük, milyen segítség lenne neked jó.",
+            "A saját szavaiddal is elmondhatod, mire van szükséged.",
+            "Kérhetsz időt vagy támogatást a következő lépéshez."
+          ],
+          "action": "Megfogalmazok egy rövid, nyugodt kérést."
+        },
+        {
+          "id": "outside-pressure",
+          "opening": "Úgy érzem, túl sokat várnak tőlem.",
+          "topic": "pressure",
+          "practice": "pressure",
+          "intro": "A sok elvárás megterhelő lehet. Megnézhetjük, mi fér bele neked, és milyen segítségre lenne szükséged.",
+          "question": "Mi nyom most leginkább?",
+          "options": [
+            "Mások elvárása.",
+            "A saját elvárásom.",
+            "Túl sok minden jut egyszerre."
+          ],
+          "replies": [
+            "Megnézhetjük, milyen segítség lenne neked jó.",
+            "A saját szavaiddal is elmondhatod, mire van szükséged.",
+            "Kérhetsz időt vagy támogatást a következő lépéshez."
+          ],
+          "action": "Kiválasztok egy kezelhető lépést, és jelzem, mi sok nekem."
+        },
+        {
+          "id": "less-joy",
+          "opening": "Most kevesebb örömöm van a sportban.",
+          "topic": "pressure",
+          "practice": "pause",
+          "intro": "Nem kell magadra erőltetned a lelkesedést. Megnézhetjük, mi hiányzik, és mi könnyítene a napodon.",
+          "question": "Mi hiányzik most leginkább?",
+          "options": [
+            "A játék öröme.",
+            "Több pihenés.",
+            "Hogy meghallgassanak."
+          ],
+          "replies": [
+            "Megnézhetjük, milyen segítség lenne neked jó.",
+            "A saját szavaiddal is elmondhatod, mire van szükséged.",
+            "Kérhetsz időt vagy támogatást a következő lépéshez."
+          ],
+          "action": "Megnevezek egy dolgot, ami könnyebbé tenne egy alkalmat."
+        },
+        {
+          "id": "asking-clarity",
+          "opening": "Nem világos, mit kérnek tőlem.",
+          "topic": "instructions",
+          "practice": "instructions",
+          "intro": "Nyugodtan kérhetsz ismétlést vagy egy példát. Ettől nem vagy kevésbé ügyes.",
+          "question": "Melyik lenne most a leghasznosabb?",
+          "options": [
+            "Egy bemutatás.",
+            "Kisebb részek.",
+            "Több idő a kérdezésre."
+          ],
+          "replies": [
+            "Megnézhetjük, milyen segítség lenne neked jó.",
+            "A saját szavaiddal is elmondhatod, mire van szükséged.",
+            "Kérhetsz időt vagy támogatást a következő lépéshez."
+          ],
+          "action": "Kérek egy példát, majd a saját szavaimmal visszamondom az első részt."
+        },
+        {
+          "id": "feeling-left-out",
+          "opening": "Úgy érzem, kimaradok a többiek közül.",
+          "topic": "communication",
+          "practice": "communication",
+          "intro": "Fontos, hogy legyen helyed a többiek között. Ha valaki bánt, ne maradj egyedül ezzel: szólhatsz egy megbízható felnőttnek.",
+          "question": "Mi segítene most leginkább?",
+          "options": [
+            "Ha valaki meghallgatna.",
+            "Ha elmondhatnám, mi történt.",
+            "Ha egy felnőtt segítene."
+          ],
+          "replies": [
+            "Megnézhetjük, milyen segítség lenne neked jó.",
+            "A saját szavaiddal is elmondhatod, mire van szükséged.",
+            "Kérhetsz időt vagy támogatást a következő lépéshez."
+          ],
+          "action": "Elmondom egy megbízható felnőttnek, mikor érzem magam kívülállónak."
+        }
+      ],
+      "topicNodes": {
+        "focus": {
+          "response": [
+            "Nézzük meg, mi nehezíti most a figyelmedet.",
+            "Gondolkodhatunk erről együtt. Nézzük meg, mi nehezíti most a figyelmedet.",
+            "Kezdhetjük azzal, ami neked fontos. Nézzük meg, mi nehezíti most a figyelmedet.",
+            "Van időnk ezt átgondolni. Nézzük meg, mi nehezíti most a figyelmedet.",
+            "Elég egyetlen helyzetből kiindulnunk. Nézzük meg, mi nehezíti most a figyelmedet.",
+            "Mehetünk a saját tempódban. Nézzük meg, mi nehezíti most a figyelmedet.",
+            "Köszönöm, hogy ezt választottad. Nézzük meg, mi nehezíti most a figyelmedet."
+          ],
+          "question": [
+            "Mikor veszíted el leginkább a fonalat?",
+            "Melyik helyzetben nehéz most odafigyelned?",
+            "Mikor lesz most a legtöbb minden a fejedben?",
+            "Mi szokta leginkább megzavarni a figyelmedet?",
+            "Mikor érzed úgy, hogy nehéz követned a feladatot?",
+            "Melyik pillanatban lenne jó egy figyelmi kapaszkodó?",
+            "Mikor esne jól segítség a figyeléshez?"
+          ],
+          "options": [
+            {
+              "id": "context-0",
+              "variants": [
+                "Sok utasítást kapok egyszerre.",
+                "Most sok utasítást kapok egyszerre.",
+                "Azt érzem, hogy sok utasítást kapok egyszerre.",
+                "Leginkább azt érzem, hogy sok utasítást kapok egyszerre.",
+                "Nekem most az nehéz, hogy sok utasítást kapok egyszerre.",
+                "Abból indulnék ki, hogy sok utasítást kapok egyszerre.",
+                "Arról beszélnék, hogy sok utasítást kapok egyszerre."
+              ],
+              "next": "emotion"
+            },
+            {
+              "id": "context-1",
+              "variants": [
+                "Egy hiba után kapkodok.",
+                "Most egy hiba után kapkodok.",
+                "Azt érzem, hogy egy hiba után kapkodok.",
+                "Leginkább azt érzem, hogy egy hiba után kapkodok.",
+                "Nekem most az nehéz, hogy egy hiba után kapkodok.",
+                "Abból indulnék ki, hogy egy hiba után kapkodok.",
+                "Arról beszélnék, hogy egy hiba után kapkodok."
+              ],
+              "next": "emotion"
+            },
+            {
+              "id": "context-2",
+              "variants": [
+                "Más gondolatok foglalkoztatnak.",
+                "Most más gondolatok foglalkoztatnak.",
+                "Azt érzem, hogy más gondolatok foglalkoztatnak.",
+                "Leginkább azt érzem, hogy más gondolatok foglalkoztatnak.",
+                "Nekem most az nehéz, hogy más gondolatok foglalkoztatnak.",
+                "Abból indulnék ki, hogy más gondolatok foglalkoztatnak.",
+                "Arról beszélnék, hogy más gondolatok foglalkoztatnak."
+              ],
+              "next": "emotion"
+            }
+          ]
+        },
+        "habits": {
+          "response": [
+            "A pihenést nem kell kiérdemelned. Megkereshetjük, mire lenne szükséged.",
+            "Gondolkodhatunk erről együtt. A pihenést nem kell kiérdemelned. Megkereshetjük, mire lenne szükséged.",
+            "Kezdhetjük azzal, ami neked fontos. A pihenést nem kell kiérdemelned. Megkereshetjük, mire lenne szükséged.",
+            "Van időnk ezt átgondolni. A pihenést nem kell kiérdemelned. Megkereshetjük, mire lenne szükséged.",
+            "Elég egyetlen helyzetből kiindulnunk. A pihenést nem kell kiérdemelned. Megkereshetjük, mire lenne szükséged.",
+            "Mehetünk a saját tempódban. A pihenést nem kell kiérdemelned. Megkereshetjük, mire lenne szükséged.",
+            "Köszönöm, hogy ezt választottad. A pihenést nem kell kiérdemelned. Megkereshetjük, mire lenne szükséged."
+          ],
+          "question": [
+            "Mi nehezíti most a feltöltődést?",
+            "Mitől nehéz most kipihenned magad?",
+            "Mi áll most a pihenésed útjában?",
+            "Melyik része nehéz most a lelassulásnak?",
+            "Mikor érzed, hogy több pihenésre lenne szükséged?",
+            "Miért nehéz most helyet találni a feltöltődésnek?",
+            "Mi segítene megérteni, mire lenne szükséged a pihenéshez?"
+          ],
+          "options": [
+            {
+              "id": "context-0",
+              "variants": [
+                "Nehéz este lelassulnom.",
+                "Most nehéz este lelassulnom.",
+                "Azt érzem, hogy nehéz este lelassulnom.",
+                "Leginkább azt érzem, hogy nehéz este lelassulnom.",
+                "Nekem most az nehéz, hogy nehéz este lelassulnom.",
+                "Abból indulnék ki, hogy nehéz este lelassulnom.",
+                "Arról beszélnék, hogy nehéz este lelassulnom."
+              ],
+              "next": "emotion"
+            },
+            {
+              "id": "context-1",
+              "variants": [
+                "Túl zsúfoltak a napjaim.",
+                "Most túl zsúfoltak a napjaim.",
+                "Azt érzem, hogy túl zsúfoltak a napjaim.",
+                "Leginkább azt érzem, hogy túl zsúfoltak a napjaim.",
+                "Nekem most az nehéz, hogy túl zsúfoltak a napjaim.",
+                "Abból indulnék ki, hogy túl zsúfoltak a napjaim.",
+                "Arról beszélnék, hogy túl zsúfoltak a napjaim."
+              ],
+              "next": "emotion"
+            },
+            {
+              "id": "context-2",
+              "variants": [
+                "Nem tudom, mi esne jól.",
+                "Most nem tudom, mi esne jól.",
+                "Azt érzem, hogy nem tudom, mi esne jól.",
+                "Leginkább azt érzem, hogy nem tudom, mi esne jól.",
+                "Nekem most az nehéz, hogy nem tudom, mi esne jól.",
+                "Abból indulnék ki, hogy nem tudom, mi esne jól.",
+                "Arról beszélnék, hogy nem tudom, mi esne jól."
+              ],
+              "next": "emotion"
+            }
+          ]
+        },
+        "sport": {
+          "response": [
+            "A sportban nemcsak az eredmény számít: az is, hogyan érzed magad benne.",
+            "Gondolkodhatunk erről együtt. A sportban nemcsak az eredmény számít: az is, hogyan érzed magad benne.",
+            "Kezdhetjük azzal, ami neked fontos. A sportban nemcsak az eredmény számít: az is, hogyan érzed magad benne.",
+            "Van időnk ezt átgondolni. A sportban nemcsak az eredmény számít: az is, hogyan érzed magad benne.",
+            "Elég egyetlen helyzetből kiindulnunk. A sportban nemcsak az eredmény számít: az is, hogyan érzed magad benne.",
+            "Mehetünk a saját tempódban. A sportban nemcsak az eredmény számít: az is, hogyan érzed magad benne.",
+            "Köszönöm, hogy ezt választottad. A sportban nemcsak az eredmény számít: az is, hogyan érzed magad benne."
+          ],
+          "question": [
+            "Mi foglalkoztat most a sporttal kapcsolatban?",
+            "Mi az, ami most nehéz neked a sportban?",
+            "Melyik része fontos most a sporthoz fűződő érzéseidnek?",
+            "Miről lenne jó beszélnünk a sport kapcsán?",
+            "Mit szeretnél most másképp megélni sportolás közben?",
+            "Mi jut eszedbe először a mostani sportélményeidről?",
+            "Melyik érzésedből induljunk ki a sporttal kapcsolatban?"
+          ],
+          "options": [
+            {
+              "id": "context-0",
+              "variants": [
+                "Kevesebb örömöt érzek.",
+                "Most kevesebb örömöt érzek.",
+                "Azt érzem, hogy kevesebb örömöt érzek.",
+                "Leginkább azt érzem, hogy kevesebb örömöt érzek.",
+                "Nekem most az nehéz, hogy kevesebb örömöt érzek.",
+                "Abból indulnék ki, hogy kevesebb örömöt érzek.",
+                "Arról beszélnék, hogy kevesebb örömöt érzek."
+              ],
+              "next": "emotion"
+            },
+            {
+              "id": "context-1",
+              "variants": [
+                "Nehéz megtalálnom a helyem.",
+                "Most nehéz megtalálnom a helyem.",
+                "Azt érzem, hogy nehéz megtalálnom a helyem.",
+                "Leginkább azt érzem, hogy nehéz megtalálnom a helyem.",
+                "Nekem most az nehéz, hogy nehéz megtalálnom a helyem.",
+                "Abból indulnék ki, hogy nehéz megtalálnom a helyem.",
+                "Arról beszélnék, hogy nehéz megtalálnom a helyem."
+              ],
+              "next": "emotion"
+            },
+            {
+              "id": "context-2",
+              "variants": [
+                "Valamin szívesen változtatnék.",
+                "Most valamin szívesen változtatnék.",
+                "Azt érzem, hogy valamin szívesen változtatnék.",
+                "Leginkább azt érzem, hogy valamin szívesen változtatnék.",
+                "Nekem most az nehéz, hogy valamin szívesen változtatnék.",
+                "Abból indulnék ki, hogy valamin szívesen változtatnék.",
+                "Arról beszélnék, hogy valamin szívesen változtatnék."
+              ],
+              "next": "emotion"
+            }
+          ]
+        },
+        "competition": {
+          "response": [
+            "Megnézhetjük, mi segítene a versenyhelyzetben.",
+            "Gondolkodhatunk erről együtt. Megnézhetjük, mi segítene a versenyhelyzetben.",
+            "Kezdhetjük azzal, ami neked fontos. Megnézhetjük, mi segítene a versenyhelyzetben.",
+            "Van időnk ezt átgondolni. Megnézhetjük, mi segítene a versenyhelyzetben.",
+            "Elég egyetlen helyzetből kiindulnunk. Megnézhetjük, mi segítene a versenyhelyzetben.",
+            "Mehetünk a saját tempódban. Megnézhetjük, mi segítene a versenyhelyzetben.",
+            "Köszönöm, hogy ezt választottad. Megnézhetjük, mi segítene a versenyhelyzetben."
+          ],
+          "question": [
+            "Mi a legnehezebb a versenyzésben?",
+            "Mitől érzel most nyomást a versenyhelyzetben?",
+            "Melyik versenyhez kötődő gondolat foglalkoztat?",
+            "Mi nehezíti meg most a verseny megélését?",
+            "Miről beszélnél a versennyel kapcsolatban?",
+            "Melyik résznél lenne jó egy kis támogatás?",
+            "Mi aggaszt leginkább, amikor eredményt vársz magadtól?"
+          ],
+          "options": [
+            {
+              "id": "context-0",
+              "variants": [
+                "Félek, hogy csalódást okozok.",
+                "Most félek, hogy csalódást okozok.",
+                "Azt érzem, hogy félek, hogy csalódást okozok.",
+                "Leginkább azt érzem, hogy félek, hogy csalódást okozok.",
+                "Nekem most az nehéz, hogy félek, hogy csalódást okozok.",
+                "Abból indulnék ki, hogy félek, hogy csalódást okozok.",
+                "Arról beszélnék, hogy félek, hogy csalódást okozok."
+              ],
+              "next": "emotion"
+            },
+            {
+              "id": "context-1",
+              "variants": [
+                "Sokat várok magamtól.",
+                "Most sokat várok magamtól.",
+                "Azt érzem, hogy sokat várok magamtól.",
+                "Leginkább azt érzem, hogy sokat várok magamtól.",
+                "Nekem most az nehéz, hogy sokat várok magamtól.",
+                "Abból indulnék ki, hogy sokat várok magamtól.",
+                "Arról beszélnék, hogy sokat várok magamtól."
+              ],
+              "next": "emotion"
+            },
+            {
+              "id": "context-2",
+              "variants": [
+                "Egy hibán sokáig gondolkodom.",
+                "Most egy hibán sokáig gondolkodom.",
+                "Azt érzem, hogy egy hibán sokáig gondolkodom.",
+                "Leginkább azt érzem, hogy egy hibán sokáig gondolkodom.",
+                "Nekem most az nehéz, hogy egy hibán sokáig gondolkodom.",
+                "Abból indulnék ki, hogy egy hibán sokáig gondolkodom.",
+                "Arról beszélnék, hogy egy hibán sokáig gondolkodom."
+              ],
+              "next": "emotion"
+            }
+          ]
+        }
+      }
     }
   }
 }

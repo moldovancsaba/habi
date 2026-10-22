@@ -209,3 +209,15 @@ Subpages identify their parent/current location and keep a current bottom-nav it
 ### Button alignment contract
 
 All primary and secondary action buttons use the same centred label, typography, padding and minimum height from `global.css`. Secondary appearance never implies answer alignment. Use `uiChoice` / `.reply-choice` explicitly for question answers and HABI topic/situation replies. Downloads, goal review, cancellation, return actions and practice entrances remain centred, even when outlined or inside a choice container. No inline styles, JavaScript style properties or per-page alignment overrides.
+
+## Connected support journeys (source-audit implementation)
+
+`follow-through.js` and MongoDB-backed `support_loop_v1` connect existing HABI features. No new navigation tab, coach workflow, score, mandatory questionnaire or automatic sharing is introduced. New content: one rehearsal practice, five concrete social/pressure/clarity situations, topic-specific chat openings, communication preparation, optional before/after-event reflection, and optional success/lesson/next-time/role-model prompts. Shared appearance remains exclusively in `global.css` and `ui.js`.
+
+Primary and secondary actions remain centred; question replies explicitly use `uiChoice`. Communication drafts preserve exact child wording. Only an explicit choice creates a goal or saved return time; support returns are resumable pointers into the existing conversation/reflection journey, not a second task list. Replacing a return preserves the previous pointer in history. Urgent support never offers a later-return action. Exports include the actual original conclusion and remain child-controlled downloads.
+
+Daily answers and question wording resume after reload. Monthly drafts pin definitions, choice labels and a revision at start; comparisons require equivalent item keys/text and answer meaning. Existing completed snapshots remain unchanged. Unanswerable monthly domains do not create inferred deficits or a default focus practice. Daily personal observations exclude seeded records internally while the accepted populated prototype history remains available without provenance banners.
+
+Reflections preserve source, optional goal and event context. Their storage date is when the child wrote them; event date is separate. Preparing another event never pre-fills the previous event's private answers. Reviews use all linked explicit practice feedback; completion alone never establishes improvement. Goal-to-habit conversion opens the actual linked form. Before/after-event support reuses the diary, not a calendar or additional daily assessment.
+
+Verification: existing flows plus reload/draft recovery, questionnaire revision changes, all-skipped answers, communication wording/escaping, selected conclusion export, action/return lifecycle, dated event reflections, contextual openings, mixed practice evidence, habit conversion and source-linked notes. Run `npm test` and `npm run build`; verify narrow browser flows before completing delivery.
