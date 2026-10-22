@@ -43,3 +43,7 @@ Verified in the staged and published releases on 22 October 2026. Automated chec
 - Public home resume check: active guided chat shows the continuation card; after an actual ending it no longer does. The public design-system route and main application load successfully.
 
 No unresolved gaps remain in this register. Future discoveries should be added with their own evidence and verification rather than assuming that a passing test suite proves universal visual perfection.
+
+## Follow-up: action alignment
+
+Secondary actions incorrectly inherited left alignment from the shared answer class. Resolved by keeping action alignment in `.btn` and adding explicit `.reply-choice` for question/topic answers. Primary and secondary actions now share typography, spacing and alignment across all screens; enclosing a button in a choice layout does not change its role. Reference examples distinguish both roles.

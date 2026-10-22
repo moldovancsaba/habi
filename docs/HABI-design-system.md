@@ -13,7 +13,8 @@ The spacing scale is 4/8/12/16/24/32px. Radii are 12/16/24px. Interactive contro
 | Component | Canonical interface / class | Rule |
 | --- | --- | --- |
 | Action | `uiButton`, `.btn` | Full available width, centred, blue, 48px minimum |
-| Secondary/choice | `uiButton(...,{secondary:true})`, `.btn.habi-choice` | Same control dimensions, white surface, blue left-aligned text |
+| Secondary action | `uiButton(...,{secondary:true})`, `.btn.habi-choice` | Same centred text, weight, padding and dimensions as primary; white surface and blue text |
+| Question/topic reply | `uiChoice`, `.btn.reply-choice` | Explicit start-aligned answer variant; never use it for navigation, downloads, cancellation or practice actions |
 | Choice list | `.habi-choices` | Grid with 8px gap; children have no external button margin |
 | Adjacent actions | `.btn + .btn` | 8px gap; never alter by page/card subtype |
 | Back/defer | `.back-link` | Quiet text action, 48px minimum, visible hover/focus |
