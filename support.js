@@ -7,7 +7,7 @@ let supportPage=null;
 function concern(e){const a=e?.answers||{};return a.pain>=1?'pain':a.sleep>=2?'sleep':a.energy>=2?'energy':a.focus>=2?'focus':a.mood>=2?'pressure':a.result>=2&&a.result<4?'restart':'general'}
 function practiceKey(e){const c=concern(e);return c==='energy'?'pause':c==='general'?'restart':c==='pain'?null:c}
 function entryById(id){return db.checkins.find(e=>e.id===Number(id))}
-function supportActions(e){const key=practiceKey(e);return '<div class="support-actions">'+uiButton(xl('talk'),'openContext('+e.id+')')+(concern(e)!=='pain'?lb('saveAction','goalFromDaily('+e.id+')',true):'')+lb('contextOwn','openNoteTopics('+e.id+')',true)+(key?uiButton(xl('try')+': '+practices[key].title,'openPractice(\''+key+'\','+e.id+')',{secondary:true}):'')+'</div>'}
+function supportActions(e){const key=practiceKey(e);return '<div class="support-actions">'+uiButton(xl('talk'),'openContext('+e.id+')')+(concern(e)!=='pain'?lb('saveAction','goalFromDaily('+e.id+')',true):'')+lb('contextOwn','openNoteTopics('+e.id+')',true)+dailySituationButton(e)+(key?uiButton(xl('try')+': '+practices[key].title,'openPractice(\''+key+'\','+e.id+')',{secondary:true}):'')+'</div>'}
 function openContext(id){const e=entryById(id);if(!e)return;delete db.drafts.context;habiSession={start:0,choices:[],context:{entry:e.id,date:e.date,theme:concern(e),responses:[],complete:false}};habiStore();go('habi')}
 function contextNode(c){const theme=c.theme;const step=c.responses.length;const intro=habiData("support_intro");
 if(theme==='pain'){const nodes=[{response:intro.pain,question:habiText("c38f3fc269226e0dc"),options:habiData("ca64fcaa26a6ba535")},habiData("c12b7fa2225ae41fb"),habiData("c8715d1b43153dc92")];return nodes[step]||null}

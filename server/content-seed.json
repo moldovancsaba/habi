@@ -3713,6 +3713,34 @@
           ]
         }
       }
+    },
+    "recovery_v1": {
+      "labels": {
+        "intro": "Írhatsz a saját szavaiddal, választhatsz témát, vagy indulhatunk egy kérdésből. Te döntöd el, hogyan kezdjük.",
+        "topics": "Választok egy témát",
+        "starters": "Egy kérdésből indulnék",
+        "legacy": "Folytatom a korábbi beszélgetésemet",
+        "repeat": "Újra jelzem, hogyan vagyok",
+        "situation": "Egy kapcsolódó helyzetről beszélnék",
+        "monthlyOpen": "Megnyitom ezt a visszatekintést",
+        "days": "Felmért napok",
+        "tasks": "Teljesített feladatok",
+        "results": "Eredmények"
+      },
+      "starters": [
+        {
+          "question": "Mi segíthet, amikor félek, hogy nem sikerül?",
+          "message": "Félek, hogy nem sikerül."
+        },
+        {
+          "question": "Hogyan találhatok újra örömöt a sportban?",
+          "message": "Szeretném újra élvezni a sportot."
+        },
+        {
+          "question": "Hogyan kérhetek segítséget, ha egyedül érzem magam?",
+          "message": "Egyedül érzem magam, és segítséget szeretnék kérni."
+        }
+      ]
     }
   }
 }

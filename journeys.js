@@ -59,3 +59,6 @@ function downloadGoal(){const g=currentGoalView();if(!g)return;const text=goalSu
 
 
 function practiceFromMonthly(id){const r=db.monthly.find(r=>r.id===id);if(r)openPractice(r.feedback.practice,null,{type:'monthly',id:r.id})}
+
+function dailySituationButton(e){return journeyContent.dailySituations[concern(e)]?uiButton(rl('situation'),'situationFromDaily('+e.id+')',{secondary:true}):''}
+function situationFromDaily(id){const e=entryById(id),s=e&&journeyContent.dailySituations[concern(e)];if(s)openSituation(s,{type:'daily',id:e.id})}

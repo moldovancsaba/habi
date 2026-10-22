@@ -190,9 +190,9 @@ Every authored acknowledgement, question, reply choice, topic label and ending h
 
 All runtime content lives in MongoDB-backed `guided_chat_v2`; the UI uses the shared robot, message/choice components, auto-scroll and global.css. Authoring instructions and a fillable JSON structure are in `docs/HABI-chat-authoring.md` and `docs/chat-tree-template.json`. These supersede the old random starter for ordinary new chats; existing daily/monthly assessment questions remain unchanged.
 
-### Topic-first chat starter
+### Athlete-chosen chat starter
 
-Ordinary new HABI conversations open with “Miről beszélgessünk?”, a short invitation and the seven topic choices on one screen. No input field or separate start button. A topic tap immediately opens its tree. Topic wording persists across redraw/reload; the selected topic is the opening in summaries and dated history. Existing in-progress conversations keep their exact wording. Keyword routing remains available internally for contextual integrations but is not an extra screen in ordinary chat.
+Ordinary new HABI conversations offer all three entry methods together: free-text input, seven direct topic choices, and suggested starter questions. The athlete decides how to begin; these are parallel choices, never replacements or required sequential steps. Typed and suggested messages show the exact opening, acknowledge it and offer keyword-ranked topics for confirmation. Topics directly open their existing trees. Blank submission does nothing; safety routing takes priority. Draft text survives reload. Existing and previously archived unfinished legacy chats remain resumable without replacing the current chat silently. All completed conversation wording and outcomes remain unchanged.
 
 ## HABI design system
 
@@ -221,3 +221,5 @@ Daily answers and question wording resume after reload. Monthly drafts pin defin
 Reflections preserve source, optional goal and event context. Their storage date is when the child wrote them; event date is separate. Preparing another event never pre-fills the previous event's private answers. Reviews use all linked explicit practice feedback; completion alone never establishes improvement. Goal-to-habit conversion opens the actual linked form. Before/after-event support reuses the diary, not a calendar or additional daily assessment.
 
 Verification: existing flows plus reload/draft recovery, questionnaire revision changes, all-skipped answers, communication wording/escaping, selected conclusion export, action/return lifecycle, dated event reflections, contextual openings, mixed practice evidence, habit conversion and source-linked notes. Run `npm test` and `npm run build`; verify narrow browser flows before completing delivery.
+
+Regression recovery: completed daily check-ins retain a visible repeat action; each monthly history entry opens its full result and follow-up actions; daily situation shortcuts preserve the exact source ID; dated diary retains assessed-day and completed-task counts. Verify entry buttons/forms and navigation as well as directly callable functions.
