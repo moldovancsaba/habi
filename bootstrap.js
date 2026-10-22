@@ -7,7 +7,7 @@ window.habiData=function(key){const value=window.habiCatalog?.data?.[key];if(val
   const local=localApp?{app:localApp,chat:localChat||null}:null,dirty=localStorage.getItem('habi-cloud-dirty')==='1';let chosen=remote.payload;
   if(!remote.payload)chosen=local;if(remote.payload&&local&&dirty)chosen=mergeCloud(remote.payload,local,null);
   if(chosen){localStorage.setItem('habi-app-v1',JSON.stringify(chosen.app));localStorage.setItem('habi-chat-v1',JSON.stringify(chosen.chat||null))}
-  for(const path of ['/habi.js','/support.js','/trends.js','/monthly.js','/journeys.js','/guided-chat.js','/app.js'])await loadScript(path);
- }catch{document.getElementById('app').innerHTML='<section class="card"><div class="ey">HABI</div><h1>Most nem tudok kapcsolódni.</h1><p>Próbáld meg újra egy kicsit később.</p><button class="btn" onclick="location.reload()">Újrapróbálom</button></section>'}
+  for(const path of ['/ui.js','/habi.js','/support.js','/trends.js','/monthly.js','/journeys.js','/guided-chat.js','/app.js'])await loadScript(path);
+ }catch{document.getElementById('app').setAttribute('aria-busy','false');document.getElementById('app').innerHTML='<section class="card"><div class="ey">HABI</div><h1>Most nem tudok kapcsolódni.</h1><p>Próbáld meg újra egy kicsit később.</p><button class="btn" onclick="location.reload()">Újrapróbálom</button></section>'}
  function loadScript(src){return new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.body.appendChild(script)})}
 })();

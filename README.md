@@ -193,3 +193,9 @@ All runtime content lives in MongoDB-backed `guided_chat_v2`; the UI uses the sh
 ### Topic-first chat starter
 
 Ordinary new HABI conversations open with “Miről beszélgessünk?”, a short invitation and the seven topic choices on one screen. No input field or separate start button. A topic tap immediately opens its tree. Topic wording persists across redraw/reload; the selected topic is the opening in summaries and dated history. Existing in-progress conversations keep their exact wording. Keyword routing remains available internally for contextual integrations but is not an extra screen in ordinary chat.
+
+## HABI design system
+
+`global.css` is the sole visual source of truth. `ui.js` owns shared buttons, cards, speakers, navigation, robot and metric rendering. The component reference is `/design-system.html`; the complete contract and audit register are in `docs/HABI-design-system.md` and `docs/HABI-UI-gap-register.md`. The reference page uses the application's actual components and does not write athlete state.
+
+Preserve the established HABI identity. Reuse semantic variants rather than adding page-specific overrides: primary action, secondary/choice, quiet action, icon-rich assessment, tab, navigation and disclosure. All controls have consistent focus/state treatment and at least 48px height. Main instructions use readable body text; dates/supporting metadata use the supporting role. Component lists own gaps; card subtypes never redefine button margins. Standalone pages use h1 and embedded cards h2. Keep all five metric identities and daily/history parity. Run functional and design-contract checks, inspect real desktop/narrow flows and update the gap register before publishing.

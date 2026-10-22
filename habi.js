@@ -6,7 +6,7 @@ if(habiSession?.engine==='guided-v1'){if(typeof habiSession.opening!=='string'||
 else if(!habiSession||!Number.isInteger(habiSession.start)||habiSession.start<0||habiSession.start>2||!Array.isArray(habiSession.choices)||habiSession.choices.length>6||habiSession.choices.some((n,i)=>!Number.isInteger(n)||n<0||n>=(i===0?6:3))){habiSession=null}
 function habiStore(){localStorage.setItem(HABI_KEY,JSON.stringify(habiSession));cloudSchedule()}
 function habiBegin(){habiSession={start:Math.floor(Math.random()*HABI_STARTERS.length),choices:[]};habiStore()}
-function habiRobot(){return '<svg class="habi-robot" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path class="habi-robot-line" d="M32 8V16M12 31H6V43H12M52 31H58V43H52"/><circle class="habi-robot-dot" cx="32" cy="7" r="4"/><rect class="habi-robot-face" x="12" y="16" width="40" height="38" rx="12"/><circle class="habi-robot-dot" cx="24" cy="32" r="4"/><circle class="habi-robot-dot" cx="40" cy="32" r="4"/><path class="habi-robot-line" d="M25 43Q32 48 39 43"/></svg>'}
+
 function habiNode(choices){const theme=choices[0]??0;const themes=habiData("habi_themes");
 if(choices.length===0)return {response:habiData("cdb6cf5443d29b327")[habiSession.start],question:habiText("cf6c8f68b36caa248"),options:habiData("c4cca2937317259c7")};
 if(choices.length===1){const responses=habiData("habi_responses");return {response:responses[theme],question:habiText("c151cb9c15fd5691e"),options:theme===3?habiData("ce1384f8b62d5137d"):habiData("c384f5319f6a1ff72")}}
