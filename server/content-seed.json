@@ -3754,6 +3754,165 @@
       "monthlyLast": "Vissza az utolsó kérdéshez",
       "otherChat": "Másról beszélnék HABI-val",
       "legacyHelp": "Ha ez visszatérően megnehezíti a napjaidat, kérj segítséget egy megbízható felnőttől vagy pszichológustól is."
+    },
+    "habi2_v1": {
+      "labels": {
+        "title": "HABI · Beszélgetés",
+        "welcome": "Szia! Mi lenne most jó neked?",
+        "intro": "Mesélhetsz a napodról, kereshetünk egy kis kapaszkodót, vagy visszanézhetjük, mi segített neked. Te választasz.",
+        "input": "Üzeneted HABInak",
+        "placeholder": "Írd le, ami most foglalkoztat…",
+        "send": "Elküldöm",
+        "menu": "Lehetőségek",
+        "close": "Bezárom",
+        "home": "Beszélgetés eleje",
+        "daily": "Mesélek a mai napomról",
+        "talk": "Beszélgessünk arról, ami foglalkoztat",
+        "practice": "Kipróbálnék valamit",
+        "progress": "Megnézném, hogyan alakulnak a napjaim",
+        "monthly": "Visszanézném az elmúlt hónapomat",
+        "reflection": "Átgondolnám, mi történt",
+        "tasks": "A kis vállalásaim",
+        "settings": "Beállításaim",
+        "prepare": "Segíts megfogalmazni valakinek",
+        "event": "Egy fontos eseményem",
+        "topics": "Miről beszélgessünk?",
+        "starters": "Segíts elkezdeni",
+        "topicIntro": "Hoztam néhány témát, amiből választhatsz. A saját szavaiddal is írhatsz.",
+        "dailyIntro": "Kezdjük azzal, hogy most hogy vagy. Egy kérdésre figyelünk egyszerre. Bármelyiket kihagyhatod.",
+        "monthlyIntro": "Nézzük meg, milyen volt neked az elmúlt hónap. Nem kell mindenre válaszolnod.",
+        "resultIntro": "Köszönöm, hogy elmondtad. Nézzük meg, mi segíthet ma.",
+        "practiceIntro": "Válassz valamit, ami most jól esne. Utána elmondhatod, segített-e.",
+        "progressIntro": "Nézzünk vissza a saját napjaidra. A változás nem verseny: azt keressük, mire lenne most szükséged.",
+        "reflectionIntro": "Mi maradt meg benned? Abból is tanulhatunk, ami jól esett, és abból is, ami nehéz volt.",
+        "tasksIntro": "Egy kis próbálkozás is elég. Nézzük meg, mit választottál magadnak.",
+        "otherIntro": "Itt együtt végigmehetünk rajta. Válassz, vagy írd le, ami most fontos.",
+        "pause": "Később folytatom",
+        "resume": "Ott folytatom, ahol tartottam",
+        "previous": "Korábbi válaszaim",
+        "edit": "Módosítom",
+        "skipped": "Ezt most kihagytam.",
+        "switchTitle": "Másfelé menjünk tovább?",
+        "switchBody": "A mostani válaszaid megmaradnak. Az új üzeneteddel egy másik beszélgetést kezdhetünk.",
+        "switchYes": "Ezzel az üzenettel folytatom",
+        "switchNo": "Maradok ennél",
+        "pending": "Félretett beszélgetésem",
+        "resumeChat": "Folytatom a félretett beszélgetést",
+        "current": "Most erről beszélgetünk",
+        "next": "Mi lenne a következő kis lépésed?",
+        "startAgain": "Új beszélgetést választok",
+        "about": "Hogyan segít HABI?",
+        "aboutText": "HABI egy digitális segítő: kérdésekkel és kipróbálható ötletekkel támogat. Nem ember és nem helyettesít egy megbízható felnőttet vagy szakembert.",
+        "help": "Most segítségre van szükségem",
+        "helpTitle": "Nem kell egyedül maradnod ezzel.",
+        "helpText": "Ha veszélyben vagy, vagy attól tartasz, hogy bántanád magad, most szólj egy közeli, megbízható felnőttnek. Mondd el neki, hogy azonnali segítségre van szükséged.",
+        "helpAction": "Segíts megfogalmazni, mit mondjak",
+        "contextHint": "Írhatsz is, ha más foglalkoztat.",
+        "draftHint": "A megkezdett válaszaidhoz a Lehetőségek menüből visszatérhetsz.",
+        "you": "Te",
+        "questionChanged": "A következő kérdésed megérkezett.",
+        "legacy": "A korábbi HABI megnyitása",
+        "menuShort": "Menü",
+        "welcomeIntro": "Mesélj a napodról, vagy keressünk egy kis kapaszkodót. Te választasz.",
+        "composePlaceholder": "Írj HABInak…"
+      },
+      "menu": [
+        {
+          "id": "home",
+          "label": "home",
+          "icon": "home"
+        },
+        {
+          "id": "daily",
+          "label": "daily",
+          "icon": "tasks"
+        },
+        {
+          "id": "talk",
+          "label": "talk",
+          "icon": "habi"
+        },
+        {
+          "id": "practice",
+          "label": "practice",
+          "icon": "tasks"
+        },
+        {
+          "id": "tasks",
+          "label": "tasks",
+          "icon": "tasks"
+        },
+        {
+          "id": "progress",
+          "label": "progress",
+          "icon": "history"
+        },
+        {
+          "id": "monthly",
+          "label": "monthly",
+          "icon": "history"
+        },
+        {
+          "id": "reflection",
+          "label": "reflection",
+          "icon": "history"
+        },
+        {
+          "id": "prepare",
+          "label": "prepare",
+          "icon": "habi"
+        },
+        {
+          "id": "event",
+          "label": "event",
+          "icon": "tasks"
+        },
+        {
+          "id": "settings",
+          "label": "settings",
+          "icon": "home"
+        }
+      ],
+      "intentKeywords": {
+        "daily": [
+          "mai nap",
+          "napom",
+          "felmérés",
+          "hogy vagyok",
+          "check in",
+          "daily"
+        ],
+        "progress": [
+          "fejlődés",
+          "fejlődés",
+          "korábbi",
+          "eredmény",
+          "history",
+          "progress"
+        ],
+        "monthly": [
+          "havi",
+          "hónap",
+          "monthly"
+        ],
+        "practice": [
+          "gyakorlat",
+          "gyakorol",
+          "exercise"
+        ],
+        "reflection": [
+          "visszagondol",
+          "visszatekin",
+          "reflection"
+        ]
+      },
+      "contexts": {
+        "home": "Beszélgetés",
+        "check": "Mai napom",
+        "habi": "Beszélgetés",
+        "result": "Mai visszajelzésem",
+        "monthly": "Havi visszatekintés"
+      }
     }
   }
 }
