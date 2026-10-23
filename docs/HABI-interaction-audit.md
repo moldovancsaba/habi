@@ -5,12 +5,12 @@
 | Role | Appearance | Alignment | Component |
 |---|---|---|---|
 | Answer to a question | White outlined choice; pale blue selected state | Start | uiChoice |
-| Icon assessment answer | Square, icon and label | Centre | answer-card |
-| Primary action | HABI blue fill, white text | Centre | uiButton |
-| Secondary action | White outline, HABI blue text | Centre | uiButton secondary |
-| Flow control | Soft blue fill, same geometry for skip/back/cancel/pause/restart/return | Centre | uiControl / uiFlowControls |
-| Section / period / metric selection | Shared selected-state tabs | Centre | tabs |
-| Breadcrumb / disclosure / bottom navigation | Existing shared navigation styles | Consistent within each family | location-trail / summary / uiNavItem |
+| Icon assessment answer | Square artwork, start-aligned icon and label | Start | answer-card |
+| Primary action | HABI blue fill, white text | Start | uiButton |
+| Secondary action | White outline, HABI blue text | Start | uiButton secondary |
+| Flow control | Soft blue fill, same geometry for skip/back/cancel/pause/restart/return | Start | uiControl / uiFlowControls |
+| Section / period / metric selection | Shared selected-state tabs | Start | tabs |
+| Breadcrumb / disclosure / bottom navigation | Existing shared navigation styles | Start-aligned text across every family | location-trail / summary / uiNavItem |
 
 ## Coverage and corrections
 
@@ -27,4 +27,6 @@
 
 Presentation is defined only in global.css. Application behaviour and stored results are preserved. Catalog-backed control labels are separate from obsolete catalog HTML fragments, so database copy cannot reintroduce a mixed button family on these flows.
 
-Verification: 50 automated checks, including an application-wide rendered-button audit and answer-versus-control behaviour checks. Narrow and desktop browser checks accompany the release; these are viewport checks, not a claim of physical-device testing.
+Previous verification: 50 automated checks, including an application-wide rendered-button audit and answer-versus-control behaviour checks. Narrow and desktop browser checks accompany the release; these are viewport checks, not a claim of physical-device testing.
+
+Current alignment consolidation (23 October 2026): all text interactions share start alignment; flow controls use a quieter weight. Boxed disclosures use compact headers with trailing chevrons. SVG presentation and browser theme colours are derived from global.css. See HABI-presentation-audit.md for the final source/render audit.

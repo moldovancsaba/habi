@@ -12,21 +12,21 @@ The spacing scale is 4/8/12/16/24/32px. Radii are 12/16/24px. Interactive contro
 
 | Component | Canonical interface / class | Rule |
 | --- | --- | --- |
-| Action | `uiButton`, `.btn` | Full available width, centred, blue, 48px minimum |
-| Secondary action | `uiButton(...,{secondary:true})`, `.btn.habi-choice` | Same centred text, weight, padding and dimensions as primary; white surface and blue text |
-| Question/topic reply | `uiChoice`, `.btn.reply-choice` | Explicit start-aligned answer variant; never use it for navigation, downloads, cancellation or practice actions |
+| Action | `uiButton`, `.btn` | Full available width, start-aligned, blue, 48px minimum |
+| Secondary action | `uiButton(...,{secondary:true})`, `.btn.habi-choice` | Same start-aligned text, weight, padding and dimensions as primary; white surface and blue text |
+| Question/topic reply | `uiChoice`, `.btn.reply-choice` | Start-aligned answer role, distinguished by weight; never use it for navigation, downloads, cancellation or practice actions |
 | Choice list | `.habi-choices` | Grid with 8px gap; children have no external button margin |
 | Adjacent actions | `.btn + .btn` | 8px gap; never alter by page/card subtype |
 | Back/defer | `.back-link` | Quiet text action, 48px minimum, visible hover/focus |
-| Daily answer | `.answer-card` | Intentional icon-rich two-column variant, 172px minimum / 150px compact |
+| Daily answer | `.answer-card` | Start-aligned icon and label, two-column variant, 172px minimum / 150px compact |
 | Tabs | `.tabs` | 48px minimum; selected colour and border with `aria-pressed` |
-| Bottom navigation | `uiNavItem`, `.nav` | Four matching icon/label controls, `aria-current="page"` |
+| Bottom navigation | `uiNavItem`, `.nav` | Four matching start-aligned icon/label controls, `aria-current="page"` |
 | Card | `uiCard`, `.card` | Shared radius, border, padding and edge spacing |
 | Speaker | `uiSpeaker`, `.habi-speaker` | Same robot and label scale across chat, feedback and cards |
 | Chat | `.habi-thread`, `.habi-assistant`, `.habi-athlete` | Shared bubble geometry for all three conversation renderers |
 | Fields | `.text-input`, `textarea` | Same border, radius, text and focus treatment across text/select/time/notes |
 | Error | `.field-error`, `aria-invalid`, `aria-describedby` | Named error colour plus an actual error message; focus invalid field |
-| Disclosure | native `details > summary` | 48px minimum header, same typography/spacing; native expanded semantics |
+| Disclosure | native `details > summary` | 48px minimum header, start-aligned label, trailing CSS chevron and compact boxed padding; native expanded semantics |
 | Feedback surface | `.daily-advice`, `.journey-example`, `.journey-explanation`, `.habi-takeaway` | Shared inset surface rules |
 | Metrics | `visual`, `.metric-icon` | One implementation, same square viewBox, one canonical colour per metric |
 | Result/history icons | `.result-icons` | All five metrics in one row; no visible labels, accessible descriptions |
@@ -56,3 +56,7 @@ Use the same components for daily and historical results. Existing content snaps
 5. Run `npm test` and `npm run build`, inspect the reference page and affected real flow at desktop and 320/375px widths, and update the gap register.
 
 Automated checks cover contrast for normal text/action combinations, safe shared component markup, canonical stylesheet usage, page-heading contracts, metric geometry and existing complete product flows. Browser checks remain necessary for layout and visual comparison; passing unit tests alone is not evidence of complete visual consistency.
+
+## Global alignment and presentation audit
+
+All text-based interaction labels use start alignment, including primary/secondary actions, flow controls, answer cards, text tabs, selects and navigation. Athlete bubbles are positioned right; their text remains start-aligned. Only icon-only controls and icon artwork centre inside their own boxes. SVG appearance is class-driven; only geometry and data coordinates belong in JavaScript. Browser theme metadata reads the CSS token. Regression checks inspect all root client files and Mongo seed strings for presentation attributes and inline styling.

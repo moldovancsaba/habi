@@ -12,3 +12,5 @@ document.querySelectorAll('[data-speaker]').forEach(el=>el.innerHTML=habiRobot()
 document.addEventListener('click',event=>{const button=event.target.closest('button');if(!button||button.disabled)return;const group=button.closest('[data-choice-group]');if(group)group.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));if(button.closest('#ds-navigation'))document.querySelectorAll('#ds-navigation button').forEach(b=>{b.classList.toggle('active',b===button);if(b===button)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});if(button.closest('#ds-buttons')||button.hasAttribute('data-demo-action'))document.getElementById('ds-action-status').textContent='A műveletet kiválasztottad.'});
 
 document.getElementById('ds-control').innerHTML=uiControl('Vissza',null);
+
+document.getElementById('ds-answer-cards').innerHTML=['Nagyon jól','Jól','Lehangoltan','Feszült'].map((label,i)=>'<button type="button" class="answer-card"><span class="answer-icon">'+visual(3,4-i)+'</span><span class="answer-text">'+label+'</span></button>').join('');

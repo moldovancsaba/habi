@@ -51,7 +51,7 @@ The design optimises for useful completion and a comfortable exit, not message c
 2. The composer stays available. During an active flow it can begin another topic after a clear choice, without silently treating typed text as a scored answer.
 3. Unknown text leads to topic disambiguation. Multiple matching service intents also fall back to topic selection rather than guessing.
 4. Safety-language routing is checked before ordinary service intents. Keyword recognition is limited and is not a dependable risk-assessment system.
-5. Answer buttons use the existing start-aligned choice component. Actions use centred primary/secondary components. Skip, back and later share the same soft-blue control family.
+5. Answer buttons use the existing start-aligned choice component. Actions use the same start alignment in primary/secondary components. Skip, back and later share the same start-aligned soft-blue control family.
 6. There is one active question. The latest completed daily/monthly exchange remains visible; earlier replies are expandable. Daily replies can be revisited, and monthly back retains the pinned definition.
 7. Navigation does not save a completed record. Only the existing completion actions do that. Drafts and completed records remain distinct.
 8. A new conversation cannot erase an unfinished one through the HABI2 composer or topic launcher. Parked conversations have explicit resume actions.

@@ -7,10 +7,10 @@ function chart(keys,ref){const end=new Date();end.setHours(12,0,0,0);const start
 const x=i=>50+i*480/(period-1),y=v=>28+(4-v)*66;function path(k){let s='',previous=null;for(let i=0;i<vals.length;i++){if(vals[i][k]===null){previous=null;continue}const point=[x(i),y(vals[i][k])];if(!previous)s+=' M'+point.join(',');else {const mid=(previous[0]+point[0])/2;s+=' C'+mid+','+previous[1]+' '+mid+','+point[1]+' '+point.join(',')}previous=point}return s.trim()}
 
 let svg=habiText("c99560afb05ef0b24");
-for(let n=1;n<=4;n++)svg+='<line x1="50" x2="530" y1="'+y(n)+'" y2="'+y(n)+'" class="chart-grid"/><text x="33" y="'+(y(n)+5)+'" text-anchor="end" class="chart-label">'+n+'</text>';
-keys.forEach(k=>{svg+='<path d="'+path(k)+'" class="chart-series metric-'+k+'"/>';for(let i=0;i<period;i++){if(has.has(i)&&vals[i][k]!==null)svg+='<circle cx="'+x(i)+'" cy="'+y(vals[i][k])+'" r="4.5" class="chart-point metric-'+k+'"/>'}});
+for(let n=1;n<=4;n++)svg+='<line x1="50" x2="530" y1="'+y(n)+'" y2="'+y(n)+'" class="chart-grid"/><text x="33" y="'+(y(n)+5)+'" class="chart-label">'+n+'</text>';
+keys.forEach(k=>{svg+='<path d="'+path(k)+'" class="chart-series metric-'+k+'"/>';for(let i=0;i<period;i++){if(has.has(i)&&vals[i][k]!==null)svg+='<circle cx="'+x(i)+'" cy="'+y(vals[i][k])+'" class="chart-point metric-'+k+'"/>'}});
 
-svg+='<text x="50" y="283" class="chart-date">'+days[0].toLocaleDateString('hu-HU',{month:'short',day:'numeric'})+'</text><text x="530" y="283" text-anchor="end" class="chart-date">'+end.toLocaleDateString('hu-HU',{month:'short',day:'numeric'})+'</text></svg>';return svg}
+svg+='<text x="50" y="283" class="chart-date">'+days[0].toLocaleDateString('hu-HU',{month:'short',day:'numeric'})+'</text><text x="530" y="283" class="chart-date chart-date-end">'+end.toLocaleDateString('hu-HU',{month:'short',day:'numeric'})+'</text></svg>';return svg}
 
 function answerVisual(key,i){let k=fields.indexOf(key);return visual(k<0?(key==='result'?5:6):k,key==='load'||key==='pain'?i+1:4-i)}
 

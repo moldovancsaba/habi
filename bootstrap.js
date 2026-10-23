@@ -1,3 +1,5 @@
+// Browser theme metadata follows the same CSS palette as the interface.
+const browserTheme=document.querySelector('meta[name=theme-color]');if(browserTheme)browserTheme.setAttribute('content',getComputedStyle(document.documentElement).getPropertyValue('--page').trim());
 window.habiText=function(key){const value=window.habiCatalog?.messages?.[key];if(typeof value!=='string')throw new Error('Content unavailable');return value};
 window.habiData=function(key){const value=window.habiCatalog?.data?.[key];if(value===undefined)throw new Error('Content unavailable');return JSON.parse(JSON.stringify(value))};
 (async function boot(){
