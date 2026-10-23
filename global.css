@@ -212,7 +212,7 @@ details[open]>summary { margin-bottom:var(--space-3); }
 .location-trail{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-4);font-size:var(--font-small);color:var(--text-muted)}
 .location-trail .back-link{margin:0;font-size:inherit}
 .location-trail span{overflow-wrap:anywhere}
-.section-tabs>button{flex:1}
+.section-tabs>button{flex:1 1 auto;overflow-wrap:anywhere}
 .quiet-invitation{margin-top:var(--space-5);padding-top:var(--space-4);border-top:var(--border-width) solid var(--border)}
 .quiet-invitation>:first-child{margin-top:0}
 .page-utilities{margin:var(--space-4) 0}
@@ -285,3 +285,52 @@ body.habi2 { height:100dvh; display:grid; grid-template-rows:auto auto minmax(0,
 
 /* Behaviour reads this CSS-owned layout mode; there is no second JS breakpoint. */
 @media (max-width:1023px) { :root { --experience-layout:mobile; } }
+
+/* Desktop application shell. Compact HABI2 keeps its existing layout. */
+:root { --desktop-sidebar:224px; --desktop-content:1240px; --desktop-reading:760px; --desktop-aside:300px; --desktop-answer-height:80px; --desktop-chat-height:calc(100dvh - var(--space-6) * 2); --desktop-dates-height:320px; }
+@media (min-width:1024px) {
+ body[data-layout="desktop"] { padding-inline-start:var(--desktop-sidebar); }
+ [data-layout="desktop"] main { max-width:var(--desktop-content); margin-inline:auto; padding:var(--space-6); }
+ [data-layout="desktop"] main.desktop-focused { max-width:var(--desktop-reading); }
+ [data-layout="desktop"] .desktop-nav { inset:0 auto 0 0; width:var(--desktop-sidebar); border-top:0; border-inline-end:var(--border-width) solid var(--border); display:flex; flex-direction:column; justify-content:flex-start; align-items:stretch; gap:var(--space-6); padding:var(--space-5) var(--space-4); overflow-y:auto; }
+ .desktop-brand { padding:var(--space-3) var(--space-2); }
+ .desktop-brand .habi-speaker { font-size:var(--font-heading); }
+ .desktop-nav-links,.desktop-nav-utilities { display:grid; gap:var(--space-2); }
+ .desktop-nav-utilities { margin-block-start:auto; }
+ .desktop-nav button { flex:none; width:100%; max-width:none; flex-direction:row; justify-content:flex-start; align-items:center; gap:var(--space-3); padding:var(--space-3); font-size:var(--font-small); }
+ .desktop-nav .flow-control { margin:0; }
+ .desktop-grid { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(var(--desktop-aside),1fr); align-items:start; gap:var(--space-5); }
+ .desktop-grid-single { grid-template-columns:minmax(0,1fr); }
+ .desktop-primary,.desktop-secondary { min-width:0; }
+ .desktop-secondary>.card { padding:var(--space-5); }
+ .desktop-discovery-item+.desktop-discovery-item { margin-block-start:var(--space-5); }
+ .desktop-discovery-item .btn { gap:var(--space-3); }
+ .desktop-discovery-item p { margin-block:var(--space-2) 0; }
+ .desktop-signal { padding-block:var(--space-3); border-bottom:var(--border-width) solid var(--border); }
+ .desktop-signal:last-child { border-bottom:0; }
+ .desktop-signal>summary { display:flex; justify-content:flex-start; align-items:center; gap:var(--space-3); min-height:var(--control-height); }
+ .desktop-signal .nav-visual .metric-icon { width:100%; height:100%; }
+ .desktop-signal>summary::after { margin-inline-start:auto; }
+ .desktop-date-list { display:grid; gap:var(--space-2); max-height:var(--desktop-dates-height); overflow-y:auto; padding:var(--space-1); scroll-padding-block:var(--space-2); }
+ .desktop-date-list>.btn { margin:0; }
+ .desktop-card-grid,.desktop-monthly-topics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-5); align-items:start; }
+ .desktop-card-grid>.card { margin:0; }
+ .desktop-monthly-topics { grid-template-columns:repeat(auto-fit,minmax(min(100%,var(--desktop-aside)),1fr)); }
+ .desktop-monthly-topics .monthly-topic { min-width:0; margin:0; }
+ .desktop-focused .choices { grid-template-columns:minmax(0,1fr); }
+ .desktop-focused .answer-card { min-height:var(--desktop-answer-height); flex-direction:row; align-items:center; justify-content:flex-start; gap:var(--space-4); }
+ .desktop-chat-column { height:var(--desktop-chat-height); display:flex; flex-direction:column; gap:var(--space-4); }
+ .desktop-chat-log { flex:1; min-height:0; overflow-y:auto; padding:var(--space-1); scroll-padding-block:var(--space-4); }
+ .desktop-chat-log .habi-thread { min-width:0; }
+ .desktop-compose { flex-shrink:0; background:var(--surface); border:var(--border-width) solid var(--border); border-radius:var(--radius-md); padding:var(--space-4); }
+ .desktop-compose-fields { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:var(--space-3); align-items:end; }
+ .desktop-compose textarea { min-height:var(--control-height); margin:0; }
+ .desktop-compose .btn { width:auto; margin:0; }
+ [data-layout="desktop"] .sync-note { margin:var(--space-4) var(--space-6) 0; }
+}
+@media (min-width:1024px) and (max-width:1199px) {
+ :root { --desktop-sidebar:184px; --desktop-aside:268px; }
+ [data-layout="desktop"] main { padding:var(--space-5); }
+ .desktop-grid { gap:var(--space-4); }
+ .desktop-nav button { gap:var(--space-2); }
+}

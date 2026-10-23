@@ -17,7 +17,7 @@ draw=function(){
  const mobile=habiMobileLayout(),changed=responsiveMode!==null&&responsiveMode!==mobile;
  responsiveMode=mobile;habiApplyShell(mobile);
  habiScrollToReplies=mobile?function(){}:h2OriginalScroll;
- if(mobile){if(changed)h2LastKey='';responsiveMobileDraw()}
- else{cancelAnimationFrame(h2Frame);responsiveDesktopDraw();document.title=responsiveDesktopTitle;const overlay=h2InterruptionView();if(overlay)document.getElementById('app').innerHTML='<section class="habi-thread">'+overlay+'</section>';else if(['home','habi'].includes(page))document.getElementById('app').innerHTML+=h2ParkedView()}
+ if(mobile){if(typeof desktopReset==='function')desktopReset();if(changed)h2LastKey='';responsiveMobileDraw()}
+ else{cancelAnimationFrame(h2Frame);responsiveDesktopDraw();document.title=responsiveDesktopTitle;const overlay=h2InterruptionView();if(overlay)document.getElementById('app').innerHTML='<section class="habi-thread">'+overlay+'</section>';else if(['home','habi'].includes(page))document.getElementById('app').innerHTML+=h2ParkedView();if(typeof desktopEnhance==='function')desktopEnhance()}
  responsiveRemember();
 };

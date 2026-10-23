@@ -3913,6 +3913,79 @@
         "result": "Mai visszajelzésem",
         "monthly": "Havi visszatekintés"
       }
+    },
+    "desktop_v1": {
+      "labels": {
+        "discover": "Miben segíthetek?",
+        "discoverIntro": "Válaszd azt, ami most jól jön. Nem kell mindent végigcsinálnod.",
+        "talk": "Beszélgessünk",
+        "talkIntro": "Írj arról, ami foglalkoztat, vagy válassz egy témát.",
+        "practice": "Kipróbálnék valamit",
+        "practiceIntro": "Keressünk egy rövid gyakorlatot a mai napodhoz.",
+        "progress": "Visszanézek a napjaimra",
+        "progressIntro": "Nézd meg a jelzéseidet és azt, mi segített neked.",
+        "context": "Egy kis kapaszkodó",
+        "signals": "Miről mesélnek a jelzéseid?",
+        "next": "Hogyan indulj el?",
+        "period": "Amit érdemes megfigyelned",
+        "dates": "Melyik napodra nézzünk vissza?",
+        "day": "Erről a napról meséltél",
+        "emptyDay": "Ezen a napon nem töltöttél ki napi felmérést. A többi feljegyzésedet itt találod, ha írtál ilyet.",
+        "noTraining": "Ezen a napon nem jeleztél edzést. Az edzésterhelés helyén ezért nem mutatunk erősséget.",
+        "skipped": "Erről most nem adtál választ.",
+        "chatContext": "A beszélgetésed fonala",
+        "chatTopic": "Most erről beszélgetünk",
+        "chatOpening": "Ezzel érkeztél",
+        "chatAnswer": "Legutóbb ezt választottad",
+        "chatEmpty": "Haladj a saját tempódban. Választhatsz a felkínált üzenetek közül, és a saját szavaiddal is írhatsz.",
+        "chatEnd": "A következő kis lépésed",
+        "chatInput": "Üzeneted HABInak",
+        "chatPlaceholder": "Írj HABInak…",
+        "send": "Elküldöm",
+        "taskHelp": "Így legyen a sajátod",
+        "taskHelpText": "Válassz egyetlen kis dolgot, amit szívesen kipróbálnál. Gondold át, mikor fér bele a napodba. Utána azt figyeld meg, mi segített és min változtatnál. Ha ma nem fér bele, később is visszatérhetsz hozzá.",
+        "monthlyHelp": "Vidd tovább a hétköznapokba",
+        "monthlyHelpText": "Válassz ki egy gondolatot a visszatekintésből, ami most közel áll hozzád. Próbáld ki egy konkrét helyzetben, majd figyeld meg, hogyan érezted magad. Nem kell mindenen egyszerre változtatnod.",
+        "periodHelp": "Az egyes napokat együtt érdemes nézni. Ha észreveszel egy visszatérő nehézséget, gondold át, milyen helyzetekben jelent meg, és mi könnyítette meg. Egy-egy nap nem mond el rólad mindent.",
+        "periodStart": "Beszéljük át, amit észrevettél",
+        "allSignals": "Megnézem a jelzéseimet",
+        "history": "A kiválasztott napod",
+        "help": "Segítséget szeretnék kérni",
+        "reading": "Nézzük meg együtt",
+        "yourAnswer": "Ezt jelölted:"
+      },
+      "metrics": [
+        {
+          "meaning": "Az erőnléted azt mutatja, mennyi energiát éreztél magadban, amikor válaszoltál. Az is számít, hogy a nap melyik részében jársz.",
+          "try": "Figyeld meg, mikor könnyebb elindulni, és mikor esne jól egy rövid pihenő."
+        },
+        {
+          "meaning": "Az alvásodnál azt jelzed, mennyire érezted pihentetőnek az éjszakát. Ez a saját élményedről szól.",
+          "try": "Gondold át, mi segít esténként lelassulni. Egy ismerős, nyugodt esti szokás jó kiindulópont lehet."
+        },
+        {
+          "meaning": "A koncentrációd arról mesél, mennyire volt könnyű egy dologra figyelned. A környezet és az aznapi történések is számíthatnak.",
+          "try": "A következő feladatnál nevezz meg egyetlen dolgot, amire figyelni szeretnél."
+        },
+        {
+          "meaning": "A hangulatodnak van helye itt akkor is, ha nehéz megnevezni vagy napközben változik. Nem kell jobb érzést választanod annál, amit tényleg érzel.",
+          "try": "Próbáld megnevezni, mi foglalkoztat. Ha jólesne, keress valakit, akiben megbízol, és mondd el neki."
+        },
+        {
+          "meaning": "Az edzésterhelés azt jelzi, milyen megterhelőnek élted meg az edzést. A több terhelés önmagában nem jelent jobb napot.",
+          "try": "Figyeld meg, hogyan érzed magad mozgás után és másnap. A pihenésnek is helye van a sport mellett."
+        }
+      ],
+      "explanations": {
+        "pain": "Ha fájdalmat jelzel, most annak a részletei a fontosak: hol érzed, mikor kezdődött, és melyik mozdulatnál jelentkezik. Ne próbáld fájdalmon keresztül teljesíteni a gyakorlatot. Mondd el egy megbízható felnőttnek is, hogy segítséget kaphass.",
+        "sleep": "Egy kevésbé pihentető éjszaka után érdemes kisebb, átlátható feladattal kezdened. Estére válassz egy egyszerű lelassító szokást, amit szívesen megismételnél.",
+        "energy": "Ha kevés energiát érzel, először figyeld meg, mire lenne most szükséged. Egy rövid szünet vagy egy kisebb első feladat segíthet abban, hogy ne kelljen mindent egyszerre megoldanod.",
+        "focus": "Ha nehéz figyelned, bontsd kisebb részekre azt, ami előtted áll. Válassz egyetlen következő feladatot, és annak adj egy rövid, zavartalan időt.",
+        "pressure": "Nem kell elnyomnod azt, amit érzel. Nevezd meg magadnak az érzést, és válassz egy kis lépést, ami most könnyebbséget adhat. Beszélgetést is választhatsz.",
+        "restart": "Ha valami másképp sikerült, mint szeretted volna, válaszd külön azt, ami rajtad múlt, és azt, ami nem. A következő alkalomra egyetlen kipróbálható változtatást keress.",
+        "general": "A jelzéseidből indulunk ki, de te tudod, mi esne most jól. Válassz egy apró dolgot, amit szívesen kipróbálnál, és a nap végén gondold át, mit vettél észre.",
+        "empty": "Ha most nem szerettél volna válaszolni, az is rendben van. Beszélgetéssel vagy egy általad választott rövid gyakorlattal is folytathatod."
+      }
     }
   }
 }

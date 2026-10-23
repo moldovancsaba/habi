@@ -47,3 +47,7 @@ No unresolved gaps remain in this register. Future discoveries should be added w
 ## Follow-up: action alignment
 
 Secondary actions incorrectly inherited left alignment from the shared answer class. Resolved by keeping action alignment in `.btn` and adding explicit `.reply-choice` for question/topic answers. Primary and secondary actions now share typography, spacing and alignment across all screens; enclosing a button in a choice layout does not change its role. Reference examples distinguish both roles.
+
+## Extended desktop workspace — 23 October 2026
+
+Desktop discovery, sidebar orientation, primary/supporting-column separation, wider chart context, dated diary selection and an active-chat composer are implemented. See [delivery and verification record](HABI-desktop-delivery.md). Compact HABI2 remains the mobile experience. Shared CSS and original report/record contracts remain mandatory.
