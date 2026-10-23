@@ -1,5 +1,11 @@
 # Extended desktop delivery — 23 October 2026
 
+## Journey clarity update — 23 October 2026
+
+- Home shows one resumable activity first; a due monthly invitation waits until there is no other activity to resume.
+- Tasks shows today's practical step and the athlete's active goal as separate items. The full daily explanation remains on Result; Tasks provides a concise action, status, and link back to that result.
+- Daily guidance retains priority over goal practice when the current check-in raises a pain concern.
+
 The approved scope keeps the same HABI brand and domain workflows. Desktop uses a sidebar and paired activity/context columns; compact widths retain HABI2's conversational shell. The CSS-owned 1024px layout boundary remains unchanged.
 
 | Area | Delivered behaviour |

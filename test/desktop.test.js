@@ -34,6 +34,19 @@ test('desktop sections render all existing tools without empty main columns or d
  const x=setup();for(const action of ["go('tasks')","go('library')","openProgress('overview')","openProgress('monthly')","openMonthly()","go('settings')","go('reflections')","openPractice('focus',null)","go('home')"]){x.run(action);const app=x.document.querySelector('#app');assert(app.textContent.trim(),action);const primary=app.querySelector('.desktop-primary');if(primary)assert(primary.textContent.trim(),action);const ids=[...app.querySelectorAll('[id]')].map(el=>el.id);assert.equal(ids.length,new Set(ids).size,action)}
 });
 
+test('home gives an unfinished activity priority over the due monthly invitation',()=>{
+ const x=setup();x.run("db.goalDraft={text:'A saved goal draft'};save();go('home')");assert(x.document.querySelector('#app').textContent.includes(seed.data.experience_v1.labels.pendingGoal));assert(!x.document.querySelector('#app').textContent.includes(seed.data.experience_v1.labels.monthlyDue));
+ x.run("delete db.goalDraft;go('home')");assert(x.document.querySelector('#app').textContent.includes(seed.data.experience_v1.labels.monthlyDue));
+});
+
+test('Tasks keeps today’s action and the chosen goal distinct without repeating the full result',()=>{
+ const x=setup();x.run('start();choose(2);choose(null);choose(null);choose(null);choose(null);choose(null);choose(null)');assert.equal(x.run('page'),'result');
+ const what=x.run('latest().habiFeedback.what'),how=x.run('latest().habiFeedback.how');assert(what&&how&&what!==how);
+ x.run("offerGoal('My chosen small step','focus',{type:'audit',id:1});db.goalDraft.when='After practice';confirmGoal();go('tasks')");
+ let app=x.document.querySelector('#app'),text=app.textContent;assert(text.includes(how));assert(!text.includes(what));assert(text.includes('My chosen small step'));assert(app.querySelector('[onclick="completeTask()"]'));assert(app.querySelector('[onclick="go(\'result\')"]'));
+ x.resize('mobile');x.run("go('tasks')");app=x.document.querySelector('#app');text=app.textContent;assert(text.includes(how));assert(text.includes('My chosen small step'));assert(!text.includes(what));
+});
+
 test('no-training day has no scored load and detail labels come from pinned questions',()=>{const x=setup();x.run('start();choose(1);choose(1);choose(1);choose(1);choose(4);choose(0)');assert.equal(x.run('page'),'result');assert.equal(x.run('actual(latest(),"load")'),null);const before=x.run('JSON.stringify(latest())');const oldLabel=x.run("latest().questions.find(q=>q[0]==='sleep')[2][1]");x.run("questions.find(q=>q[0]==='sleep')[2][1]='A changed catalogue label';draw()");assert(x.document.querySelector('.desktop-secondary').textContent.includes(oldLabel));assert(x.document.querySelector('.desktop-secondary').textContent.includes(seed.data.desktop_v1.labels.noTraining));assert.equal(x.run('JSON.stringify(latest())'),before)});
 
 test('desktop counters use the selected period and one canonical record per date',()=>{const x=setup();x.run("openProgress('diary')");const previousDone=x.document.querySelector('.desktop-period-counts').querySelectorAll('strong')[1].textContent;x.run("db.checkins.push({id:42,date:'2000. 01. 01.',answers:{}});db.tasks.push({checkin:42,done:true});openProgress('diary')");const days=x.run('desktopDates().filter(date=>!!dailyEntry(date)).length');const counts=x.document.querySelector('.desktop-period-counts');assert.equal(Number(counts.querySelector('strong').textContent),days);assert.equal(counts.querySelectorAll('strong')[1].textContent,previousDone)});
