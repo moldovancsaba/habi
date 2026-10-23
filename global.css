@@ -1,7 +1,7 @@
 /* HABI design system v1. Tokens → foundations → components → responsive rules.
    This is the only application stylesheet. Component appearance is never page-specific. */
 :root {
-  --page:#f4f7fb; --surface:#fff; --surface-soft:#f0f4fa; --surface-answer:#f5f7fc;
+  --experience-layout:desktop; --page:#f4f7fb; --surface:#fff; --surface-soft:#f0f4fa; --surface-answer:#f5f7fc;
   --text:#1b2c46; --text-muted:#566980; --text-subtle:var(--text-muted); --border:#e0e8f2;
   --primary:#365fd2; --primary-hover:#294eb7; --primary-soft:#eaf0ff; --inactive:#dfe6ef;
   --error:#ad3046; --error-soft:#fff1f3;
@@ -282,3 +282,6 @@ body.habi2 { height:100dvh; display:grid; grid-template-rows:auto auto minmax(0,
 .ds-review-regular { width:375px; }
 
 .habi2>.sync-note { grid-row:2; width:calc(100% - var(--space-6)); margin:var(--space-2) auto; max-height:30dvh; overflow:auto; }
+
+/* Behaviour reads this CSS-owned layout mode; there is no second JS breakpoint. */
+@media (max-width:1023px) { :root { --experience-layout:mobile; } }

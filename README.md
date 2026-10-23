@@ -230,9 +230,11 @@ Answer choices (including “Nem volt ilyen helyzet.”) use `uiChoice` and shar
 
 The same interaction roles apply application-wide: all text interactions are start-aligned; skip/back/cancel/pause/restart/return controls share the quieter soft-filled control component. Goal replacement is a pair of equally styled answer choices. Habit reviews are answers, not tabs. Breadcrumbs, section/period tabs, disclosure headers and fixed navigation retain their own shared navigation components. The reference page displays the real answer, action and control helpers side by side. The interaction audit covers all journey families, every daily/monthly question, all practice/situation entries, legacy/guided/contextual chat, goals, reflections and communication/return/event forms.
 
-### HABI2 conversational version
+### Unified responsive HABI experience
 
-Open `/habi2` for the separate chat-led experience; `/` retains HABI1. HABI2 reuses the same MongoDB content, assessments, exercises, goals and dated history. The composer, topic choices and starter questions coexist. The menu exposes every existing area; daily/monthly answers become conversational turns, while charts and longer tools remain visual cards. Drafts and interrupted conversations are resumable. All styling remains in `global.css`; new configurable copy is in the additive `habi2_v1` catalog.
+The public entry point is `/`. At widths below 1024px it uses HABI2’s conversational structure, persistent composer and contextual menu. At 1024px and wider it uses HABI’s desktop structure and four-area navigation. `global.css` owns the breakpoint through `--experience-layout`; `layout.js` reads that token and `responsive.js` selects the renderer. The legacy `/habi2` and `/habi2.html` routes redirect to `/`.
+
+Both layouts share the same application session, MongoDB content, assessments, exercises, goals, chat and dated history. Resizing switches renderers without reloading or resetting answers. The canonical `uiWorkspace` restores the current area after reload at either size; daily/monthly drafts and personal text remain shared. Existing HABI2 workspace and unsent composer drafts migrate on first entry. Topic choices, starter questions and typed input remain available. All styling stays in `global.css`; configurable HABI2 copy remains in the additive `habi2_v1` catalog.
 
 Research, source comparisons, journey mapping and validation boundaries: [HABI2 research and journey](docs/HABI2-research-and-journey.md).
 
