@@ -14,6 +14,12 @@ import {
   createLoginTransaction,
   persistLoginTransaction,
 } from "../src/lib/auth/login-transaction.mjs";
+import {
+  issueSession,
+  readActiveSession,
+  revokeSession,
+  touchSession,
+} from "../src/lib/auth/session.mjs";
 
 const mongoUri = process.env.HABI_TEST_MONGODB_URI;
 
@@ -145,6 +151,64 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           state: transaction.state,
           binding: transaction.binding,
         }),
+        null,
+      );
+    },
+  );
+
+  await t.test(
+    "opaque session expires, touches idle time, and revokes",
+    async () => {
+      const collection = db.collection("sessions");
+      const now = new Date("2026-10-25T12:00:00.000Z");
+      const key = "test-only-session-key-material-0123456789";
+      const issued = await issueSession(collection, {
+        actorId: "seed-actor-test",
+        tenantId: "seed-tenant-a",
+        retentionPolicyId: "retention-v1",
+        activeRole: "parent",
+        playerId: "seed-player-001",
+        accessRevision: 1,
+        hmacKey: key,
+        now,
+      });
+      let session = await readActiveSession(collection, issued.token, key, now);
+      assert.ok(session);
+      assert.equal(
+        await touchSession(collection, session, new Date(now.getTime() + 1000)),
+        true,
+      );
+      session = await readActiveSession(
+        collection,
+        issued.token,
+        key,
+        new Date(now.getTime() + 1000),
+      );
+      assert.ok(session);
+      assert.equal(
+        await readActiveSession(
+          collection,
+          issued.token,
+          key,
+          new Date(now.getTime() + 31 * 60_000),
+        ),
+        null,
+      );
+      assert.equal(
+        await revokeSession(
+          collection,
+          session,
+          new Date(now.getTime() + 2000),
+        ),
+        true,
+      );
+      assert.equal(
+        await readActiveSession(
+          collection,
+          issued.token,
+          key,
+          new Date(now.getTime() + 2000),
+        ),
         null,
       );
     },

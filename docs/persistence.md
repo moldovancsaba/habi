@@ -58,7 +58,13 @@ The database-only callback must not send an email, call Ollama, call SSO, upload
 
 ## Authentication transaction storage
 
-`src/lib/auth/login-transaction.mjs` creates cryptographically random state, nonce, PKCE verifier, and browser-binding values. Only the SHA-256 hashes of state and browser binding are indexed; nonce and verifier are held server-side in `auth_transactions`. The browser binding is intended for the `__Host-hg_auth_txn` Secure/HttpOnly/SameSite=Lax cookie. A new login for the same binding atomically consumes its previous pending transaction before inserting a replacement. Callback consumption is a single `findOneAndUpdate` constrained by both hashes, `consumedAt: null`, and `expiresAt > now`, so replay, wrong-browser use, and expiry fail closed. `returnTo` is restricted to same-origin relative paths. These primitives and the local Mongo behavior are tested; there is not yet a hosted login route, OIDC callback, SSO client registration, session issuance, or live SSO proof.
+`src/lib/auth/login-transaction.mjs` creates cryptographically random state, nonce, PKCE verifier, and browser-binding values. Only the SHA-256 hashes of state and browser binding are indexed; nonce and verifier are held server-side in `auth_transactions`. The browser binding is intended for the `__Host-hg_auth_txn` Secure/HttpOnly/SameSite=Lax cookie. A new login for the same binding atomically consumes its previous pending transaction before inserting a replacement. Callback consumption is a single `findOneAndUpdate` constrained by both hashes, `consumedAt: null`, and `expiresAt > now`, so replay, wrong-browser use, and expiry fail closed. `returnTo` is restricted to same-origin relative paths.
+
+`src/lib/auth/sso-oidc.mjs` supplies testable OIDC protocol functions: HTTPS issuer discovery pinned to its origin, JSON authorization-code exchange (`client_secret_post`), RS256/JWKS claim verification (`iss`, `aud`, `azp`, `exp`, `iat`, `nonce`), userinfo, and approved app-permission checks. Each HTTP dependency request is no-store and has a five-second timeout. These functions are not yet wired into a hosted route; unknown-`kid` JWKS refresh remains part of the callback integration.
+
+`src/lib/auth/session.mjs` generates 256-bit opaque session tokens and stores only a purpose-separated HMAC-SHA256 token hash. It derives an HMAC CSRF token bound to that browser session and implements request-time absolute expiry (eight hours), idle expiry (30 minutes), atomic idle touch, and revocation. No SSO access/refresh token is persisted. Local Mongo behavior and crypto checks are tested, but no hosted session issuance or request authorization middleware exists.
+
+`src/lib/auth/identity-access.mjs` resolves an external identity strictly by `(issuer, subject)`, requires the matching active local actor, and returns only active nonexpired memberships whose tenant and player links still resolve within the same tenant. It never joins identities by email or trusts the SSO app role as a Habi role. This resolver is unit-tested with revoked/suspended, expired, cross-tenant and missing-identity cases; it is not yet used by an HTTP route.
 
 ## Index intent
 
@@ -66,7 +72,7 @@ The database-only callback must not send an email, call Ollama, call SSO, upload
 | ----------------- | ------------------------------------------------------------------------------------------------ |
 | `identities`      | Unique `(issuer,subject)` identity binding                                                       |
 | `auth_transactions` | Internal login state: unique state hash, one live transaction per browser binding, ten-minute TTL |
-| `sessions`        | Unique opaque token hash and TTL expiry                                                          |
+| `sessions`        | Unique purpose-separated HMAC token hash and absolute-expiry TTL                                  |
 | `memberships`     | Active membership uniqueness and tenant/player access lookup                                     |
 | `players`         | Tenant-scoped ID uniqueness                                                                      |
 | `records`         | Tenant-scoped ID, stable player timeline, and per-session metric uniqueness for check-in answers |
