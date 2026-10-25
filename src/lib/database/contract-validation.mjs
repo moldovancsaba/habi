@@ -10,11 +10,41 @@ addFormats(ajv);
 ajv.addSchema(contract);
 
 const compiled = new Map(
-  Object.entries(COLLECTION_SCHEMA).map(([collection, definition]) => [
-    collection,
-    ajv.compile({ $ref: `${contract.$id}#/$defs/${definition}` }),
-  ]),
+  Object.entries(COLLECTION_SCHEMA)
+    .filter(([, definition]) => definition)
+    .map(([collection, definition]) => [
+      collection,
+      ajv.compile({ $ref: `${contract.$id}#/$defs/${definition}` }),
+    ]),
 );
+
+const authTransactionSchema = {
+  bsonType: "object",
+  required: [
+    "id",
+    "stateHash",
+    "browserBindingHash",
+    "nonce",
+    "pkceVerifier",
+    "returnTo",
+    "createdAt",
+    "expiresAt",
+    "consumedAt",
+  ],
+  additionalProperties: false,
+  properties: {
+    _id: { bsonType: ["objectId", "string"] },
+    id: { bsonType: "string", pattern: "^[A-Za-z0-9_-]{16,128}$" },
+    stateHash: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
+    browserBindingHash: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
+    nonce: { bsonType: "string", pattern: "^[A-Za-z0-9_-]{32,128}$" },
+    pkceVerifier: { bsonType: "string", pattern: "^[A-Za-z0-9_-]{43,128}$" },
+    returnTo: { bsonType: "string", maxLength: 500 },
+    createdAt: { bsonType: "date" },
+    expiresAt: { bsonType: "date" },
+    consumedAt: { bsonType: ["date", "null"] },
+  },
+};
 
 function normalizeStoredDates(value) {
   if (value instanceof Date) return value.toISOString();
@@ -30,6 +60,18 @@ function normalizeStoredDates(value) {
 }
 
 export function validateContractDocument(collection, document) {
+  if (collection === "auth_transactions") {
+    const candidate = { ...document };
+    if (typeof candidate.createdAt === "string")
+      candidate.createdAt = new Date(candidate.createdAt);
+    if (typeof candidate.expiresAt === "string")
+      candidate.expiresAt = new Date(candidate.expiresAt);
+    if (typeof candidate.consumedAt === "string")
+      candidate.consumedAt = new Date(candidate.consumedAt);
+    const valid = validateInternalAuthTransaction(candidate);
+    if (!valid) throw new Error("DOCUMENT_CONTRACT_INVALID:auth_transaction");
+    return true;
+  }
   const validator = compiled.get(collection);
   if (!validator) throw new Error("COLLECTION_SCHEMA_UNKNOWN");
   const valid = validator(normalizeStoredDates(document));
@@ -43,11 +85,53 @@ export function validateContractDocument(collection, document) {
 }
 
 export function mongoValidatorForCollection(collection) {
+  if (collection === "auth_transactions")
+    return { $jsonSchema: authTransactionSchema };
   const definition = COLLECTION_SCHEMA[collection];
   if (!definition) throw new Error("COLLECTION_SCHEMA_UNKNOWN");
   return {
     $jsonSchema: mongoSchema(contract.$defs[definition], new Set(), collection),
   };
+}
+
+function validateInternalAuthTransaction(document) {
+  const schema = authTransactionSchema;
+  const properties = schema.properties;
+  if (!document || typeof document !== "object" || Array.isArray(document))
+    return false;
+  if (Object.keys(document).some((key) => !Object.hasOwn(properties, key)))
+    return false;
+  if (schema.required.some((key) => !Object.hasOwn(document, key)))
+    return false;
+  for (const [key, value] of Object.entries(document)) {
+    const rule = properties[key];
+    if (
+      rule.bsonType === "date" &&
+      !(value instanceof Date && Number.isFinite(value.getTime()))
+    )
+      return false;
+    if (rule.bsonType === "null" && value !== null) return false;
+    if (rule.bsonType === "string") {
+      if (
+        typeof value !== "string" ||
+        (rule.maxLength && value.length > rule.maxLength)
+      )
+        return false;
+      if (rule.pattern && !new RegExp(rule.pattern).test(value)) return false;
+    }
+    if (
+      Array.isArray(rule.bsonType) &&
+      !rule.bsonType.some((type) =>
+        type === "null"
+          ? value === null
+          : type === "date" &&
+            value instanceof Date &&
+            Number.isFinite(value.getTime()),
+      )
+    )
+      return false;
+  }
+  return true;
 }
 
 function mongoSchema(schema, seenRefs, collection, propertyName = null) {

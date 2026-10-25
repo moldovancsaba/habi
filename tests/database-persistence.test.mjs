@@ -9,6 +9,11 @@ import { runIdempotentCommand } from "../src/lib/database/idempotent-command.mjs
 import { runMigrations } from "../src/lib/database/migrations/runner.mjs";
 import { applySyntheticSeed } from "../src/lib/database/seed.mjs";
 import { validateContractDocument } from "../src/lib/database/contract-validation.mjs";
+import {
+  consumeLoginTransaction,
+  createLoginTransaction,
+  persistLoginTransaction,
+} from "../src/lib/auth/login-transaction.mjs";
 
 const mongoUri = process.env.HABI_TEST_MONGODB_URI;
 
@@ -32,15 +37,15 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
     assert.deepEqual(
       await runMigrations(db, new Date("2026-10-25T00:00:00.000Z")),
       {
-        applied: ["001-initial-schema"],
-        current: "001-initial-schema",
+        applied: ["001-initial-schema", "002-auth-transactions"],
+        current: "002-auth-transactions",
       },
     );
     assert.deepEqual(
       await runMigrations(db, new Date("2026-10-25T00:00:01.000Z")),
       {
         applied: [],
-        current: "001-initial-schema",
+        current: "002-auth-transactions",
       },
     );
     const migrationRecord = await db
@@ -67,6 +72,16 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
     );
     assert.ok(indexNames.includes("record_timeline"));
     assert.ok(indexNames.includes("record_checkin_answer_unique"));
+    const authIndexes = (
+      await db.collection("auth_transactions").indexes()
+    ).map(({ name }) => name);
+    assert.ok(authIndexes.includes("auth_transaction_state_unique"));
+    assert.ok(authIndexes.includes("auth_transaction_browser_active_unique"));
+    assert.ok(authIndexes.includes("auth_transaction_expiry_ttl"));
+    await assert.rejects(
+      db.collection("auth_transactions").insertOne({ id: "invalid-auth-txn" }),
+      (error) => error.code === 121,
+    );
     assert.equal(
       validateContractDocument("tenants", {
         id: "valid-tenant",
@@ -107,6 +122,33 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
     assert.equal(await db.collection("tenants").countDocuments(), 2);
     assert.equal(await db.collection("players").countDocuments(), 2);
   });
+
+  await t.test(
+    "auth transaction is persisted and consumed once by its browser",
+    async () => {
+      const collection = db.collection("auth_transactions");
+      const transaction = createLoginTransaction({ now: new Date() });
+      await persistLoginTransaction(collection, transaction.document);
+      const wrongBrowser = await consumeLoginTransaction(collection, {
+        state: transaction.state,
+        binding: "another-browser",
+      });
+      assert.equal(wrongBrowser, null);
+      const consumed = await consumeLoginTransaction(collection, {
+        state: transaction.state,
+        binding: transaction.binding,
+      });
+      assert.ok(consumed);
+      assert.ok(consumed.consumedAt instanceof Date);
+      assert.equal(
+        await consumeLoginTransaction(collection, {
+          state: transaction.state,
+          binding: transaction.binding,
+        }),
+        null,
+      );
+    },
+  );
 
   await t.test("tenant reads cannot cross a tenant boundary", async () => {
     assert.equal(

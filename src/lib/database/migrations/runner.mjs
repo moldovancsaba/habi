@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { migration as initialSchema } from "./001-initial-schema.mjs";
+import { migration as authTransactions } from "./002-auth-transactions.mjs";
 
-const MIGRATIONS = [initialSchema];
+const MIGRATIONS = [initialSchema, authTransactions];
 
 export async function runMigrations(db, now = new Date()) {
   const ledger = db.collection("_habi_migrations");

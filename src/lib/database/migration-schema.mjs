@@ -37,10 +37,13 @@ export const COLLECTIONS = Object.freeze([
   "knowledge_sources",
 ]);
 
+export const INTERNAL_COLLECTIONS = Object.freeze(["auth_transactions"]);
+
 export const COLLECTION_SCHEMA = Object.freeze({
   tenants: "Tenant",
   actors: "Actor",
   identities: "Identity",
+  auth_transactions: null,
   sessions: "Session",
   memberships: "Membership",
   players: "Player",
@@ -86,6 +89,24 @@ export const INDEXES = Object.freeze({
       key: { issuer: 1, subject: 1 },
       name: "identity_issuer_subject_unique",
       unique: true,
+    },
+  ],
+  auth_transactions: [
+    {
+      key: { stateHash: 1 },
+      name: "auth_transaction_state_unique",
+      unique: true,
+    },
+    {
+      key: { browserBindingHash: 1 },
+      name: "auth_transaction_browser_active_unique",
+      unique: true,
+      partialFilterExpression: { consumedAt: null },
+    },
+    {
+      key: { expiresAt: 1 },
+      name: "auth_transaction_expiry_ttl",
+      expireAfterSeconds: 0,
     },
   ],
   sessions: [

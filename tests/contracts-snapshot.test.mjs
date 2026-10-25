@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   COLLECTIONS,
   COLLECTION_SCHEMA,
+  INTERNAL_COLLECTIONS,
 } from "../src/lib/database/migration-schema.mjs";
 import { validateContractDocument } from "../src/lib/database/contract-validation.mjs";
 
@@ -19,9 +20,20 @@ test("runtime contract snapshot is pinned and covers every persisted collection"
   const digest = createHash("sha256").update(sourceBytes).digest("hex");
   assert.equal(manifest.artifact, "domain-schemas.source.json");
   assert.equal(manifest.sha256, digest);
-  assert.equal(Object.keys(COLLECTION_SCHEMA).length, COLLECTIONS.length);
+  assert.equal(
+    Object.keys(COLLECTION_SCHEMA).length,
+    COLLECTIONS.length + INTERNAL_COLLECTIONS.length,
+  );
+  assert.equal(COLLECTION_SCHEMA.auth_transactions, null);
+  assert.equal(
+    Object.values(COLLECTION_SCHEMA).filter(Boolean).length,
+    COLLECTIONS.length,
+  );
   assert.deepEqual(
-    Object.keys(COLLECTION_SCHEMA).sort(),
+    Object.entries(COLLECTION_SCHEMA)
+      .filter(([, definition]) => definition)
+      .map(([collection]) => collection)
+      .sort(),
     [...COLLECTIONS].sort(),
   );
 });

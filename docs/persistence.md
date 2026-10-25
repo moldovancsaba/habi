@@ -19,7 +19,7 @@ MongoDB TTL indexes require BSON `Date` values. `sessions.expiresAt` and `idempo
 
 ## Versioned migration
 
-`src/lib/database/migrations/001-initial-schema.mjs` creates the 36 named collections, applies strict validators, and establishes the named indexes in `migration-schema.mjs`. `runMigrations()` records each applied ID and source-file SHA-256 in `_habi_migrations`. A later invocation skips a matching version and fails with `MIGRATION_CHECKSUM_MISMATCH` if the source for an already-applied ID has changed. A changed migration must receive a new ID and a forward-only correction; never edit an applied migration in place.
+`src/lib/database/migrations/001-initial-schema.mjs` creates the 36 contract collections. `002-auth-transactions.mjs` adds one internal, non-contract `auth_transactions` collection for short-lived login state. It has its own strict MongoDB validator, a unique state-hash index, a one-active-transaction-per-browser partial unique index, and a ten-minute TTL index. The public contract snapshot test deliberately distinguishes its 36 contract entities from this internal runtime record. `runMigrations()` records each applied ID and source-file SHA-256 in `_habi_migrations`. A later invocation skips a matching version and fails with `MIGRATION_CHECKSUM_MISMATCH` if the source for an already-applied ID has changed. A changed migration must receive a new ID and a forward-only correction; never edit an applied migration in place.
 
 The runner re-applies schema/index setup if the migration did not reach its ledger write. DDL operations are deliberately idempotent. There is no automatic down migration. If an index or validator change causes an incident, stop writes if needed, preserve the failing database state and logs, then apply a reviewed forward migration or restore a verified Atlas backup. Do not delete the migration ledger to force a blind replay.
 
@@ -56,11 +56,16 @@ It rejects non-test environment labels, non-loopback hosts and database names wi
 
 The database-only callback must not send an email, call Ollama, call SSO, upload to another service or perform any effect outside the transaction; MongoDB can retry a transaction callback. A client timeout after a successful commit is recovered by repeating the same request and key. The receipt stores the resource reference and response status, not a stale privileged response body; the route must re-authorize before returning current data.
 
+## Authentication transaction storage
+
+`src/lib/auth/login-transaction.mjs` creates cryptographically random state, nonce, PKCE verifier, and browser-binding values. Only the SHA-256 hashes of state and browser binding are indexed; nonce and verifier are held server-side in `auth_transactions`. The browser binding is intended for the `__Host-hg_auth_txn` Secure/HttpOnly/SameSite=Lax cookie. A new login for the same binding atomically consumes its previous pending transaction before inserting a replacement. Callback consumption is a single `findOneAndUpdate` constrained by both hashes, `consumedAt: null`, and `expiresAt > now`, so replay, wrong-browser use, and expiry fail closed. `returnTo` is restricted to same-origin relative paths. These primitives and the local Mongo behavior are tested; there is not yet a hosted login route, OIDC callback, SSO client registration, session issuance, or live SSO proof.
+
 ## Index intent
 
 | Collection        | Index purpose                                                                                    |
 | ----------------- | ------------------------------------------------------------------------------------------------ |
 | `identities`      | Unique `(issuer,subject)` identity binding                                                       |
+| `auth_transactions` | Internal login state: unique state hash, one live transaction per browser binding, ten-minute TTL |
 | `sessions`        | Unique opaque token hash and TTL expiry                                                          |
 | `memberships`     | Active membership uniqueness and tenant/player access lookup                                     |
 | `players`         | Tenant-scoped ID uniqueness                                                                      |
