@@ -4,7 +4,7 @@ A Habi a fiatal sportolókhoz és a körülöttük lévő jogosult felnőttekhez
 
 ## Aktuális állapot
 
-Ez az ág a régi Habi prototípus forrását eltávolítja az alkalmazás-pillanatképből, és az elfogadott Vercel + Atlas + DoneIsBetter SSO + helyi Mac AI-worker architektúrához készít tiszta Next.js alapot. A korábbi commitok a Git történetében megmaradnak. Az új alap jelenleg konfigurációvalidálást, biztonságos elérhetetlenségi oldalt, liveness végpontot és worker-konfigurációs próbákat tartalmaz. Bejelentkezés, üzleti API, Atlas repository, adatbázis-migráció, AI-poller és személyes pilot még nincs megvalósítva.
+Ez az ág a régi Habi prototípus forrását eltávolítja az alkalmazás-pillanatképből, és az elfogadott Vercel + Atlas + DoneIsBetter SSO + helyi Mac AI-worker architektúrához készít tiszta Next.js alapot. A korábbi commitok a Git történetében megmaradnak. A kódbázis konfigurációvalidálást, biztonságos elérhetetlenségi oldalt, liveness és readiness végpontot, valamint fail-closed, újrahasznált Atlas `MongoClient` kapcsolati réteget tartalmaz. Domain repositoryk, SSO, üzleti API, sémamigrációk, indexek, seed, GridFS, AI-poller és személyes pilot még nincs megvalósítva.
 
 A terméket a Vercel futtatja. A Mac worker kizárólag kifelé hívja a Vercel API-t és a helyi Ollamát; közvetlen Atlas-kapcsolatot nem kap. A meglévő modellt és hostzárat kell használni. Külső személyes AI-tartalékút nincs.
 

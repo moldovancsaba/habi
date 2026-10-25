@@ -1,5 +1,18 @@
 # Habi — ellenőrzési napló
 
+## T-HG-107 · Atlas kapcsolati alap és readiness · 2026-10-25
+
+| Parancs | Eredmény | Bizonyíték és korlát |
+| --- | --- | --- |
+| `npm test` | PASS, exit 0; 8 Node tesztcsoport | Atlas-konfiguráció fail-closed, szintetikus mód tiltása, readiness 200/503 és hiba-redakció; 27 domain referencia-szcenárió. Nincs élő Atlas-hívás. |
+| `npm run lint` | PASS, exit 0 | Biome 13 forrás-/tesztfájlon; figyelmeztetés nélkül. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript ellenőrzés. |
+| `npm run build` | PASS, exit 0 | Next.js 16.4.3; `/api/health` és `/api/ready` dinamikus kérésidejű route. |
+
+Kód: `mongodb@7.7.0`, `server-only@0.0.1`; szerverpéldányon újrahasznált, maximum öt kapcsolatos MongoClient pool, rövid connection/server-selection/queue timeoutokkal. `/api/health` liveness és `/api/ready` Atlas ping-alapú readiness különválasztva. A readiness nem ad vissza belső driverhibát vagy secretet. Az aktív Next.js 16 Cache Components konfigurációban a GET handler request-time adatbázis-hozzáférése automatikusan dinamikussá teszi az útvonalat; az alkalmazás `dynamic='force-dynamic'` szegmensflaget nem használ.
+
+Az új `HG_*` Atlas-konfiguráció nincs beállítva, ezért Atlas-kapcsolat, migráció, index, seed, domain repository, SSO, deploy vagy személyes adatművelet nem történt. A pool korlát induló érték; Vercel párhuzamos példányszám és Atlas connection budget alapján még mérendő. A legacy `habi_mongodb_uri` értékét nem olvastuk.
+
 ## T-HG-105 · `codex/habi-ground-up` · 2026-10-25
 
 ### Lokális forrás- és buildellenőrzés
