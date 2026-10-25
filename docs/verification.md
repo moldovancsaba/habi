@@ -1,17 +1,18 @@
 # Habi — ellenőrzési napló
 
-## T-HG-115 · API hiba-envelope és redakció · 2026-10-25
+## T-HG-116 · Request correlation and redacted API failure logging · 2026-10-25
 
-| Parancs / próba | Eredmény | Környezet és korlát |
+| Command / probe | Result | Environment and limits |
 | --- | --- | --- |
-| `npm test` | PASS, 37 pass, 0 fail, 1 skip | Local Node suite; Mongo replica-set integration skipped because no test URI is set. |
-| `npm run lint` | PASS, exit 0 | Biome. |
+| `npm test` | PASS, 42 passed, 0 failed, 1 skipped | Local Node suite; isolated Mongo replica-set integration skipped because no test URI was supplied. |
+| `npm run lint` | PASS, exit 0 | Biome, 39 source/test files. |
 | `npm run typecheck` | PASS, exit 0 | TypeScript. |
-| `npm run build` | PASS, exit 0 | Next.js 16.4.3; no new routes. |
+| `npm run build` | PASS, exit 0 | Next.js 16.4.3; no build-time route errors or readiness probes. |
+| Local production-server smoke | PASS, `/api/health` 200; `/api/ready` 503 | Synthetic-only runtime config, no Atlas URI; each response had a unique `X-Request-ID`, readiness body was `DEPENDENCY_UNAVAILABLE`, and the server emitted a content-free correlated 503 event. |
 
-The API helper maps each documented public error class to a stable HTTP status and exact `{code, requestId, retryAfter}` shape. Unknown codes become generic 500 `INTERNAL_ERROR`; raw exception messages, stack traces, connection URIs, and credential fragments are not serialized. All responses are `private, no-store`; valid retry delay is an integer and is reflected in `Retry-After`. No automatic retry is performed.
+Both operational routes use the shared API boundary. Known/unknown exceptions map to the stable public envelope; normal 5xx dependency responses also produce safe structured events. Query/body, exception detail, driver text, URI, and credentials are not logged. The readiness 503 is expected because this local smoke intentionally had no Atlas target; it is not evidence of a live Atlas failure.
 
-Unit coverage only; the helper is not yet connected to route handlers, so this does not prove production API redaction or retry behavior. No service/DB/SSO calls or personal data. Rollback is a code revert with no persistent effect.
+This change does not provide live Atlas/SSO verification and is not yet applied to future business routes. Rollback is a code revert with no persistent database effect.
 
 ## T-HG-114 · Idővonal DTO → view-model adapter · 2026-10-25
 

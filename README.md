@@ -14,7 +14,7 @@ Az SSO app-permission policy minden műveletnél friss ellenőrzést próbál. S
 
 Az idővonal DTO adapter a szerveroldalú `submittedAt/actorRole/kind` mezőket a meglévő megjelenítő `at/role/type` alakjára képezi. Megőrzi a cursor-, continuation- és explicit process-állapotot, kihagyja a tenant/retention/audit mezőket, és nem talál ki szerzőt vagy tartalmat. Ez még nem API-handler vagy end-to-end timeline.
 
-A HTTP error helper a dokumentált hibakódokhoz stabil státuszt és `{code, requestId, retryAfter}` választ készít. Belső exception textet és stack adatot nem ad vissza, és no-store fejléccel jelöli az eredményt. A helper még nincs route-ba bekötve.
+A route-ok közös API-határa minden válaszhoz friss request ID-t ad, az ismert és ismeretlen kivételeket redaktált hibaválasszá alakítja, és strukturált, tartalommentes eseményt ír a szerverlogba. A readiness 5xx eseménye is csak műveletet, státuszt és request ID-t tartalmaz. Next.js prerender vezérlőjeleket továbbenged; a liveness/readiness útvonalak csak request időben futnak. Ez a közös határ jelenleg csak a két operációs végpontra van bekötve, nem az üzleti API-kra.
 
 ## Helyi ellenőrzés
 

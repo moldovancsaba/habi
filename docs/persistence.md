@@ -84,6 +84,10 @@ The database-only callback must not send an email, call Ollama, call SSO, upload
 
 Mongo TTL removal is asynchronous and is not authorization. Expired sessions must be rejected by request-time expiry checks; expired idempotency receipts are checked and removed in the transaction path. The current Habi schema does not define `Job.logicalKey`, so no such index is created; a future logical-job deduplication field needs a versioned contract change before index creation.
 
+## API request correlation and safe failure logs
+
+`src/lib/api/route-boundary.mjs` creates a cryptographically random 128-bit request ID for each request handled by `/api/health` and `/api/ready`, returns it in `X-Request-ID`, and uses the same ID in the public error body and safe server event. Expected readiness `5xx` responses and unexpected exceptions generate JSON log events containing only a fixed operation label, request ID, HTTP status, and allow-listed error code where applicable. The request URL/body, exception text/stack, database error, URI, and credentials are excluded. A logging failure cannot replace the API result. Next.js request-time prerender control signals pass through the boundary so the framework can preserve dynamic route behavior. The wrapper is not yet installed on future business API routes; they must adopt the same boundary before release.
+
 ## Failures and recovery
 
 - Missing or invalid Atlas config: fail closed with a generic dependency/configuration code; never include URI or provider error text in HTTP output.

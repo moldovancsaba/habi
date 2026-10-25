@@ -13,11 +13,15 @@ const ERROR_STATUS = Object.freeze({
 
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 
+export function createRequestId() {
+  return randomBytes(16).toString("hex");
+}
+
 function safeRequestId(value) {
   if (typeof value === "string" && REQUEST_ID_PATTERN.test(value)) {
     return value;
   }
-  return randomBytes(16).toString("hex");
+  return createRequestId();
 }
 
 function safeRetryAfter(value) {
