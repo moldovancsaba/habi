@@ -1,5 +1,19 @@
 # Habi — ellenőrzési napló
 
+## T-HG-126 · sessionhöz kötött titkosított SSO credential lifecycle · 2026-10-25
+
+| Parancs / próba | Eredmény | Környezet és korlát |
+| --- | --- | --- |
+| `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, 75 pass, 0 fail, 0 skip | Izolált, egynode-os lokális MongoDB 8.0.24 replica set; teszt-DB törölve a suite végén. |
+| `npm run lint` | PASS, exit 0 | Biome, 52 forrás-/tesztfájl. |
+| `npm run build` | PASS, exit 0 | Next.js 16.4.3; route inventory változatlan. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript. |
+| `git diff --check` | PASS, exit 0 | Lokális munkafa. |
+
+Migration 003 kétszeri futtatása, checksums, strict Mongo validator, session-unique/TTL indexek és plaintext token elutasítása ellenőrizve. Két egyidejű refresh kérelem ugyanazt az egy provider hívást eredményezte; a lease/CAS egy tokenpárt mentett, a másik kérés a friss encrypted access tokent használta. SSO elutasítás visszavonta, logout helper visszavonta és a credential újraolvasását tiltotta. A credential expiry a session expiry-vel egyezik.
+
+Ez helyi DB+fake SSO bizonyíték. Nincs Habi Atlas, hosted SSO, callback/login/logout HTTP route vagy auth middleware; credential modulet még nem hívja termék-route. Nem történt deploy vagy személyes adatkezelés. A refresh rotation szolgáltatói hívása és Mongo commit között marad egy remote/local dual-write ablak; crash vagy elveszett válasz esetén, ha a provider a régi tokent már érvénytelenítette, a felhasználónak újból be kell jelentkeznie. Rollback: `003-session-sso-credentials` down-migration nélkül marad; kódrevert mellett a nem használt, session-TTL-es titkosított rekordok TTL-lel ürülnek, nem törlünk migrációs ledger-t.
+
 ## T-HG-125 · SSO refresh token protokoll és titkosítási alap · 2026-10-25
 
 | Parancs / próba | Eredmény | Környezet és korlát |

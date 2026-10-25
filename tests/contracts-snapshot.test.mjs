@@ -6,6 +6,7 @@ import {
   COLLECTIONS,
   COLLECTION_SCHEMA,
   INTERNAL_COLLECTIONS,
+  INTERNAL_RUNTIME_COLLECTIONS,
 } from "../src/lib/database/migration-schema.mjs";
 import { validateContractDocument } from "../src/lib/database/contract-validation.mjs";
 
@@ -22,9 +23,11 @@ test("runtime contract snapshot is pinned and covers every persisted collection"
   assert.equal(manifest.sha256, digest);
   assert.equal(
     Object.keys(COLLECTION_SCHEMA).length,
-    COLLECTIONS.length + INTERNAL_COLLECTIONS.length,
+    COLLECTIONS.length + INTERNAL_RUNTIME_COLLECTIONS.length,
   );
   assert.equal(COLLECTION_SCHEMA.auth_transactions, null);
+  assert.equal(COLLECTION_SCHEMA.session_sso_credentials, null);
+  assert.equal(INTERNAL_COLLECTIONS.includes("session_sso_credentials"), false);
   assert.equal(
     Object.values(COLLECTION_SCHEMA).filter(Boolean).length,
     COLLECTIONS.length,

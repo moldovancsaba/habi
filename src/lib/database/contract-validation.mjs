@@ -2,6 +2,10 @@ import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { createRequire } from "node:module";
 import { COLLECTION_SCHEMA } from "./migration-schema.mjs";
+import {
+  sessionSsoCredentialMongoSchema,
+  validateSessionSsoCredential,
+} from "./session-sso-credential-schema.mjs";
 
 const require = createRequire(import.meta.url);
 const contract = require("../../../contracts/domain-schemas.source.json");
@@ -60,6 +64,12 @@ function normalizeStoredDates(value) {
 }
 
 export function validateContractDocument(collection, document) {
+  if (collection === "session_sso_credentials") {
+    if (!validateSessionSsoCredential(document)) {
+      throw new Error("DOCUMENT_CONTRACT_INVALID:session_sso_credential");
+    }
+    return true;
+  }
   if (collection === "auth_transactions") {
     const candidate = { ...document };
     if (typeof candidate.createdAt === "string")
@@ -85,6 +95,8 @@ export function validateContractDocument(collection, document) {
 }
 
 export function mongoValidatorForCollection(collection) {
+  if (collection === "session_sso_credentials")
+    return { $jsonSchema: sessionSsoCredentialMongoSchema };
   if (collection === "auth_transactions")
     return { $jsonSchema: authTransactionSchema };
   const definition = COLLECTION_SCHEMA[collection];

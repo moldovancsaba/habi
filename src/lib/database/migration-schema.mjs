@@ -38,12 +38,17 @@ export const COLLECTIONS = Object.freeze([
 ]);
 
 export const INTERNAL_COLLECTIONS = Object.freeze(["auth_transactions"]);
+export const INTERNAL_RUNTIME_COLLECTIONS = Object.freeze([
+  ...INTERNAL_COLLECTIONS,
+  "session_sso_credentials",
+]);
 
 export const COLLECTION_SCHEMA = Object.freeze({
   tenants: "Tenant",
   actors: "Actor",
   identities: "Identity",
   auth_transactions: null,
+  session_sso_credentials: null,
   sessions: "Session",
   memberships: "Membership",
   players: "Player",

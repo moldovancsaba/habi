@@ -15,6 +15,12 @@ import {
   persistLoginTransaction,
 } from "../src/lib/auth/login-transaction.mjs";
 import {
+  createSessionSsoCredential,
+  getSessionAccessToken,
+  readSessionSsoCredential,
+  revokeSessionSsoCredential,
+} from "../src/lib/auth/session-sso-credentials.mjs";
+import {
   issueSession,
   readActiveSession,
   revokeSession,
@@ -43,15 +49,19 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
     assert.deepEqual(
       await runMigrations(db, new Date("2026-10-25T00:00:00.000Z")),
       {
-        applied: ["001-initial-schema", "002-auth-transactions"],
-        current: "002-auth-transactions",
+        applied: [
+          "001-initial-schema",
+          "002-auth-transactions",
+          "003-session-sso-credentials",
+        ],
+        current: "003-session-sso-credentials",
       },
     );
     assert.deepEqual(
       await runMigrations(db, new Date("2026-10-25T00:00:01.000Z")),
       {
         applied: [],
-        current: "002-auth-transactions",
+        current: "003-session-sso-credentials",
       },
     );
     const migrationRecord = await db
@@ -209,6 +219,118 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           key,
           new Date(now.getTime() + 2000),
         ),
+        null,
+      );
+    },
+  );
+
+  await t.test(
+    "encrypted SSO credentials persist under strict schema and concurrent refresh rotates once",
+    async () => {
+      const now = new Date();
+      const key = "test-refresh-encryption-key-with-strong-length-0123456789";
+      const issued = await issueSession(db.collection("sessions"), {
+        actorId: "seed-actor-test",
+        tenantId: "seed-tenant-a",
+        retentionPolicyId: "retention-v1",
+        activeRole: "parent",
+        playerId: "seed-player-001",
+        accessRevision: 1,
+        hmacKey: "test-only-session-key-material-0123456789",
+        now,
+      });
+      const collection = db.collection("session_sso_credentials");
+      await createSessionSsoCredential(collection, {
+        session: issued.document,
+        issuer: "https://sso.example.test",
+        clientId: "habi-test-client",
+        accessToken: "integration-access-token",
+        refreshToken: "integration-refresh-token",
+        expiresIn: 3600,
+        encryptionKey: key,
+        now,
+      });
+      const original = await collection.findOne({
+        sessionId: issued.document.id,
+      });
+      assert.ok(original);
+      const credentialIndexes = (await collection.indexes()).map(
+        ({ name }) => name,
+      );
+      assert.ok(
+        credentialIndexes.includes("session_sso_credential_session_unique"),
+      );
+      assert.ok(
+        credentialIndexes.includes("session_sso_credential_expiry_ttl"),
+      );
+      assert.equal(
+        JSON.stringify(original).includes("integration-access-token"),
+        false,
+      );
+      assert.equal(
+        JSON.stringify(original).includes("integration-refresh-token"),
+        false,
+      );
+      await assert.rejects(
+        collection.insertOne({
+          ...original,
+          plaintextRefreshToken: "forbidden",
+        }),
+        (error) => error.code === 121,
+      );
+
+      await collection.updateOne(
+        { sessionId: issued.document.id },
+        { $set: { accessTokenExpiresAt: new Date(now.getTime() - 1) } },
+      );
+      let refreshCalls = 0;
+      const refresh = async (token) => {
+        refreshCalls += 1;
+        assert.equal(token, "integration-refresh-token");
+        await new Promise((resolve) => setTimeout(resolve, 80));
+        return {
+          accessToken: "integration-access-token-rotated",
+          refreshToken: "integration-refresh-token-rotated",
+          expiresIn: 3600,
+        };
+      };
+      const getToken = () =>
+        getSessionAccessToken({
+          collection,
+          sessionId: issued.document.id,
+          encryptionKey: key,
+          refresh,
+          leaseMs: 2000,
+          waitMs: 1000,
+          pollMs: 10,
+        });
+      assert.deepEqual(await Promise.all([getToken(), getToken()]), [
+        "integration-access-token-rotated",
+        "integration-access-token-rotated",
+      ]);
+      assert.equal(refreshCalls, 1);
+      const rotated = await collection.findOne({
+        sessionId: issued.document.id,
+      });
+      assert.equal(rotated.revision, 2);
+      assert.equal(rotated.refreshLeaseId, null);
+      assert.equal(rotated.refreshLeaseExpiresAt, null);
+      assert.equal(
+        await readSessionSsoCredential(collection, {
+          sessionId: issued.document.id,
+        }).then((document) => document.revision),
+        2,
+      );
+      assert.equal(
+        await revokeSessionSsoCredential(collection, {
+          sessionId: issued.document.id,
+        }),
+        true,
+      );
+      assert.equal(
+        await readSessionSsoCredential(collection, {
+          sessionId: issued.document.id,
+        }),
         null,
       );
     },

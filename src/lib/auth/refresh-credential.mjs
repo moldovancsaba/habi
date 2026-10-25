@@ -16,14 +16,14 @@ function credentialKey(keyMaterial) {
     hkdfSync(
       "sha256",
       Buffer.from(keyMaterial, "utf8"),
-      Buffer.from("habi-refresh-credential-v1", "utf8"),
-      Buffer.from("refresh-token-encryption", "utf8"),
+      Buffer.from("habi-session-credential-v1", "utf8"),
+      Buffer.from("sso-token-encryption", "utf8"),
       32,
     ),
   );
 }
 
-function associatedData({ issuer, clientId, actorId }) {
+function associatedData({ issuer, clientId, actorId, sessionId }, purpose) {
   let parsedIssuer;
   try {
     parsedIssuer = new URL(issuer);
@@ -37,7 +37,10 @@ function associatedData({ issuer, clientId, actorId }) {
     typeof clientId !== "string" ||
     !/^[A-Za-z0-9][A-Za-z0-9._~-]{0,299}$/.test(clientId) ||
     typeof actorId !== "string" ||
-    !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(actorId)
+    !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(actorId) ||
+    typeof sessionId !== "string" ||
+    !/^[a-f0-9]{48}$/.test(sessionId) ||
+    !["access", "refresh"].includes(purpose)
   ) {
     throw new Error("REFRESH_CREDENTIAL_SCOPE_INVALID");
   }
@@ -46,6 +49,8 @@ function associatedData({ issuer, clientId, actorId }) {
       parsedIssuer.toString().replace(/\/$/, ""),
       clientId,
       actorId,
+      sessionId,
+      purpose,
     ]),
     "utf8",
   );
@@ -62,36 +67,47 @@ function decodeBase64Url(value) {
   return decoded;
 }
 
-export function encryptRefreshCredential(refreshToken, scope, keyMaterial) {
+export function encryptSessionCredential(
+  credential,
+  purpose,
+  scope,
+  keyMaterial,
+) {
   if (
-    typeof refreshToken !== "string" ||
-    !refreshToken ||
-    Buffer.byteLength(refreshToken, "utf8") > 16_384
+    typeof credential !== "string" ||
+    !credential ||
+    Buffer.byteLength(credential, "utf8") > 16_384
   ) {
-    throw new Error("SSO_REFRESH_TOKEN_INVALID");
+    throw new Error("SSO_CREDENTIAL_INVALID");
   }
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", credentialKey(keyMaterial), iv);
-  const aad = associatedData(scope);
-  cipher.setAAD(aad);
+  cipher.setAAD(associatedData(scope, purpose));
   const ciphertext = Buffer.concat([
-    cipher.update(refreshToken, "utf8"),
+    cipher.update(credential, "utf8"),
     cipher.final(),
   ]);
   return Object.freeze({
     version: VERSION,
     algorithm: ALGORITHM,
+    purpose,
     iv: iv.toString("base64url"),
     ciphertext: ciphertext.toString("base64url"),
     tag: cipher.getAuthTag().toString("base64url"),
   });
 }
 
-export function decryptRefreshCredential(envelope, scope, keyMaterial) {
+export function decryptSessionCredential(
+  envelope,
+  purpose,
+  scope,
+  keyMaterial,
+) {
   if (
     !envelope ||
     envelope.version !== VERSION ||
     envelope.algorithm !== ALGORITHM ||
+    envelope.purpose !== purpose ||
     typeof envelope.iv !== "string" ||
     typeof envelope.ciphertext !== "string" ||
     typeof envelope.tag !== "string"
@@ -110,7 +126,7 @@ export function decryptRefreshCredential(envelope, scope, keyMaterial) {
       credentialKey(keyMaterial),
       iv,
     );
-    decipher.setAAD(associatedData(scope));
+    decipher.setAAD(associatedData(scope, purpose));
     decipher.setAuthTag(tag);
     return Buffer.concat([
       decipher.update(ciphertext),
@@ -120,3 +136,9 @@ export function decryptRefreshCredential(envelope, scope, keyMaterial) {
     throw new Error("REFRESH_CREDENTIAL_INVALID");
   }
 }
+
+export const encryptRefreshCredential = (token, scope, keyMaterial) =>
+  encryptSessionCredential(token, "refresh", scope, keyMaterial);
+
+export const decryptRefreshCredential = (envelope, scope, keyMaterial) =>
+  decryptSessionCredential(envelope, "refresh", scope, keyMaterial);

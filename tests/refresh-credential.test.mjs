@@ -10,6 +10,7 @@ const scope = {
   issuer: "https://sso.example.test",
   clientId: "habi-test-client",
   actorId: "actor-test-1",
+  sessionId: "a".repeat(48),
 };
 
 test("encrypted refresh credential is randomized and decrypts only in scope", () => {
@@ -17,6 +18,7 @@ test("encrypted refresh credential is randomized and decrypts only in scope", ()
   const second = encryptRefreshCredential("refresh-secret", scope, key);
   assert.notDeepEqual(first, second);
   assert.equal(first.algorithm, "A256GCM");
+  assert.equal(first.purpose, "refresh");
   assert.equal(decryptRefreshCredential(first, scope, key), "refresh-secret");
   assert.notEqual(JSON.stringify(first).includes("refresh-secret"), true);
   assert.throws(
@@ -30,6 +32,10 @@ test("encrypted refresh credential is randomized and decrypts only in scope", ()
   );
   assert.throws(
     () => decryptRefreshCredential(first, scope, `${key}-changed`),
+    { message: "REFRESH_CREDENTIAL_INVALID" },
+  );
+  assert.throws(
+    () => decryptRefreshCredential({ ...first, purpose: "access" }, scope, key),
     { message: "REFRESH_CREDENTIAL_INVALID" },
   );
 });
