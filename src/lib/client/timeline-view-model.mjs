@@ -1,3 +1,5 @@
+import { isTimelinePageResponse } from "./timeline-response-validator.mjs";
+
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 const ROLES = new Set(["player", "parent", "coach"]);
 
@@ -10,16 +12,7 @@ function isDateTime(value) {
 }
 
 function requirePage(page) {
-  if (
-    !page ||
-    typeof page !== "object" ||
-    !Array.isArray(page.nodes) ||
-    !Array.isArray(page.edges) ||
-    !Array.isArray(page.processes) ||
-    !Array.isArray(page.continuations) ||
-    !(typeof page.nextCursor === "string" || page.nextCursor === null) ||
-    !isDateTime(page.snapshotAt)
-  ) {
+  if (!isTimelinePageResponse(page)) {
     throw new Error("TIMELINE_PAGE_INVALID");
   }
 }

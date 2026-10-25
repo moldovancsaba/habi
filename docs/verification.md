@@ -1,5 +1,19 @@
 # Habi — ellenőrzési napló
 
+## T-HG-120 · Rögzített timeline DTO-validálás és loader · 2026-10-25
+
+| Parancs / próba | Eredmény | Környezet és korlát |
+| --- | --- | --- |
+| `npm test` | PASS, 53 pass, 0 fail, 1 skip | Lokális Node suite; Atlas replica-set integráció kihagyva, mert nincs `HABI_TEST_MONGODB_URI`. Az új loader fetchét kontrollált fake válasz adta. |
+| `npm run lint` | PASS, exit 0 | Biome; 44 forrás-/tesztfájl. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript, `tsc --noEmit`. |
+| Böngészőmodul build-próba | PASS, exit 0 | Ideiglenes `use client` import route sikeresen buildelt a loaderrel/Ajv sémával; a próbafájlt utána eltávolítottuk, a produkciós build nem tartalmazza ezt a próbaoldalt. |
+| `git diff --check` | PASS, exit 0 | Lokális munkafa. |
+
+A `contracts/api-response-schemas.json` a kanonikus API 2.2.0 timeline read DTO-kat rögzíti; `api-response-manifest.json` rögzíti a `cc90a71cbf4196e61b91bd848474bc0d81330537` forrás-commitot és a SHA-256 digestet. Az Ajv 2020 validátor elutasítja a hiányzó `accessRevision` mezőt és a nem engedélyezett nested mezőket. A `loadTimelinePage` query allow-listet épít, same-origin `no-store` transporton kér, a pinned sémával validál, majd meghívja a view-model adaptert. A tesztek a transzportopciókat, mezőleképezést, folytatás/cursor állapotot és fail-closed viselkedést ellenőrzik.
+
+Ez csak kliensmodulok közti izolált bizonyíték fake API-válasszal és a Next.js browser-boundary build-próba. Nincs Habi üzleti API-route, hosted SSO/middleware, valódi UI, Atlas, deploy vagy személyes adat; tehát nem igazolja az end-to-end jogosultságot vagy adatfolyamot. Visszaállítás: kód/séma/manifeszt/dokumentáció commit revertje, nincs perzisztens hatás.
+
 ## T-HG-118 · Product API responses require validation · 2026-10-25
 
 | Command / test | Result | Environment and limits |

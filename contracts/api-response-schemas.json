@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://habi.invalid/contracts/api-response-schemas-v2.2.0.json",
+  "title": "Habi API response schema snapshot v2.2.0",
+  "sourceApiVersion": "2.2.0",
+  "$defs": {
+    "Edge": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "to": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "reply",
+            "belongs_to",
+            "derived_from",
+            "closes",
+            "reopens"
+          ]
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "Continuation": {
+      "type": "object",
+      "properties": {
+        "processId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "before",
+            "after"
+          ]
+        }
+      },
+      "required": [
+        "processId",
+        "direction"
+      ],
+      "additionalProperties": false
+    },
+    "TimelineEventReadDTO": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "actorRole": {
+          "type": "string",
+          "enum": [
+            "player",
+            "parent",
+            "coach"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "processId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "replyTo": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "relatedId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "submittedAt",
+        "actorRole",
+        "kind",
+        "processId",
+        "replyTo",
+        "relatedId"
+      ],
+      "additionalProperties": false
+    },
+    "TimelineProcessReadDTO": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "closedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "closedAt"
+      ],
+      "additionalProperties": false
+    },
+    "TimelinePageReadDTO": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimelineEventReadDTO"
+          },
+          "maxItems": 50
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Edge"
+          },
+          "maxItems": 200
+        },
+        "processes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimelineProcessReadDTO"
+          },
+          "maxItems": 50
+        },
+        "continuations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Continuation"
+          },
+          "maxItems": 100
+        },
+        "nextCursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snapshotAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "accessRevision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "nodes",
+        "edges",
+        "processes",
+        "continuations",
+        "nextCursor",
+        "snapshotAt",
+        "accessRevision"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

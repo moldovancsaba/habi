@@ -1,0 +1,16 @@
+{
+  "artifact": "api-response-schemas.json",
+  "sourceRepository": "https://github.com/moldovancsaba/calvus",
+  "sourcePath": "habigoal/contracts/schemas.json",
+  "sourceCommit": "cc90a71cbf4196e61b91bd848474bc0d81330537",
+  "apiVersion": "2.2.0",
+  "sha256": "62da8f312d7329dcbfac8b189add865a03290d6049a14fd3203f0c906a5c3509",
+  "definitions": [
+    "Edge",
+    "Continuation",
+    "TimelineEventReadDTO",
+    "TimelineProcessReadDTO",
+    "TimelinePageReadDTO"
+  ],
+  "purpose": "Pinned allow-listed API response DTO schemas for browser-side validation. Update only from the canonical Habi contract and record source commit and digest."
+}

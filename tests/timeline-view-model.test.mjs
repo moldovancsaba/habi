@@ -14,17 +14,12 @@ function page(overrides = {}) {
         processId: "thread-1",
         replyTo: "event-0",
         relatedId: null,
-        tenantId: "tenant-secret",
-        retentionPolicyId: "retention-secret",
-        email: "private@example.test",
-        text: "must not be inferred or copied from storage-shaped extras",
       },
     ],
     edges: [{ from: "event-1", to: "event-0", kind: "reply" }],
     processes: [
       {
         id: "thread-1",
-        status: "closed",
         closedAt: "2026-10-25T11:00:00.000Z",
       },
     ],
@@ -57,8 +52,6 @@ test("timeline adapter maps authorized DTO names and preserves process and page 
   assert.equal(view.accessRevision, 9);
   assert.equal(Object.hasOwn(view.events[0], "tenantId"), false);
   assert.equal(Object.hasOwn(view.events[0], "retentionPolicyId"), false);
-  assert.equal(Object.hasOwn(view.events[0], "email"), false);
-  assert.equal(Object.hasOwn(view.events[0], "text"), false);
   assert.equal(Object.isFrozen(view), true);
   assert.equal(Object.isFrozen(view.events), true);
 });
@@ -66,7 +59,7 @@ test("timeline adapter maps authorized DTO names and preserves process and page 
 test("adapter preserves explicit open state and never invents closure without process evidence", () => {
   const open = adaptTimelinePage(
     page({
-      processes: [{ id: "thread-1", status: "open", closedAt: null }],
+      processes: [{ id: "thread-1", closedAt: null }],
     }),
   );
   assert.equal(Object.hasOwn(open.events[0], "closedAt"), true);
@@ -80,18 +73,35 @@ test("adapter rejects malformed page/event data instead of dropping records", ()
   assert.throws(() => adaptTimelinePage({}), {
     message: "TIMELINE_PAGE_INVALID",
   });
+  assert.throws(() => adaptTimelinePage(page({ accessRevision: undefined })), {
+    message: "TIMELINE_PAGE_INVALID",
+  });
+  assert.throws(
+    () =>
+      adaptTimelinePage(
+        page({ nodes: [{ ...page().nodes[0], tenantId: "other-tenant" }] }),
+      ),
+    { message: "TIMELINE_PAGE_INVALID" },
+  );
+  assert.throws(
+    () =>
+      adaptTimelinePage(
+        page({ edges: [{ ...page().edges[0], retentionPolicyId: "secret" }] }),
+      ),
+    { message: "TIMELINE_PAGE_INVALID" },
+  );
   assert.throws(
     () =>
       adaptTimelinePage(
         page({ nodes: [{ ...page().nodes[0], submittedAt: "not-a-date" }] }),
       ),
-    { message: "TIMELINE_EVENT_INVALID" },
+    { message: "TIMELINE_PAGE_INVALID" },
   );
   assert.throws(
     () =>
       adaptTimelinePage(
         page({ processes: [{ id: "thread-1", closedAt: "bad" }] }),
       ),
-    { message: "TIMELINE_PROCESS_INVALID" },
+    { message: "TIMELINE_PAGE_INVALID" },
   );
 });
