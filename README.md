@@ -14,6 +14,8 @@ Az SSO app-permission policy minden műveletnél friss ellenőrzést próbál. S
 
 Az idővonal DTO adapter a szerveroldalú `submittedAt/actorRole/kind` mezőket a meglévő megjelenítő `at/role/type` alakjára képezi. Megőrzi a cursor-, continuation- és explicit process-állapotot, kihagyja a tenant/retention/audit mezőket, és nem talál ki szerzőt vagy tartalmat. Ez még nem API-handler vagy end-to-end timeline.
 
+A HTTP error helper a dokumentált hibakódokhoz stabil státuszt és `{code, requestId, retryAfter}` választ készít. Belső exception textet és stack adatot nem ad vissza, és no-store fejléccel jelöli az eredményt. A helper még nincs route-ba bekötve.
+
 ## Helyi ellenőrzés
 
 Node.js 20.19+, 22.13+ vagy 24+.

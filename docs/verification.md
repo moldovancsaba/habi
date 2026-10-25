@@ -1,5 +1,18 @@
 # Habi — ellenőrzési napló
 
+## T-HG-115 · API hiba-envelope és redakció · 2026-10-25
+
+| Parancs / próba | Eredmény | Környezet és korlát |
+| --- | --- | --- |
+| `npm test` | PASS, 37 pass, 0 fail, 1 skip | Local Node suite; Mongo replica-set integration skipped because no test URI is set. |
+| `npm run lint` | PASS, exit 0 | Biome. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript. |
+| `npm run build` | PASS, exit 0 | Next.js 16.4.3; no new routes. |
+
+The API helper maps each documented public error class to a stable HTTP status and exact `{code, requestId, retryAfter}` shape. Unknown codes become generic 500 `INTERNAL_ERROR`; raw exception messages, stack traces, connection URIs, and credential fragments are not serialized. All responses are `private, no-store`; valid retry delay is an integer and is reflected in `Retry-After`. No automatic retry is performed.
+
+Unit coverage only; the helper is not yet connected to route handlers, so this does not prove production API redaction or retry behavior. No service/DB/SSO calls or personal data. Rollback is a code revert with no persistent effect.
+
 ## T-HG-114 · Idővonal DTO → view-model adapter · 2026-10-25
 
 | Parancs / próba | Eredmény | Környezet és korlát |
