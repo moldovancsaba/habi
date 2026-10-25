@@ -2,19 +2,21 @@
 
 ## Vercel
 
-A Habi projekt neve `habi`, repositoryja `moldovancsaba/habi`. A live Habi projektet ez a branch nem változtatja meg. A mostani `codex/habi-ground-up` branch nem került feltöltésre vagy deployra. A repositoryban rögzített Vercel keretrendszer Next.js; először izolált Preview környezetben kell ellenőrizni, productionra csak külön tulajdonosi utasítással és zöld ellenőrzésekkel szabad előléptetni.
+A Habi a termék és a leszállítandó Vercel-alkalmazás. A Habigoal a bemutató/prototípus és specifikációs forrás, nem a futó termék célneve. A Habi célrepoja `moldovancsaba/habi`; a `codex/habi-ground-up` ág szándékosan lecseréli a korábbi prototípus-forrásfát. A korábbi commitok auditálható Git-előzményként megmaradnak, a korábbi alkalmazás nem megőrzendő célállapot.
+
+A repository lokálisan a `narimato/habi` Vercel projekthez van kapcsolva. A branch még nincs feltöltve vagy deployolva; a jelenlegi élő alkalmazás ezért átmenetileg a régi snapshotot szolgálja ki. Az új alkalmazás csak az új Habi forrásból készül. A kiadási út: build és automatizált ellenőrzések → Habi Preview ellenőrzése személyes adatok nélkül → a Habi Vercel projekt új forrásának kiadása → élő ellenőrzés és visszaállítható deployment rögzítése.
 
 A környezetkulcsok kanonikus nevei: `development/environment.example`. A konfigurációminta nem bizonyíték a szolgáltatáskapcsolatra. Secretet ne másolj logba, dokumentumba vagy kliens bundle-be.
 
 ## Környezeti felderítés · 2026-10-25
 
-- Vercel `habi`: a titkos `habi_mongodb_uri` változó Development, Preview és Production célra egyaránt be van állítva. Ezt nem tekintjük izolált teszt-adatbázisnak, nem húztuk le és nem olvastuk ki az értékét.
+- Vercel `habi`: a titkos `habi_mongodb_uri` változó Development, Preview és Production célra egyaránt be van állítva. A név és célkörnyezetek láthatók; az értéket nem olvastuk. Nem bizonyított, hogy ez a régi adatbázis alkalmas az új sémához, ezért nem csatlakoztunk hozzá, nem migráltunk és nem seedeltünk.
 - Vercel `habigoal`: Preview célra titkos `MONGODB_URI`, `MONGODB_DB` és `MONGODB_APP_NAME` változók vannak. Az egyik Preview deployment védett válasza HTTP 302 átirányítás volt, ezért a health állapotot és az adatbázis elkülönítését nem sikerült igazolni. Az értékeket nem olvastuk.
-- Nincs kijelölt, bizonyítottan izolált tesztstack. A felhasználó azonosítja a meglévő Preview/test környezetet. Addig nincs Vercel-link a repositoryban, env pull, Atlas kapcsolat, migráció, seed vagy deploy.
+- A Habi Vercel projekt a célkörnyezet, de a dedikált Atlas adatbázis, új `HG_*` futásidejű változók és DoneIsBetter SSO kliens nincsenek igazolva. A Vercel projektkapcsolat lokális és `.vercel/` alatt marad; titkot nem húztunk le. Preview telepítés előtt a szükséges kulcsokat és Atlas elkülönítést kell létrehozni, hogy a Preview ne módosíthassa a régi vagy éles adatokat.
 
 ## Kiadási előfeltételek
 
-1. Az izolált teszt Vercel-projektet, Atlas teszt-adatbázist és DoneIsBetter tesztkliens azonosítani kell; Preview titkok nem kerülhetnek productionból másolásra.
+1. A Habi projekthez dedikált, új sémájú Atlas adatbázist és DoneIsBetter kliens-konfigurációt kell biztosítani; a régi `habi_mongodb_uri` nem helyettesíti ezeket.
 2. Az env-kulcsok teljességét név szerint, értékek nélkül kell ellenőrizni.
 3. Futtatni kell az idempotens migrációt, indexellenőrzést és determinisztikus, csak szintetikus seedet.
 4. Igazolni kell a böngésző → Vercel API → Atlas → Mac worker → válasz → újratöltés útvonalat, pozitív és jogosulatlan tesztesetekkel.

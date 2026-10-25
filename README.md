@@ -20,7 +20,7 @@ Node.js 20.19+, 22.13+ vagy 24+.
 - `uv sync --frozen` a `worker/` mappában — Python worker környezet zárolt telepítése.
 - `uv run python -m unittest discover -s tests -v` a `worker/` mappában — worker-konfigurációs próbák.
 
-Vercel-projektet és környezetet csak azonosítás után kapcsolj a checkout-hoz. Ne futtass Atlas-migrációt, seedet vagy szolgáltatói kapcsolatot, amíg az izolált tesztkörnyezet és valamennyi env-kulcs nem igazolt. Soha ne pullold a production secretet fejlesztéshez.
+Ez a checkout a `narimato/habi` Vercel projekthez van kapcsolva (`.vercel/`, lokális és gitignore-olt). A projekt a Habi termék célkörnyezete. Jelenleg csak egy régi, titkos Mongo URI nevű változó van beállítva minden környezethez; értékét nem olvastuk. Az új runtime SSO/session/Atlas kulcsai, a dedikált adatbázis és az integráció még hiányzik. Ne húzz le production secretet; ne futtass migrációt vagy seedet a dedikált Habi adatbázis és konfiguráció ellenőrzéséig.
 
 ## Futtatási határok
 
