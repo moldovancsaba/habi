@@ -1,9 +1,54 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://habi.invalid/contracts/api-response-schemas-v2.2.0.json",
-  "title": "Habi API response schema snapshot v2.2.0",
-  "sourceApiVersion": "2.2.0",
+  "$id": "https://habi.invalid/contracts/api-response-schemas-v2.3.0.json",
+  "title": "Habi API 2.3.0 allow-listed response DTOs",
   "$defs": {
+    "AttributionView": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "player",
+            "parent",
+            "coach"
+          ]
+        }
+      },
+      "required": [
+        "displayName",
+        "role"
+      ],
+      "additionalProperties": false
+    },
+    "Continuation": {
+      "type": "object",
+      "properties": {
+        "processId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "before",
+            "after"
+          ]
+        }
+      },
+      "required": [
+        "processId",
+        "direction"
+      ],
+      "additionalProperties": false
+    },
     "Edge": {
       "type": "object",
       "properties": {
@@ -33,24 +78,124 @@
       ],
       "additionalProperties": false
     },
-    "Continuation": {
+    "RecordReadDTO": {
       "type": "object",
       "properties": {
-        "processId": {
+        "id": {
           "type": "string",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
         },
-        "direction": {
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "playerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "kind": {
           "type": "string",
           "enum": [
-            "before",
-            "after"
+            "diary",
+            "checkin_answer",
+            "observation"
+          ]
+        },
+        "recordedBy": {
+          "$ref": "#/$defs/AttributionView"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceView"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sharingClass": {
+          "type": "string",
+          "enum": [
+            "player_direct",
+            "parent_shared",
+            "coach"
+          ]
+        },
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 4000
+        },
+        "sessionId": {
+          "type": [
+            "string",
+            "null"
           ]
         }
       },
       "required": [
-        "processId",
-        "direction"
+        "id",
+        "revision",
+        "playerId",
+        "kind",
+        "recordedBy",
+        "source",
+        "occurredAt",
+        "submittedAt",
+        "sharingClass",
+        "text",
+        "sessionId"
+      ],
+      "additionalProperties": false
+    },
+    "Ref": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "id",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "SourceView": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "self",
+            "proxy",
+            "observation",
+            "provider"
+          ]
+        },
+        "respondent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AttributionView"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "respondent"
       ],
       "additionalProperties": false
     },
@@ -65,6 +210,10 @@
           "type": "integer",
           "minimum": 1
         },
+        "playerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
         "submittedAt": {
           "type": "string",
           "format": "date-time"
@@ -77,10 +226,22 @@
             "coach"
           ]
         },
+        "sourceKind": {
+          "type": "string",
+          "enum": [
+            "self",
+            "proxy",
+            "observation",
+            "provider"
+          ]
+        },
         "kind": {
           "type": "string",
           "minLength": 1,
           "maxLength": 50
+        },
+        "resourceRef": {
+          "$ref": "#/$defs/Ref"
         },
         "processId": {
           "type": "string",
@@ -112,37 +273,15 @@
       "required": [
         "id",
         "revision",
+        "playerId",
         "submittedAt",
         "actorRole",
+        "sourceKind",
         "kind",
+        "resourceRef",
         "processId",
         "replyTo",
         "relatedId"
-      ],
-      "additionalProperties": false
-    },
-    "TimelineProcessReadDTO": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
-        },
-        "closedAt": {
-          "anyOf": [
-            {
-              "type": "string",
-              "format": "date-time"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "required": [
-        "id",
-        "closedAt"
       ],
       "additionalProperties": false
     },
@@ -206,6 +345,31 @@
         "nextCursor",
         "snapshotAt",
         "accessRevision"
+      ],
+      "additionalProperties": false
+    },
+    "TimelineProcessReadDTO": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "closedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "closedAt"
       ],
       "additionalProperties": false
     }

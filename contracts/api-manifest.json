@@ -1,0 +1,9 @@
+{
+  "artifact": "api.json",
+  "sourceRepository": "https://github.com/moldovancsaba/calvus",
+  "sourcePath": "habigoal/contracts/api.json",
+  "sourceCommit": "1f4c2fa45af5a4b8bf46e1eb6e9f2ae2948fb787",
+  "apiVersion": "2.3.0",
+  "sha256": "16cdeda73a27b44595f4dc651cc7f770b48952b6c83d13982fb54c044884881e",
+  "purpose": "Pinned Habi cloud API contract. Update only from the canonical product contract and verify the source commit and digest."
+}

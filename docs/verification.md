@@ -206,3 +206,11 @@ Ezek a T-HG-105 időbélyegzett eredményei; a következő bejegyzés frissíti 
 - A Vercel projekt `frameworkPreset=Other`; Next.js beállítás és Habi buildbeállítás verifikálása deploy előtt.
 - Az új Habi Preview/Production konfiguráció és dedikált Atlas adatbázis előkészítése; a régi URI átnevezése/újrakötése nem tekinthető biztonságos konfigurációnak.
 - A teljes szerepköri folyamat, SSO, API, Atlas/GridFS és worker end-to-end próbája továbbra sincs megvalósítva.
+## T-HG-123 · API 2.3.0 timeline-tulajdonlás és jogosultság-ellenőrzött rekordbetöltés · 2026-10-25
+
+Kanonikus forrás: Calvus `1f4c2fa45af5a4b8bf46e1eb6e9f2ae2948fb787`, API 2.3.0. A pinelt válaszséma tartalmazza az idővonal oldal/esemény/folyamat DTO-kat, a pontos `playerId`, `sourceKind`, `resourceRef{id,revision}` mezőket, valamint az allow-listed `RecordReadDTO`-t és annak hivatkozott sémáit. A séma digestje: `6f2d7ff05020b32f007201d350839ec6c96396957c54976a2d3bc2292ac01415`.
+
+- `npm test`: PASS, 56 sikeres / 0 hibás / 1 kihagyott próba. A kihagyott esethez `HABI_TEST_MONGODB_URI` szükséges; az új tesztek szintetikus API-fixture-t használnak.
+- Az idővonal-loader az adapter előtt validálja a pinelt 2.3 oldalt, és megőrzi a játékos-/forrás-/erőforrás-hivatkozást.
+- A `loadTimelineRecord` az eseményből vett pontos referenciával hívja a jogosultság-ellenőrzött `/v1/players/{playerId}/records/{id}` útvonalat. Tartalmat csak érvényes DTO és egyező `playerId`, rekordazonosító, valamint revision esetén ad vissza. Eltérésnél és hibás eseménynél zártan hibára fut.
+- Ez kliensoldali szerződés- és loaderpróba, nem igazolja a telepített végpontot, szerveroldali jogosultságot, UI-integrációt, Atlas-t, SSO-t vagy személyesadat-feldolgozást. A backendnek ettől függetlenül kell tagságot és játékos-scope-ot ellenőriznie. Nem történt deploy vagy távoli adatelérés.

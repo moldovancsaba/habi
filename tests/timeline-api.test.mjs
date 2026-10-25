@@ -3,8 +3,14 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { loadTimelinePage } from "../src/lib/client/timeline-api.mjs";
-import { isTimelinePageResponse } from "../src/lib/client/timeline-response-validator.mjs";
+import {
+  loadTimelinePage,
+  loadTimelineRecord,
+} from "../src/lib/client/timeline-api.mjs";
+import {
+  isRecordReadResponse,
+  isTimelinePageResponse,
+} from "../src/lib/client/timeline-response-validator.mjs";
 
 function dto() {
   return {
@@ -12,9 +18,12 @@ function dto() {
       {
         id: "event-1",
         revision: 1,
+        playerId: "player-1",
         submittedAt: "2026-10-25T10:00:00.000Z",
         actorRole: "coach",
+        sourceKind: "observation",
         kind: "observation",
+        resourceRef: { id: "record-1", revision: 3 },
         processId: "process-1",
         replyTo: null,
         relatedId: null,
@@ -50,10 +59,10 @@ test("timeline schema snapshot matches its canonical source manifest", async () 
       "utf8",
     ),
   );
-  assert.equal(manifest.apiVersion, "2.2.0");
+  assert.equal(manifest.apiVersion, "2.3.0");
   assert.equal(
     manifest.sourceCommit,
-    "cc90a71cbf4196e61b91bd848474bc0d81330537",
+    "1f4c2fa45af5a4b8bf46e1eb6e9f2ae2948fb787",
   );
   assert.equal(
     createHash("sha256").update(schemaBytes).digest("hex"),
@@ -78,6 +87,13 @@ test("pinned timeline validator accepts the canonical DTO and rejects extra fiel
     false,
   );
   assert.equal(isTimelinePageResponse({ ...dto(), accessRevision: 0 }), false);
+  assert.equal(
+    isTimelinePageResponse({
+      ...dto(),
+      nodes: [{ ...dto().nodes[0], resourceRef: { id: "record-1" } }],
+    }),
+    false,
+  );
 });
 
 test("timeline loader uses same-origin transport, validates, and adapts the DTO", async () => {
@@ -104,12 +120,77 @@ test("timeline loader uses same-origin transport, validates, and adapts the DTO"
     at: "2026-10-25T10:00:00.000Z",
     role: "coach",
     type: "observation",
+    playerId: "player-1",
+    sourceKind: "observation",
+    resourceRef: { id: "record-1", revision: 3 },
     processId: "process-1",
     replyTo: null,
     relatedId: null,
     closedAt: null,
   });
   assert.equal(result.accessRevision, 2);
+});
+
+function recordDto(overrides = {}) {
+  return {
+    id: "record-1",
+    revision: 3,
+    playerId: "player-1",
+    kind: "observation",
+    recordedBy: { role: "coach", displayName: "Coach" },
+    source: { kind: "observation", respondent: null },
+    occurredAt: "2026-10-25T09:55:00.000Z",
+    submittedAt: "2026-10-25T10:00:00.000Z",
+    sharingClass: "coach",
+    text: "Synthetic test record",
+    sessionId: null,
+    ...overrides,
+  };
+}
+
+test("linked record loader uses exact event reference and validates record identity", async () => {
+  let captured;
+  const record = recordDto();
+  assert.equal(isRecordReadResponse(record), true);
+  const result = await loadTimelineRecord(dto().nodes[0], {
+    fetchImpl: async (path, options) => {
+      captured = { path, options };
+      return response(record);
+    },
+  });
+  assert.equal(captured.path, "/v1/players/player-1/records/record-1");
+  assert.equal(captured.options.credentials, "same-origin");
+  assert.equal(captured.options.cache, "no-store");
+  assert.deepEqual(result, record);
+});
+
+test("linked record loader fails closed on mismatched owner, ID, or revision", async () => {
+  for (const mismatch of [
+    { playerId: "player-2" },
+    { id: "record-2" },
+    { revision: 4 },
+  ]) {
+    await assert.rejects(
+      loadTimelineRecord(dto().nodes[0], {
+        fetchImpl: async () => response(recordDto(mismatch)),
+      }),
+      { message: "LINKED_RECORD_MISMATCH" },
+    );
+  }
+
+  let called = false;
+  await assert.rejects(
+    loadTimelineRecord(
+      { ...dto().nodes[0], playerId: "../other" },
+      {
+        fetchImpl: async () => {
+          called = true;
+        },
+      },
+    ),
+    { message: "TIMELINE_EVENT_INVALID" },
+  );
+  assert.equal(called, false);
 });
 
 test("timeline loader fails closed on malformed response and query", async () => {

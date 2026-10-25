@@ -1,6 +1,10 @@
 import { requestHabiApi } from "./api-client.mjs";
 import { adaptTimelinePage } from "./timeline-view-model.mjs";
-import { isTimelinePageResponse } from "./timeline-response-validator.mjs";
+import {
+  isRecordReadResponse,
+  isTimelineEventResponse,
+  isTimelinePageResponse,
+} from "./timeline-response-validator.mjs";
 
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 
@@ -62,4 +66,30 @@ export async function loadTimelinePage(query, options = {}) {
     validateResponse: isTimelinePageResponse,
   });
   return adaptTimelinePage(dto);
+}
+
+/**
+ * Load a linked record only through the separately authorized record endpoint.
+ * The timeline event is a locator, not authorization; exact player, ID, and
+ * revision agreement is required before returning record content to a caller.
+ */
+export async function loadTimelineRecord(event, options = {}) {
+  if (!isTimelineEventResponse(event)) {
+    throw new Error("TIMELINE_EVENT_INVALID");
+  }
+  const { playerId, resourceRef } = event;
+  const path = `/v1/players/${encodeURIComponent(playerId)}/records/${encodeURIComponent(resourceRef.id)}`;
+  const record = await requestHabiApi(path, {
+    ...options,
+    method: "GET",
+    validateResponse: isRecordReadResponse,
+  });
+  if (
+    record.playerId !== playerId ||
+    record.id !== resourceRef.id ||
+    record.revision !== resourceRef.revision
+  ) {
+    throw new Error("LINKED_RECORD_MISMATCH");
+  }
+  return record;
 }

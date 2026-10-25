@@ -25,6 +25,7 @@ function requireEvent(event) {
     !Number.isSafeInteger(event.revision) ||
     event.revision < 1 ||
     !isDateTime(event.submittedAt) ||
+    !isId(event.playerId) ||
     !ROLES.has(event.actorRole) ||
     typeof event.kind !== "string" ||
     event.kind.length < 1 ||
@@ -69,6 +70,12 @@ export function adaptTimelinePage(page) {
       at: node.submittedAt,
       role: node.actorRole,
       type: node.kind,
+      playerId: node.playerId,
+      sourceKind: node.sourceKind,
+      resourceRef: Object.freeze({
+        id: node.resourceRef.id,
+        revision: node.resourceRef.revision,
+      }),
       processId: node.processId,
       replyTo: node.replyTo,
       relatedId: node.relatedId,
