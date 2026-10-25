@@ -40,3 +40,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Python worker
+__pycache__/
+*.py[cod]
+.venv/
