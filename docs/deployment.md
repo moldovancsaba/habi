@@ -22,3 +22,10 @@ A környezetkulcsok kanonikus nevei: `development/environment.example`. A konfig
 4. Igazolni kell a böngésző → Vercel API → Atlas → Mac worker → válasz → újratöltés útvonalat, pozitív és jogosulatlan tesztesetekkel.
 5. Visszaállításnál a legutóbbi jó Vercel deploymentre és Atlas mentésre kell visszaállni; migrációs rollbacket külön kell validálni.
 6. Gyermek/personal adatokkal végzett pilot csak verziózott, jóváhagyott consent/retention policy, jogosultságok és felelős reviewer után indulhat.
+
+## Migrációs és tesztadat-határok
+
+- A jelenlegi `db:migrate:test` és `db:seed:test` parancsok kizárólag localhoston futó, `_test` végű adatbázisra fogadnak konfigurációt; a guard Vercel/Atlas környezetet elutasít.
+- A MongoDB integrációs teszt szintén csak explicit `HABI_TEST_MONGODB_URI` mellett fut; a fejlesztői példány külön `habi_<run>_test` adatbázist hoz létre és a teszt végén törli.
+- Nincs production migrációparancs vagy automatikus migráció Vercel indításkor. Ezt későbbi munka előzi meg dedikált adatbázis, least-privilege migrációs credential, backup, rollback/forward javítási terv és jóváhagyott futtatási eljárás mellett.
+- Az indexmigráció idempotens előrehaladást támogat; nem tartalmaz veszélyes automatikus visszabontást. Hibás migráció után meg kell őrizni a hiba bizonyítékát, nem vakon törölni a ledger rekordot; javító migráció vagy jóváhagyott backup restore szükséges.

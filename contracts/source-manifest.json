@@ -1,0 +1,8 @@
+{
+  "artifact": "domain-schemas.source.json",
+  "sourceRepository": "https://github.com/moldovancsaba/calvus",
+  "sourcePath": "habigoal/contracts/schemas.json",
+  "sourceCommit": "bd09b4fdcd73487651344e3d550479c759060981",
+  "sha256": "4b15cbac01f854359e6a9a51ce5a8ea74161ce0acb8947e630de494ecbff58d0",
+  "purpose": "Build-time snapshot of accepted Habi data contracts used by runtime validators. Update only from the canonical contract and record the source commit and digest."
+}

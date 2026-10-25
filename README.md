@@ -4,7 +4,7 @@ A Habi a fiatal sportolókhoz és a körülöttük lévő jogosult felnőttekhez
 
 ## Aktuális állapot
 
-Ez az ág a régi Habi prototípus forrását eltávolítja az alkalmazás-pillanatképből, és az elfogadott Vercel + Atlas + DoneIsBetter SSO + helyi Mac AI-worker architektúrához készít tiszta Next.js alapot. A korábbi commitok a Git történetében megmaradnak. A kódbázis konfigurációvalidálást, biztonságos elérhetetlenségi oldalt, liveness és readiness végpontot, valamint fail-closed, újrahasznált Atlas `MongoClient` kapcsolati réteget tartalmaz. Domain repositoryk, SSO, üzleti API, sémamigrációk, indexek, seed, GridFS, AI-poller és személyes pilot még nincs megvalósítva.
+Ez a repository a Habi terméket a földről építi újra. A régi alkalmazás forrása nem része a jelenlegi alkalmazásnak; előzménye csak a Git történetében marad. A Habigoal bemutató/prototípus elfogadott szerződései a runtime validáció forrásai, nem futtatható termékkódok. A kódbázis most tartalmaz fail-closed konfigurációt, liveness/readiness végpontot, Atlas kapcsolati réteget, a szerződésekből rögzített séma-pillanatképet, szigorú MongoDB validátorokat, verziózott migrációt, szintetikus két-tenant seedet, tenant-szűrt olvasást, revision-CAS-t és tranzakciós idempotencia-adaptert. Ezt csak lokális Mongo replica seten teszteltük; nincs még Habi Atlas-kapcsolat, üzleti API-handler, SSO, GridFS, Mac worker polling/inference vagy end-to-end szerepköri folyamat.
 
 A terméket a Vercel futtatja. A Mac worker kizárólag kifelé hívja a Vercel API-t és a helyi Ollamát; közvetlen Atlas-kapcsolatot nem kap. A meglévő modellt és hostzárat kell használni. Külső személyes AI-tartalékút nincs.
 
@@ -14,13 +14,16 @@ Node.js 20.19+, 22.13+ vagy 24+.
 
 - `npm ci` — lockfile szerinti telepítés.
 - `npm test` — konfigurációs és domain-referencia próbák.
+- `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` — teljes MongoDB replica-set integrációs próbák, ha a helyi teszt-replica fut.
+- `npm run db:migrate:test` — csak explicit `HG_ENVIRONMENT=test`, `HG_MIGRATION_ALLOW_LOCAL_TEST_DB=true`, localhost URI és `_test` nevű DB mellett migrál.
+- `npm run db:seed:test` — ugyanazokkal a localhost-only guardokkal determinisztikus szintetikus két-tenant fixture-t helyez el.
 - `npm run lint` — Biome statikus ellenőrzés.
 - `npm run typecheck` — TypeScript ellenőrzés.
 - `npm run build` — Vercel/Next.js production build.
 - `uv sync --frozen` a `worker/` mappában — Python worker környezet zárolt telepítése.
 - `uv run python -m unittest discover -s tests -v` a `worker/` mappában — worker-konfigurációs próbák.
 
-Ez a checkout a `narimato/habi` Vercel projekthez van kapcsolva (`.vercel/`, lokális és gitignore-olt). A projekt a Habi termék célkörnyezete. Jelenleg csak egy régi, titkos Mongo URI nevű változó van beállítva minden környezethez; értékét nem olvastuk. Az új runtime SSO/session/Atlas kulcsai, a dedikált adatbázis és az integráció még hiányzik. Ne húzz le production secretet; ne futtass migrációt vagy seedet a dedikált Habi adatbázis és konfiguráció ellenőrzéséig.
+Ez a checkout a `narimato/habi` Vercel projekthez van kapcsolva (`.vercel/`, lokális és gitignore-olt). A projekt a Habi termék célkörnyezete. A korábbi `habi_mongodb_uri` titok értékét nem olvastuk, és az új runtime nem használja. SSO/session/Atlas konfiguráció, dedikált DB cél és integráció nincs igazolva. A jelen migrációs és seed CLI szándékosan csak localhost `_test` DB-t enged; nem kapcsolódik a Vercelhez vagy Atlas productionhöz. Production migrációs út, felülvizsgálat, backup/restore próba és külön jóváhagyás még kiépítendő.
 
 ## Futtatási határok
 
@@ -31,4 +34,4 @@ Ez a checkout a `narimato/habi` Vercel projekthez van kapcsolva (`.vercel/`, lok
 - Worker nem kap Atlas URI-t vagy felhasználói SSO hitelesítőt.
 - Személyes adatot és gyerekadatot csak külön jóváhagyott consent/policy és izolált tesztkörnyezet után lehet feldolgozni.
 
-Lásd a `docs/` könyvtárat és a [meglévő #35 szállítási feladatot](https://github.com/moldovancsaba/calvus/issues/35) a részletes elfogadási feltételekért és átadási pontokért.
+Lásd az [architektúrát](docs/architecture.md), az [alacsony szintű perzisztenciatervet](docs/persistence.md), a [kiadási/restore kapukat](docs/deployment.md), a [verification naplót](docs/verification.md) és a [meglévő #35 szállítási feladatot](https://github.com/moldovancsaba/calvus/issues/35) a részletes elfogadási feltételekért és átadási pontokért.

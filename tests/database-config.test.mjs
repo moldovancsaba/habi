@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readAtlasConfig } from "../src/lib/database/config.mjs";
 import { evaluateDatabaseReadiness } from "../src/lib/database/readiness.mjs";
+import { readLocalTestTarget } from "../scripts/database-target.mjs";
+import { hashRequestBody } from "../src/lib/database/idempotent-command.mjs";
 
 test("accepts configured Atlas settings as an immutable object", () => {
   const config = readAtlasConfig({
@@ -61,5 +63,58 @@ test("readiness reports dependency outages without leaking driver errors", async
   assert.deepEqual(healthy, {
     status: 200,
     body: { ok: true, service: "habi" },
+  });
+});
+
+test("database tooling accepts only explicitly enabled localhost test databases", () => {
+  const local = readLocalTestTarget({
+    HG_ENVIRONMENT: "test",
+    HG_MIGRATION_ALLOW_LOCAL_TEST_DB: "true",
+    HG_ATLAS_URI: "mongodb://127.0.0.1:27099/?replicaSet=habiTestRs",
+    HG_ATLAS_DATABASE: "habi_ci_test",
+  });
+  assert.equal(local.database, "habi_ci_test");
+  assert.throws(
+    () =>
+      readLocalTestTarget({
+        HG_ENVIRONMENT: "production",
+        HG_MIGRATION_ALLOW_LOCAL_TEST_DB: "true",
+        HG_ATLAS_URI: "mongodb://127.0.0.1:27099",
+        HG_ATLAS_DATABASE: "habi_prod_test",
+      }),
+    { message: "LOCAL_TEST_MIGRATION_ONLY" },
+  );
+  assert.throws(
+    () =>
+      readLocalTestTarget({
+        HG_ENVIRONMENT: "test",
+        HG_MIGRATION_ALLOW_LOCAL_TEST_DB: "true",
+        HG_ATLAS_URI: "mongodb+srv://cluster.example.net",
+        HG_ATLAS_DATABASE: "habi_test",
+      }),
+    { message: "LOCAL_TEST_DATABASE_REQUIRED" },
+  );
+  assert.throws(
+    () =>
+      readLocalTestTarget({
+        HG_ENVIRONMENT: "test",
+        HG_MIGRATION_ALLOW_LOCAL_TEST_DB: "true",
+        HG_ATLAS_URI: "mongodb://127.0.0.1:27099",
+        HG_ATLAS_DATABASE: "habi_production",
+      }),
+    { message: "LOCAL_TEST_DATABASE_REQUIRED" },
+  );
+});
+
+test("idempotency request hashing canonicalizes JSON keys and rejects non-JSON values", () => {
+  assert.equal(
+    hashRequestBody({ b: 2, a: { y: true, x: null } }),
+    hashRequestBody({ a: { x: null, y: true }, b: 2 }),
+  );
+  assert.throws(() => hashRequestBody({ value: undefined }), {
+    message: "IDEMPOTENCY_BODY_NOT_JSON",
+  });
+  assert.throws(() => hashRequestBody(new Date()), {
+    message: "IDEMPOTENCY_BODY_NOT_JSON",
   });
 });

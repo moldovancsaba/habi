@@ -1,0 +1,88 @@
+# Habi persistence design
+
+This document describes the persistence code that exists in the ground-up Habi application. It does not assert that Atlas has been provisioned or that production data has been migrated.
+
+## Boundaries
+
+- The Vercel server is the only Habi application component permitted to hold the Atlas URI.
+- The browser receives server-built DTOs. The Mac AI worker receives only its future outbound API credentials and approved job payloads; it will not receive an Atlas credential.
+- Database access is server-only. The generic persistence adapters in this version are not yet connected to authenticated business routes.
+- The old Habi app and its database are not migration sources for this build. Any future legacy data migration needs an explicit source inventory, consent/retention review, reversible export plan and separately approved execution.
+
+## Contract and validators
+
+`contracts/domain-schemas.source.json` is the pinned runtime copy of the canonical Calvus Habi schema contract. `contracts/source-manifest.json` records its repository path, source commit and SHA-256. `tests/contracts-snapshot.test.mjs` fails if the artifact and digest diverge or if a persisted collection has no entity mapping.
+
+Ajv 2020 validates the complete document schema, including nested `$ref`s, strict properties, enum values and date-time formats. The MongoDB collection validator is generated from that same entity schema and rejects invalid top-level/nested shape and types before a write. The API/service layer must call `validateContractDocument(collection, document)` before every insert/replace; Mongo validation is a second boundary, not authorization. A missing tenant or role check cannot be repaired by schema validation.
+
+MongoDB TTL indexes require BSON `Date` values. `sessions.expiresAt` and `idempotency.expiresAt` therefore use `Date` in storage; DTO adapters must convert them to ISO 8601 strings before applying the public contract.
+
+## Versioned migration
+
+`src/lib/database/migrations/001-initial-schema.mjs` creates the 36 named collections, applies strict validators, and establishes the named indexes in `migration-schema.mjs`. `runMigrations()` records each applied ID and source-file SHA-256 in `_habi_migrations`. A later invocation skips a matching version and fails with `MIGRATION_CHECKSUM_MISMATCH` if the source for an already-applied ID has changed. A changed migration must receive a new ID and a forward-only correction; never edit an applied migration in place.
+
+The runner re-applies schema/index setup if the migration did not reach its ledger write. DDL operations are deliberately idempotent. There is no automatic down migration. If an index or validator change causes an incident, stop writes if needed, preserve the failing database state and logs, then apply a reviewed forward migration or restore a verified Atlas backup. Do not delete the migration ledger to force a blind replay.
+
+The current CLI is test-only. It requires all of:
+
+```sh
+HG_ENVIRONMENT=test
+HG_MIGRATION_ALLOW_LOCAL_TEST_DB=true
+HG_ATLAS_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs
+HG_ATLAS_DATABASE=habi_local_test
+```
+
+It rejects non-test environment labels, non-loopback hosts and database names without the `_test` suffix. It does not pull Vercel secrets, contact Atlas, deploy migrations from a Vercel function or provision credentials. A production migration command needs a distinct reviewed operational path with an isolated migration principal, backup proof, deployment ordering, timeout policy and restore/forward procedure.
+
+## Synthetic seed
+
+`applySyntheticSeed()` inserts two tenants and one synthetic player per tenant using stable IDs, fixed document timestamps and `$setOnInsert`. The same player ID exists in both tenants with different synthetic time zones so a cross-tenant lookup can prove that `tenantId` is part of the query. A rerun inserts zero additional documents. The seed has no SSO identity, email, consent evidence or personal data, and the CLI refuses any non-local `_test` target.
+
+## Tenant reads and revisions
+
+`findTenantDocument(collection, tenantId, id)` always emits both tenant and document IDs. Missing scope throws `TENANT_SCOPE_REQUIRED`. `listTenantDocuments()` forces the caller scope onto the Mongo query and rejects a contradictory tenant filter. The database also has unique `(tenantId,id)` indexes on the scoped collections.
+
+`compareAndSwapDocument()` updates only `{tenantId,id,revision:expectedRevision}` and increments revision atomically. A zero-match update throws `REVISION_CONFLICT`; no last-write-wins retry occurs. General changes cannot override `_id`, `id`, `tenantId`, `schemaVersion`, `revision` or `createdAt`. Callers must read the newly authorized revision and let a user resolve a conflict.
+
+## Transaction and idempotency protocol
+
+`runIdempotentCommand()` runs a database-only callback and the idempotency receipt inside one replica-set transaction:
+
+1. Calculate a stable SHA-256 over the canonical JSON request body.
+2. Look up `(tenantId, actorOrClientId, method, path, key)` in the unique scope index.
+3. For an unexpired receipt, replay the original status and resource reference if the body hash matches; a changed body returns `IDEMPOTENCY_CONFLICT`.
+4. For an expired receipt, delete it in the transaction even if MongoDB's background TTL monitor has not deleted it yet.
+5. Execute the business DB mutations, write the receipt with a 24-hour BSON-Date expiry, then commit with `readConcern: snapshot` and `writeConcern: majority`.
+
+The database-only callback must not send an email, call Ollama, call SSO, upload to another service or perform any effect outside the transaction; MongoDB can retry a transaction callback. A client timeout after a successful commit is recovered by repeating the same request and key. The receipt stores the resource reference and response status, not a stale privileged response body; the route must re-authorize before returning current data.
+
+## Index intent
+
+| Collection        | Index purpose                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| `identities`      | Unique `(issuer,subject)` identity binding                                                       |
+| `sessions`        | Unique opaque token hash and TTL expiry                                                          |
+| `memberships`     | Active membership uniqueness and tenant/player access lookup                                     |
+| `players`         | Tenant-scoped ID uniqueness                                                                      |
+| `records`         | Tenant-scoped ID, stable player timeline, and per-session metric uniqueness for check-in answers |
+| `events`          | Player timeline order and process order                                                          |
+| `jobs`            | Tenant-scoped job identity and bounded due-job claim order                                       |
+| `idempotency`     | Unique request scope and TTL cleanup                                                             |
+| `audit`           | Tenant/time audit traversal                                                                      |
+| `deletion_ledger` | Unique tenant subject deletion control                                                           |
+
+Mongo TTL removal is asynchronous and is not authorization. Expired sessions must be rejected by request-time expiry checks; expired idempotency receipts are checked and removed in the transaction path. The current Habi schema does not define `Job.logicalKey`, so no such index is created; a future logical-job deduplication field needs a versioned contract change before index creation.
+
+## Failures and recovery
+
+- Missing or invalid Atlas config: fail closed with a generic dependency/configuration code; never include URI or provider error text in HTTP output.
+- Transaction unsupported (standalone MongoDB), primary change or transaction timeout: abort the business commit; client receives a retryable dependency error, and same-key retry decides whether a commit receipt exists.
+- Revision mismatch: return a conflict and require a fresh read; never overwrite.
+- Migration checksum mismatch: stop before running the changed migration; create a new migration ID and review the forward change.
+- Contract validation failure: reject before mutation and record a safe internal error code without sensitive request content.
+- Local test process interruption: rerun the same migration/seed against the same disposable `_test` database; migrations are idempotent and seed uses `$setOnInsert`.
+- Production recovery: not yet implemented or tested. Do not infer Atlas restore readiness from the local replica-set tests.
+
+## Verification scope
+
+The local replica-set integration tests exercise migration repeatability/checksum, schema enforcement, duplicate seed, tenant isolation, competing revisions, repeated same-key calls, concurrent same-key calls, body-hash conflicts and expiry before the asynchronous TTL sweep. They run only when `HABI_TEST_MONGODB_URI` is explicitly set. They prove MongoDB 8.0.24 single-node replica-set behavior on this workstation; they are not Atlas, production failover, backup/restore, API authorization or browser-to-worker evidence.

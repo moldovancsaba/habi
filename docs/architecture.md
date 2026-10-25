@@ -14,6 +14,17 @@ A Mac kizárólag AI-workert futtat: a worker kifelé hívja a Vercel feladat AP
 - A pool korlát folyamatonként/függvénypéldányonként értendő, nem globális Vercel-projektkorlát. Ötös pool induló, konzervatív érték, nem mért terhelési cél; a skálázás és Atlas connection budget még nincs igazolva. A driver hálózati retryja nem helyettesíti az üzleti idempotenciát.
 - Eddig csak konfiguráció- és readiness-eredménypróba futott. Atlasra nem csatlakoztunk; a `habi_mongodb_uri` secret értékét nem olvastuk vagy használtuk.
 
+## Adatbázis-alapréteg · HG-DEV-03
+
+- A 36 persistence collection sémája a Calvus `habigoal/contracts/schemas.json` fájl rögzített pillanatképe (`contracts/domain-schemas.source.json`). A `contracts/source-manifest.json` forrás commitot és SHA-256 digestet rögzít; a teszt ezt ellenőrzi. A kanonikus szerződés változását csak forrásfrissítéssel és új snapshot/digesttel szabad átvenni.
+- Ajv 2020 validálja a teljes szerződést és a beágyazott referenciákat. Az `001-initial-schema` verziózott migráció collectionenként MongoDB `$jsonSchema` validátort és indexeket állít be, `strict/error` módban. A MongoDB `expiresAt` mezői BSON Date formában tárolódnak a TTL indexhez; HTTP DTO-ba ISO dátummá kell szerializálni.
+- A tenant repository minden olvasásnál kötelező `tenantId` szűrést ad. Revision írás `findOneAndUpdate` CAS-szal zárja ki a last-write-wins felülírást; az `id`, `tenantId`, `schemaVersion`, `revision` és `createdAt` nem módosítható általános mezőként.
+- A tranzakciós idempotencia receipt-et és üzleti módosítást ugyanabban a Mongo session tranzakcióban ment. Majority write concern, snapshot read concern, 24 órás kulcs-ablak és request-body SHA-256 tartozik hozzá. A callback csak tranzakcióba kötött DB-műveletet végezhet; HTTP/Ollama/e-mail külső mellékhatás nem ismételhető benne. Az elveszett kliensválasz azonos kulccsal visszajátszható.
+- A lokális migrációs/seed CLI védelmi kapuja kizárólag `HG_ENVIRONMENT=test`, explicit `HG_MIGRATION_ALLOW_LOCAL_TEST_DB=true`, loopback Mongo URI és `_test` végű DB-nevet enged. A seed fix azonosítókat használ két tenantban, és `$setOnInsert` miatt újraindítható. A migration újrafuttatható; nincs automatikus down-migráció, visszaállítás backupból történik.
+- Ez a réteg nincs bekötve domain HTTP handlerekbe, nem igazol éles Atlas DB-t, termékfelhasználói adatot, migration production runbookot vagy backup/restore helyreállítást.
+
+A konkrét indexdefiníciók, migration checksum, TTL dátumkonverzió, tenant query adapter és helyreállítási szabályok a [persistence designban](persistence.md) vannak leírva.
+
 ## Kötelező adatvédelmi viselkedés
 
 - Minden olvasás és írás szerveroldali tenant-, szerep-, tagság- és erőforrásverzió-ellenőrzésen megy át.

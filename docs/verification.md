@@ -1,13 +1,30 @@
 # Habi — ellenőrzési napló
 
+## T-HG-108 · Perzisztencia, migráció és seed · 2026-10-25
+
+| Parancs / próba                                            | Eredmény                                                             | Környezet és korlát                                                                                                                                  |
+| ---------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm ci`                                                   | PASS, exit 0; 50 csomag, 0 audit finding                            | Node.js 24.20.0 / npm; lockfile szerinti tiszta install.                                                                                             |
+| `HABI_TEST_MONGODB_URI=… npm test`                         | PASS, exit 0; 20 test, 0 skip; ezen belül 7 MongoDB integrációs eset | Lokális MongoDB 8.0.24 egynode-os replica set, kizárólag szintetikus fixture. A szerver API, Atlas-kapcsolat, SSO és személyes adat nincs tesztelve. A 27 domain referencia-szcenárió is PASS. |
+| `npm run db:migrate:test` explicit localhost `_test` célon | PASS, exit 0; `001-initial-schema` alkalmazva                        | 36 collection, contract validator és indexek. A parancs csak localhost és `HG_ENVIRONMENT=test` értéknél engedélyezett; Vercel/Atlas címet elutasít. |
+| `npm run db:seed:test` kétszer                             | PASS; első futás 4 insert, második 0                                 | Két szintetikus tenant és két játékos; tenantonként azonos játékos-ID, eltérő timeZone marker. A DB-t a próba után eldobtuk.                         |
+| `npm run db:migrate:test` konfigurációs guard nélkül       | Várt elutasítás, exit 1                                              | `LOCAL_TEST_MIGRATION_ONLY`; DB-kapcsolat nem nyílt.                                                                                                 |
+| `npm run lint`                                             | PASS, exit 0; Biome 22 fájl                                        | Hiba és figyelmeztetés nélkül.                                                                                                                       |
+| `npm run typecheck`                                        | PASS, exit 0                                                        | TypeScript statikus ellenőrzés.                                                                                                                      |
+| `npm run build`                                            | PASS, exit 0; Next.js 16.4.3                                       | `/`, `/_not-found` statikus; `/api/health` és `/api/ready` dinamikus.                                                                                |
+
+Megvalósítás: 36 collectionre Ajv 2020 teljes sémavalidáció és MongoDB `$jsonSchema` validátor; pinned source manifest/digest; versioned `001-initial-schema` migration; tenant-szűrt repository olvasás; revision CAS; majority/snapshot tranzakciós idempotency receipt, body-hash conflict, 24h replay window és expired receipt törlése (a TTL monitor késésétől függetlenül); deterministic `$setOnInsert` seed. Same-key párhuzamos kérések és lejárt kulcs utáni új művelet is replica-seten futott.
+
+Nem készült Atlas-provisioning vagy remote/production migrációs parancs. Nem kötöttük a generikus adaptert üzleti API-handlerekhez; ezekhez továbbra is auth/authorization middleware kell. MongoDB mentésből visszaállítás, távoli deployment, SSO, GridFS és szerepköri E2E még nincs igazolva. A migráció felfelé idempotens, automatizált down-migration nincs; visszajavítás külön forward migration vagy jóváhagyott backup restore.
+
 ## T-HG-107 · Atlas kapcsolati alap és readiness · 2026-10-25
 
-| Parancs | Eredmény | Bizonyíték és korlát |
-| --- | --- | --- |
-| `npm test` | PASS, exit 0; 8 Node tesztcsoport | Atlas-konfiguráció fail-closed, szintetikus mód tiltása, readiness 200/503 és hiba-redakció; 27 domain referencia-szcenárió. Nincs élő Atlas-hívás. |
-| `npm run lint` | PASS, exit 0 | Biome 13 forrás-/tesztfájlon; figyelmeztetés nélkül. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript ellenőrzés. |
-| `npm run build` | PASS, exit 0 | Next.js 16.4.3; `/api/health` és `/api/ready` dinamikus kérésidejű route. |
+| Parancs             | Eredmény                          | Bizonyíték és korlát                                                                                                                                |
+| ------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm test`          | PASS, exit 0; 8 Node tesztcsoport | Atlas-konfiguráció fail-closed, szintetikus mód tiltása, readiness 200/503 és hiba-redakció; 27 domain referencia-szcenárió. Nincs élő Atlas-hívás. |
+| `npm run lint`      | PASS, exit 0                      | Biome 13 forrás-/tesztfájlon; figyelmeztetés nélkül.                                                                                                |
+| `npm run typecheck` | PASS, exit 0                      | TypeScript ellenőrzés.                                                                                                                              |
+| `npm run build`     | PASS, exit 0                      | Next.js 16.4.3; `/api/health` és `/api/ready` dinamikus kérésidejű route.                                                                           |
 
 Kód: `mongodb@7.7.0`, `server-only@0.0.1`; szerverpéldányon újrahasznált, maximum öt kapcsolatos MongoClient pool, rövid connection/server-selection/queue timeoutokkal. `/api/health` liveness és `/api/ready` Atlas ping-alapú readiness különválasztva. A readiness nem ad vissza belső driverhibát vagy secretet. Az aktív Next.js 16 Cache Components konfigurációban a GET handler request-time adatbázis-hozzáférése automatikusan dinamikussá teszi az útvonalat; az alkalmazás `dynamic='force-dynamic'` szegmensflaget nem használ.
 
@@ -17,14 +34,14 @@ Az új `HG_*` Atlas-konfiguráció nincs beállítva, ezért Atlas-kapcsolat, mi
 
 ### Lokális forrás- és buildellenőrzés
 
-| Parancs | Eredmény | Bizonyíték és korlát |
-| --- | --- | --- |
-| `npm ci` | PASS, exit 0 | 31 npm csomag auditálva; 0 sebezhetőségi találat; a lockfile tiszta telepítést ad. |
-| `npm test` | PASS, exit 0; 5 teszteset | 4 konfigurációs teszt és 27 domain-referencia forgatókönyv; egyik sem élő API/Atlas/SSO bizonyíték. |
-| `npm run lint` | PASS, exit 0 | Biome 8 Habi runtime/test fájlon, hiba vagy figyelmeztetés nélkül. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript statikus ellenőrzése. |
-| `npm run build` | PASS, exit 0 | Next.js 16.4.3 / Turbopack. `/` és `/_not-found` statikus; `/api/health` futásidőben kiszolgált dinamikus route. |
-| `uv sync --frozen` + `uv run python -m unittest discover -s tests -v` (`worker/`) | PASS, exit 0; 6/6 | Worker konfigurációt és credential-határokat ellenőrzi; poller, Ollama inference és valódi hostzár nem része a csomagnak. |
+| Parancs                                                                           | Eredmény                  | Bizonyíték és korlát                                                                                                      |
+| --------------------------------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `npm ci`                                                                          | PASS, exit 0              | 31 npm csomag auditálva; 0 sebezhetőségi találat; a lockfile tiszta telepítést ad.                                        |
+| `npm test`                                                                        | PASS, exit 0; 5 teszteset | 4 konfigurációs teszt és 27 domain-referencia forgatókönyv; egyik sem élő API/Atlas/SSO bizonyíték.                       |
+| `npm run lint`                                                                    | PASS, exit 0              | Biome 8 Habi runtime/test fájlon, hiba vagy figyelmeztetés nélkül.                                                        |
+| `npm run typecheck`                                                               | PASS, exit 0              | TypeScript statikus ellenőrzése.                                                                                          |
+| `npm run build`                                                                   | PASS, exit 0              | Next.js 16.4.3 / Turbopack. `/` és `/_not-found` statikus; `/api/health` futásidőben kiszolgált dinamikus route.          |
+| `uv sync --frozen` + `uv run python -m unittest discover -s tests -v` (`worker/`) | PASS, exit 0; 6/6         | Worker konfigurációt és credential-határokat ellenőrzi; poller, Ollama inference és valódi hostzár nem része a csomagnak. |
 
 A `contracts/check-contracts.py` és a `check-handoff.py` a Calvus dokumentációs/forrástárban fut, mert azok a teljes dokumentumkészletet és prototípust ellenőrzik. Eredmény: 78 API-művelet, 13 read DTO, 59 gap link, 12 függőségi munkacsomag és 25 konfigurációs kulcs PASS. A Calvus saját repository-gate-je külön marad.
 
