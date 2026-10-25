@@ -1,5 +1,16 @@
 # Habi — ellenőrzési napló
 
+## T-HG-121 · Közös vizuális forrás hash-pinelése · 2026-10-25
+
+| Parancs / próba | Eredmény | Környezet és korlát |
+| --- | --- | --- |
+| `npm test` | PASS, 54 pass, 0 fail, 1 skip | Lokális Node suite; plusz a központi CSS SHA-256 és forráscommit ellenőrzése. A Mongo replica-set integráció kihagyva, nincs `HABI_TEST_MONGODB_URI`. |
+| `npm run lint` | PASS, exit 0 | Biome. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript. |
+| `git diff --check` | PASS, exit 0 | Lokális munkafa. |
+
+A Habi `global.css` byte-pontosan egyezik a Habigoal v101 kanonikus `wireframes/global.css` fájllal. A `design/design-system-manifest.json` rögzíti a `ef6eea568961327026bddbbcea1faa2728e6006d` forráscommitot és SHA-256-ot; a regressziós teszt bármilyen eltérésnél hibázik. Nincs képernyőkomponens-módosítás, live UI, böngészős accessibility audit vagy szolgáltatásintegráció. A CSS manifest/test eltávolítása kódrevert, tartós mellékhatás nélkül.
+
 ## T-HG-120 · Rögzített timeline DTO-validálás és loader · 2026-10-25
 
 | Parancs / próba | Eredmény | Környezet és korlát |

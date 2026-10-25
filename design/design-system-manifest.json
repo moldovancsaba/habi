@@ -1,0 +1,9 @@
+{
+  "artifact": "global.css",
+  "sourceRepository": "https://github.com/moldovancsaba/calvus",
+  "sourcePath": "habigoal/wireframes/global.css",
+  "sourceCommit": "ef6eea568961327026bddbbcea1faa2728e6006d",
+  "prototypeVersion": 101,
+  "sha256": "eb6128971d4c7dcf1db030f166a1f1179259a1a8b44faf6a06420225729348d6",
+  "purpose": "Pinned copy of the accepted shared design tokens and component CSS. Preserve one visual source; update only from the canonical prototype and review the Habi impact."
+}
