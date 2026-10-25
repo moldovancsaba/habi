@@ -299,4 +299,18 @@ test("JWKS, userinfo and app permission calls are bounded, no-store and fail clo
     ),
     { message: "SSO_PERMISSION_DENIED" },
   );
+  await assert.rejects(
+    fetchAppPermission(
+      discovered,
+      {
+        subject: "sso-subject-1",
+        clientId: "habi-client",
+        accessToken: "access-token",
+      },
+      async () => {
+        throw new TypeError("network unavailable");
+      },
+    ),
+    { message: "SSO_DEPENDENCY_UNAVAILABLE" },
+  );
 });

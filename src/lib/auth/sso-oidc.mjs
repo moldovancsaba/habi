@@ -266,14 +266,26 @@ export async function fetchAppPermission(
     `/api/users/${encodeURIComponent(subject)}/apps/${encodeURIComponent(clientId)}/permissions`,
     discovery.issuer,
   );
-  const response = await fetchImpl(endpoint, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: "application/json",
-    },
-    cache: "no-store",
-    signal: timeoutSignal(),
-  });
+  let response;
+  try {
+    response = await fetchImpl(endpoint, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+      signal: timeoutSignal(),
+    });
+  } catch (error) {
+    if (
+      error instanceof TypeError ||
+      error?.name === "AbortError" ||
+      error?.name === "TimeoutError"
+    ) {
+      throw new Error("SSO_DEPENDENCY_UNAVAILABLE");
+    }
+    throw error;
+  }
   if (!response.ok)
     throw new Error(
       response.status >= 500
