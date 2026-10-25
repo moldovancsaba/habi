@@ -1,14 +1,28 @@
 # Habi — ellenőrzési napló
 
+## T-HG-127 · SSO login-indítás és biztonságos logout route · 2026-10-25
+
+| Parancs / próba                                                                     | Eredmény                      | Környezet és korlát                                                               |
+| ----------------------------------------------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------- |
+| `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, 81 pass, 0 fail, 0 skip | Izolált, egynode-os lokális MongoDB replica set; teszt-DB törlődik a suite végén. |
+| `npm run lint`                                                                      | PASS, exit 0                  | Biome, 58 forrás-/tesztfájl.                                                      |
+| `npm run typecheck`                                                                 | PASS, exit 0                  | TypeScript.                                                                       |
+| `npm run build`                                                                     | PASS, exit 0                  | Next.js 16.4.3; dinamikus `/auth/login` és `/auth/logout` route-ok.               |
+| `git diff --check`                                                                  | PASS, exit 0                  | Lokális munkafa.                                                                  |
+
+`GET /auth/login` ugyan-origin, szűrt `returnTo` értékkel indít OIDC discoveryt, szerveroldalon menti az egyszer használható state/nonce/PKCE tranzakciót, és Secure/HttpOnly/SameSite=Lax browser-binding cookie-val külső SSO-ra irányít. A válasz no-store és `Referrer-Policy: no-referrer`; discovery-hibánál nem marad félbehagyott login tranzakció. `POST /auth/logout` pontos Origin-egyezést és sessionhöz kötött CSRF tokent kér, előbb visszavonja a titkosított SSO credentialt, majd a sessiont, végül lejáratja mindkét auth cookie-t. A login és logout route-ra külön fake SSO/in-memory HTTP-próbák futottak.
+
+Ez nem teljes bejelentkezés: `/auth/callback`, OIDC code/ID-token ellenőrzés route-szinten, app-permission és identity/membership bekötés, session-kiadás és request auth middleware még nincs. A login gomb ezért marad letiltva. Nem történt élő SSO, Atlas, Vercel vagy deployment hívás, és nem dolgoztunk fel személyes adatot. Nincs tartós adatváltozás a kódon kívül; migráció nincs. Rollback: az új login/logout route-ok és handlerek kódrevertje. A már létrejött 10 perces login tranzakciók TTL-lel lejárnak.
+
 ## T-HG-126 · sessionhöz kötött titkosított SSO credential lifecycle · 2026-10-25
 
-| Parancs / próba | Eredmény | Környezet és korlát |
-| --- | --- | --- |
+| Parancs / próba                                                                     | Eredmény                      | Környezet és korlát                                                                     |
+| ----------------------------------------------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------- |
 | `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, 75 pass, 0 fail, 0 skip | Izolált, egynode-os lokális MongoDB 8.0.24 replica set; teszt-DB törölve a suite végén. |
-| `npm run lint` | PASS, exit 0 | Biome, 52 forrás-/tesztfájl. |
-| `npm run build` | PASS, exit 0 | Next.js 16.4.3; route inventory változatlan. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript. |
-| `git diff --check` | PASS, exit 0 | Lokális munkafa. |
+| `npm run lint`                                                                      | PASS, exit 0                  | Biome, 52 forrás-/tesztfájl.                                                            |
+| `npm run build`                                                                     | PASS, exit 0                  | Next.js 16.4.3; route inventory változatlan.                                            |
+| `npm run typecheck`                                                                 | PASS, exit 0                  | TypeScript.                                                                             |
+| `git diff --check`                                                                  | PASS, exit 0                  | Lokális munkafa.                                                                        |
 
 Migration 003 kétszeri futtatása, checksums, strict Mongo validator, session-unique/TTL indexek és plaintext token elutasítása ellenőrizve. Két egyidejű refresh kérelem ugyanazt az egy provider hívást eredményezte; a lease/CAS egy tokenpárt mentett, a másik kérés a friss encrypted access tokent használta. SSO elutasítás visszavonta, logout helper visszavonta és a credential újraolvasását tiltotta. A credential expiry a session expiry-vel egyezik.
 
@@ -16,13 +30,13 @@ Ez helyi DB+fake SSO bizonyíték. Nincs Habi Atlas, hosted SSO, callback/login/
 
 ## T-HG-125 · SSO refresh token protokoll és titkosítási alap · 2026-10-25
 
-| Parancs / próba | Eredmény | Környezet és korlát |
-| --- | --- | --- |
-| `npm test` | PASS, 60 pass, 0 fail, 1 skip | Lokális Node suite; az izolált Mongo replica-set próba kihagyva, mert nincs `HABI_TEST_MONGODB_URI`. SSO válaszok kontrollált fake fetchből jöttek. |
-| `npm run lint` | PASS, exit 0 | Biome, 48 forrás-/tesztfájl. |
-| `npm run build` | PASS, exit 0 | Next.js 16.4.3; API route inventory nem változott. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript. |
-| `git diff --check` | PASS, exit 0 | Lokális munkafa. |
+| Parancs / próba     | Eredmény                      | Környezet és korlát                                                                                                                                 |
+| ------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm test`          | PASS, 60 pass, 0 fail, 1 skip | Lokális Node suite; az izolált Mongo replica-set próba kihagyva, mert nincs `HABI_TEST_MONGODB_URI`. SSO válaszok kontrollált fake fetchből jöttek. |
+| `npm run lint`      | PASS, exit 0                  | Biome, 48 forrás-/tesztfájl.                                                                                                                        |
+| `npm run build`     | PASS, exit 0                  | Next.js 16.4.3; API route inventory nem változott.                                                                                                  |
+| `npm run typecheck` | PASS, exit 0                  | TypeScript.                                                                                                                                         |
+| `git diff --check`  | PASS, exit 0                  | Lokális munkafa.                                                                                                                                    |
 
 Az auth request kéri az elfogadott DoneIsBetter guide `offline_access` scope-ját; a code exchange validálja a nem üres refresh tokent és pozitív `expires_in` mezőt. A refresh grant kizárólag JSON POST-tal, no-store és 5 másodperces timeouttal fut; rotált refresh tokent ad vissza. Az AES-256-GCM helper HKDF kulcsot, egyedi 96 bites IV-t, auth tag-et és issuer/client/actor kötésű associated data-t használ; kulcs-, payload-, tenant/persona-scope és módosítási esetek teszteltek. Nincs nyers token logolva.
 
@@ -30,34 +44,34 @@ Ez nem credential persistence vagy hosted auth: a helper még nincs session/data
 
 ## T-HG-124 · Habi belépőképernyő · 2026-10-25
 
-| Parancs / próba | Eredmény | Környezet és korlát |
-| --- | --- | --- |
-| Lokális production server smoke | PASS, `/` HTTP 200 | Lokális, szintetikus adatra korlátozott környezet; a Habi SSO nincs bekötve. |
-| Viewport ellenőrzés | PASS, 360/390/430/768/1024/1440 px, nincs vízszintes túlcsordulás | Chrome headless, lokális build; 390 px szélességen 200%-os gyökér-betűméret mellett is nincs vízszintes túlcsordulás. |
-| Képernyőolvasási szemantika / fókusz | Részleges, manuális DOM-ellenőrzés | Egyetlen `h1`, `lang="hu"`, `aria-labelledby`-del címkézett fő szakasz, `role="status"`; a bejelentkezés gomb letiltott, ezért nincs aktív fókuszálható vezérlő. Fizikai eszköz és teljes képernyőolvasó-próba nem történt. |
+| Parancs / próba                      | Eredmény                                                          | Környezet és korlát                                                                                                                                                                                                         |
+| ------------------------------------ | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lokális production server smoke      | PASS, `/` HTTP 200                                                | Lokális, szintetikus adatra korlátozott környezet; a Habi SSO nincs bekötve.                                                                                                                                                |
+| Viewport ellenőrzés                  | PASS, 360/390/430/768/1024/1440 px, nincs vízszintes túlcsordulás | Chrome headless, lokális build; 390 px szélességen 200%-os gyökér-betűméret mellett is nincs vízszintes túlcsordulás.                                                                                                       |
+| Képernyőolvasási szemantika / fókusz | Részleges, manuális DOM-ellenőrzés                                | Egyetlen `h1`, `lang="hu"`, `aria-labelledby`-del címkézett fő szakasz, `role="status"`; a bejelentkezés gomb letiltott, ezért nincs aktív fókuszálható vezérlő. Fizikai eszköz és teljes képernyőolvasó-próba nem történt. |
 
 A főoldal egyértelműen Habi-ként azonosítja a terméket, magyar belépőszöveget és a hiányzó SSO-folyamat állapotát mutatja. Szerepválasztás, hamis bejelentkezés, mintajátékos vagy személyes adat nincs. A gomb szándékosan letiltott; azt SSO route/session integráció tényleges elkészülte után lehet aktiválni. Ez kizárólag a belépőfelület bizonyítéka, nem backend/API/Atlas/worker integráció vagy személyes pilot. Rollback: a `src/app/page.tsx`, `page.module.css` és `layout.tsx` változásainak revertje; nincs perzisztens adatváltozás.
 
 ## T-HG-121 · Közös vizuális forrás hash-pinelése · 2026-10-25
 
-| Parancs / próba | Eredmény | Környezet és korlát |
-| --- | --- | --- |
-| `npm test` | PASS, 54 pass, 0 fail, 1 skip | Lokális Node suite; plusz a központi CSS SHA-256 és forráscommit ellenőrzése. A Mongo replica-set integráció kihagyva, nincs `HABI_TEST_MONGODB_URI`. |
-| `npm run lint` | PASS, exit 0 | Biome. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript. |
-| `git diff --check` | PASS, exit 0 | Lokális munkafa. |
+| Parancs / próba     | Eredmény                      | Környezet és korlát                                                                                                                                   |
+| ------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm test`          | PASS, 54 pass, 0 fail, 1 skip | Lokális Node suite; plusz a központi CSS SHA-256 és forráscommit ellenőrzése. A Mongo replica-set integráció kihagyva, nincs `HABI_TEST_MONGODB_URI`. |
+| `npm run lint`      | PASS, exit 0                  | Biome.                                                                                                                                                |
+| `npm run typecheck` | PASS, exit 0                  | TypeScript.                                                                                                                                           |
+| `git diff --check`  | PASS, exit 0                  | Lokális munkafa.                                                                                                                                      |
 
 A Habi `global.css` byte-pontosan egyezik a Habigoal v101 kanonikus `wireframes/global.css` fájllal. A `design/design-system-manifest.json` rögzíti a `ef6eea568961327026bddbbcea1faa2728e6006d` forráscommitot és SHA-256-ot; a regressziós teszt bármilyen eltérésnél hibázik. Nincs képernyőkomponens-módosítás, live UI, böngészős accessibility audit vagy szolgáltatásintegráció. A CSS manifest/test eltávolítása kódrevert, tartós mellékhatás nélkül.
 
 ## T-HG-120 · Rögzített timeline DTO-validálás és loader · 2026-10-25
 
-| Parancs / próba | Eredmény | Környezet és korlát |
-| --- | --- | --- |
-| `npm test` | PASS, 53 pass, 0 fail, 1 skip | Lokális Node suite; Atlas replica-set integráció kihagyva, mert nincs `HABI_TEST_MONGODB_URI`. Az új loader fetchét kontrollált fake válasz adta. |
-| `npm run lint` | PASS, exit 0 | Biome; 44 forrás-/tesztfájl. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript, `tsc --noEmit`. |
-| Böngészőmodul build-próba | PASS, exit 0 | Ideiglenes `use client` import route sikeresen buildelt a loaderrel/Ajv sémával; a próbafájlt utána eltávolítottuk, a produkciós build nem tartalmazza ezt a próbaoldalt. |
-| `git diff --check` | PASS, exit 0 | Lokális munkafa. |
+| Parancs / próba           | Eredmény                      | Környezet és korlát                                                                                                                                                       |
+| ------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm test`                | PASS, 53 pass, 0 fail, 1 skip | Lokális Node suite; Atlas replica-set integráció kihagyva, mert nincs `HABI_TEST_MONGODB_URI`. Az új loader fetchét kontrollált fake válasz adta.                         |
+| `npm run lint`            | PASS, exit 0                  | Biome; 44 forrás-/tesztfájl.                                                                                                                                              |
+| `npm run typecheck`       | PASS, exit 0                  | TypeScript, `tsc --noEmit`.                                                                                                                                               |
+| Böngészőmodul build-próba | PASS, exit 0                  | Ideiglenes `use client` import route sikeresen buildelt a loaderrel/Ajv sémával; a próbafájlt utána eltávolítottuk, a produkciós build nem tartalmazza ezt a próbaoldalt. |
+| `git diff --check`        | PASS, exit 0                  | Lokális munkafa.                                                                                                                                                          |
 
 A `contracts/api-response-schemas.json` a kanonikus API 2.2.0 timeline read DTO-kat rögzíti; `api-response-manifest.json` rögzíti a `cc90a71cbf4196e61b91bd848474bc0d81330537` forrás-commitot és a SHA-256 digestet. Az Ajv 2020 validátor elutasítja a hiányzó `accessRevision` mezőt és a nem engedélyezett nested mezőket. A `loadTimelinePage` query allow-listet épít, same-origin `no-store` transporton kér, a pinned sémával validál, majd meghívja a view-model adaptert. A tesztek a transzportopciókat, mezőleképezést, folytatás/cursor állapotot és fail-closed viselkedést ellenőrzik.
 
@@ -65,12 +79,12 @@ Ez csak kliensmodulok közti izolált bizonyíték fake API-válasszal és a Nex
 
 ## T-HG-118 · Product API responses require validation · 2026-10-25
 
-| Command / test | Result | Environment and limits |
-| --- | --- | --- |
-| `npm test` | PASS, 49 passed, 0 failed, 1 skipped | Local Node suite; isolated Mongo replica-set test skipped because no URI was supplied. |
-| `npm run lint` | PASS, exit 0 | Biome. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript. |
-| `npm run build` | PASS, exit 0 | Next.js 16.4.3; no build-time DB probe or route error. |
+| Command / test      | Result                               | Environment and limits                                                                 |
+| ------------------- | ------------------------------------ | -------------------------------------------------------------------------------------- |
+| `npm test`          | PASS, 49 passed, 0 failed, 1 skipped | Local Node suite; isolated Mongo replica-set test skipped because no URI was supplied. |
+| `npm run lint`      | PASS, exit 0                         | Biome.                                                                                 |
+| `npm run typecheck` | PASS, exit 0                         | TypeScript.                                                                            |
+| `npm run build`     | PASS, exit 0                         | Next.js 16.4.3; no build-time DB probe or route error.                                 |
 
 `requestHabiApi` refuses `/v1/*` requests before fetch if no caller-supplied response validator is present. A validator returning false or throwing produces a generic contract error without leaking its detail. Input-method/body/header errors are checked before the validator requirement, and server error responses remain distinguishable without treating their payload as success DTOs.
 
@@ -78,12 +92,12 @@ This does not provide a canonical DTO schema registry or UI integration; screens
 
 ## T-HG-117 · Same-origin böngészős API transport · 2026-10-25
 
-| Parancs / próba | Eredmény | Környezet és korlát |
-| --- | --- | --- |
-| `npm test` | PASS, 48 pass, 0 fail, 1 skip | Node unit suite; isolated Mongo integration skip, no test URI. |
-| `npm run lint` | PASS, exit 0 | Biome, 41 source/test files. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript. |
-| `npm run build` | PASS, exit 0 | Next.js 16.4.3, no build-time route probes/errors. |
+| Parancs / próba     | Eredmény                      | Környezet és korlát                                            |
+| ------------------- | ----------------------------- | -------------------------------------------------------------- |
+| `npm test`          | PASS, 48 pass, 0 fail, 1 skip | Node unit suite; isolated Mongo integration skip, no test URI. |
+| `npm run lint`      | PASS, exit 0                  | Biome, 41 source/test files.                                   |
+| `npm run typecheck` | PASS, exit 0                  | TypeScript.                                                    |
+| `npm run build`     | PASS, exit 0                  | Next.js 16.4.3, no build-time route probes/errors.             |
 
 `src/lib/client/api-client.mjs` only allows same-origin `/api/`, `/auth/`, `/v1/` paths, same-origin cookies, no-store fetch, no redirects, and a small CSRF/idempotency/revision header allow-list; browser Authorization bearer headers are rejected. Network, abort, HTTP and protocol errors remain separate. It does not retry. Tests cover success/options, body/header behavior, path/credential restrictions, offline/abort, redacted server failures and one-call-only writes.
 
@@ -91,12 +105,12 @@ This is a transport primitive, not a connected screen or authenticated workflow.
 
 ## T-HG-116 · Request correlation and redacted API failure logging · 2026-10-25
 
-| Command / probe | Result | Environment and limits |
-| --- | --- | --- |
-| `npm test` | PASS, 42 passed, 0 failed, 1 skipped | Local Node suite; isolated Mongo replica-set integration skipped because no test URI was supplied. |
-| `npm run lint` | PASS, exit 0 | Biome, 39 source/test files. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript. |
-| `npm run build` | PASS, exit 0 | Next.js 16.4.3; no build-time route errors or readiness probes. |
+| Command / probe               | Result                                    | Environment and limits                                                                                                                                                                           |
+| ----------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm test`                    | PASS, 42 passed, 0 failed, 1 skipped      | Local Node suite; isolated Mongo replica-set integration skipped because no test URI was supplied.                                                                                               |
+| `npm run lint`                | PASS, exit 0                              | Biome, 39 source/test files.                                                                                                                                                                     |
+| `npm run typecheck`           | PASS, exit 0                              | TypeScript.                                                                                                                                                                                      |
+| `npm run build`               | PASS, exit 0                              | Next.js 16.4.3; no build-time route errors or readiness probes.                                                                                                                                  |
 | Local production-server smoke | PASS, `/api/health` 200; `/api/ready` 503 | Synthetic-only runtime config, no Atlas URI; each response had a unique `X-Request-ID`, readiness body was `DEPENDENCY_UNAVAILABLE`, and the server emitted a content-free correlated 503 event. |
 
 Both operational routes use the shared API boundary. Known/unknown exceptions map to the stable public envelope; normal 5xx dependency responses also produce safe structured events. Query/body, exception detail, driver text, URI, and credentials are not logged. The readiness 503 is expected because this local smoke intentionally had no Atlas target; it is not evidence of a live Atlas failure.
@@ -105,12 +119,12 @@ This change does not provide live Atlas/SSO verification and is not yet applied 
 
 ## T-HG-114 · Idővonal DTO → view-model adapter · 2026-10-25
 
-| Parancs / próba | Eredmény | Környezet és korlát |
-| --- | --- | --- |
-| `npm test` | PASS, 35 pass, 0 fail, 1 skip | Synthetic DTO fixture; Mongo replica-set integráció kihagyva, mert nincs `HABI_TEST_MONGODB_URI`. |
-| `npm run lint` | PASS, exit 0 | Biome. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript. |
-| `npm run build` | PASS, exit 0 | Next.js 16.4.3; a route inventory nem változott. |
+| Parancs / próba     | Eredmény                      | Környezet és korlát                                                                               |
+| ------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------- |
+| `npm test`          | PASS, 35 pass, 0 fail, 1 skip | Synthetic DTO fixture; Mongo replica-set integráció kihagyva, mert nincs `HABI_TEST_MONGODB_URI`. |
+| `npm run lint`      | PASS, exit 0                  | Biome.                                                                                            |
+| `npm run typecheck` | PASS, exit 0                  | TypeScript.                                                                                       |
+| `npm run build`     | PASS, exit 0                  | Next.js 16.4.3; a route inventory nem változott.                                                  |
 
 Az adapter a szerződött `submittedAt → at`, `actorRole → role`, `kind → type` mappinget végzi; megőrzi ID/revision/processId/replyTo/relatedId, server-process `closedAt`, edges, continuations, nextCursor, snapshotAt és explicit accessRevision állapotot. Nincs storage-only tenant/retention/audit field, email, text, title vagy author másolás. Hiányzó Processből nem következtet lezárásra. A malformed page/node/process elutasított, nem csendben elhagyott. A view model és a tömbjei immutable.
 
@@ -118,12 +132,12 @@ Nincs API-handler, Atlas/SSO kapcsolat, személyes adat, UI bekötés vagy böng
 
 ## T-HG-113 · SSO permission outage grace · 2026-10-25
 
-| Parancs / próba | Eredmény | Környezet és korlát |
-| --- | --- | --- |
-| `npm test` | PASS, 32 pass, 0 fail, 1 skip | Node.js local unit/domain suite; a Mongo replica-set integráció kihagyva, mert nincs `HABI_TEST_MONGODB_URI`. |
-| `npm run lint` | PASS, exit 0 | Biome. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript. |
-| `npm run build` | PASS, exit 0 | Next.js 16.4.3. |
+| Parancs / próba     | Eredmény                      | Környezet és korlát                                                                                           |
+| ------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `npm test`          | PASS, 32 pass, 0 fail, 1 skip | Node.js local unit/domain suite; a Mongo replica-set integráció kihagyva, mert nincs `HABI_TEST_MONGODB_URI`. |
+| `npm run lint`      | PASS, exit 0                  | Biome.                                                                                                        |
+| `npm run typecheck` | PASS, exit 0                  | TypeScript.                                                                                                   |
+| `npm run build`     | PASS, exit 0                  | Next.js 16.4.3.                                                                                               |
 
 Az új permission policy adapter minden hívásnál először a friss SSO-ellenőrzést próbálja. SSO-hálózati/kiesési hibánál legfeljebb 60 másodperces approved cache kizárólag normál `read` műveletet tarthat fenn; hiányzó, lejárt vagy jövőből származó timestamp elutasított. `write`, `publish` és `worker_context` offline mindig `SSO_DEPENDENCY_UNAVAILABLE`; sikeres friss revocation törli a korábbi cache-engedélyt. Fetch timeout/network hibák stabil unavailable hibakódra normalizálódnak; váratlan checker hiba általános, zárt `SSO_PERMISSION_CHECK_FAILED` választ ad. A cache issuer/subject/client scope-ra különül, process-local és 256-entry boundot alkalmaz; csak hash-kulcsot és minimális engedélyállapotot tárol.
 
@@ -131,13 +145,13 @@ A próbák fake permission checkerrel futottak; nem történt SSO/Atlas/Vercel k
 
 ## T-HG-112 · JWKS kulcsrotáció és session ID kontraktus · 2026-10-25
 
-| Parancs / próba | Eredmény | Környezet és korlát |
-| --- | --- | --- |
-| `npm test` | PASS, exit 0; 27 pass, 0 fail, 1 skip | Az Atlas replica-set integration case kihagyva, mert ebben a futásban nem volt `HABI_TEST_MONGODB_URI`; JWKS-próba generált RSA kulcspárral és fake fetch-sel futott. |
-| `npm run lint` | PASS, exit 0; 31 fájl | Biome, figyelmeztetés nélkül. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript. |
-| `npm run build` | PASS, exit 0 | Next.js 16.4.3; auth route továbbra sincs a route inventoryban. |
-| `git diff --check` | PASS, exit 0 | Nincs whitespace-hiba. |
+| Parancs / próba     | Eredmény                              | Környezet és korlát                                                                                                                                                   |
+| ------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm test`          | PASS, exit 0; 27 pass, 0 fail, 1 skip | Az Atlas replica-set integration case kihagyva, mert ebben a futásban nem volt `HABI_TEST_MONGODB_URI`; JWKS-próba generált RSA kulcspárral és fake fetch-sel futott. |
+| `npm run lint`      | PASS, exit 0; 31 fájl                 | Biome, figyelmeztetés nélkül.                                                                                                                                         |
+| `npm run typecheck` | PASS, exit 0                          | TypeScript.                                                                                                                                                           |
+| `npm run build`     | PASS, exit 0                          | Next.js 16.4.3; auth route továbbra sincs a route inventoryban.                                                                                                       |
+| `git diff --check`  | PASS, exit 0                          | Nincs whitespace-hiba.                                                                                                                                                |
 
 Az ismeretlen `kid` egyszeri JWKS-frissítése csak jól formált RS256 JWT fejlécre indul; hibás token nem generál hálózati kérést, az ismeretlen kulcs frissítés után elutasított marad. Minden JWKS HTTP-kérés no-store és legfeljebb öt másodperces. A session ID Base64URL-ről hexre változott, mert a Base64URL véletlen érték `_` vagy `-` karakterrel kezdődhetett, amely megsértette a közös alfanumerikus kezdőkarakterű ID-sémát. Ez a szerződés alapján intermittáló session-kiadási hibát okozhatott.
 
@@ -145,13 +159,13 @@ Nem történt SSO/Atlas/Vercel hívás, deploy vagy adatváltozás. Rollback: az
 
 ## T-HG-110 · OIDC és session alapprimitívek · 2026-10-25
 
-| Parancs / próba | Eredmény | Környezet és korlát |
-| --- | --- | --- |
+| Parancs / próba                                                                     | Eredmény                    | Környezet és korlát                                                                                                                                               |
+| ----------------------------------------------------------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, exit 0; 36/36, 0 skip | Node.js 24.20; lokális MongoDB 8.0.24 egynode-os replica set; 9 Mongo-integrációs alteset. OIDC HTTP-függőségek fake fetch-sel; nincs élő SSO/Atlas/hosted próba. |
-| `npm run lint` | PASS, exit 0; 31 fájl | Biome, figyelmeztetés nélkül. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript, `tsc --noEmit`. |
-| `npm run build` | PASS, exit 0 | Next.js 16.4.3; route inventory változatlan, auth függvények még nincsenek bekötve. |
-| `git diff --check` | PASS, exit 0 | Nincs whitespace-hiba. |
+| `npm run lint`                                                                      | PASS, exit 0; 31 fájl       | Biome, figyelmeztetés nélkül.                                                                                                                                     |
+| `npm run typecheck`                                                                 | PASS, exit 0                | TypeScript, `tsc --noEmit`.                                                                                                                                       |
+| `npm run build`                                                                     | PASS, exit 0                | Next.js 16.4.3; route inventory változatlan, auth függvények még nincsenek bekötve.                                                                               |
+| `git diff --check`                                                                  | PASS, exit 0                | Nincs whitespace-hiba.                                                                                                                                            |
 
 OIDC: felfedezési issuer pontos egyezés és az issuer HTTPS originjén belüli endpointok; S256 authorization URL; JSON `client_secret_post` tokencsere; JWKS-alapú, kizárólag RS256 aláírás és `iss/aud/azp/exp/iat/nonce` ellenőrzés; userinfo és `approved` + `user|admin` app-permission ellenőrzés; minden hálózati kérés öt másodperces timeouttal, `no-store` beállítással. A session alapréteg 256 bites opaque tokent, csak HMAC-SHA256 hash tárolást, sessionhöz kötött CSRF tokent, 8 órás abszolút és 30 perces inaktivitási határt, touch/revoke műveletet ad. A `(issuer,subject)` feloldó csak aktív helyi actort, aktív nem lejárt membershipet, aktív tenantot és tenanton belül létező playert fogad el; email-alapú összefűzés nincs.
 
@@ -159,13 +173,13 @@ Nincs még route-level flow, ismeretlen `kid` esetén egyszeri JWKS refresh, per
 
 ## T-HG-109 · Login-tranzakciós alap · 2026-10-25
 
-| Parancs / próba | Eredmény | Környezet és korlát |
-| --- | --- | --- |
-| `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, exit 0; 26/26, 0 skip | Node.js 24.20; lokális MongoDB 8.0.24 egynode-os replica set, kizárólag eldobható szintetikus `_test` DB. 8 Mongo integrációs alteset. SSO/Atlas/hosted route nincs hívva. |
-| `npm run lint` | PASS, exit 0; 25 forrás-/tesztfájl | Biome; nulla lint/format hiba. |
-| `npm run typecheck` | PASS, exit 0 | TypeScript, `tsc --noEmit`. |
-| `npm run build` | PASS, exit 0 | Next.js 16.4.3/Turbopack; az új auth route még nincs bekötve. |
-| `git diff --check` | PASS, exit 0 | Nincs whitespace-hiba. |
+| Parancs / próba                                                                     | Eredmény                           | Környezet és korlát                                                                                                                                                        |
+| ----------------------------------------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, exit 0; 26/26, 0 skip        | Node.js 24.20; lokális MongoDB 8.0.24 egynode-os replica set, kizárólag eldobható szintetikus `_test` DB. 8 Mongo integrációs alteset. SSO/Atlas/hosted route nincs hívva. |
+| `npm run lint`                                                                      | PASS, exit 0; 25 forrás-/tesztfájl | Biome; nulla lint/format hiba.                                                                                                                                             |
+| `npm run typecheck`                                                                 | PASS, exit 0                       | TypeScript, `tsc --noEmit`.                                                                                                                                                |
+| `npm run build`                                                                     | PASS, exit 0                       | Next.js 16.4.3/Turbopack; az új auth route még nincs bekötve.                                                                                                              |
+| `git diff --check`                                                                  | PASS, exit 0                       | Nincs whitespace-hiba.                                                                                                                                                     |
 
 Elkészült a 36 termékszerződés szerinti collectiontól különálló `auth_transactions` belső tároló, szigorú Mongo validatorral, state-hash és aktív browser-binding egyedi indexszel, valamint tízperces TTL indexszel. Az új `002-auth-transactions` forward migration hozzáadja ezt a tárolót; a már kiadott `001-initial-schema` fájl változatlan. A state egyszer használható, browser-bound és lejáratot ellenőrző atomic `findOneAndUpdate` útvonalat kapott. A második login ugyanazon browser bindinggel az első tranzakciót invalidálja. `returnTo` csak same-origin relatív útvonal lehet; az authorize URL S256 PKCE paramétereket épít.
 
@@ -173,16 +187,16 @@ Ez csak a szerveroldali tranzakciós alap és helyi próba. Hosted `/auth/login`
 
 ## T-HG-108 · Perzisztencia, migráció és seed · 2026-10-25
 
-| Parancs / próba                                            | Eredmény                                                             | Környezet és korlát                                                                                                                                  |
-| ---------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm ci`                                                   | PASS, exit 0; 50 csomag, 0 audit finding                            | Node.js 24.20.0 / npm; lockfile szerinti tiszta install.                                                                                             |
+| Parancs / próba                                                                     | Eredmény                                                             | Környezet és korlát                                                                                                                                                                            |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm ci`                                                                            | PASS, exit 0; 50 csomag, 0 audit finding                             | Node.js 24.20.0 / npm; lockfile szerinti tiszta install.                                                                                                                                       |
 | `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, exit 0; 20 test, 0 skip; ezen belül 7 MongoDB integrációs eset | Lokális MongoDB 8.0.24 egynode-os replica set, kizárólag szintetikus fixture. A szerver API, Atlas-kapcsolat, SSO és személyes adat nincs tesztelve. A 27 domain referencia-szcenárió is PASS. |
-| `npm run db:migrate:test` explicit localhost `_test` célon | PASS, exit 0; `001-initial-schema` alkalmazva                        | 36 collection, contract validator és indexek. A parancs csak localhost és `HG_ENVIRONMENT=test` értéknél engedélyezett; Vercel/Atlas címet elutasít. |
-| `npm run db:seed:test` kétszer                             | PASS; első futás 4 insert, második 0                                 | Két szintetikus tenant és két játékos; tenantonként azonos játékos-ID, eltérő timeZone marker. A DB-t a próba után eldobtuk.                         |
-| `npm run db:migrate:test` konfigurációs guard nélkül       | Várt elutasítás, exit 1                                              | `LOCAL_TEST_MIGRATION_ONLY`; DB-kapcsolat nem nyílt.                                                                                                 |
-| `npm run lint`                                             | PASS, exit 0; Biome 22 fájl                                        | Hiba és figyelmeztetés nélkül.                                                                                                                       |
-| `npm run typecheck`                                        | PASS, exit 0                                                        | TypeScript statikus ellenőrzés.                                                                                                                      |
-| `npm run build`                                            | PASS, exit 0; Next.js 16.4.3                                       | `/`, `/_not-found` statikus; `/api/health` és `/api/ready` dinamikus.                                                                                |
+| `npm run db:migrate:test` explicit localhost `_test` célon                          | PASS, exit 0; `001-initial-schema` alkalmazva                        | 36 collection, contract validator és indexek. A parancs csak localhost és `HG_ENVIRONMENT=test` értéknél engedélyezett; Vercel/Atlas címet elutasít.                                           |
+| `npm run db:seed:test` kétszer                                                      | PASS; első futás 4 insert, második 0                                 | Két szintetikus tenant és két játékos; tenantonként azonos játékos-ID, eltérő timeZone marker. A DB-t a próba után eldobtuk.                                                                   |
+| `npm run db:migrate:test` konfigurációs guard nélkül                                | Várt elutasítás, exit 1                                              | `LOCAL_TEST_MIGRATION_ONLY`; DB-kapcsolat nem nyílt.                                                                                                                                           |
+| `npm run lint`                                                                      | PASS, exit 0; Biome 22 fájl                                          | Hiba és figyelmeztetés nélkül.                                                                                                                                                                 |
+| `npm run typecheck`                                                                 | PASS, exit 0                                                         | TypeScript statikus ellenőrzés.                                                                                                                                                                |
+| `npm run build`                                                                     | PASS, exit 0; Next.js 16.4.3                                         | `/`, `/_not-found` statikus; `/api/health` és `/api/ready` dinamikus.                                                                                                                          |
 
 Megvalósítás: 36 collectionre Ajv 2020 teljes sémavalidáció és MongoDB `$jsonSchema` validátor; pinned source manifest/digest; versioned `001-initial-schema` migration; tenant-szűrt repository olvasás; revision CAS; majority/snapshot tranzakciós idempotency receipt, body-hash conflict, 24h replay window és expired receipt törlése (a TTL monitor késésétől függetlenül); deterministic `$setOnInsert` seed. Same-key párhuzamos kérések és lejárt kulcs utáni új művelet is replica-seten futott.
 

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
 import { MongoClient } from "mongodb";
 import {
@@ -14,6 +15,12 @@ import {
   createLoginTransaction,
   persistLoginTransaction,
 } from "../src/lib/auth/login-transaction.mjs";
+import { createLoginHandler } from "../src/lib/auth/login-handler.mjs";
+import {
+  createLogoutHandler,
+  SESSION_COOKIE,
+  CSRF_HEADER,
+} from "../src/lib/auth/logout-handler.mjs";
 import {
   createSessionSsoCredential,
   getSessionAccessToken,
@@ -163,6 +170,48 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
         }),
         null,
       );
+    },
+  );
+
+  await t.test(
+    "login route writes strict transaction state before redirect",
+    async () => {
+      const issuer = "https://sso.example.test";
+      const handler = createLoginHandler({
+        db,
+        config: {
+          issuer,
+          clientId: "habi-integration-client",
+          redirectUri: "https://habi.example.test/auth/callback",
+        },
+        fetchImpl: async (url, options) => {
+          assert.equal(
+            String(url),
+            `${issuer}/.well-known/openid-configuration`,
+          );
+          assert.equal(options.cache, "no-store");
+          return Response.json({
+            issuer,
+            authorization_endpoint: `${issuer}/api/oauth/authorize`,
+            token_endpoint: `${issuer}/api/oauth/token`,
+            userinfo_endpoint: `${issuer}/api/oauth/userinfo`,
+            jwks_uri: `${issuer}/api/oauth/jwks`,
+            id_token_signing_alg_values_supported: ["RS256"],
+          });
+        },
+      });
+      const response = await handler(
+        new Request("https://habi.example.test/auth/login?returnTo=%2Fhome"),
+      );
+      assert.equal(response.status, 302);
+      const state = new URL(response.headers.get("location")).searchParams.get(
+        "state",
+      );
+      const transaction = await db.collection("auth_transactions").findOne({
+        stateHash: createHash("sha256").update(state).digest("hex"),
+      });
+      assert.ok(transaction);
+      assert.equal(transaction.returnTo, "/home");
     },
   );
 
@@ -332,6 +381,64 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           sessionId: issued.document.id,
         }),
         null,
+      );
+    },
+  );
+
+  await t.test(
+    "logout revokes a real session and its encrypted credential",
+    async () => {
+      const now = new Date();
+      const hmacKey = "test-only-session-key-material-0123456789";
+      const encryptionKey =
+        "test-refresh-encryption-key-with-strong-length-0123456789";
+      const issued = await issueSession(db.collection("sessions"), {
+        actorId: "seed-actor-test",
+        tenantId: "seed-tenant-a",
+        retentionPolicyId: "retention-v1",
+        activeRole: "parent",
+        playerId: "seed-player-001",
+        accessRevision: 1,
+        hmacKey,
+        now,
+      });
+      await createSessionSsoCredential(
+        db.collection("session_sso_credentials"),
+        {
+          session: issued.document,
+          issuer: "https://sso.example.test",
+          clientId: "habi-test-client",
+          accessToken: "logout-access-token",
+          refreshToken: "logout-refresh-token",
+          expiresIn: 3600,
+          encryptionKey,
+          now,
+        },
+      );
+      const response = await createLogoutHandler({
+        db,
+        hmacKey,
+        now: () => now,
+      })(
+        new Request("https://habi.example.test/auth/logout", {
+          method: "POST",
+          headers: {
+            Origin: "https://habi.example.test",
+            Cookie: `${SESSION_COOKIE}=${issued.token}`,
+            [CSRF_HEADER]: issued.csrfToken,
+          },
+        }),
+      );
+      assert.equal(response.status, 204);
+      assert.ok(
+        await db
+          .collection("sessions")
+          .findOne({ id: issued.document.id, revokedAt: now.toISOString() }),
+      );
+      assert.ok(
+        await db
+          .collection("session_sso_credentials")
+          .findOne({ sessionId: issued.document.id, revokedAt: now }),
       );
     },
   );

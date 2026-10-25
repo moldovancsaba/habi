@@ -11,7 +11,7 @@ This document describes the persistence code that exists in the ground-up Habi a
 
 ## Contract and validators
 
-`contracts/domain-schemas.source.json` is the pinned runtime copy of the canonical Calvus Habi schema contract. `contracts/source-manifest.json` records its repository path, source commit and SHA-256. `tests/contracts-snapshot.test.mjs` fails if the artifact and digest diverge or if a persisted collection has no entity mapping.
+`contracts/domain-schemas.source.json` is the versioned Habi-local schema contract snapshot used by runtime validation. `contracts/source-manifest.json` records provenance and SHA-256 integrity; build and runtime do not fetch another repository. `tests/contracts-snapshot.test.mjs` fails if the artifact and digest diverge or if a persisted collection has no entity mapping.
 
 Ajv 2020 validates the complete document schema, including nested `$ref`s, strict properties, enum values and date-time formats. The MongoDB collection validator is generated from that same entity schema and rejects invalid top-level/nested shape and types before a write. The API/service layer must call `validateContractDocument(collection, document)` before every insert/replace; Mongo validation is a second boundary, not authorization. A missing tenant or role check cannot be repaired by schema validation.
 
@@ -60,29 +60,29 @@ The database-only callback must not send an email, call Ollama, call SSO, upload
 
 ## Authentication transaction storage
 
-`src/lib/auth/login-transaction.mjs` creates cryptographically random state, nonce, PKCE verifier, and browser-binding values. Only the SHA-256 hashes of state and browser binding are indexed; nonce and verifier are held server-side in `auth_transactions`. The browser binding is intended for the `__Host-hg_auth_txn` Secure/HttpOnly/SameSite=Lax cookie. A new login for the same binding atomically consumes its previous pending transaction before inserting a replacement. Callback consumption is a single `findOneAndUpdate` constrained by both hashes, `consumedAt: null`, and `expiresAt > now`, so replay, wrong-browser use, and expiry fail closed. `returnTo` is restricted to same-origin relative paths.
+`src/lib/auth/login-transaction.mjs` creates cryptographically random state, nonce, PKCE verifier, and browser-binding values. Only the SHA-256 hashes of state and browser binding are indexed; nonce and verifier are held server-side in `auth_transactions`. The browser binding is intended for the `__Host-hg_auth_txn` Secure/HttpOnly/SameSite=Lax cookie. Starting a new login first marks any pending transaction for the same binding consumed, then inserts the replacement; the partial unique index rejects concurrent duplicate pending transactions. Callback consumption is a single `findOneAndUpdate` constrained by both hashes, `consumedAt: null`, and `expiresAt > now`, so replay, wrong-browser use, and expiry fail closed. `returnTo` is restricted to same-origin relative paths. `src/app/auth/login/route.ts` uses dynamic request handling, loads issuer-pinned discovery metadata, and redirects with no-store/referrer protection plus the Secure, HttpOnly, SameSite=Lax binding cookie.
 
-`src/lib/auth/sso-oidc.mjs` supplies testable OIDC protocol functions: HTTPS issuer discovery pinned to its origin, JSON authorization-code exchange (`client_secret_post`), RS256/JWKS claim verification (`iss`, `aud`, `azp`, `exp`, `iat`, `nonce`), userinfo, and approved app-permission checks. Each HTTP dependency request is no-store and has a five-second timeout. `verifyIdTokenWithKeyRefresh` refreshes JWKS once only when a well-formed RS256 token references an unknown signing `kid`; malformed tokens do not trigger a fetch and a missing key after refresh is rejected. These functions are not yet wired into a hosted route.
+`src/lib/auth/sso-oidc.mjs` supplies testable OIDC protocol functions: HTTPS issuer discovery pinned to its origin, JSON authorization-code exchange (`client_secret_post`), RS256/JWKS claim verification (`iss`, `aud`, `azp`, `exp`, `iat`, `nonce`), userinfo, and approved app-permission checks. Each HTTP dependency request is no-store and has a five-second timeout. `verifyIdTokenWithKeyRefresh` refreshes JWKS once only when a well-formed RS256 token references an unknown signing `kid`; malformed tokens do not trigger a fetch and a missing key after refresh is rejected. These protocol functions are used by the `/auth/login` initiation route; callback verification and session issuance remain unwired.
 
-`src/lib/auth/session.mjs` generates 256-bit opaque session tokens and stores only a purpose-separated HMAC-SHA256 token hash. Session IDs are 24 random bytes encoded as hex to always satisfy the shared identifier schema. It derives an HMAC CSRF token bound to that browser session and implements request-time absolute expiry (eight hours), idle expiry (30 minutes), atomic idle touch, and revocation. No SSO access/refresh token is persisted. Local Mongo behavior and crypto checks are tested, but no hosted session issuance or request authorization middleware exists.
+`src/lib/auth/session.mjs` generates 256-bit opaque session tokens and stores only a purpose-separated HMAC-SHA256 token hash. Session IDs are 24 random bytes encoded as hex to always satisfy the shared identifier schema. It derives an HMAC CSRF token bound to that browser session and implements request-time absolute expiry (eight hours), idle expiry (30 minutes), atomic idle touch, and revocation. SSO access/refresh tokens are persisted only in the separate encrypted `session_sso_credentials` collection introduced by migration 003. Local Mongo behavior and crypto checks are tested; hosted callback/session issuance and request authorization middleware are not yet wired. `src/app/auth/logout/route.ts` provides same-origin POST logout with `x-habi-csrf`; it revokes the session credential before the session and clears both auth cookies. A failure between those two writes leaves the session active but its SSO credential revoked, so retrying logout can finish session revocation.
 
 `src/lib/auth/identity-access.mjs` resolves an external identity strictly by `(issuer, subject)`, requires the matching active local actor, and returns only active nonexpired memberships whose tenant and player links still resolve within the same tenant. It never joins identities by email or trusts the SSO app role as a Habi role. This resolver is unit-tested with revoked/suspended, expired, cross-tenant and missing-identity cases; it is not yet used by an HTTP route.
 
 ## Index intent
 
-| Collection        | Index purpose                                                                                    |
-| ----------------- | ------------------------------------------------------------------------------------------------ |
-| `identities`      | Unique `(issuer,subject)` identity binding                                                       |
+| Collection          | Index purpose                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------- |
+| `identities`        | Unique `(issuer,subject)` identity binding                                                        |
 | `auth_transactions` | Internal login state: unique state hash, one live transaction per browser binding, ten-minute TTL |
-| `sessions`        | Unique purpose-separated HMAC token hash and absolute-expiry TTL                                  |
-| `memberships`     | Active membership uniqueness and tenant/player access lookup                                     |
-| `players`         | Tenant-scoped ID uniqueness                                                                      |
-| `records`         | Tenant-scoped ID, stable player timeline, and per-session metric uniqueness for check-in answers |
-| `events`          | Player timeline order and process order                                                          |
-| `jobs`            | Tenant-scoped job identity and bounded due-job claim order                                       |
-| `idempotency`     | Unique request scope and TTL cleanup                                                             |
-| `audit`           | Tenant/time audit traversal                                                                      |
-| `deletion_ledger` | Unique tenant subject deletion control                                                           |
+| `sessions`          | Unique purpose-separated HMAC token hash and absolute-expiry TTL                                  |
+| `memberships`       | Active membership uniqueness and tenant/player access lookup                                      |
+| `players`           | Tenant-scoped ID uniqueness                                                                       |
+| `records`           | Tenant-scoped ID, stable player timeline, and per-session metric uniqueness for check-in answers  |
+| `events`            | Player timeline order and process order                                                           |
+| `jobs`              | Tenant-scoped job identity and bounded due-job claim order                                        |
+| `idempotency`       | Unique request scope and TTL cleanup                                                              |
+| `audit`             | Tenant/time audit traversal                                                                       |
+| `deletion_ledger`   | Unique tenant subject deletion control                                                            |
 
 Mongo TTL removal is asynchronous and is not authorization. Expired sessions must be rejected by request-time expiry checks; expired idempotency receipts are checked and removed in the transaction path. The current Habi schema does not define `Job.logicalKey`, so no such index is created; a future logical-job deduplication field needs a versioned contract change before index creation.
 
