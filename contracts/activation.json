@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "purpose": "Personal-data pilot activation evidence, not prototype publication approval",
+  "environment": null,
+  "appOrigin": null,
+  "vercelProject": null,
+  "atlasProject": null,
+  "atlasRegion": null,
+  "atlasPlan": null,
+  "ssoClientRegistrationEvidence": null,
+  "workerScopeEvidence": null,
+  "childLoginEvidence": null,
+  "modelDigest": null,
+  "hostLockEvidence": null,
+  "restoreEvidence": null,
+  "apiE2eEvidence": null,
+  "aiEvaluationEvidence": null,
+  "userComprehensionEvidence": null,
+  "reportRightsEvidence": null,
+  "controllerPolicyEvidence": null,
+  "representationPolicyEvidence": null,
+  "retentionPolicyEvidence": null,
+  "safeguardingRoutingEvidence": null,
+  "responsibleOwners": {
+    "product": null,
+    "backend": null,
+    "host": null,
+    "professional": null,
+    "privacy": null
+  },
+  "external": {
+    "enabled": false,
+    "accountEvidence": null,
+    "model": null,
+    "globalDailyCalls": null,
+    "tenantDailyCalls": null,
+    "dailyTokenLimit": null,
+    "dailyCostLimit": null,
+    "perRequestTokenLimit": null,
+    "costOwner": null,
+    "releaseTemplateReviewEvidence": null
+  }
+}

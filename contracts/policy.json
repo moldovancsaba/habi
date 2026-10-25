@@ -1,0 +1,70 @@
+{
+  "version": "policy-v2.1",
+  "default": "deny",
+  "roles": [
+    "player",
+    "parent",
+    "coach"
+  ],
+  "sourceClass": {
+    "player_direct": {
+      "player": "self",
+      "parent": "active-linked",
+      "coach": "active-tenant"
+    },
+    "parent_shared": {
+      "player": "deny",
+      "parent": "active-linked",
+      "coach": "active-tenant"
+    },
+    "coach": {
+      "player": "deny",
+      "parent": "active-publication-exact-revision",
+      "coach": "active-tenant"
+    }
+  },
+  "actions": {
+    "read": "sourceClass and no restriction",
+    "write": "active membership; server derives recorder/source/sharing",
+    "correct": "coach or original recorder; new immutable revision",
+    "publish": "coach; CAS exact resource revision",
+    "reviewKnowledge": "coach; evidence+privacy+rights+revision gates",
+    "interpret": "parent/coach; every source individually readable",
+    "context": "same original requester rights checked again",
+    "export": "separate identity/scope-reviewed privacy request only",
+    "manageLinks": "coach with verified representation; cannot grant from email alone",
+    "reviewInterpretation": "active tenant coach; exact interpretation revision and current readable source revisions; model/worker cannot review"
+  },
+  "fieldDeny": [
+    "tokenHash",
+    "subject",
+    "workerSecrets",
+    "hiddenSourceRefs",
+    "privateReviewProvenance"
+  ],
+  "session": {
+    "absoluteSeconds": 28800,
+    "idleSeconds": 1800,
+    "recentAuthSeconds": 300,
+    "permissionReadCacheSeconds": 60
+  },
+  "idempotencySeconds": 86400,
+  "job": {
+    "leaseSeconds": 90,
+    "heartbeatSeconds": 20,
+    "generationDeadlineSeconds": 180,
+    "jobDeadlineSeconds": 240,
+    "retryDelaysSeconds": [
+      5,
+      15,
+      60,
+      300
+    ]
+  },
+  "upload": {
+    "maxBytes": 10485760,
+    "chunkBytes": 1048576,
+    "expirySeconds": 86400
+  },
+  "partialAssessmentRetentionTestSeconds": 86400
+}

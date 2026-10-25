@@ -1,0 +1,9 @@
+[project]
+name = "habi-worker"
+version = "0.1.0"
+description = "Habi outbound AI worker package"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.uv]
+package = false

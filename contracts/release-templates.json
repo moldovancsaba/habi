@@ -1,0 +1,11 @@
+[
+  {
+    "id": "communication-v1",
+    "topic": "communication",
+    "status": "approved",
+    "scope": "synthetic_contract_fixture_only",
+    "generalQuestion": "Milyen általános kommunikációs kérdések segítenek elkülöníteni a sportolói önbeszámolót a megfigyeléstől?",
+    "requestedOutput": "questions_and_limits",
+    "verifiedGeneralReferences": []
+  }
+]

@@ -1,0 +1,26 @@
+.main {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.status {
+  width: min(100%, 42rem);
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.status h1 {
+  margin-bottom: var(--space-4);
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  line-height: 1.2;
+}
+
+.status p {
+  max-width: 65ch;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}

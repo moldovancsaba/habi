@@ -1,0 +1,81 @@
+{
+  "version": 2,
+  "effective": "2026-10-25",
+  "decisions": [
+    {
+      "id": "D-HG-007",
+      "status": "accepted",
+      "rule": "Vercel cloud API; Atlas canonical; outbound Mac only",
+      "authority": "T-HG-083",
+      "supersedes": [
+        "local-personal-api",
+        "local-mongodb",
+        "client-vpn"
+      ]
+    },
+    {
+      "id": "D-HG-008",
+      "status": "accepted",
+      "rule": "DoneIsBetter own SSO",
+      "authority": "T-HG-081",
+      "supersedes": [
+        "local-identity-provider"
+      ]
+    },
+    {
+      "id": "D-HG-009",
+      "status": "accepted",
+      "rule": "Exactly player/parent/coach; equal authorized parents and tenant coaches",
+      "authority": "T-HG-078/080",
+      "supersedes": [
+        "no-player-entry",
+        "exclusive-coach-approver"
+      ]
+    },
+    {
+      "id": "D-HG-010",
+      "status": "accepted",
+      "rule": "Direct child submissions immediately parent-visible; coach material publication separate",
+      "authority": "T-HG-078/080",
+      "supersedes": []
+    },
+    {
+      "id": "D-HG-011",
+      "status": "accepted",
+      "rule": "Single existing qwen2.5:7b/shared lock; no new embedding/cloud fallback",
+      "authority": "T-HG-078",
+      "supersedes": []
+    },
+    {
+      "id": "D-HG-012",
+      "status": "accepted",
+      "rule": "Player direct AI deferred; reviewed retrieval learning not weight training",
+      "authority": "T-HG-079/080",
+      "supersedes": []
+    },
+    {
+      "id": "D-HG-013",
+      "status": "accepted",
+      "rule": "Hungarian product; shared accepted HABI-inspired visual language",
+      "authority": "T-HG-095/096",
+      "supersedes": [
+        "A-B-comparison",
+        "English-current-product"
+      ]
+    },
+    {
+      "id": "D-HG-014",
+      "status": "implementation_baseline",
+      "rule": "Contract v2, daily-v1, strict-template release, manual extraction first",
+      "authority": "T-HG-098",
+      "supersedes": []
+    },
+    {
+      "id": "D-HG-015",
+      "status": "deferred",
+      "rule": "Population aggregate learning, long-horizon auto-programmes, HABI account merge",
+      "authority": "T-HG-098",
+      "supersedes": []
+    }
+  ]
+}

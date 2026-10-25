@@ -1,0 +1,151 @@
+{
+  "id": "checkin-hu-1",
+  "source": "habigoal/wireframes/workspace.js@e40b1a8bc349c6f80b20792c2bbf66ec6d07093e",
+  "status": "unvalidated_self_report",
+  "rights": "Own interface text; independent third-party instrument reuse not authorized by this manifest",
+  "translationVersion": "hu-1",
+  "scoringVersion": "categories-v1",
+  "missing": "No imputation; absent answer remains absent",
+  "aggregateScore": null,
+  "completion": "Explicit finish; prototype auto-finishes after all five submitted answers",
+  "items": [
+    {
+      "id": "energy",
+      "text": "Mennyi energiád van?",
+      "required": false,
+      "choices": [
+        {
+          "code": 0,
+          "label": "Sok",
+          "displayLevel": 4
+        },
+        {
+          "code": 1,
+          "label": "Megfelelő",
+          "displayLevel": 3
+        },
+        {
+          "code": 2,
+          "label": "Kevés",
+          "displayLevel": 2
+        },
+        {
+          "code": 3,
+          "label": "Kimerültem",
+          "displayLevel": 1
+        }
+      ]
+    },
+    {
+      "id": "sleep",
+      "text": "Hogyan aludtál?",
+      "required": false,
+      "choices": [
+        {
+          "code": 0,
+          "label": "Kiválóan",
+          "displayLevel": 4
+        },
+        {
+          "code": 1,
+          "label": "Jól",
+          "displayLevel": 3
+        },
+        {
+          "code": 2,
+          "label": "Keveset",
+          "displayLevel": 2
+        },
+        {
+          "code": 3,
+          "label": "Rosszul",
+          "displayLevel": 1
+        }
+      ]
+    },
+    {
+      "id": "focus",
+      "text": "Mennyire tudsz figyelni?",
+      "required": false,
+      "choices": [
+        {
+          "code": 0,
+          "label": "Nagyon jól",
+          "displayLevel": 4
+        },
+        {
+          "code": 1,
+          "label": "Jól",
+          "displayLevel": 3
+        },
+        {
+          "code": 2,
+          "label": "Nehezen",
+          "displayLevel": 2
+        },
+        {
+          "code": 3,
+          "label": "Alig",
+          "displayLevel": 1
+        }
+      ]
+    },
+    {
+      "id": "mood",
+      "text": "Hogy érzed magad?",
+      "required": false,
+      "choices": [
+        {
+          "code": 0,
+          "label": "Nagyon jól",
+          "displayLevel": 4
+        },
+        {
+          "code": 1,
+          "label": "Jól",
+          "displayLevel": 3
+        },
+        {
+          "code": 2,
+          "label": "Lehangoltan",
+          "displayLevel": 2
+        },
+        {
+          "code": 3,
+          "label": "Feszült",
+          "displayLevel": 1
+        }
+      ]
+    },
+    {
+      "id": "load",
+      "text": "Mennyit edzettél?",
+      "required": false,
+      "choices": [
+        {
+          "code": 0,
+          "label": "Nem edzettem",
+          "displayLevel": 1
+        },
+        {
+          "code": 1,
+          "label": "Keveset",
+          "displayLevel": 2
+        },
+        {
+          "code": 2,
+          "label": "Közepesen",
+          "displayLevel": 3
+        },
+        {
+          "code": 3,
+          "label": "Sokat",
+          "displayLevel": 4
+        }
+      ]
+    }
+  ],
+  "deferred": [
+    "Athlete IQ scored modules until version/method/rights/golden vectors reviewed"
+  ]
+}
