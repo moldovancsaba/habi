@@ -1,5 +1,18 @@
 # Habi — ellenőrzési napló
 
+## T-HG-117 · Same-origin böngészős API transport · 2026-10-25
+
+| Parancs / próba | Eredmény | Környezet és korlát |
+| --- | --- | --- |
+| `npm test` | PASS, 48 pass, 0 fail, 1 skip | Node unit suite; isolated Mongo integration skip, no test URI. |
+| `npm run lint` | PASS, exit 0 | Biome, 41 source/test files. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript. |
+| `npm run build` | PASS, exit 0 | Next.js 16.4.3, no build-time route probes/errors. |
+
+`src/lib/client/api-client.mjs` only allows same-origin `/api/`, `/auth/`, `/v1/` paths, same-origin cookies, no-store fetch, no redirects, and a small CSRF/idempotency/revision header allow-list; browser Authorization bearer headers are rejected. Network, abort, HTTP and protocol errors remain separate. It does not retry. Tests cover success/options, body/header behavior, path/credential restrictions, offline/abort, redacted server failures and one-call-only writes.
+
+This is a transport primitive, not a connected screen or authenticated workflow. Successful DTO payloads are not yet schema-validated. No Atlas/SSO/deployment/personal-data operation. Rollback is a code revert with no persistent impact.
+
 ## T-HG-116 · Request correlation and redacted API failure logging · 2026-10-25
 
 | Command / probe | Result | Environment and limits |

@@ -46,6 +46,10 @@ A konkrét indexdefiníciók, migration checksum, TTL dátumkonverzió, tenant q
 
 `src/lib/api/error-response.mjs` a gépi API-hibakódokat stabil HTTP státuszra és a kanonikus `{code, requestId, retryAfter}` envelope-ra képezi. Ismeretlen belső hibakód 500/`INTERNAL_ERROR`; kivételszöveg, stack, Mongo URI/host vagy credential nem kerül a válaszba. A `src/lib/api/route-boundary.mjs` a liveness/readiness válaszokhoz kriptográfiailag véletlen request ID-t ad, kivételeket redaktál, és csak rögzített műveletnevet, státuszt, hibakódot és request ID-t naplóz. A readiness által várt 5xx is naplózódik, tartalom nélkül. Next.js prerender/redirect/not-found vezérlőhibák nem nyelődnek el. A response `private, no-store`; csak nemnegatív integer retry-after kerül a body-ba és `Retry-After` fejlécbe. Automatikus újrapróba nincs; a helper jelenleg nem üzleti API-kba van bekötve.
 
+## Böngészős API-kliens alap
+
+`src/lib/client/api-client.mjs` az API-útvonalakat same-origin `/api/`, `/auth/` vagy `/v1/` pathra korlátozza, `credentials: same-origin`, `cache: no-store` és redirect-tiltással. Böngészőből nem fogad Authorization bearer header-t; CSRF, idempotency és revision feltételekhez allow-listelt header használható. A network offline, abort, HTTP és hibás response külön error kind; nincs automatikus újrapróba, így írás nem duplázódik. A sikeres DTO shape-ot ez a transport még nem validálja, és a kliens nincs UI-ba vagy valós API-route-ba bekötve.
+
 ## Jelenlegi hiányok
 
 A repository a Next.js indítási alapot, fail-closed konfigurációellenőrzést, liveness/readiness végpontot, Atlas driver-kapcsolati réteget, szerződés-snapshotokat, 36 domain collectiont és egy belső auth collectiont létrehozó migrációkat, szintetikus seedet, tenant/CAS/idempotencia-adaptert, OIDC/session alapfüggvényeket tartalmaz. Nincs még hosted SSO-flow, permission credential lifecycle, auth middleware, domain API-handler, GridFS, tartós job/lease, worker polling/lease/inference vagy end-to-end felhasználói folyamat. Ezeket a projekt dokumentációja tételesen követi a Calvus #35 feladatban.
