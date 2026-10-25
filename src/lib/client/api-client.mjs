@@ -98,9 +98,17 @@ function parseError(response, body) {
  */
 export async function requestHabiApi(
   path,
-  { method = "GET", body, headers, signal, fetchImpl = fetch } = {},
+  {
+    method = "GET",
+    body,
+    headers,
+    signal,
+    validateResponse,
+    fetchImpl = fetch,
+  } = {},
 ) {
   const endpoint = validatePath(path);
+  const requiresContractValidation = endpoint.startsWith("/v1/");
   if (typeof method !== "string" || !API_METHODS.has(method.toUpperCase())) {
     throw new HabiClientError({
       kind: "contract",
@@ -143,6 +151,13 @@ export async function requestHabiApi(
     }
   }
 
+  if (requiresContractValidation && typeof validateResponse !== "function") {
+    throw new HabiClientError({
+      kind: "contract",
+      code: "RESPONSE_VALIDATOR_REQUIRED",
+    });
+  }
+
   let response;
   try {
     response = await fetchImpl(endpoint, {
@@ -163,5 +178,19 @@ export async function requestHabiApi(
 
   const result = await parseJsonResponse(response);
   if (!response.ok) throw parseError(response, result);
+  if (requiresContractValidation) {
+    try {
+      if (validateResponse(result) === false) {
+        throw new Error("response validation failed");
+      }
+    } catch {
+      throw new HabiClientError({
+        kind: "contract",
+        code: "INVALID_API_RESPONSE",
+        status: response.status,
+        requestId: response.headers.get("x-request-id"),
+      });
+    }
+  }
   return result;
 }
