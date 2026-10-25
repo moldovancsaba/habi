@@ -1,8 +1,8 @@
 {
   "version": "runtime-v1",
   "model": "qwen2.5:7b",
-  "artifactDigest": null,
-  "ollamaVersion": null,
+  "artifactDigest": "sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+  "ollamaVersion": "0.40.3",
   "promptFile": "prompt.md",
   "promptSha256": "f330e95d9312d0ade1e19305bd75cf9c74cb5cf35916a8be94f14def285aa7d7",
   "policyVersion": "policy-v2",
@@ -12,5 +12,5 @@
   "outputTokenLimit": 2048,
   "temperature": 0.2,
   "concurrency": 1,
-  "verification": "target_host_not_measured"
+  "verification": "local_mac_synthetic_inference_verified_2026-10-25"
 }

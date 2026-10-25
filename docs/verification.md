@@ -1,5 +1,18 @@
 # Habi — ellenőrzési napló
 
+## T-HG-129 · Mac Ollama runtime és synthetic-only worker smoke · 2026-10-25
+
+| Parancs / próba | Eredmény | Környezet és korlát |
+| --- | --- | --- |
+| `uv sync --frozen` | PASS, exit 0 | `worker/`, Python 3.10 virtuális környezet, lockfile szerint. |
+| `uv run python -m unittest discover -s tests -v` | PASS, 16 próba | Worker konfiguráció, hostzár, model/prompt drift és hibás inference válasz próbák. |
+| `set -a; source .env.example; set +a; uv run python -m habi_worker.cli verify-local` | PASS, exit 0 | Helyi Ollama HTTP API: szerver `0.40.3`, `qwen2.5:7b` digest `sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e`, prompt SHA-256 egyezett. |
+| `set -a; source .env.example; set +a; uv run python -m habi_worker.cli smoke-local` | PASS, exit 0, inference `passed` | Rögzített szintetikus ellenőrző prompt a lokális modellre; elvárt exact marker válasz. Felhasználói adat nem volt a kérésben. |
+
+A local worker mód csak development + synthetic-only konfigurációval indul, loopback Ollama hostot követel, és hibázik, ha cloud, Atlas, user SSO vagy külső provider secret kerül a folyamat env-jébe. A lokális advisory lock 0600-as fájlon, nem blokkoló `flock`-kal zárja ki a második worker példányt. A kimeneti JSON nem tartalmaz promptot vagy generált szöveget. A runtime manifest már a ténylegesen látott daemon/model/prompt értékeket pineli.
+
+Ez a modell- és futtatási bizonyíték, nem Habi job-feldolgozás. Worker service-token, cloud job API, lease/heartbeat, jogosultságfrissítés, kontextusbetöltés, eredménybeküldés és tartós retry még nincs megvalósítva. Nincs Atlas/Vercel kapcsolat, telepítés vagy személyes adat. Rollback: worker helyi CLI/config kód visszavonása és runtime-manifest korábbi verzióra állítása; perzisztens termékadat nem változott.
+
 ## T-HG-128 · Szerveroldali session- és scope-guard · 2026-10-25
 
 | Parancs / próba | Eredmény | Környezet és korlát |

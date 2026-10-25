@@ -29,7 +29,7 @@ class WorkerConfigTests(unittest.TestCase):
 
     def test_cloud_origin_must_use_tls(self):
         self.env["HG_CLOUD_API_ORIGIN"] = "http://habi-test.example"
-        with self.assertRaisesRegex(ValueError, "must use HTTPS"):
+        with self.assertRaisesRegex(ValueError, "HTTPS"):
             load_config(self.env)
 
     def test_ollama_must_be_on_local_host(self):
@@ -46,6 +46,66 @@ class WorkerConfigTests(unittest.TestCase):
         self.env["HG_WORKER_SSO_TOKEN_ENDPOINT"] = "http://sso.example/oauth/token"
         with self.assertRaisesRegex(ValueError, "must use HTTPS"):
             load_config(self.env)
+
+    def test_local_synthetic_mode_runs_without_cloud_or_sso_credentials(self):
+        env = {
+            "HG_WORKER_MODE": "local_synthetic",
+            "HG_ENVIRONMENT": "development",
+            "HG_SYNTHETIC_DATA_ONLY": "true",
+            "HG_HOST_LOCK_PATH": "/tmp/habi-test.lock",
+            "HG_OLLAMA_ORIGIN": "http://127.0.0.1:11434",
+            "HG_MODEL": "qwen2.5:7b",
+            "HG_MODEL_DIGEST": "sha256:" + "a" * 64,
+            "HG_PROMPT_HASH": "b" * 64,
+        }
+        config = load_config(env)
+        self.assertEqual(config.mode, "local_synthetic")
+        self.assertIsNone(config.cloud_api_origin)
+        self.assertIsNone(config.client_secret)
+
+    def test_local_synthetic_mode_requires_development_and_synthetic_only(self):
+        env = {
+            "HG_WORKER_MODE": "local_synthetic",
+            "HG_ENVIRONMENT": "production",
+            "HG_SYNTHETIC_DATA_ONLY": "false",
+            "HG_HOST_LOCK_PATH": "/tmp/habi-test.lock",
+            "HG_OLLAMA_ORIGIN": "http://127.0.0.1:11434",
+            "HG_MODEL": "qwen2.5:7b",
+            "HG_MODEL_DIGEST": "sha256:" + "a" * 64,
+            "HG_PROMPT_HASH": "b" * 64,
+        }
+        with self.assertRaisesRegex(ValueError, "development and synthetic-only"):
+            load_config(env)
+
+    def test_local_synthetic_mode_rejects_cloud_credentials(self):
+        env = {
+            "HG_WORKER_MODE": "local_synthetic",
+            "HG_ENVIRONMENT": "development",
+            "HG_SYNTHETIC_DATA_ONLY": "true",
+            "HG_HOST_LOCK_PATH": "/tmp/habi-test.lock",
+            "HG_OLLAMA_ORIGIN": "http://127.0.0.1:11434",
+            "HG_MODEL": "qwen2.5:7b",
+            "HG_MODEL_DIGEST": "sha256:" + "a" * 64,
+            "HG_PROMPT_HASH": "b" * 64,
+            "HG_WORKER_CLIENT_SECRET": "must-not-be-present",
+        }
+        with self.assertRaisesRegex(ValueError, "forbidden in local_synthetic mode"):
+            load_config(env)
+
+    def test_local_synthetic_mode_rejects_user_sso_and_external_provider_secrets(self):
+        env = {
+            "HG_WORKER_MODE": "local_synthetic",
+            "HG_ENVIRONMENT": "development",
+            "HG_SYNTHETIC_DATA_ONLY": "true",
+            "HG_HOST_LOCK_PATH": "/tmp/habi-test.lock",
+            "HG_OLLAMA_ORIGIN": "http://127.0.0.1:11434",
+            "HG_MODEL": "qwen2.5:7b",
+            "HG_MODEL_DIGEST": "sha256:" + "a" * 64,
+            "HG_PROMPT_HASH": "b" * 64,
+            "HG_SSO_CLIENT_SECRET": "must-not-be-present",
+        }
+        with self.assertRaisesRegex(ValueError, "forbidden in local_synthetic mode"):
+            load_config(env)
 
 
 if __name__ == "__main__":
