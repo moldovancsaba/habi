@@ -38,6 +38,10 @@ A konkrét indexdefiníciók, migration checksum, TTL dátumkonverzió, tenant q
 - Külső AI alapból tiltott; csak külön jóváhagyott, általános csomag kerülhet ki.
 - Helyi szintetikus próbán túl személyes adatfeldolgozás nem engedélyezett jóváhagyott consent/retention policy nélkül.
 
+## Idővonal DTO-adapter
+
+`src/lib/client/timeline-view-model.mjs` a szerver által jogosultan visszaadott oldal node-jait mapeli a prototípus timeline mezőneveire: `submittedAt → at`, `actorRole → role`, `kind → type`; azonosító, revision, processId és tárolt reply/related ID változatlan. `closedAt` csak a szerver által visszaadott kapcsolt Processből, vagy az explicit DTO-mezőből kerül be; process-bizonyíték nélkül kimarad. A cursor, snapshot, continuations és edges változatlanul megmarad. Az adapter nem másol tenant/retention/audit mezőt, nem készít author/title/text értéket, és hibás rekordot nem dob el csendben, hanem elutasítja az oldalt. Ez nem pótolja a szerveroldali DTO-whitelistet vagy API-handlert.
+
 ## Jelenlegi hiányok
 
 A repository a Next.js indítási alapot, fail-closed konfigurációellenőrzést, liveness/readiness végpontot, Atlas driver-kapcsolati réteget, szerződés-snapshotokat, 36 domain collectiont és egy belső auth collectiont létrehozó migrációkat, szintetikus seedet, tenant/CAS/idempotencia-adaptert, OIDC/session alapfüggvényeket tartalmaz. Nincs még hosted SSO-flow, permission credential lifecycle, auth middleware, domain API-handler, GridFS, tartós job/lease, worker polling/lease/inference vagy end-to-end felhasználói folyamat. Ezeket a projekt dokumentációja tételesen követi a Calvus #35 feladatban.

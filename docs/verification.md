@@ -1,5 +1,18 @@
 # Habi — ellenőrzési napló
 
+## T-HG-114 · Idővonal DTO → view-model adapter · 2026-10-25
+
+| Parancs / próba | Eredmény | Környezet és korlát |
+| --- | --- | --- |
+| `npm test` | PASS, 35 pass, 0 fail, 1 skip | Synthetic DTO fixture; Mongo replica-set integráció kihagyva, mert nincs `HABI_TEST_MONGODB_URI`. |
+| `npm run lint` | PASS, exit 0 | Biome. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript. |
+| `npm run build` | PASS, exit 0 | Next.js 16.4.3; a route inventory nem változott. |
+
+Az adapter a szerződött `submittedAt → at`, `actorRole → role`, `kind → type` mappinget végzi; megőrzi ID/revision/processId/replyTo/relatedId, server-process `closedAt`, edges, continuations, nextCursor, snapshotAt és explicit accessRevision állapotot. Nincs storage-only tenant/retention/audit field, email, text, title vagy author másolás. Hiányzó Processből nem következtet lezárásra. A malformed page/node/process elutasított, nem csendben elhagyott. A view model és a tömbjei immutable.
+
+Nincs API-handler, Atlas/SSO kapcsolat, személyes adat, UI bekötés vagy böngésző→API→adatbázis integráció. Visszaállítás: tiszta kódcommit-revert, nincs perzisztens mellékhatás. HO-04 adapter unit szinten teljesült; szerver DTO és képernyő-integráció továbbra is nyitott.
+
 ## T-HG-113 · SSO permission outage grace · 2026-10-25
 
 | Parancs / próba | Eredmény | Környezet és korlát |

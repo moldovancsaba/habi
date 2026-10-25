@@ -12,6 +12,8 @@ Az OIDC alapprimitívek ismeretlen `kid` esetén egyszer frissítik a JWKS kulcs
 
 Az SSO app-permission policy minden műveletnél friss ellenőrzést próbál. SSO-kieséskor legfeljebb 60 másodperces korábbi jóváhagyás csak normál olvasást tarthat fenn; írás, publikálás és worker-context kiadása fail-closed. A gyorsítótár process-local, legfeljebb 256 elemű, és nem helyettesíti a még hiányzó hosted auth middleware-t vagy credential lifecycle-t.
 
+Az idővonal DTO adapter a szerveroldalú `submittedAt/actorRole/kind` mezőket a meglévő megjelenítő `at/role/type` alakjára képezi. Megőrzi a cursor-, continuation- és explicit process-állapotot, kihagyja a tenant/retention/audit mezőket, és nem talál ki szerzőt vagy tartalmat. Ez még nem API-handler vagy end-to-end timeline.
+
 ## Helyi ellenőrzés
 
 Node.js 20.19+, 22.13+ vagy 24+.
