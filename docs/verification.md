@@ -1,5 +1,63 @@
 # Habi — ellenőrzési napló
 
+## Aktuális ágállapot · 2026-10-25
+
+A jelenlegi, módosított API-kontraktus verziója 2.4.8. A T-HG-130 alatti végrehajtás a korábbi 2.4.1 verzióra vonatkozott.
+
+### Friss helyi szintetikus ellenőrzés
+
+| Parancs / próba | Eredmény | Környezet és korlát |
+| --- | --- | --- |
+| `set -a; source .env.test.example; set +a; npm test` | PASS, 93/93, 0 skip | Helyi MongoDB replica set; API/domain/auth/kontraktus és Mongo-perzisztencia tesztek. A 12 Mongo gyermekteszt egyedi, eldobható `_test` adatbázist használt. |
+| `npm run test:workflow:local` | PASS, exit 0 | Localhost-only Mongo replica set, 001–009 migrációk és szintetikus seed; check-in/snapshot, versioned player practice feedback, parent + coach observations, source-grounded question → Mac worker → result and reloadable thread history, PDF quarantine/ClamAV scan, manual extraction review, coach material publication, plan acceptance/follow-up, cursor paging, write denial, role visibility and cross-tenant 404. |
+| `npm run lint`; `npm run typecheck`; `git diff --check` | PASS, 0 warning/error | Habi worktree; Biome 140 source/test files. |
+| `npm run build`; `npm run start:test` | PASS | Next.js 16.4.3 production build runs locally on loopback with synthetic-only config; no hosted/Atlas data used. |
+| Worker: `uv run python -m unittest discover -s tests -v` | PASS, 16/16 | Local Python worker config, host lock and pinned local model/prompt checks. |
+| Mac worker service + helyi Ollama | PASS, a job `succeeded`; modellválasz `no_evidence`, 0 claim | A szintetikus rekordhoz nem állt rendelkezésre megalapozott állítás; a worker nem fabrikált következtetést. Ez a job-pipeline működését igazolja, a válasz szakmai minőségét nem. |
+| Böngésző, `http://127.0.0.1:3000` | PASS, synthetic player + parent workflow | A játékos megnyitotta a migrált, öt elemű gyakorlatkönyvtárat, visszajelzést mentett, majd újratöltés után a feljegyzés visszaállt. A szülő újratöltés után látta a másik jogosult szülő beszélgetését. |
+| Reszponzív és billentyűzetes UI | PASS | 360/390/430/768/1024/1440 px szélesség; nincs vízszintes túlcsordulás, a vizsgált interaktív célok legalább 44 px magasak, Tab-fókusz 3 px-es látható körvonalat ad. Fizikai eszközteszt és 200%-os szövegnagyítás még hátravan. |
+| Kérdés API szerződésfix | PASS reprodukcióval | Javítva a Job dokumentumból hiányzó `uploadId`, a csak Jobba beszivárgó `threadId`, a worker aktív játékosi státuszra vonatkozó hibás feltételezése, valamint az Interpretationből hiányzó `turnRevision`. |
+
+A szintetikus Mongo-adatbázis a teszt előtt újraépült; user adatot nem használt. A régi, 2026-10-25-i korábbi bejegyzések a korábbi scope-ra vonatkozó történeti bizonyítékok. A régi HABI-képességek teljes migrációját a `docs/legacy-feature-migration.md` rögzíti; az ott hiányzóként jelölt funkciók még nem teljesültek.
+
+A T-HG-130 és T-HG-131 alatti további régi bejegyzések az akkori állapot történeti bizonyítékai. Az alábbi friss ellenőrzési táblázat a jelenlegi, módosított worktree-re vonatkozik.
+
+## T-HG-131 · Nem-SSO szerepköri munkafolyamat · történeti induló állapot · 2026-10-25
+
+API-kontraktus 2.4.8. A munkafában szerepelnek szerepköri terv/utánkövetés, kérdés/thread/job, idővonal, coach-anyag verziózás/publikálás, PDF chunk-feltöltés, GridFS karantén, report-scan job, extraction mező-review és helyi Mac worker folyamat. A claim body-hashhez kötött, lease tokenje szerveroldali verifierből származik, a worker fence-et és heartbeatet használ. A worker kontextus a kanonikus schema ellenőrzésén megy át, a jelentés csak sikeres ClamAV clean verdict után válik olvashatóvá.
+
+| Ellenőrzés | Állapot | Megjegyzés |
+| --- | --- | --- |
+| Kód / API / migráció / szerződés | Implementálva | Új migráció 009; API-, domain- és response manifest frissítve. |
+| Helyi Mongo/HTTP acceptance | PASS a friss, szintetikus workflow-ra | A napló tetején felsorolt teljes helyi role workflow, worker, report scan/review, plan/material és thread-history ellenőrzés. |
+| Mac worker + Ollama | Kérdés-job round-trip igazolt | A worker `no_evidence` eredményt adott a synthetic fixture-re; ez biztonságos elutasítás, nem modellminőségi bizonyíték. |
+| ClamAV | PASS a szintetikus report acceptance-ben | ClamAV 1.5.4; `freshclam` letöltötte és validálta az adatbázisokat (daily 28164, main 63, bytecode 339). A worker 48 óránál régebbi vagy hiányzó signature DB mellett nem ad tiszta verdictet. A korábbi `ERROR: NULL X509 store` frissítési üzenet mellett a letöltött adatbázisok tesztje sikeres volt; az upstream [macOS Homebrew issue](https://github.com/Cisco-Talos/clamav/issues/1421) hasonló, sikeres frissítés melletti üzenetet dokumentál. |
+| SSO / Vercel / Atlas / személyes pilot | Későbbi fázis | SSO, hosted secrets/DB, consent/retention és személyes pilot nincs ebben a lokális acceptance scope-ban. |
+
+**A jelenlegi worktree még nem production/release-ready.** A friss localhost acceptance lefedi az első tartós role workflow-t. Az örökölt HABI-funkciók nagy része még nincs átültetve (lásd `docs/legacy-feature-migration.md`); SSO, elkülönített hosted adatbázis/env, consent/retention jóváhagyás, preview verification és domain-cutover még hiányoznak. A régi `main` mentés változatlan; rollback a korábbi deploymentre/domainre visszaállás, Mongo-migráció esetén csak előre javító migráció használható.
+
+## T-HG-130 · Szintetikus szerepköri workflow tesztkész állapot · 2026-10-25
+
+| Parancs / próba | Eredmény | Környezet és korlát |
+| --- | --- | --- |
+| `set -a; source .env.test.example; set +a; npm test` | PASS, 93/93, 0 skip | Lokális Mongo replica set; contract, auth, persistence, race/idempotency és domain esetek. |
+| `npm run test:workflow:local` | PASS, exit 0 | Szintetikus tesztadatbázis-visszaállítás → 001–004 migráció → szintetikus seed (2 tenant, 6 identitás) → HTTP-folyamat. |
+| `npm run db:test:start && npm run db:test:stop` | PASS, exit 0 | A helyi MongoDB 8.0.24 replica elindult, majd admin shutdown paranccsal tisztán leállt; a tesztadatfájlok az ideiglenes mappában maradtak. |
+| `npm run lint` | PASS, exit 0 | Biome, 84 source/test file; no warning/error. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript, exit 0. |
+| `set -a; source .env.test.example; set +a; npm run build` | PASS, exit 0 | Next.js 16.4.3; every API route is dynamic; no build-time error output. |
+| `worker`: `uv run python -m unittest discover -s tests -v` | PASS, 16/16 | Local Mac worker config, lock and model contract tests. |
+| `worker`: `verify-local` + `smoke-local` | PASS | Ollama 0.40.3, `qwen2.5:7b`, pinned digest/prompt; synthetic inference only. |
+| Browser at `http://127.0.0.1:3000` | PASS, visual/AX smoke | Hungarian synthetic workspace rendered; synthetic player session and daily check-in start controls worked; logout revoked the session. |
+
+A helyi szintetikus HTTP-folyamat ellenőrzi a játékos bejelentkezését, a check-in session létrehozását, a válaszok mentését, az idempotens újraküldést, a stale revision elutasítását, a lezárt snapshot és session revision egyezését, a szülői és edzői olvasást, a kétféle megfigyelés rögzítőjét és forrását, az edzői megfigyelés pontos revisionjának publikálását, a szerepkör szerinti láthatóságot, az aláírt cursor lapozását és a módosított cursor elutasítását, a check-in válasz általános record úton történő létrehozásának tiltását, valamint a tenantok közötti 404 izolációt. Az adatbázis egy eldobható localhost replica set, nem Atlas.
+
+A T-HG-130 végrehajtásakor a kanonikus API-manifest a Habi API **2.4.1** verzióját rögzítette. A szerződés szerint check-in válasz kizárólag a revisionnel védett check-in útvonalon hozható létre. Az általános record írás nem kerülheti meg a session revision- és eredmény-snapshot logikáját.
+
+**Ready now at T-HG-130:** synthetic acceptance testing of the earlier check-in, observation, publication and authorization slice at `127.0.0.1:3000` using the instructions in `README.md`. This historical scope does not certify the later implementation.
+
+**Not covered by T-HG-130:** DoneIsBetter callback/session issuance, live SSO permissions, Atlas/Vercel deployment, consent/retention evidence and personal pilot approval. The non-SSO implementation is documented under T-HG-131 and remains untested. No secrets were read or changed; no deployment or hosted DB operation occurred.
+
 ## T-HG-129 · Mac Ollama runtime és synthetic-only worker smoke · 2026-10-25
 
 | Parancs / próba | Eredmény | Környezet és korlát |

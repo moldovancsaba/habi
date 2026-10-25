@@ -7,9 +7,8 @@ class WorkerConfigTests(unittest.TestCase):
     def setUp(self):
         self.env = {
             "HG_CLOUD_API_ORIGIN": "https://habi-test.example",
-            "HG_WORKER_CLIENT_ID": "worker-test",
-            "HG_WORKER_CLIENT_SECRET": "synthetic-placeholder-worker-secret",
-            "HG_WORKER_SSO_TOKEN_ENDPOINT": "https://sso.example/oauth/token",
+            "HG_WORKER_SERVICE_ID": "worker-test",
+            "HG_WORKER_BEARER_TOKEN": "synthetic-placeholder-worker-secret-that-is-long-enough",
             "HG_HOST_LOCK_PATH": "/tmp/habi-test.lock",
             "HG_OLLAMA_ORIGIN": "http://127.0.0.1:11434",
             "HG_MODEL": "qwen2.5:7b",
@@ -20,6 +19,7 @@ class WorkerConfigTests(unittest.TestCase):
     def test_accepts_scoped_worker_environment(self):
         config = load_config(self.env)
         self.assertEqual(config.model, "qwen2.5:7b")
+        self.assertEqual(config.service_id, "worker-test")
         self.assertNotIn("synthetic-placeholder-worker-secret", repr(config))
 
     def test_requires_all_worker_values(self):
@@ -42,9 +42,9 @@ class WorkerConfigTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "forbidden on the worker"):
             load_config(self.env)
 
-    def test_worker_token_endpoint_requires_tls(self):
-        self.env["HG_WORKER_SSO_TOKEN_ENDPOINT"] = "http://sso.example/oauth/token"
-        with self.assertRaisesRegex(ValueError, "must use HTTPS"):
+    def test_worker_bearer_token_requires_entropy(self):
+        self.env["HG_WORKER_BEARER_TOKEN"] = "short"
+        with self.assertRaisesRegex(ValueError, "at least 32 bytes"):
             load_config(self.env)
 
     def test_local_synthetic_mode_runs_without_cloud_or_sso_credentials(self):
@@ -61,7 +61,7 @@ class WorkerConfigTests(unittest.TestCase):
         config = load_config(env)
         self.assertEqual(config.mode, "local_synthetic")
         self.assertIsNone(config.cloud_api_origin)
-        self.assertIsNone(config.client_secret)
+        self.assertIsNone(config.bearer_token)
 
     def test_local_synthetic_mode_requires_development_and_synthetic_only(self):
         env = {
@@ -87,7 +87,7 @@ class WorkerConfigTests(unittest.TestCase):
             "HG_MODEL": "qwen2.5:7b",
             "HG_MODEL_DIGEST": "sha256:" + "a" * 64,
             "HG_PROMPT_HASH": "b" * 64,
-            "HG_WORKER_CLIENT_SECRET": "must-not-be-present",
+            "HG_WORKER_BEARER_TOKEN": "must-not-be-present-and-too-short",
         }
         with self.assertRaisesRegex(ValueError, "forbidden in local_synthetic mode"):
             load_config(env)

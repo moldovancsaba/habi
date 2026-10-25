@@ -19,9 +19,11 @@ export const COLLECTIONS = Object.freeze([
   "events",
   "edges",
   "interpretations",
+  "interpretation_reviews",
   "turns",
   "handoffs",
   "publications",
+  "coach_materials",
   "plans",
   "follow_ups",
   "jobs",
@@ -66,9 +68,11 @@ export const COLLECTION_SCHEMA = Object.freeze({
   events: "Event",
   edges: "Edge",
   interpretations: "Interpretation",
+  interpretation_reviews: "InterpretationReview",
   turns: "Turn",
   handoffs: "Handoff",
   publications: "Publication",
+  coach_materials: "CoachMaterial",
   plans: "Plan",
   follow_ups: "FollowUp",
   jobs: "Job",
@@ -173,6 +177,51 @@ export const INDEXES = Object.freeze({
     {
       key: { status: 1, nextAttemptAt: 1, priority: -1, createdAt: 1 },
       name: "job_claim_order",
+    },
+  ],
+  interpretation_reviews: [
+    {
+      key: { tenantId: 1, id: 1 },
+      name: "interpretation_review_tenant_id_unique",
+      unique: true,
+    },
+    {
+      key: { tenantId: 1, "interpretationRef.id": 1, revision: -1 },
+      name: "interpretation_review_history",
+    },
+  ],
+  coach_materials: [
+    {
+      key: { tenantId: 1, id: 1 },
+      name: "coach_material_tenant_id_unique",
+      unique: true,
+    },
+    {
+      key: { tenantId: 1, playerId: 1, materialId: 1, version: 1 },
+      name: "coach_material_version_unique",
+      unique: true,
+    },
+    {
+      key: { tenantId: 1, playerId: 1, createdAt: -1, id: -1 },
+      name: "coach_material_player_created",
+    },
+  ],
+  publications: [
+    {
+      key: { tenantId: 1, id: 1 },
+      name: "publication_tenant_id_unique",
+      unique: true,
+    },
+    {
+      key: {
+        tenantId: 1,
+        playerId: 1,
+        "resourceRef.id": 1,
+        "resourceRef.revision": 1,
+      },
+      name: "publication_active_resource_unique",
+      unique: true,
+      partialFilterExpression: { status: "active" },
     },
   ],
   idempotency: [

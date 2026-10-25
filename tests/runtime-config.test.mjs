@@ -26,6 +26,8 @@ const hosted = {
   HG_SESSION_HMAC_KEY: "s".repeat(40),
   HG_REFRESH_ENCRYPTION_KEY: "r".repeat(40),
   HG_CURSOR_HMAC_KEY: "c".repeat(40),
+  HG_WORKER_SERVICE_ID: "habi-test-worker",
+  HG_WORKER_BEARER_SHA256: "a".repeat(64),
 };
 
 test("allows only synthetic localhost configuration for development", () => {
@@ -49,6 +51,58 @@ test("allows only synthetic localhost configuration for development", () => {
         HG_WORKER_CLIENT_SECRET: "worker-placeholder",
       }),
     /forbidden in the web runtime/,
+  );
+});
+
+test("allows an explicitly gated localhost synthetic workflow test database", () => {
+  const config = validateRuntimeConfig({
+    ...local,
+    HG_ENVIRONMENT: "test",
+    HG_APP_ORIGIN: "http://localhost:3000",
+    HG_SYNTHETIC_DATA_ONLY: "true",
+    HG_LOCAL_TEST_MODE: "true",
+    HG_MIGRATION_ALLOW_LOCAL_TEST_DB: "true",
+    HABI_TEST_MONGODB_URI: "mongodb://127.0.0.1:27017/?replicaSet=habiTestRs",
+    HABI_TEST_MONGODB_DATABASE: "habi_workflow_test",
+  });
+  assert.equal(config.localTestMode, true);
+  assert.equal(config.syntheticOnly, true);
+});
+
+test("local workflow test mode rejects hosted databases and secrets", () => {
+  const valid = {
+    ...local,
+    HG_ENVIRONMENT: "test",
+    HG_APP_ORIGIN: "http://localhost:3000",
+    HG_SYNTHETIC_DATA_ONLY: "true",
+    HG_LOCAL_TEST_MODE: "true",
+    HG_MIGRATION_ALLOW_LOCAL_TEST_DB: "true",
+    HABI_TEST_MONGODB_URI: "mongodb://127.0.0.1:27017/?replicaSet=habiTestRs",
+    HABI_TEST_MONGODB_DATABASE: "habi_workflow_test",
+  };
+  assert.throws(
+    () =>
+      validateRuntimeConfig({
+        ...valid,
+        HG_ATLAS_URI: "mongodb+srv://atlas.test",
+      }),
+    /must not receive hosted secrets/,
+  );
+  assert.throws(
+    () =>
+      validateRuntimeConfig({
+        ...valid,
+        HABI_TEST_MONGODB_URI: "mongodb+srv://cluster.example",
+      }),
+    /localhost _test database/,
+  );
+  assert.throws(
+    () =>
+      validateRuntimeConfig({
+        ...valid,
+        HABI_TEST_MONGODB_DATABASE: "habi_prod",
+      }),
+    /localhost _test database/,
   );
 });
 

@@ -42,9 +42,14 @@ function getClientPromise(): Promise<MongoClient> {
   return promise;
 }
 
+export async function getMongoClient(): Promise<MongoClient> {
+  await readAtlasConfig(process.env);
+  return getClientPromise();
+}
+
 export async function getDatabase(): Promise<Db> {
   const { database } = readAtlasConfig(process.env);
-  const client = await getClientPromise();
+  const client = await getMongoClient();
   return client.db(database);
 }
 

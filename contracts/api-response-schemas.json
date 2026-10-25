@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://habi.invalid/contracts/api-response-schemas-v2.3.0.json",
-  "title": "Habi API 2.3.0 allow-listed response DTOs",
+  "$id": "https://habi.invalid/contracts/api-response-schemas-v2.4.8.json",
+  "title": "Habi API 2.4.8 allow-listed response DTOs",
   "$defs": {
     "AttributionView": {
       "type": "object",
@@ -149,6 +149,33 @@
         "sharingClass",
         "text",
         "sessionId"
+      ],
+      "additionalProperties": false
+    },
+    "SourceRef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "span": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "span"
       ],
       "additionalProperties": false
     },
@@ -370,6 +397,221 @@
       "required": [
         "id",
         "closedAt"
+      ],
+      "additionalProperties": false
+    },
+    "CoachMaterialReadDTO": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "playerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "materialId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "withdrawn"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "createdBy": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "maxItems": 20
+        },
+        "supersedesRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "playerId",
+        "materialId",
+        "version",
+        "status",
+        "title",
+        "text",
+        "createdBy",
+        "sourceRefs",
+        "supersedesRef"
+      ],
+      "additionalProperties": false
+    },
+    "ReportReadDTO": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "playerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "providerVersion": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ready",
+            "restricted",
+            "deleted"
+          ]
+        },
+        "latestExtractionRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "publicationRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scanStatus": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "passed",
+            "failed"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "playerId",
+        "providerVersion",
+        "status",
+        "scanStatus",
+        "latestExtractionRef",
+        "publicationRef"
+      ],
+      "additionalProperties": false
+    },
+    "UploadReadDTO": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "playerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "staged",
+            "quarantined",
+            "ready",
+            "aborted",
+            "expired"
+          ]
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "scanStatus": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "passed",
+            "failed"
+          ]
+        },
+        "scannerVersion": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "playerId",
+        "status",
+        "size",
+        "sha256",
+        "scanStatus",
+        "scannerVersion",
+        "expiresAt"
       ],
       "additionalProperties": false
     }

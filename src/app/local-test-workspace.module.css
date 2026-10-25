@@ -1,0 +1,224 @@
+.main {
+  min-height: 100dvh;
+  padding: clamp(16px, 4vw, 48px);
+  display: grid;
+  align-items: center;
+}
+
+.container {
+  width: min(100%, 72rem);
+  margin-inline: auto;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+.header > :last-child {
+  margin: 0;
+}
+.panel {
+  width: min(100%, 62rem);
+  margin-inline: auto;
+  padding: clamp(24px, 5vw, 56px);
+}
+.panel h1 {
+  max-width: 22ch;
+  margin-bottom: var(--space-4);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  letter-spacing: -0.03em;
+}
+.intro {
+  max-width: 64ch;
+  margin-bottom: var(--space-5);
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+.personas {
+  display: grid;
+  gap: var(--space-3);
+  border: 0;
+  padding: 0;
+  margin: var(--space-6) 0 0;
+}
+.personas legend {
+  margin-bottom: var(--space-3);
+  font-weight: 700;
+}
+.personas button {
+  max-width: 36rem;
+}
+.workspace {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+}
+.sessionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.sessionBar p {
+  margin: 0;
+}
+.sessionBar button {
+  width: auto;
+}
+.checkin {
+  display: grid;
+  gap: var(--space-4);
+}
+.checkin h2,
+.checkin p {
+  margin: 0;
+}
+.observationForm {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 48rem;
+  margin-block: var(--space-4);
+}
+.observationForm label {
+  font-weight: 700;
+}
+.observationForm textarea {
+  min-height: 8rem;
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+.question {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+}
+.question legend {
+  padding-inline: var(--space-2);
+  font-weight: 700;
+}
+.sourceChoice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+  padding-block: var(--space-2);
+  cursor: pointer;
+}
+.sourceChoice + .sourceChoice {
+  border-top: 1px solid var(--line);
+}
+.sourceChoice input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0.2rem 0 0;
+  accent-color: var(--teal);
+}
+.sourceChoice span {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.sourceChoice small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: var(--space-2);
+}
+.choices button {
+  justify-content: center;
+  text-align: center;
+}
+.result {
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+}
+.result h3 {
+  margin-top: 0;
+}
+.result li + li {
+  margin-top: var(--space-2);
+}
+.practiceList {
+  display: grid;
+  gap: var(--space-3);
+  list-style: none;
+  padding: 0;
+}
+.practiceFeedback {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.practiceChoice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  cursor: pointer;
+}
+.practiceChoice input {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--teal);
+}
+.error {
+  padding: var(--space-3);
+  border-inline-start: 4px solid #b42318;
+  background: #fff2f0;
+  color: #7a271a;
+}
+.footer {
+  width: min(100%, 62rem);
+  margin: var(--space-6) auto 0;
+  color: var(--muted);
+  font-size: var(--font-small);
+}
+
+@media (max-width: 520px) {
+  .main {
+    align-items: start;
+    padding: 16px;
+  }
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+  }
+  .panel {
+    padding: 24px 20px;
+  }
+  .sessionBar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .sessionBar button {
+    width: 100%;
+  }
+}
+.threadList {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.threadList button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}

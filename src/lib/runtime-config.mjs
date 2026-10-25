@@ -8,6 +8,8 @@ const CLOUD_REQUIRED = [
   "HG_SESSION_HMAC_KEY",
   "HG_REFRESH_ENCRYPTION_KEY",
   "HG_CURSOR_HMAC_KEY",
+  "HG_WORKER_SERVICE_ID",
+  "HG_WORKER_BEARER_SHA256",
 ];
 
 const HOSTED_KEYS = [
@@ -20,6 +22,8 @@ const HOSTED_KEYS = [
   "HG_SESSION_HMAC_KEY",
   "HG_REFRESH_ENCRYPTION_KEY",
   "HG_CURSOR_HMAC_KEY",
+  "HG_WORKER_SERVICE_ID",
+  "HG_WORKER_BEARER_SHA256",
 ];
 
 const NON_WEB_KEYS = [
@@ -67,6 +71,53 @@ export function validateRuntimeConfig(env) {
 
   if (env.HG_EXTERNAL_ENABLED !== "false") {
     throw new Error("External AI is disabled until policy and budget approval");
+  }
+
+  if (environment === "test" && env.HG_LOCAL_TEST_MODE === "true") {
+    if (env.HG_SYNTHETIC_DATA_ONLY !== "true") {
+      throw new Error("Local test mode requires synthetic-only data");
+    }
+    if (
+      appOrigin.protocol !== "http:" ||
+      !["localhost", "127.0.0.1"].includes(appOrigin.hostname)
+    ) {
+      throw new Error(
+        "Local test mode requires a localhost application origin",
+      );
+    }
+    const localWorkerAuth = new Set([
+      "HG_WORKER_SERVICE_ID",
+      "HG_WORKER_BEARER_SHA256",
+    ]);
+    const accidentallyConfigured = HOSTED_KEYS.filter(
+      (key) => env[key] && !localWorkerAuth.has(key),
+    );
+    if (accidentallyConfigured.length) {
+      throw new Error(
+        `Local test mode must not receive hosted secrets: ${accidentallyConfigured.join(", ")}`,
+      );
+    }
+    const testDatabase = parseUrl(
+      env.HABI_TEST_MONGODB_URI ?? "",
+      "HABI_TEST_MONGODB_URI",
+    );
+    const allowedHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+    if (
+      !["mongodb:", "mongodb+srv:"].includes(testDatabase.protocol) ||
+      !allowedHosts.has(testDatabase.hostname) ||
+      !env.HABI_TEST_MONGODB_DATABASE?.endsWith("_test") ||
+      env.HG_MIGRATION_ALLOW_LOCAL_TEST_DB !== "true"
+    ) {
+      throw new Error(
+        "Local test mode requires an explicit localhost _test database",
+      );
+    }
+    return Object.freeze({
+      environment,
+      appOrigin: appOrigin.origin,
+      syntheticOnly: true,
+      localTestMode: true,
+    });
   }
 
   if (environment === "development") {
@@ -139,11 +190,18 @@ export function validateRuntimeConfig(env) {
       throw new Error(`${key} must contain at least 32 bytes`);
     }
   }
+  if (
+    !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(env.HG_WORKER_SERVICE_ID ?? "") ||
+    !/^[a-f0-9]{64}$/.test(env.HG_WORKER_BEARER_SHA256 ?? "")
+  ) {
+    throw new Error("Worker service authentication is invalid");
+  }
 
   return Object.freeze({
     environment,
     appOrigin: appOrigin.origin,
     syntheticOnly: false,
+    localTestMode: false,
   });
 }
 

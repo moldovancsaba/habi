@@ -1,63 +1,50 @@
 # Habi — architektúra és biztonsági határok
 
-## Futtatási felosztás
+## Termék és futtatási környezet
 
-A Vercel szolgáltatja a Habi webalkalmazást és az azonos origin API-t. A MongoDB Atlas a kanonikus személyes, review- és tudásadat-tár; a riportfájlok GridFS-be kerülnek. A Habi a saját DoneIsBetter SSO-integrációján keresztül azonosítja a felhasználót.
+A termék neve **Habi**. A **Habigoal** a kliensbemutató prototípus és a specifikáció neve; nem a runtime neve. A Habi önálló alkalmazásként épül ebben a repositoryban.
 
-A Mac kizárólag AI-workert futtat: a worker kifelé hívja a Vercel feladat API-ját, az elfogadott hostzárat és a már telepített Ollama `qwen2.5:7b` modellt használja. A worker nem csatlakozhat közvetlenül az Atlas-hoz, nem kaphat felhasználói SSO vagy web session titkot, és nem küldhet személyes tartalmat külső AI-szolgáltatónak.
+- **Vercel:** Habi webalkalmazás és azonos eredetű API.
+- **MongoDB Atlas:** a hosztolt runtime tervezett kanonikus adatbázisa. A helyi szintetikus próba nem éri el.
+- **Mac worker:** a későbbi, csak kifelé kapcsolatot kezdeményező AI-worker; a már elfogadott Ollama `qwen2.5:7b` modellt és a közös hostzárat használja. Közvetlen Atlas-kapcsolatot és felhasználói SSO-titkot nem kaphat.
+- **Külső AI:** személyes tartalom feldolgozására tiltott.
 
-## Elérhetőség és Atlas-kapcsolat
+A jelenlegi fejlesztői tesztkörnyezet Vercel nélkül, `127.0.0.1` címen, elkülönített Mongo replica seten és kizárólag szintetikus adatokkal fut. Ez nem módosítja a tervezett production architektúrát.
 
-- `GET /api/health` liveness: azt jelzi, hogy a webalkalmazás HTTP-kérést szolgál ki. Nem állít adatbázis-kapcsolatot.
-- `GET /api/ready` readiness: Atlas `ping` után `200 {ok:true,service:"habi"}`; konfigurációs vagy hálózati hibánál `503 {ok:false,service:"habi",error:"DEPENDENCY_UNAVAILABLE"}`. A driver-hibát, URI-t, hostot és credentialt nem adja vissza vagy naplózza; tartalommentes, request ID-val korrelálható 5xx eseményt ír.
-- A szerverfolyamat egy `MongoClient` példányt és poolt használ újra. Kezdő korlátok: `maxPoolSize=5`, `minPoolSize=0`, `maxIdleTimeMS=60000`, `connectTimeoutMS=5000`, `serverSelectionTimeoutMS=5000`, `waitQueueTimeoutMS=3000`. Az Atlas `HG_ATLAS_URI` és `HG_ATLAS_DATABASE` nélkül nem kapcsolódik; szintetikus lokális környezetben az Atlas letiltott.
-- A pool korlát folyamatonként/függvénypéldányonként értendő, nem globális Vercel-projektkorlát. Ötös pool induló, konzervatív érték, nem mért terhelési cél; a skálázás és Atlas connection budget még nincs igazolva. A driver hálózati retryja nem helyettesíti az üzleti idempotenciát.
-- Eddig csak konfiguráció- és readiness-eredménypróba futott. Atlasra nem csatlakoztunk; a `habi_mongodb_uri` secret értékét nem olvastuk vagy használtuk.
+## Szerepek és hozzáférési szabályok
 
-## Adatbázis-alapréteg · HG-DEV-03
+A terméknek pontosan három szerepe van: `player`, `parent`, `coach`. A jogosult szülők és az adott tenant edzői egyenrangúak. Az írás külön tárolja a rögzítőt és az adat forrását. Minden adatbázis-lekérdezés tenantazonosítóval szűr; az API nem ad vissza közvetlen Mongo dokumentumot, csak engedélyezett mezőkből összeállított DTO-t.
 
-- A 36 persistence collection sémája a Habi repository saját, verziózott szerződés-pillanatképe (`contracts/domain-schemas.source.json`). A `contracts/source-manifest.json` eredet- és SHA-256 adatot őriz integritási ellenőrzéshez; runtime és build során nincs külső repository-elérés. A szerződés változása Habi-forrásfrissítéssel és új snapshot/digesttel történik.
-- Ajv 2020 validálja a teljes szerződést és a beágyazott referenciákat. Az `001-initial-schema` verziózott migráció collectionenként MongoDB `$jsonSchema` validátort és indexeket állít be, `strict/error` módban. A MongoDB `expiresAt` mezői BSON Date formában tárolódnak a TTL indexhez; HTTP DTO-ba ISO dátummá kell szerializálni.
-- A tenant repository minden olvasásnál kötelező `tenantId` szűrést ad. Revision írás `findOneAndUpdate` CAS-szal zárja ki a last-write-wins felülírást; az `id`, `tenantId`, `schemaVersion`, `revision` és `createdAt` nem módosítható általános mezőként.
-- A tranzakciós idempotencia receipt-et és üzleti módosítást ugyanabban a Mongo session tranzakcióban ment. Majority write concern, snapshot read concern, 24 órás kulcs-ablak és request-body SHA-256 tartozik hozzá. A callback csak tranzakcióba kötött DB-műveletet végezhet; HTTP/Ollama/e-mail külső mellékhatás nem ismételhető benne. Az elveszett kliensválasz azonos kulccsal visszajátszható.
-- A login state külön, belső `auth_transactions` collectionbe kerül. A state/browser binding hash-elve, a nonce és PKCE verifier csak szerveroldalon tárolódik, tíz perc után TTL takarítja. Atomic consumption védi a replayt és a másik böngészőből érkező callbacket. Migration 003 külön, belső `session_sso_credentials` gyűjteményt hoz létre a kódcsere access/refresh tokenjeihez. Mindkettőn szigorú Mongo validátor van; a credential sessionId-ja egyedi, expiresAt TTL törli, a bearer tokenek AES-256-GCM titkosított borítékban tárolódnak, session/actor/client/issuer/token purpose kötésű AAD-val.
-- A `(issuer,subject)` identitás-feloldó aktív actorhoz és az aktuálisan még létező, aktív tenant/player kapcsolatokat vizsgálja; e-mail egyezés nem jogosít. Session-alapréteg opaque 256-bit tokent ad, Atlasban HMAC hash-t tárol, CSRF-t tokendervációval köti, és nyolcórás abszolút / 30 perces idle lejáratot, touch-et és revoke-ot kezel. A session SSO credential csak a session lejáratáig létezik. Token refresh csak 30 másodpercen belüli lejáratkor indul. Rövid adatbázis lease zárja ki a versengő refresh hívást; az új tokenpár lease ID + revision feltétellel egyetlen atomikus update-ben kerül mentésre. Párhuzamos kérelmek a már elforgatott access tokent kapják; SSO refresh elutasításkor credential visszavont, hálózati hibánál a lease felszabadul. Ismeretlen `kid` esetén egyszeri JWKS-frissítés van, öt másodperces timeouttal. A route-integráció részleges: login-indítás és CSRF-védett logout elérhető, callback és auth middleware még nincs; élő SSO nem történt.
-- **T-HG-125 SSO refresh groundwork:** `offline_access`, bounded refresh grant, token validation, and AES-GCM/HKDF were verified.
-- **T-HG-127 login-indítás és logout:** a `/auth/login` biztonságos visszatérési útvonallal, OIDC discoveryvel, egyszer használható state/nonce/PKCE tranzakcióval, browser-binding cookie-val és no-store átirányítással indul. A `/auth/logout` same-origin POST-ot és sessionhöz kötött CSRF tokent követel, visszavonja az SSO credentialt, majd a Habi sessiont, és lejáratja mindkét auth cookie-t. Mindkét route kész; a callback és a route-ba kötött autentikáció még hiányzik.
-- **T-HG-128 request authentication guard:** `authenticateHabiRequest()` validates the opaque session, mutation Origin/CSRF, current actor/access revision, exact tenant-role-player membership, active tenant/player, then touches session idle time. Stale actor or membership scope revokes both credential and session. This helper is tested, but no business API route calls it yet.
-- **T-HG-129 local AI runtime:** the Mac's loopback Ollama service and exact `qwen2.5:7b` digest are pinned in `contracts/runtime-manifest.json`; prompt SHA-256 is verified at startup. The local synthetic-only CLI enforces one process with a filesystem lock and executes a fixed, non-personal inference smoke. No cloud job polling or result path exists yet.
-- SSO app-permission minden művelet előtt frissen kérendő. Kizárólag SSO-hálózati/kiesési hibánál a processzlokális cache-ben lévő korábbi approved eredmény legfeljebb 60 másodpercig tarthat fenn normál olvasást; denied állapot sosem használ stale engedélyt. Írás, publikálás és worker-context kiadás SSO-kiesésnél mindig elutasított. A cache 256 bejegyzésre korlátos, csak `(issuer, subject, clientId)` hash-kulcsot, approved role-t és ellenőrzési időt tartalmaz; nem adatgazda és nem hordozható folyamatok között. A fetch timeout/network hibák a stabil `SSO_DEPENDENCY_UNAVAILABLE` kódra normalizálódnak; váratlan checker-hiba nem kap stale-read felmentést. A credential lifecycle alap megvalósult és lokális MongoDB replica seten ellenőrzött; hosted login/callback/logout útvonalak, auth middleware és élő SSO-ellenőrzés még hiányzik.
-- A lokális migrációs/seed CLI védelmi kapuja kizárólag `HG_ENVIRONMENT=test`, explicit `HG_MIGRATION_ALLOW_LOCAL_TEST_DB=true`, loopback Mongo URI és `_test` végű DB-nevet enged. A seed fix azonosítókat használ két tenantban, és `$setOnInsert` miatt újraindítható. A migration újrafuttatható; nincs automatikus down-migráció, visszaállítás backupból történik.
-- Ez a réteg nincs bekötve domain HTTP handlerekbe, nem igazol éles Atlas DB-t, termékfelhasználói adatot, migration production runbookot vagy backup/restore helyreállítást.
+- A játékos a saját `player_direct` adatait rögzíti és olvassa.
+- A szülő proxy adatot a saját rögzítői azonosítójával ment; ez `parent_shared`, a játékos számára nem látható.
+- Az edző megfigyelése kezdetben `coach` besorolású. A szülő csak az adott rekord pontos revisionjának külön publikálása után láthatja.
+- Az idempotencia-bizonylat és az üzleti módosítás egy tranzakcióban mentődik. Revision-eltéréskor 409, a tenanton vagy látható jogosultsági körön kívüli erőforrásnál 404 a válasz.
 
-A konkrét indexdefiníciók, migration checksum, TTL dátumkonverzió, tenant query adapter és helyreállítási szabályok a [persistence designban](persistence.md) vannak leírva.
+## Kérésfeldolgozás és adattárolás
 
-## Kötelező adatvédelmi viselkedés
+1. A Next.js API-útvonal a `runAuthorizedHabiRoute()` közös hibakezelő és `no-store` rétegét használja.
+2. A kérésvédelmi réteg ellenőrzi a session token hash-t, az actor hozzáférési revisionjét, az aktív tagságot, a tenant/player scope-ot, valamint módosító kéréseknél az origint és a CSRF tokent.
+3. A bemenetet API JSON Schema ellenőrzi; az üzleti dokumentumot Ajv és a MongoDB collection validator is validálja.
+4. Az írás tranzakciót, majority write concern-t, snapshot read concern-t, body hash-hez kötött idempotenciát és revision CAS-t használ.
+5. Az olvasás ismét ellenőrzi a tenant/player scope-ot és a szerepkör szerinti hozzáférést, majd engedélyezett DTO-t ad vissza.
+6. A lapozókurzor HMAC-aláírással a tenanthez, játékoshoz, access revisionhöz, snapshothoz és lejárati időhöz kötött. Új adat nem kerülhet egy korábbi snapshot oldalára.
 
-- Minden olvasás és írás szerveroldali tenant-, szerep-, tagság- és erőforrásverzió-ellenőrzésen megy át.
-- A rejtett erőforrás egységesen nem található választ ad; más tenant adata vagy létezésére utaló metaadat nem szivároghat ki.
-- A napi értelmezés és a források snapshotként, megváltoztathatatlan eredményhez kötve tárolandók.
-- A nem publikált edzői anyag nem látható szülőnek vagy játékosnak.
-- A személyes AI-eredmény emberi review nélkül nem látható a családnak.
-- Külső AI alapból tiltott; csak külön jóváhagyott, általános csomag kerülhet ki.
-- Helyi szintetikus próbán túl személyes adatfeldolgozás nem engedélyezett jóváhagyott consent/retention policy nélkül.
+A Mongo kliensfolyamatonként újrahasznált. A kezdeti pool-korlát `maxPoolSize=5`, a kapcsolódási időkorlát 5 másodperc, a kiszolgálóválasztási korlát 5 másodperc, a várakozási korlát 3 másodperc. Ezeket az értékeket még nem támasztja alá Vercel-terhelésmérés vagy Atlas-kapcsolatkeret-elemzés.
 
-## Idővonal DTO-adapter
+## Korábban ellenőrzött alap és jelenlegi bővítés
 
-`contracts/api.json` a teljes API 2.3.0 szerződés pinelt másolata; a `contracts/api-manifest.json` SHA-256-manifest a Habi repositoryban őrzi a snapshot integritását és eredetét. A `contracts/api-response-schemas.json` a böngészős allow-list sémák szűk, a Habi repositoryban kezelt pillanatképe; digestjét a `contracts/api-response-manifest.json` rögzíti. Ajv 2020 validátor ellenőrzi a teljes `TimelinePageReadDTO`-t, az `RecordReadDTO`-t, a beágyazott referenciákat és az összes objektum `additionalProperties:false` korlátozását. A timeline event kötelezően őrzi a `playerId`, `sourceKind`, `resourceRef{id,revision}` mezőket. `src/lib/client/timeline-api.mjs` csak a specifikált `playerId/kind/cursor/limit` query kulcsokat engedi, a `/v1/timeline` hívásra átadja a pinned validátort, majd a validált oldalt az adapternek adja. A `loadTimelineRecord` a validált event pontos player- és resource ID-jával hívja a külön `/v1/players/{playerId}/records/{id}` jogosultság-ellenőrzött útvonalat; eltérő player, ID vagy revision esetén hibával leáll. `src/lib/client/timeline-view-model.mjs` a `submittedAt → at`, `actorRole → role`, `kind → type` leképezést végzi, miközben az event tulajdonosa, forrástípusa és pontos erőforrás-referenciája megmarad. ID, revision, processId, reply/related ID, cursor, snapshot, accessRevision, continuations és edges megmarad. `closedAt` csak a szerver DTO-jában szereplő Processből kerül be. Hibás vagy extra mezős teljes oldal elutasított; storage mezőből nincs fallback, author/title/text nem készül. Ez szigorú kliensoldali ellenőrzés, nem helyettesíti a szerver DTO-whitelistet, authorizationt vagy API-handlert.
+A `player → check-in indítása → válasz mentése → lezárás → változatlan CheckinResult` folyamat MongoDB tranzakciókat támogató helyi replica seten működik. `parent` és `coach` szerepben olvasható a mentett eredmény. A szülői és edzői megfigyelés, a rekordlista/részlet, az aláírt lapozás és az edzői megfigyelés pontos revisionjának közzététele helyi HTTP-folyamatban ellenőrzött. A szintetikus session csak `HG_ENVIRONMENT=test`, localhost app és Mongo, `_test` nevű adatbázis, szintetikus adatok és kikapcsolt külső AI mellett érhető el. Hosztolt környezetben tiltott.
 
-## Közös vizuális forrás
+A DoneIsBetter felhasználói SSO még nincs bekötve; a helyi szintetikus belépés nem production hitelesítés. A nem-SSO szerepköri bővítések most kódban megvannak: terv és utánkövetés, kérdés/thread/job, idővonal, kézi extraction review, verziózott edzői anyag, PDF chunk-feltöltés/GridFS karantén és worker API. A Mac worker claim/lease/heartbeat/context/result és ClamAV riportvizsgálati ciklusa is implementálva van. A változtatásokat még nem ellenőriztük; a ClamAV, lokális acceptance suite és browser/accessibility review még hátralévő tesztkészítési feltétel. Vercel/Atlas konfiguráció és end-to-end igazolás, SSO, consent/retention és személyes pilot külön későbbi fázis.
 
-A Habi `global.css` a kanonikus Habigoal v101 `wireframes/global.css` pontos másolata. A `design/design-system-manifest.json` rögzíti a forrás-repository/útvonal/commit, prototípus-verzió és SHA-256 értékeit; `tests/design-system-manifest.test.mjs` minden tesztfutásban ellenőrzi a fájlt. A `src/app/globals.css` az egyetlen importút. Közös CSS változásnál előbb a kanonikus forrás módosul, majd az engedélyezett revíziót át kell másolni, hash-t frissíteni és a manifest tesztet futtatni. A jelenlegi buildnek nincs több UI-komponense a Habi oldalon; a CSS-egyezés nem bizonyít képernyő- vagy akadálymentességi készültséget.
+## SSO és session
 
-## HTTP hiba-envelope és függőségkiesés
+A tervezett hitelesítés a DoneIsBetter OIDC-integráció. A repository tartalmaz discovery-, PKCE/nonce/state-, token-ellenőrzési és refresh credential-titkosítási segédeket, továbbá login-indító és logout útvonalat, valamint közös session guardot. Az OIDC callback, az SSO-identitáshoz kötött session-kiadás, az app-permission kapcsolat és az éles SSO-kliens még nincs kész.
 
-`src/lib/api/error-response.mjs` a gépi API-hibakódokat stabil HTTP státuszra és a kanonikus `{code, requestId, retryAfter}` envelope-ra képezi. Ismeretlen belső hibakód 500/`INTERNAL_ERROR`; kivételszöveg, stack, Mongo URI/host vagy credential nem kerül a válaszba. A `src/lib/api/route-boundary.mjs` a liveness/readiness válaszokhoz kriptográfiailag véletlen request ID-t ad, kivételeket redaktál, és csak rögzített műveletnevet, státuszt, hibakódot és request ID-t naplóz. A readiness által várt 5xx is naplózódik, tartalom nélkül. Next.js prerender/redirect/not-found vezérlőhibák nem nyelődnek el. A response `private, no-store`; csak nemnegatív integer retry-after kerül a body-ba és `Retry-After` fejlécbe. Automatikus újrapróba nincs; a helper jelenleg nem üzleti API-kba van bekötve.
+## Személyes és gyermekadatok
 
-## Böngészős API-kliens alap
+Személyes vagy gyermekadatokkal végzett pilot előtt szükséges a jóváhagyott consent/retention szabályzat, a forrásjogok bizonyítéka, a felelős owner kijelölése és az elkülönített Atlas tesztkörnyezet. A szintetikus szerződéses fixture nem alakítható át valódi profilként. Exportot nem engedélyez a normál olvasási jogosultság; külön adatvédelmi folyamat szükséges.
 
-`src/lib/client/api-client.mjs` az API-útvonalakat same-origin `/api/`, `/auth/` vagy `/v1/` pathra korlátozza, `credentials: same-origin`, `cache: no-store` és redirect-tiltással. Böngészőből nem fogad Authorization bearer header-t; CSRF, idempotency és revision feltételekhez allow-listelt header használható. A network offline, abort, HTTP és hibás response külön error kind; nincs automatikus újrapróba, így írás nem duplázódik. A `/v1/*` híváshoz a caller köteles válaszvalidátort adni; nélküle fetch nem indul, `false` vagy validator exception esetén az adat elutasított. A `/v1/timeline` és a külön rekord-részlet loader saját 2.3.0 validátort köt a kéréshez. Nincs UI vagy működő üzleti API-route bekötés.
+## Normatív szerződések
 
-## Jelenlegi hiányok
-
-A repository tartalmazza a Next.js indítási alapot, fail-closed konfigurációt, liveness/readiness végpontokat, Atlas driver-réteget, helyi szerződés-pillanatképeket, a 36 domain- és két belső auth collection verziózott migrációit, szintetikus seedet, tenant/CAS/idempotencia adaptereket, OIDC/session és titkosított credential lifecycle segédeket, továbbá a login-indítási és CSRF-védett logout route-ot. A hosted callback, az autentikált request middleware, az üzleti API-handlerek, a GridFS, a cloud worker job polling/lease/heartbeat/result útvonal és a teljes szerepköri folyamat még hiányzik; a Mac helyi Ollama inference smoke-ja már igazolt.
+A `contracts/api.json`, `contracts/schemas.json`, `contracts/policy.json`, `contracts/domain.js` és `contracts/runtime-manifest.json` írja le az API-t, az adatmodellt, a jogosultsági szabályokat és a rögzített modellkörnyezetet. Verzió- vagy digestváltoztatáskor frissítsd a manifestet és az azt ellenőrző próbákat is. Régi Habigoal- vagy Calvus-fájl nem bizonyítja, hogy bármelyik szolgáltatás ténylegesen konfigurálva vagy telepítve van.

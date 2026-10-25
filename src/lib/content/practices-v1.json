@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "source": "backup/main-before-habi-migration-2026-10-25:server/content-seed.json#support_practices",
+  "items": [
+    {
+      "id": "focus",
+      "title": "Egy figyelmi kapaszkodó",
+      "what": "Válassz egyetlen dolgot a következő feladathoz.",
+      "how": "Nézz körül, majd nevezd meg azt az egy mozdulatot vagy részfeladatot, amivel kezdesz. Ha elkalandozol, térj vissza ehhez a mondathoz: „Most csak a következő feladat.”"
+    },
+    {
+      "id": "sleep",
+      "title": "Nyugodtabb este",
+      "what": "Készíts helyet a pihenésnek.",
+      "how": "Válassz egy esti időpontot a lelassulásra. Készítsd össze a holnapi dolgaidat, majd válassz egy csendes elfoglaltságot. Figyeld meg, melyik része esett jól."
+    },
+    {
+      "id": "restart",
+      "title": "Újrakezdés egy hiba után",
+      "what": "Válaszd külön a történteket attól, ahogyan magadról gondolkodsz.",
+      "how": "Mondd el egy mondatban, mi történt. Utána fejezd be: „A következő próbálkozásnál arra figyelek, hogy…” Egy apró, kipróbálható dolgot válassz."
+    },
+    {
+      "id": "pressure",
+      "title": "Ami most rajtam múlik",
+      "what": "Válassz egy kezelhető teendőt a sok elvárás helyett.",
+      "how": "Nevezz meg egy dolgot, ami aggaszt, majd egyet, amit most meg tudsz tenni. Kezdd azzal. Ha továbbra is soknak érzed, mondd el egy felnőttnek, akiben megbízol."
+    },
+    {
+      "id": "pause",
+      "title": "Egy rövid megálló",
+      "what": "Adj magadnak egy nyugodt percet.",
+      "how": "Ülj le kényelmesen, és vedd észre, mi van körülötted. Ha jólesik, figyeld a saját ritmusú légzésedet. Ha ez kellemetlen, nézz inkább egy tárgyat, vagy beszélj valakivel."
+    }
+  ]
+}

@@ -7,7 +7,10 @@ export function readLocalTestTarget(env) {
   ) {
     throw new Error("LOCAL_TEST_MIGRATION_ONLY");
   }
-  const config = readAtlasConfig({ ...env, HG_SYNTHETIC_DATA_ONLY: "false" });
+  const config =
+    env.HG_LOCAL_TEST_MODE === "true"
+      ? readAtlasConfig(env)
+      : readAtlasConfig({ ...env, HG_SYNTHETIC_DATA_ONLY: "false" });
   const parsed = new URL(config.uri);
   const allowedHosts = new Set(["127.0.0.1", "localhost", "[::1]"]);
   if (

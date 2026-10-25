@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://habigoal.invalid/contracts/schemas-v2.1.0.json",
-  "title": "Habigoal contract release 2.1.0; structural schemas, not deployment evidence",
+  "$id": "https://habi.invalid/contracts/domain-schemas-v2.4.0.json",
+  "title": "Habi persistence contracts v2.4.0; schemas do not assert deployment",
   "$defs": {
     "Ref": {
       "type": "object",
@@ -1493,6 +1493,18 @@
             "failed"
           ]
         },
+        "scannerVersion": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "expiresAt": {
           "type": "string",
           "format": "date-time"
@@ -1513,6 +1525,7 @@
         "chunkHashes",
         "gridFsFileId",
         "scanStatus",
+        "scannerVersion",
         "expiresAt"
       ],
       "additionalProperties": false
@@ -2270,6 +2283,10 @@
           "type": "string",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
         },
+        "turnRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
         "answer": {
           "$ref": "#/$defs/Answer"
         }
@@ -2285,6 +2302,7 @@
         "playerId",
         "threadId",
         "turnId",
+        "turnRevision",
         "answer"
       ],
       "additionalProperties": false
@@ -2784,7 +2802,8 @@
           "type": "string",
           "enum": [
             "personalInterpretation",
-            "externalKnowledge"
+            "externalKnowledge",
+            "reportScan"
           ]
         },
         "requesterActorId": {
@@ -2794,6 +2813,43 @@
         "requesterAccessRevision": {
           "type": "integer",
           "minimum": 1
+        },
+        "requesterRole": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "player",
+                "parent",
+                "coach"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "turnId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "uploadId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "sourceRefs": {
           "type": "array",
@@ -2891,6 +2947,50 @@
               "type": "null"
             }
           ]
+        },
+        "claimKeyHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "claimServiceId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "claimRequestHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "claimContextRevision": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -2905,6 +3005,9 @@
         "kind",
         "requesterActorId",
         "requesterAccessRevision",
+        "requesterRole",
+        "turnId",
+        "uploadId",
         "sourceRefs",
         "status",
         "reasonCode",
@@ -2915,7 +3018,11 @@
         "nextAttemptAt",
         "attempts",
         "resultRef",
-        "retryOf"
+        "retryOf",
+        "claimKeyHash",
+        "claimServiceId",
+        "claimRequestHash",
+        "claimContextRevision"
       ],
       "additionalProperties": false
     },
@@ -4643,6 +4750,15 @@
           "type": "string",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
         },
+        "turnId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
         "fence": {
           "type": "integer",
           "minimum": 1
@@ -4674,10 +4790,17 @@
         "deadline": {
           "type": "string",
           "format": "date-time"
+        },
+        "turnRevision": {
+          "type": "integer",
+          "minimum": 1
         }
       },
       "required": [
         "jobId",
+        "turnId",
+        "turnRevision",
+        "question",
         "fence",
         "sourceSnapshots",
         "knowledgeSnapshots",
@@ -4773,9 +4896,89 @@
           "$ref": "#/$defs/PersonalContext"
         },
         {
+          "$ref": "#/$defs/ReportScanContext"
+        },
+        {
           "$ref": "#/$defs/ExternalContext"
         }
       ]
+    },
+    "ReportScanContext": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "uploadId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "fileHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "fence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "deadline": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "jobId",
+        "uploadId",
+        "fileHash",
+        "size",
+        "fence",
+        "deadline"
+      ],
+      "additionalProperties": false
+    },
+    "UploadScanInput": {
+      "type": "object",
+      "properties": {
+        "fence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "leaseToken": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "clean",
+            "infected"
+          ]
+        },
+        "fileHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "scannerVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "fence",
+        "leaseToken",
+        "verdict",
+        "fileHash",
+        "scannerVersion"
+      ],
+      "additionalProperties": false
     },
     "CheckinStartInput": {
       "type": "object",
@@ -5313,6 +5516,26 @@
           "type": "object",
           "properties": {
             "kind": {
+              "const": "checkin_result"
+            },
+            "resourceRef": {
+              "$ref": "#/$defs/Ref"
+            },
+            "payload": {
+              "$ref": "#/$defs/CheckinResult"
+            }
+          },
+          "required": [
+            "kind",
+            "resourceRef",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
               "const": "assessment_result"
             },
             "resourceRef": {
@@ -5340,6 +5563,46 @@
             },
             "payload": {
               "$ref": "#/$defs/Message"
+            }
+          },
+          "required": [
+            "kind",
+            "resourceRef",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "report"
+            },
+            "resourceRef": {
+              "$ref": "#/$defs/Ref"
+            },
+            "payload": {
+              "$ref": "#/$defs/Report"
+            }
+          },
+          "required": [
+            "kind",
+            "resourceRef",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "interpretation"
+            },
+            "resourceRef": {
+              "$ref": "#/$defs/Ref"
+            },
+            "payload": {
+              "$ref": "#/$defs/Interpretation"
             }
           },
           "required": [
@@ -6505,6 +6768,10 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 100
+        },
+        "sessionRevision": {
+          "type": "integer",
+          "minimum": 1
         }
       },
       "required": [
@@ -6517,6 +6784,7 @@
         "retentionPolicyId",
         "playerId",
         "sessionId",
+        "sessionRevision",
         "instrumentVersion",
         "feedbackVersion",
         "completedAt",
@@ -6839,6 +7107,107 @@
         "claimId",
         "verdict",
         "checkedSourceRefs"
+      ],
+      "additionalProperties": false
+    },
+    "CoachMaterial": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "tenantId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "schemaVersion": {
+          "const": 2
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retentionPolicyId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "playerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "materialId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "withdrawn"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "createdBy": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Ref"
+          },
+          "maxItems": 20
+        },
+        "supersedesRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "tenantId",
+        "schemaVersion",
+        "revision",
+        "createdAt",
+        "updatedAt",
+        "retentionPolicyId",
+        "playerId",
+        "materialId",
+        "version",
+        "status",
+        "title",
+        "text",
+        "createdBy",
+        "sourceRefs",
+        "supersedesRef"
       ],
       "additionalProperties": false
     }

@@ -1,51 +1,67 @@
 # Habi
 
-A Habi a fiatal sportolókhoz és a körülöttük lévő jogosult felnőttekhez tartozó termék. A Habigoal a bemutató és prototípus neve. A Habi alkalmazás és a jelenlegi termékfejlesztés forrása ez a repository.
+A Habi fiatal sportolók, jogosult szülők és edzők közös támogatási terméke. **Habigoal** a kliensbemutató prototípus és a specifikáció neve; a leszállítandó termék neve **Habi**. Ez a repository a Habi alkalmazás forrása.
 
-## Aktuális állapot
+## Állapot
 
-Ez a repository a Habi terméket a földről építi újra. A korábbi alkalmazás forrása nem része a jelenlegi alkalmazásnak; előzménye csak a Git történetében marad. A Habi saját repositoryja tartalmazza az alkalmazás kódját és a validált termékszerződés-pillanatképeket; a forrásmanifeszt kizárólag verzió- és eredetkövetést szolgál. A kódbázis fail-closed konfigurációt, liveness/readiness végpontot, Atlas kapcsolati réteget, rögzített adat-sémákat, szigorú MongoDB validátorokat, verziózott migrációkat, szintetikus két-tenant seedet, tenant-szűrt olvasást, revision-CAS-t, tranzakciós idempotencia-adaptert, OIDC/JWKS protokollt, opaque session/CSRF alapot, single-use login-state tárolást, session-élettartamhoz kötött titkosított SSO credential lifecycle modult, SSO login-indítási route-ot és CSRF-védett logout route-ot tartalmaz. A credential adatbázis-migrációt, Mongo replica-set és fake SSO tesztet kapott. A SSO callback még nincs bekötve, a session guardot pedig egyetlen üzleti API-route sem használja; ezért a felhasználói belépés nincs aktiválva. Még nincs Habi Atlas-kapcsolat, üzleti API-handler, GridFS, Mac worker cloud job polling/lease/heartbeat/result path (standalone local Ollama inference is verified) vagy end-to-end szerepköri folyamat.
+A jelenlegi ág a nem-SSO szerepköri folyamat lokális, kizárólag szintetikus acceptance tesztelésére szolgál. A check-in, a változatlan napi snapshot, a szülői és edzői megfigyelés, valamint a szülői kérdés → API → MongoDB → Mac worker → helyi Ollama → eredmény útvonal helyi szintetikus acceptance teszten és böngészőpróbán ment át. Ez nem igazolja a hosted SSO-t, Atlas/Vercel-konfigurációt vagy személyes pilotot.
 
-A terméket a Vercel futtatja. A Mac worker kizárólag kifelé hívja a Vercel API-t és a helyi Ollamát; közvetlen Atlas-kapcsolatot nem kap. A meglévő modellt és hostzárat kell használni. Külső személyes AI-tartalékút nincs.
+- a játékos napi állapotjelzése, a válaszok mentése, az idempotens újrapróbálás és a változatlan lezárt visszajelzés;
+- a szülői és edzői megfigyelések külön rögzítővel és forrásmegjelöléssel;
+- az edzői megfigyelés szülői láthatósága kizárólag az adott revision külön publikálása után;
+- a szerepkör szerinti láthatóság, az aláírt lapozókurzor és a tenantok közötti hozzáférés megtagadása (korábbi ellenőrzött alap);
+- edzői tervjavaslat, szülői/játékosi elfogadás és vállalt tervhez kapcsolt utánkövetés;
+- tartós szülői kérdés/thread/job; a Mac worker helyi Ollamával dolgozik, internet/API/AI függőséghibánál késleltetetten újrapróbálja a jobot, bizonyíték nélküli választ pedig `no_evidence` állapotban tart;
+- idővonal-végpont és szintetikus UI-idővonal;
+- verziózott edzői anyag és pontos verzió publikálása;
+- PDF chunk-feltöltés GridFS karanténba, ClamAV-vizsgálat, kézi extraction és mezőnkénti coach-review.
+- Verziózott játékosi gyakorlatkönyvtár; a játékos visszajelzése újratölthető, saját diary rekordként mentődik.
 
-Az OIDC alapprimitívek ismeretlen `kid` esetén egyszer frissítik a JWKS kulcslistát, majd újra ellenőrzik az aláírást; hibás token nem indít hálózati kérést. A sessionazonosító szerződéskompatibilis, kriptográfiailag véletlen hex érték. Ezek továbbra sem jelentenek kész bejelentkezési útvonalat.
+> **A teljes régi HABI-funkciók migrációja nincs kész, a produkciós rendszer nincs engedélyezve.** A lokális szintetikus acceptance a szerepköri munkafolyamatot, worker-kérdést, PDF-karantént és scan-t, kézi extraction-review-t, publikált edzői anyagot, tervelfogadást/utánkövetést és újratölthető szülői beszélgetést ellenőrzi. Ez nem igazol személyes adatot, valódi sportjelentés-értelmezést vagy hosted integrációt. A korábbi gyakorlatok, helyzetalapú utak, havi visszatekintés, trendek, HABI2 és helyi adatok migrációs állapotát a [legacy funkció-mátrix](docs/legacy-feature-migration.md) rögzíti. A DoneIsBetter SSO, dedikált Habi Atlas-adatbázis és Vercel-konfiguráció, consent/retention jóváhagyás és személyes pilot külön fázis. A helyi szintetikus belépés kizárólag localhoston használható.
 
-Az authorization-code protokoll `offline_access` scope-ot kér; a kódcsere megköveteli az access token, ID token, refresh token és pozitív lejárati idő mezőket. A session credential gyűjtemény mindkét token titkosított borítékát tárolja; AAD az issuerhez, clienthez, actorhoz, sessionhöz és tokencélhoz kötött. A rövid Mongo lease és revision-CAS koordinálja a párhuzamos refresh kéréseket; a credential a sessionnel együtt lejár, a logout route pedig CSRF-ellenőrzés után visszavonja. A login route elindítja az OIDC folyamatot; callback, session-kiadás és session middleware még hiányzik, és nem történt élő SSO-val teszt vagy telepítés.
+## Szükséges eszközök
 
-Az SSO app-permission policy minden műveletnél friss ellenőrzést próbál. SSO-kieséskor legfeljebb 60 másodperces korábbi jóváhagyás csak normál olvasást tarthat fenn; írás, publikálás és worker-context kiadása fail-closed. A gyorsítótár process-local, legfeljebb 256 elemű, és nem helyettesíti a még hiányzó hosted auth middleware-t.
+- Node.js 20.19+, 22.13+ vagy 24+
+- MongoDB `mongod`, amely támogatja a helyi replica setet
+- npm
+- A worker ellenőrzéséhez: Python/uv és helyi Ollama. Lásd a [`worker/README.md`](worker/README.md) útmutatót.
 
-Az API-leírás (`contracts/api.json`) és a böngészős válaszsémák a Habi repositoryban verziózott API 2.3.0 szerződés-pillanatképei; a SHA-256-manifestek helyben ellenőrzik az integritást és az eredetet. Az idővonal kliens a `TimelinePageReadDTO` és `RecordReadDTO` sémákat használja. A `/v1/timeline` loader csak engedélyezett query paramétereket épít, same-origin transportot használ, a teljes nested DTO-t ellenőrzi — extra storage mezőket is elutasít —, majd a szerveroldalú `submittedAt/actorRole/kind` mezőket `at/role/type` alakra képezi. A játékosazonosítót, `sourceKind`-ot és pontos `resourceRef{id,revision}` hivatkozást megőrzi. `loadTimelineRecord` csak az eventben megadott játékos- és rekordazonosítóra kér le a külön jogosultság-ellenőrzött rekordvégpontról, és csak az ID, játékos és revision egyezése esetén adja vissza a tartalmat. Ez tesztelt kliens→DTO-validáció→adapter és fail-closed részletbetöltési alap, de még nincs UI-ba, auth middleware-be vagy működő szerver API-route-ba kötve.
+## Helyi, szintetikus tesztkörnyezet
 
-A `global.css` a Habigoal v101 központi vizuális forrásának byte-pontos másolata. A `design/design-system-manifest.json` a forrás commitját és SHA-256-át rögzíti; a teszt suite eltéréskor hibázik. A `src/app/globals.css` ezt az egy közös stílusforrást tölti be.
+A `habi` repository gyökeréből:
 
-Az első Habi belépőképernyő magyar nyelvű és nem jelenít meg teszt- vagy személyes profilt. A biztonságos belépés vezérlője addig letiltott, amíg a Habi alkalmazás SSO- és session-folyamata nincs route-szinten megvalósítva. A képernyő önmagában nem jelent bejelentkezést, jogosultságkezelést vagy pilotkész állapotot. A lokális képernyőellenőrzés 360, 390, 430, 768, 1024 és 1440 CSS-pixeles szélességen, valamint 390 pixelen 200%-os gyökér-betűmérettel történt; egyik méreten sem volt vízszintes túlcsordulás.
+1. `npm ci`
+2. Töltsd be a helyi tesztbeállításokat: `set -a; source .env.test.example; set +a`
+3. Indítsd el a teszt MongoDB-t: `npm run db:test:start`
+4. Egy terminálablakban indítsd el az alkalmazást: `npm run dev:test`
+   Ha a buildelt alkalmazást akarod ellenőrizni: töltsd be ugyanazt a szintetikus konfigurációt, futtasd a `npm run build` parancsot, majd indítsd a `npm run start:test` paranccsal. Mindkét szerver kizárólag a localhost címhez kötődik.
+5. ClamAV szükséges a quarantined PDF vizsgálatához. macOS-en telepítsd: `brew install clamav`, majd inicializáld az adatbázist: `sed 's/^Example$/#Example/' /opt/homebrew/etc/clamav/freshclam.conf.sample > /opt/homebrew/etc/clamav/freshclam.conf`, `freshclam`. A `clamscan` parancsnak elérhetőnek és az aláírás-adatbázisnak 48 óránál frissebbnek kell lennie.
+6. Indítsd a worker terminálban: `cd worker`, `set -a; source .env.test.example; set +a`, `uv sync --frozen`, majd `uv run python -m habi_worker.cli run-service`.
+7. Egy másik terminálablakban is töltsd be a tesztbeállításokat, majd futtasd: `npm run test:workflow:local`.
+8. Nyisd meg a `http://127.0.0.1:3000` címet, és vizsgáld meg a magyar nyelvű tesztfelületet billentyűzettel és keskeny képernyőn.
+9. Leállítás: a worker és fejlesztői szerveren `Ctrl-C`, majd a tesztbeállításokkal: `npm run db:test:stop`.
 
-A route-ok közös API-határa minden válaszhoz friss request ID-t ad, az ismert és ismeretlen kivételeket redaktált hibaválasszá alakítja, és strukturált, tartalommentes eseményt ír a szerverlogba. A readiness 5xx eseménye is csak műveletet, státuszt és request ID-t tartalmaz. Next.js prerender vezérlőjeleket továbbenged; a liveness/readiness útvonalak csak request időben futnak. Ez a közös határ jelenleg csak a két operációs végpontra van bekötve, nem az üzleti API-kra. A böngészős API-kliens ugyan-origin `/api`/`auth`/`v1` pathot, same-origin cookie-t és `no-store` fetch-t kényszerít ki; elkülöníti az offline/abort/HTTP/protocol hibát és nem retry-zik. A timeline loader a rögzített szerződés-validátort használja; általános `/v1/*` híváshoz továbbra is kötelező caller-supplied validátor. Ez még nincs UI-ba vagy üzleti route-ba kötve.
+`test:workflow:local` kizárólag a localhoston futó `habi_workflow_test` adatbázist törli. Ezután az 001–009 migrációkat, a szintetikus seedet és a HTTP-folyamatot futtatja. A védett script visszautasítja a távoli URI-t, az Atlas-kapcsolatot és a `_test` végződés nélküli adatbázist. A teszt-worker az `.env.test.example` kizárólag szintetikus bearer tokenjét használja, a lokális Ollamát és ClamAV-ot; nem használ Vercel-környezetet, Atlas titkot, felhasználói SSO-t vagy külső AI-szolgáltatást.
 
-## Helyi ellenőrzés
+## Ellenőrző parancsok
 
-Node.js 20.19+, 22.13+ vagy 24+.
+- `npm test` — egység-, szerződés- és domainpróbák; a MongoDB-integrációs próba replica set mellett, `HABI_TEST_MONGODB_URI` változóval fut.
+- `npm run test:workflow:local` — adatbázis újraépítése, migráció, seed és HTTP/API/MongoDB szerepköri folyamat.
+- `npm run lint` — Biome; `npm run typecheck` — TypeScript; `npm run build` — Next.js production build.
+- `cd worker && uv sync --frozen && uv run python -m unittest discover -s tests -v` — worker-konfiguráció és helyi futtatókörnyezet próbái.
 
-- `npm ci` — lockfile szerinti telepítés.
-- `npm test` — konfigurációs és domain-referencia próbák.
-- `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` — teljes MongoDB replica-set integrációs próbák, ha a helyi teszt-replica fut.
-- `npm run db:migrate:test` — csak explicit `HG_ENVIRONMENT=test`, `HG_MIGRATION_ALLOW_LOCAL_TEST_DB=true`, localhost URI és `_test` nevű DB mellett migrál.
-- `npm run db:seed:test` — ugyanazokkal a localhost-only guardokkal determinisztikus szintetikus két-tenant fixture-t helyez el.
-- `npm run lint` — Biome statikus ellenőrzés.
-- `npm run typecheck` — TypeScript ellenőrzés.
-- `npm run build` — Vercel/Next.js production build.
-- `uv sync --frozen` a `worker/` mappában — Python worker környezet zárolt telepítése.
-- `uv run python -m unittest discover -s tests -v` a `worker/` mappában — worker-konfigurációs próbák.
+## Főbb könyvtárak
 
-Ez a checkout a `narimato/habi` Vercel projekthez van kapcsolva (`.vercel/`, lokális és gitignore-olt). A projekt a Habi termék célkörnyezete. A korábbi `habi_mongodb_uri` titok értékét nem olvastuk, és az új runtime nem használja. SSO/session/Atlas konfiguráció, dedikált DB cél és integráció nincs igazolva. A jelen migrációs és seed CLI szándékosan csak localhost `_test` DB-t enged; nem kapcsolódik a Vercelhez vagy Atlas productionhöz. Production migrációs út, felülvizsgálat, backup/restore próba és külön jóváhagyás még kiépítendő.
+- `src/app` — Next.js felület és azonos eredetű API-route-ok.
+- `src/lib/auth` — SSO/session segédek; a DoneIsBetter callback még nincs bekötve.
+- `src/lib/workflows` — üzleti folyamatok.
+- `src/lib/database/migrations` — csak előrefelé futó adatbázis-migrációk.
+- `contracts` — API-, adat-, jogosultsági és modellműködési szerződések.
+- `worker` — Macen futó modellpróba és kifelé kapcsolódó service loop; lokális tesztmódban szintetikus tokennel feldolgozza a kérdés- és riportvizsgálati jobokat.
+- `docs` — architektúra, perzisztencia, telepítés és ellenőrzési bizonyítékok.
 
-## Futtatási határok
+## Rendszerhatárok
 
-- Vercel: Next.js webapp és ugyan-origin API.
-- MongoDB Atlas: kanonikus adattár; riportfájlok a specifikáció szerinti GridFS-ben.
-- Hitelesítés: DoneIsBetter SSO.
-- Mac: kifelé kapcsolódó helyi AI-worker, meglévő Ollama `qwen2.5:7b` és hostzár.
-- Worker nem kap Atlas URI-t vagy felhasználói SSO hitelesítőt.
-- Személyes adatot és gyerekadatot csak külön jóváhagyott consent/policy és izolált tesztkörnyezet után lehet feldolgozni.
+A tervezett architektúrában a Vercel futtatja a Habi webalkalmazást és API-t, a MongoDB Atlas az alapértelmezett adattár, a Mac pedig csak kimenő kapcsolatot kezdeményező AI-workert futtat közvetlen Atlas-hozzáférés nélkül. A mostani lokális end-to-end próba nem használja a Vercelt vagy az Atlást; izolált, szintetikus MongoDB-t használ. Személyes tartalomhoz külső AI nem használható.
 
-Lásd az [architektúrát](docs/architecture.md), az [alacsony szintű perzisztenciatervet](docs/persistence.md), a [kiadási/restore kapukat](docs/deployment.md) és a [verification naplót](docs/verification.md) a részletes állapotért és átadási pontokért.
+Részletek: [architektúra](docs/architecture.md), [perzisztencia](docs/persistence.md), [telepítés](docs/deployment.md), [ellenőrzési napló](docs/verification.md), [korábbi funkciók migrációja](docs/legacy-feature-migration.md) és [worker](worker/README.md).

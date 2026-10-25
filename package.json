@@ -10,7 +10,12 @@
     "test": "node --test tests/*.test.mjs contracts/domain.test.cjs",
     "db:migrate:test": "node scripts/database-migrate.mjs",
     "db:seed:test": "node scripts/database-seed.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev:test": "next dev --hostname 127.0.0.1",
+    "start:test": "next start --hostname 127.0.0.1",
+    "db:test:start": "node scripts/test-mongodb.mjs start",
+    "db:test:stop": "node scripts/test-mongodb.mjs stop",
+    "test:workflow:local": "node scripts/database-reset-test.mjs && node scripts/database-migrate.mjs && node scripts/database-seed.mjs && node scripts/test-workflow-local.mjs"
   },
   "dependencies": {
     "ajv": "^8.20.0",

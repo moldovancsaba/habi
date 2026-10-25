@@ -11,6 +11,9 @@ HG_SSO_REDIRECT_URI=
 HG_SESSION_HMAC_KEY=
 HG_REFRESH_ENCRYPTION_KEY=
 HG_CURSOR_HMAC_KEY=
+HG_WORKER_SERVICE_ID=
+# SHA-256 of a generated 256-bit worker bearer token; raw token stays on the Mac.
+HG_WORKER_BEARER_SHA256=
 HG_EXTERNAL_ENABLED=false
 HG_SYNTHETIC_DATA_ONLY=true
 # External provider is separately disabled until its policy and budget are approved.
@@ -21,9 +24,10 @@ HG_EXTERNAL_API_KEY=
 HG_WORKER_MODE=local_synthetic
 # For worker runs, use worker/.env.example; this combined template contains blank cloud keys.
 HG_CLOUD_API_ORIGIN=
-HG_WORKER_CLIENT_ID=
-HG_WORKER_CLIENT_SECRET=
-HG_WORKER_SSO_TOKEN_ENDPOINT=
+HG_WORKER_SERVICE_ID=
+# Raw token belongs only on the Mac worker; Vercel receives its SHA-256 hash.
+HG_WORKER_BEARER_TOKEN=
+HG_WORKER_BEARER_SHA256=
 HG_HOST_LOCK_PATH=
 HG_OLLAMA_ORIGIN=
 HG_MODEL=qwen2.5:7b

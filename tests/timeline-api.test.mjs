@@ -59,11 +59,12 @@ test("timeline schema snapshot matches its canonical source manifest", async () 
       "utf8",
     ),
   );
-  assert.equal(manifest.apiVersion, "2.3.0");
+  assert.equal(manifest.apiVersion, "2.4.8");
   assert.equal(
-    manifest.sourceCommit,
-    "1f4c2fa45af5a4b8bf46e1eb6e9f2ae2948fb787",
+    manifest.sourceRepository,
+    "https://github.com/moldovancsaba/habi",
   );
+  assert.equal(manifest.sourcePath, "contracts/api-response-schemas.json");
   assert.equal(
     createHash("sha256").update(schemaBytes).digest("hex"),
     manifest.sha256,

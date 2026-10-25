@@ -36,13 +36,18 @@ async function revokeStaleSession(db, session, now) {
 export async function authenticateHabiRequest(
   db,
   request,
-  { hmacKey, now = new Date() } = {},
+  {
+    hmacKey,
+    now = new Date(),
+    cookieName = SESSION_COOKIE,
+    expectedOrigin = new URL(request.url).origin,
+  } = {},
 ) {
   if (!db || typeof request?.url !== "string" || typeof hmacKey !== "string") {
     throw new Error("AUTH_SESSION_GUARD_CONFIG_INVALID");
   }
 
-  const token = readCookie(request, SESSION_COOKIE);
+  const token = readCookie(request, cookieName);
   if (!token) throw new HabiApiError("AUTHENTICATION_REQUIRED");
   const sessions = db.collection("sessions");
   const session = await readActiveSession(sessions, token, hmacKey, now);
@@ -52,7 +57,7 @@ export async function authenticateHabiRequest(
   if (!SAFE_METHODS.has(method)) {
     const origin = request.headers.get("origin");
     if (
-      origin !== new URL(request.url).origin ||
+      origin !== expectedOrigin ||
       !verifyCsrfToken(token, request.headers.get(CSRF_HEADER), hmacKey)
     ) {
       throw new HabiApiError("ACCESS_DENIED");
@@ -106,6 +111,7 @@ export async function authenticateHabiRequest(
     sessionId: session.id,
     actorId: session.actorId,
     tenantId: session.tenantId,
+    retentionPolicyId: session.retentionPolicyId,
     role: session.activeRole,
     playerId: session.playerId,
     accessRevision: session.accessRevision,

@@ -3,8 +3,24 @@ import { readFile } from "node:fs/promises";
 import { migration as initialSchema } from "./001-initial-schema.mjs";
 import { migration as authTransactions } from "./002-auth-transactions.mjs";
 import { migration as sessionSsoCredentials } from "./003-session-sso-credentials.mjs";
+import { migration as checkinSessionRevision } from "./004-checkin-result-session-revision.mjs";
+import { migration as interpretationReviews } from "./005-interpretation-reviews.mjs";
+import { migration as coachMaterials } from "./006-coach-materials.mjs";
+import { migration as publicationUniqueness } from "./007-publication-uniqueness.mjs";
+import { migration as uploadChunks } from "./008-upload-chunks.mjs";
+import { migration as workerClaimIdempotency } from "./009-worker-claim-idempotency.mjs";
 
-const MIGRATIONS = [initialSchema, authTransactions, sessionSsoCredentials];
+const MIGRATIONS = [
+  initialSchema,
+  authTransactions,
+  sessionSsoCredentials,
+  checkinSessionRevision,
+  interpretationReviews,
+  coachMaterials,
+  publicationUniqueness,
+  uploadChunks,
+  workerClaimIdempotency,
+];
 
 export async function runMigrations(db, now = new Date()) {
   const ledger = db.collection("_habi_migrations");

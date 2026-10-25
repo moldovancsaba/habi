@@ -60,15 +60,21 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           "001-initial-schema",
           "002-auth-transactions",
           "003-session-sso-credentials",
+          "004-checkin-result-session-revision",
+          "005-interpretation-reviews",
+          "006-coach-materials",
+          "007-publication-uniqueness",
+          "008-upload-chunks",
+          "009-worker-claim-idempotency",
         ],
-        current: "003-session-sso-credentials",
+        current: "009-worker-claim-idempotency",
       },
     );
     assert.deepEqual(
       await runMigrations(db, new Date("2026-10-25T00:00:01.000Z")),
       {
         applied: [],
-        current: "003-session-sso-credentials",
+        current: "009-worker-claim-idempotency",
       },
     );
     const migrationRecord = await db
@@ -140,10 +146,12 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
   await t.test("deterministic two-tenant seed is idempotent", async () => {
     const first = await applySyntheticSeed(db);
     const second = await applySyntheticSeed(db);
-    assert.equal(first.inserted, 4);
+    assert.equal(first.inserted, 16);
     assert.equal(second.inserted, 0);
     assert.equal(await db.collection("tenants").countDocuments(), 2);
     assert.equal(await db.collection("players").countDocuments(), 2);
+    assert.equal(await db.collection("actors").countDocuments(), 6);
+    assert.equal(await db.collection("memberships").countDocuments(), 6);
   });
 
   await t.test(

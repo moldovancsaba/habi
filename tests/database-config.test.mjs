@@ -20,6 +20,35 @@ test("accepts configured Atlas settings as an immutable object", () => {
   assert.equal(Object.isFrozen(config), true);
 });
 
+test("accepts only the explicitly gated localhost synthetic test database", () => {
+  assert.deepEqual(
+    readAtlasConfig({
+      HG_ENVIRONMENT: "test",
+      HG_LOCAL_TEST_MODE: "true",
+      HG_SYNTHETIC_DATA_ONLY: "true",
+      HG_MIGRATION_ALLOW_LOCAL_TEST_DB: "true",
+      HABI_TEST_MONGODB_URI: "mongodb://127.0.0.1:27017/?replicaSet=habiTestRs",
+      HABI_TEST_MONGODB_DATABASE: "habi_workflow_test",
+    }),
+    {
+      uri: "mongodb://127.0.0.1:27017/?replicaSet=habiTestRs",
+      database: "habi_workflow_test",
+    },
+  );
+  assert.throws(
+    () =>
+      readAtlasConfig({
+        HG_ENVIRONMENT: "test",
+        HG_LOCAL_TEST_MODE: "true",
+        HG_SYNTHETIC_DATA_ONLY: "true",
+        HG_MIGRATION_ALLOW_LOCAL_TEST_DB: "true",
+        HABI_TEST_MONGODB_URI: "mongodb+srv://cluster.example",
+        HABI_TEST_MONGODB_DATABASE: "habi_workflow_test",
+      }),
+    /LOCAL_TEST_DATABASE_REQUIRED/,
+  );
+});
+
 test("rejects missing, synthetic, malformed, or unsafe database configuration", () => {
   assert.throws(() => readAtlasConfig({}), { message: "ATLAS_CONFIG_MISSING" });
   assert.throws(

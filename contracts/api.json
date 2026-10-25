@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.3.0",
-    "description": "Habi product API specification; Habigoal is the prototype name. Relative same-origin servers; no handler deployment asserted."
+    "version": "2.4.8",
+    "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
     {
@@ -766,6 +766,120 @@
         }
       }
     },
+    "/v1/checkin-sessions/{id}/answers": {
+      "post": {
+        "operationId": "post_v1_checkin_sessions_id_answers",
+        "description": "A player submits one immutable answer for an active daily check-in. The request revision prevents stale session writes; Idempotency-Key makes safe retries possible.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "x-domain-action": "write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./schemas.json#/$defs/CheckinAnswerInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Answer saved as a player-direct record and linked to the session revision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/RecordReadDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or not visible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, duplicate metric, or state conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable; no save success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/checkin-sessions/{id}/complete": {
       "post": {
         "operationId": "post_v1_checkin_sessions_id_complete",
@@ -906,7 +1020,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/CheckinSession"
+                  "$ref": "./schemas.json#/$defs/CheckinSessionReadDTO"
                 }
               }
             }
@@ -1102,7 +1216,7 @@
     "/v1/extractions/{id}/review": {
       "post": {
         "operationId": "post_v1_extractions_id_review",
-        "description": "publish; cloud-only; tenant and resource authorization required.",
+        "description": "Kizárólag aktív tenantbeli coach végezheti. Az expectedRevision kötelező; a döntések egyedi field+page kulccsal azonosítják az extraction mezőit, csak megadott mezőket módosítanak, új revisiont hoznak létre, és a teljes extraction csak minden mező jóváhagyásakor válik verified állapotúvá. Ugyanazzal az idempotency key-jel a korábbi eredmény kérhető le.",
         "security": [
           {
             "sessionCookie": []
@@ -1225,7 +1339,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "./schemas.json#/$defs/RevisionInput"
+                "$ref": "./schemas.json#/$defs/ExtractionReviewInput"
               }
             }
           }
@@ -2395,6 +2509,110 @@
         }
       }
     },
+    "/v1/materials/{id}": {
+      "get": {
+        "operationId": "get_v1_materials_id",
+        "description": "Exact coach-material revision; rejtett vagy idegen resource létezése nem fedhető fel.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "x-domain-action": "read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Jogosultság szerint látható, minimális DTO; a parent csak publikált exact revisiont kap.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/CoachMaterialReadDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Hibás kérés",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Hitelesítés szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Művelet tiltva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nem található vagy nem látható",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision vagy idempotencia konfliktus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Függőség nem érhető el",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me": {
       "get": {
         "operationId": "get_v1_me",
@@ -2872,6 +3090,16 @@
         ],
         "x-domain-action": "manageLinks",
         "responses": {
+          "201": {
+            "description": "Committed authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Ref"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Invalid input",
             "content": {
@@ -2938,16 +3166,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "./schemas.json#/$defs/Error"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "Committed authorized response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./schemas.json#/$defs/Ref"
                 }
               }
             }
@@ -3338,6 +3556,16 @@
         ],
         "x-domain-action": "manageLinks",
         "responses": {
+          "201": {
+            "description": "Committed authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Player"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Invalid input",
             "content": {
@@ -3404,16 +3632,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "./schemas.json#/$defs/Error"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "Committed authorized response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./schemas.json#/$defs/Player"
                 }
               }
             }
@@ -4018,7 +4236,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/CheckinSession"
+                  "$ref": "./schemas.json#/$defs/CheckinSessionReadDTO"
                 }
               }
             }
@@ -4441,7 +4659,7 @@
     "/v1/players/{playerId}/follow-ups": {
       "post": {
         "operationId": "post_v1_players_playerId_follow_ups",
-        "description": "write; cloud-only; tenant and resource authorization required.",
+        "description": "Utánkövetés kizárólag létező, aktív terv pontos revisionjéhez és azon belüli actionId-hez kapcsolható. A recorder/source a session szerepköréből származik; a kliens által küldött forrásbesorolás nem írja felül.",
         "security": [
           {
             "sessionCookie": []
@@ -4753,7 +4971,7 @@
     "/v1/players/{playerId}/interpretations": {
       "post": {
         "operationId": "post_v1_players_playerId_interpretations",
-        "description": "interpret; cloud-only; tenant and resource authorization required.",
+        "description": "Szülő vagy coach indíthat személyes értelmezési jobot. A szerver újraellenőrzi a hivatkozott források tenant/player/revision és aktuális láthatóságát, majd a thread/message/turn/job rekordokat tranzakcióban menti. A job 202 queued állapottal tér vissza; worker kiesése nem jelenti a tartalom hibáját.",
         "security": [
           {
             "sessionCookie": []
@@ -5044,10 +5262,251 @@
         }
       }
     },
+    "/v1/players/{playerId}/materials": {
+      "post": {
+        "operationId": "post_v1_players_playerId_materials",
+        "description": "Csak coach hozhat létre immutable coach-material verziót. A supersedesRef az előző pontos revisionre mutat; új anyagnál null. A létrejövő anyag draft, szülőnek csak külön exact-revision publication után látható.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "x-domain-action": "write",
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./schemas.json#/$defs/CoachMaterialInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Immutable draft verzió létrehozva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/CoachMaterialReadDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Hibás kérés",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Hitelesítés szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Csak coach írhat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player vagy forrás nem található/nem látható",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotencia vagy korábbi revision konfliktus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Függőség nem érhető el",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "get_v1_players_playerId_materials",
+        "description": "Coach láthatja a draftokat; parent kizárólag Publication által hivatkozott exact resourceRef revisionöket. Lapozott, no-store DTO.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "x-domain-action": "read",
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Jogosult DTO-lap",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "./schemas.json#/$defs/CoachMaterialReadDTO"
+                      }
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "snapshotAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "accessRevision": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "snapshotAt",
+                    "accessRevision"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Hitelesítés szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Művelet tiltva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nem található vagy nem látható",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Függőség nem érhető el",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/players/{playerId}/plans": {
       "post": {
         "operationId": "post_v1_players_playerId_plans",
-        "description": "write; cloud-only; tenant and resource authorization required.",
+        "description": "Aktív tenant coach javasolhat legfeljebb tíz intézkedésből álló segítségtervet, legalább egy jelenleg olvasható, pontos revisionű forrással. A terv proposed állapotban jön létre; actor/owner és határidő szerveroldalon validált.",
         "security": [
           {
             "sessionCookie": []
@@ -5531,7 +5990,7 @@
     "/v1/players/{playerId}/records": {
       "post": {
         "operationId": "post_v1_players_playerId_records",
-        "description": "write; cloud-only; tenant and resource authorization required.",
+        "description": "write; cloud-only; tenant and resource authorization required. Generic record writes reject checkin_answer; answers must use the revisioned check-in session endpoint.",
         "security": [
           {
             "sessionCookie": []
@@ -5945,6 +6404,16 @@
         ],
         "x-domain-action": "correct",
         "responses": {
+          "201": {
+            "description": "Committed authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Record"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Invalid input",
             "content": {
@@ -6011,16 +6480,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "./schemas.json#/$defs/Error"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "Committed authorized response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./schemas.json#/$defs/Record"
                 }
               }
             }
@@ -6445,7 +6904,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/Upload"
+                  "$ref": "./schemas.json#/$defs/UploadReadDTO"
                 }
               }
             }
@@ -8370,7 +8829,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/Upload"
+                  "$ref": "./schemas.json#/$defs/UploadReadDTO"
                 }
               }
             }
@@ -8475,7 +8934,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/Upload"
+                  "$ref": "./schemas.json#/$defs/UploadReadDTO"
                 }
               }
             }
@@ -8599,7 +9058,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/Upload"
+                  "$ref": "./schemas.json#/$defs/UploadReadDTO"
                 }
               }
             }
@@ -8744,7 +9203,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/Report"
+                  "$ref": "./schemas.json#/$defs/ReportReadDTO"
                 }
               }
             }
@@ -8873,6 +9332,9 @@
               }
             }
           },
+          "204": {
+            "description": "No eligible work"
+          },
           "400": {
             "description": "Invalid input",
             "content": {
@@ -8942,9 +9404,6 @@
                 }
               }
             }
-          },
-          "204": {
-            "description": "No eligible work"
           }
         },
         "parameters": [
@@ -9212,6 +9671,102 @@
             "application/json": {
               "schema": {
                 "$ref": "./schemas.json#/$defs/CompleteInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/worker/jobs/{id}/content": {
+      "get": {
+        "operationId": "get_v1_worker_jobs_id_content",
+        "description": "Download the quarantined report for a currently leased reportScan job. The lease and current requester membership are rechecked; response is private and no-store.",
+        "security": [
+          {
+            "workerBearer": []
+          }
+        ],
+        "x-domain-action": "context",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Lease-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          {
+            "name": "X-Job-Fence",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quarantined PDF bytes; private, no-store; never served to a browser in quarantine.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "maxLength": 10485760
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Worker authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, no longer authorized or no longer quarantined",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Expired or stale lease",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
               }
             }
           }
@@ -9708,6 +10263,110 @@
             "application/json": {
               "schema": {
                 "$ref": "./schemas.json#/$defs/HeartbeatInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/worker/jobs/{id}/scan": {
+      "post": {
+        "operationId": "post_v1_worker_jobs_id_scan",
+        "description": "Complete an antivirus scan for a leased reportScan job. A clean report becomes readable; an infected file is removed and remains restricted.",
+        "security": [
+          {
+            "workerBearer": []
+          }
+        ],
+        "x-domain-action": "complete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./schemas.json#/$defs/UploadScanInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sanitized upload status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/UploadReadDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid scan result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Worker authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job or upload not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale lease, file hash or idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
               }
             }
           }

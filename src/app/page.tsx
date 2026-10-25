@@ -1,6 +1,23 @@
+import { Suspense } from "react";
+import { connection } from "next/server";
+import LocalTestWorkspace from "./local-test-workspace";
 import styles from "./page.module.css";
 
 export default function Home() {
+  return (
+    <Suspense fallback={<LandingPage />}>
+      <RuntimeHome />
+    </Suspense>
+  );
+}
+
+async function RuntimeHome() {
+  await connection();
+  if (process.env.HG_LOCAL_TEST_MODE === "true") return <LocalTestWorkspace />;
+  return <LandingPage />;
+}
+
+function LandingPage() {
   return (
     <main className={styles.main}>
       <div className={styles.container}>

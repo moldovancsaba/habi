@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("API contract and response schemas are pinned to canonical API 2.3.0", async () => {
+test("API contract and response schemas are pinned to canonical API 2.4.8", async () => {
   const [apiBytes, apiManifestBytes, responseBytes, responseManifestBytes] =
     await Promise.all([
       readFile(new URL("../contracts/api.json", import.meta.url)),
@@ -19,12 +19,9 @@ test("API contract and response schemas are pinned to canonical API 2.3.0", asyn
   const apiManifest = JSON.parse(apiManifestBytes.toString("utf8"));
   const responseManifest = JSON.parse(responseManifestBytes.toString("utf8"));
 
-  assert.equal(api.info.version, "2.3.0");
-  assert.equal(apiManifest.apiVersion, "2.3.0");
-  assert.equal(
-    apiManifest.sourceCommit,
-    "1f4c2fa45af5a4b8bf46e1eb6e9f2ae2948fb787",
-  );
+  assert.equal(api.info.version, "2.4.8");
+  assert.equal(apiManifest.apiVersion, "2.4.8");
+  assert.equal(responseManifest.apiVersion, "2.4.8");
   assert.equal(
     createHash("sha256").update(apiBytes).digest("hex"),
     apiManifest.sha256,
@@ -44,4 +41,5 @@ test("API contract and response schemas are pinned to canonical API 2.3.0", asyn
   assert.equal(timelineSchema, "./schemas.json#/$defs/TimelinePageReadDTO");
   assert.equal(recordSchema, "./schemas.json#/$defs/RecordReadDTO");
   assert.deepEqual(recordOperation.security, [{ sessionCookie: [] }]);
+  assert.ok(api.paths["/v1/checkin-sessions/{id}/answers"].post);
 });
