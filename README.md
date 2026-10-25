@@ -16,6 +16,8 @@ Az API-leírás (`contracts/api.json`) és a böngészős válaszsémák a Calvu
 
 A `global.css` a Habigoal v101 központi vizuális forrásának byte-pontos másolata. A `design/design-system-manifest.json` a forrás commitját és SHA-256-át rögzíti; a teszt suite eltéréskor hibázik. A `src/app/globals.css` ezt az egy közös stílusforrást tölti be.
 
+Az első Habi belépőképernyő magyar nyelvű és nem jelenít meg teszt- vagy személyes profilt. A biztonságos belépés vezérlője addig letiltott, amíg a Habi alkalmazás SSO- és session-folyamata nincs route-szinten megvalósítva. A képernyő önmagában nem jelent bejelentkezést, jogosultságkezelést vagy pilotkész állapotot. A lokális képernyőellenőrzés 360, 390, 430, 768, 1024 és 1440 CSS-pixeles szélességen, valamint 390 pixelen 200%-os gyökér-betűmérettel történt; egyik méreten sem volt vízszintes túlcsordulás.
+
 A route-ok közös API-határa minden válaszhoz friss request ID-t ad, az ismert és ismeretlen kivételeket redaktált hibaválasszá alakítja, és strukturált, tartalommentes eseményt ír a szerverlogba. A readiness 5xx eseménye is csak műveletet, státuszt és request ID-t tartalmaz. Next.js prerender vezérlőjeleket továbbenged; a liveness/readiness útvonalak csak request időben futnak. Ez a közös határ jelenleg csak a két operációs végpontra van bekötve, nem az üzleti API-kra. A böngészős API-kliens ugyan-origin `/api`/`auth`/`v1` pathot, same-origin cookie-t és `no-store` fetch-t kényszerít ki; elkülöníti az offline/abort/HTTP/protocol hibát és nem retry-zik. A timeline loader a rögzített szerződés-validátort használja; általános `/v1/*` híváshoz továbbra is kötelező caller-supplied validátor. Ez még nincs UI-ba vagy üzleti route-ba kötve.
 
 ## Helyi ellenőrzés

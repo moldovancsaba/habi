@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Habi",
-  description: "Habi sportolói támogatási rendszer",
+  title: "Habi · Sportolói támogatás",
+  description: "Játékosok, családok és edzők közös sportolói támogatása.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

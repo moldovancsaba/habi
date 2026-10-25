@@ -1,5 +1,15 @@
 # Habi — ellenőrzési napló
 
+## T-HG-124 · Habi belépőképernyő · 2026-10-25
+
+| Parancs / próba | Eredmény | Környezet és korlát |
+| --- | --- | --- |
+| Lokális production server smoke | PASS, `/` HTTP 200 | Lokális, szintetikus adatra korlátozott környezet; a Habi SSO nincs bekötve. |
+| Viewport ellenőrzés | PASS, 360/390/430/768/1024/1440 px, nincs vízszintes túlcsordulás | Chrome headless, lokális build; 390 px szélességen 200%-os gyökér-betűméret mellett is nincs vízszintes túlcsordulás. |
+| Képernyőolvasási szemantika / fókusz | Részleges, manuális DOM-ellenőrzés | Egyetlen `h1`, `lang="hu"`, `aria-labelledby`-del címkézett fő szakasz, `role="status"`; a bejelentkezés gomb letiltott, ezért nincs aktív fókuszálható vezérlő. Fizikai eszköz és teljes képernyőolvasó-próba nem történt. |
+
+A főoldal egyértelműen Habi-ként azonosítja a terméket, magyar belépőszöveget és a hiányzó SSO-folyamat állapotát mutatja. Szerepválasztás, hamis bejelentkezés, mintajátékos vagy személyes adat nincs. A gomb szándékosan letiltott; azt SSO route/session integráció tényleges elkészülte után lehet aktiválni. Ez kizárólag a belépőfelület bizonyítéka, nem backend/API/Atlas/worker integráció vagy személyes pilot. Rollback: a `src/app/page.tsx`, `page.module.css` és `layout.tsx` változásainak revertje; nincs perzisztens adatváltozás.
+
 ## T-HG-121 · Közös vizuális forrás hash-pinelése · 2026-10-25
 
 | Parancs / próba | Eredmény | Környezet és korlát |
