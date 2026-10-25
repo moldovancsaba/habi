@@ -1,5 +1,19 @@
 # Habi — ellenőrzési napló
 
+## T-HG-125 · SSO refresh token protokoll és titkosítási alap · 2026-10-25
+
+| Parancs / próba | Eredmény | Környezet és korlát |
+| --- | --- | --- |
+| `npm test` | PASS, 60 pass, 0 fail, 1 skip | Lokális Node suite; az izolált Mongo replica-set próba kihagyva, mert nincs `HABI_TEST_MONGODB_URI`. SSO válaszok kontrollált fake fetchből jöttek. |
+| `npm run lint` | PASS, exit 0 | Biome, 48 forrás-/tesztfájl. |
+| `npm run build` | PASS, exit 0 | Next.js 16.4.3; API route inventory nem változott. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript. |
+| `git diff --check` | PASS, exit 0 | Lokális munkafa. |
+
+Az auth request kéri az elfogadott DoneIsBetter guide `offline_access` scope-ját; a code exchange validálja a nem üres refresh tokent és pozitív `expires_in` mezőt. A refresh grant kizárólag JSON POST-tal, no-store és 5 másodperces timeouttal fut; rotált refresh tokent ad vissza. Az AES-256-GCM helper HKDF kulcsot, egyedi 96 bites IV-t, auth tag-et és issuer/client/actor kötésű associated data-t használ; kulcs-, payload-, tenant/persona-scope és módosítási esetek teszteltek. Nincs nyers token logolva.
+
+Ez nem credential persistence vagy hosted auth: a helper még nincs session/database mezőhöz vagy API route-hoz kötve, nem történt éles SSO/Atlas/Vercel hívás, nincs személyes adat, consent/pilot vagy deploy. Következő lépés a verziózott, sessionhöz kötött titkosított credential tárolás és refresh-verseny/idempotencia viselkedés szerződésének létrehozása; csak ezt követően lehet callback route-ot bekötni. Rollback: kód/helper teszt és OIDC scope visszavonása; nincs tartós adatváltozás.
+
 ## T-HG-124 · Habi belépőképernyő · 2026-10-25
 
 | Parancs / próba | Eredmény | Környezet és korlát |

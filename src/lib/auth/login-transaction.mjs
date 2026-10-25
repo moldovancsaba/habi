@@ -64,7 +64,7 @@ export function buildAuthorizeUrl(
     response_type: "code",
     client_id: clientId,
     redirect_uri: redirectUri,
-    scope: "openid profile email",
+    scope: "openid profile email offline_access",
     state: transaction.state,
     nonce: transaction.nonce,
     code_challenge: challenge,

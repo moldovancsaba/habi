@@ -8,6 +8,7 @@ import {
   fetchSigningKeys,
   fetchSsoUserinfo,
   loadOidcDiscovery,
+  refreshSsoAccessToken,
   verifyIdToken,
   verifyIdTokenWithKeyRefresh,
 } from "../src/lib/auth/sso-oidc.mjs";
@@ -102,6 +103,10 @@ test("authorization URL uses S256 and code exchange uses JSON client_secret_post
     authorizationUrl.searchParams.get("code_challenge_method"),
     "S256",
   );
+  assert.equal(
+    authorizationUrl.searchParams.get("scope"),
+    "openid profile email offline_access",
+  );
   assert.equal(authorizationUrl.searchParams.get("state"), "state-value");
   let request;
   const tokens = await exchangeAuthorizationCode(
@@ -117,6 +122,8 @@ test("authorization URL uses S256 and code exchange uses JSON client_secret_post
       return response({
         id_token: "signed-id-token",
         access_token: "user-access-token",
+        refresh_token: "user-refresh-token",
+        expires_in: 3600,
       });
     },
   );
@@ -131,6 +138,54 @@ test("authorization URL uses S256 and code exchange uses JSON client_secret_post
     code_verifier: "v".repeat(43),
   });
   assert.equal(tokens.accessToken, "user-access-token");
+  assert.equal(tokens.refreshToken, "user-refresh-token");
+  assert.equal(tokens.expiresIn, 3600);
+});
+
+test("SSO access-token refresh rotates refresh tokens and is bounded", async () => {
+  const discovered = {
+    issuer,
+    token_endpoint: `${issuer}/api/oauth/token`,
+  };
+  let request;
+  const tokens = await refreshSsoAccessToken(
+    discovered,
+    { clientId: "habi-client", clientSecret: "server-secret" },
+    "old-refresh-token",
+    async (url, init) => {
+      request = { url, init };
+      return response({
+        access_token: "new-access-token",
+        refresh_token: "rotated-refresh-token",
+        expires_in: 1800,
+      });
+    },
+  );
+  assert.equal(request.url, discovered.token_endpoint);
+  assert.equal(request.init.cache, "no-store");
+  assert.equal(request.init.headers["Content-Type"], "application/json");
+  assert.deepEqual(JSON.parse(request.init.body), {
+    grant_type: "refresh_token",
+    refresh_token: "old-refresh-token",
+    client_id: "habi-client",
+    client_secret: "server-secret",
+  });
+  assert.deepEqual(tokens, {
+    accessToken: "new-access-token",
+    refreshToken: "rotated-refresh-token",
+    expiresIn: 1800,
+  });
+  await assert.rejects(
+    refreshSsoAccessToken(
+      discovered,
+      { clientId: "habi-client" },
+      "",
+      async () => {
+        throw new Error("must not fetch");
+      },
+    ),
+    { message: "SSO_REFRESH_TOKEN_INVALID" },
+  );
 });
 
 test("RS256 verifier enforces issuer, audience, nonce, expiry and issue time", () => {

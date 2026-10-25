@@ -71,6 +71,10 @@ test("login transaction has S256 authorize parameters and no browser-stored veri
   assert.equal(url.searchParams.get("state"), transaction.state);
   assert.equal(url.searchParams.get("nonce"), transaction.nonce);
   assert.equal(url.searchParams.get("code_challenge_method"), "S256");
+  assert.equal(
+    url.searchParams.get("scope"),
+    "openid profile email offline_access",
+  );
   assert.notEqual(url.searchParams.get("code_challenge"), transaction.verifier);
   assert.ok(transaction.document.pkceVerifier);
   assert.equal(Object.hasOwn(transaction.document, "state"), false);

@@ -78,7 +78,7 @@ export function buildAuthorizationRedirect(
     response_type: "code",
     client_id: clientId,
     redirect_uri: redirectUri,
-    scope: "openid profile email",
+    scope: "openid profile email offline_access",
     state,
     nonce,
     code_challenge: challenge,
@@ -112,11 +112,81 @@ export async function exchangeAuthorizationCode(
   const tokens = await response.json();
   if (
     typeof tokens?.id_token !== "string" ||
-    typeof tokens?.access_token !== "string"
+    typeof tokens?.access_token !== "string" ||
+    typeof tokens?.refresh_token !== "string" ||
+    !tokens.refresh_token ||
+    !Number.isSafeInteger(tokens?.expires_in) ||
+    tokens.expires_in <= 0
   ) {
     throw new Error("SSO_TOKEN_RESPONSE_INVALID");
   }
-  return { idToken: tokens.id_token, accessToken: tokens.access_token };
+  return Object.freeze({
+    idToken: tokens.id_token,
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token,
+    expiresIn: tokens.expires_in,
+  });
+}
+
+export async function refreshSsoAccessToken(
+  discovery,
+  config,
+  refreshToken,
+  fetchImpl = fetch,
+) {
+  if (typeof refreshToken !== "string" || !refreshToken) {
+    throw new Error("SSO_REFRESH_TOKEN_INVALID");
+  }
+  let response;
+  try {
+    response = await fetchImpl(discovery.token_endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+      }),
+      cache: "no-store",
+      signal: timeoutSignal(),
+    });
+  } catch (error) {
+    if (
+      error instanceof TypeError ||
+      error?.name === "AbortError" ||
+      error?.name === "TimeoutError"
+    ) {
+      throw new Error("SSO_DEPENDENCY_UNAVAILABLE");
+    }
+    throw error;
+  }
+  if (!response.ok) {
+    throw new Error(
+      response.status >= 500
+        ? "SSO_DEPENDENCY_UNAVAILABLE"
+        : "SSO_REFRESH_REJECTED",
+    );
+  }
+  const tokens = await response.json();
+  if (
+    typeof tokens?.access_token !== "string" ||
+    !tokens.access_token ||
+    !Number.isSafeInteger(tokens?.expires_in) ||
+    tokens.expires_in <= 0 ||
+    (tokens.refresh_token !== undefined &&
+      (typeof tokens.refresh_token !== "string" || !tokens.refresh_token))
+  ) {
+    throw new Error("SSO_TOKEN_RESPONSE_INVALID");
+  }
+  return Object.freeze({
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token ?? refreshToken,
+    expiresIn: tokens.expires_in,
+  });
 }
 
 export async function fetchSigningKeys(discovery, fetchImpl = fetch) {
