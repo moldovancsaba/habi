@@ -1,5 +1,19 @@
 # Habi — ellenőrzési napló
 
+## T-HG-128 · Szerveroldali session- és scope-guard · 2026-10-25
+
+| Parancs / próba | Eredmény | Környezet és korlát |
+| --- | --- | --- |
+| `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, 85 pass, 0 fail, 0 skip | Izolált, egynode-os lokális MongoDB replica set; teszt-DB törlődött a suite végén. |
+| `npm run lint` | PASS, exit 0 | Biome, 60 forrás-/tesztfájl. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript. |
+| `npm run build` | PASS, exit 0 | Next.js 16.4.3; hosted route inventory változatlan. |
+| `git diff --check` | PASS, exit 0 | Lokális munkafa. |
+
+`authenticateHabiRequest()` ellenőrzi az opaque sessiont, az aktív actort és annak `accessRevision` értékét, a sessionben rögzített tenant/role/player pontos aktív membershipjét, tenant- és player-állapotot, valamint a session lejáratát és idle ablakát. Módosító HTTP-metódusnál pontos same-origin Origin és sessionhöz kötött CSRF header kell. Sikeres kérésnél feltételes session-touch történik, és csak minimális, immutable actor/tenant/role/player scope tér vissza. Felfüggesztett actor vagy érvénytelen membership esetén a guard előbb visszavonja a credentialt, majd a sessiont, és egységes 401-et ad. Négy helper-próba futott; a DB-replica suite a korábbi T-HG-127 handler-integrációkat is ellenőrizte.
+
+A guard még nincs üzleti API-route-ba bekötve, így egyetlen jelenlegi product endpointot sem véd; ez helper-szintű bizonyíték, nem kész auth middleware vagy végponti jogosultságvédelem. Nem történt élő SSO/Atlas/Vercel kapcsolat, deploy vagy személyes adatkezelés. Kódon kívüli adatváltozás nincs. Rollback: a guard/helper teszt kódrevertje, perzisztens hatás nélkül.
+
 ## T-HG-127 · SSO login-indítás és biztonságos logout route · 2026-10-25
 
 | Parancs / próba                                                                     | Eredmény                      | Környezet és korlát                                                               |
