@@ -1,5 +1,18 @@
 # Habi — ellenőrzési napló
 
+## T-HG-118 · Product API responses require validation · 2026-10-25
+
+| Command / test | Result | Environment and limits |
+| --- | --- | --- |
+| `npm test` | PASS, 49 passed, 0 failed, 1 skipped | Local Node suite; isolated Mongo replica-set test skipped because no URI was supplied. |
+| `npm run lint` | PASS, exit 0 | Biome. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript. |
+| `npm run build` | PASS, exit 0 | Next.js 16.4.3; no build-time DB probe or route error. |
+
+`requestHabiApi` refuses `/v1/*` requests before fetch if no caller-supplied response validator is present. A validator returning false or throwing produces a generic contract error without leaking its detail. Input-method/body/header errors are checked before the validator requirement, and server error responses remain distinguishable without treating their payload as success DTOs.
+
+This does not provide a canonical DTO schema registry or UI integration; screens must bind validators to the accepted contract before calling the client. No Atlas/SSO/deploy/personal-data operation. Rollback is a code revert with no persistent impact.
+
 ## T-HG-117 · Same-origin böngészős API transport · 2026-10-25
 
 | Parancs / próba | Eredmény | Környezet és korlát |

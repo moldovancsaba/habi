@@ -48,7 +48,7 @@ A konkrét indexdefiníciók, migration checksum, TTL dátumkonverzió, tenant q
 
 ## Böngészős API-kliens alap
 
-`src/lib/client/api-client.mjs` az API-útvonalakat same-origin `/api/`, `/auth/` vagy `/v1/` pathra korlátozza, `credentials: same-origin`, `cache: no-store` és redirect-tiltással. Böngészőből nem fogad Authorization bearer header-t; CSRF, idempotency és revision feltételekhez allow-listelt header használható. A network offline, abort, HTTP és hibás response külön error kind; nincs automatikus újrapróba, így írás nem duplázódik. A sikeres DTO shape-ot ez a transport még nem validálja, és a kliens nincs UI-ba vagy valós API-route-ba bekötve.
+`src/lib/client/api-client.mjs` az API-útvonalakat same-origin `/api/`, `/auth/` vagy `/v1/` pathra korlátozza, `credentials: same-origin`, `cache: no-store` és redirect-tiltással. Böngészőből nem fogad Authorization bearer header-t; CSRF, idempotency és revision feltételekhez allow-listelt header használható. A network offline, abort, HTTP és hibás response külön error kind; nincs automatikus újrapróba, így írás nem duplázódik. A `/v1/*` híváshoz a caller köteles válaszvalidátort adni; nélküle fetch nem indul, `false` vagy validator exception esetén az adat elutasított. A konkrét szerződéssémákat a képernyő/view adapternek kell majd bekötni; a transport jelenleg nincs UI-ba vagy valós API-route-ba bekötve.
 
 ## Jelenlegi hiányok
 
