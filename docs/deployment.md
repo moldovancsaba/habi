@@ -14,6 +14,7 @@ A környezetkulcsok kanonikus nevei: `development/environment.example`. A konfig
 - Vercel `habigoal`: Preview célra titkos `MONGODB_URI`, `MONGODB_DB` és `MONGODB_APP_NAME` változók vannak. Az egyik Preview deployment védett válasza HTTP 302 átirányítás volt, ezért a health állapotot és az adatbázis elkülönítését nem sikerült igazolni. Az értékeket nem olvastuk.
 - A Habi Vercel projekt a célkörnyezet, de a dedikált Atlas adatbázis, új `HG_*` futásidejű változók és DoneIsBetter SSO kliens nincsenek igazolva. A Vercel projektkapcsolat lokális és `.vercel/` alatt marad; titkot nem húztunk le. Preview telepítés előtt a szükséges kulcsokat és Atlas elkülönítést kell létrehozni, hogy a Preview ne módosíthassa a régi vagy éles adatokat.
 - A 2026-10-25-i ellenőrzés szerint a Habi Preview env-listában csak a régi titkos `habi_mongodb_uri` szerepel (Development, Preview, Production). Új `HG_*` konfiguráció nincs; a preview ezért nem futtathatja biztonságosan az új perzisztens Habi rendszert.
+- Hiányos Preview-konfigurációnál a build csak a kikapcsolt nyilvános belépőoldalt szolgálja ki; a health probe 200, a readiness probe 503, az üzleti/worker/auth API-k pedig `DEPENDENCY_UNAVAILABLE` 503 választ adnak. Ez diagnosztikai preview-állapot, nem használható tesztkörnyezet. A Production továbbra is induláskor visszautasítja a hiányos konfigurációt.
 
 ## Kiadási előfeltételek
 

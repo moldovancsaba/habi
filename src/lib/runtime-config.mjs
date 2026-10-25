@@ -207,5 +207,8 @@ export function validateRuntimeConfig(env) {
 
 export function validateRuntimeStartup(env) {
   if (env.NEXT_PHASE === "phase-production-build") return;
+  // An unconfigured Vercel Preview may render only the public, disabled landing
+  // page. API routes remain fail-closed until a complete Habi environment exists.
+  if (env.VERCEL_ENV === "preview" && !env.HG_ENVIRONMENT) return;
   validateRuntimeConfig(env);
 }

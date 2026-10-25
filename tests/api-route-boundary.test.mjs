@@ -15,6 +15,28 @@ test("adds a fresh request ID to successful route responses", async () => {
   assert.match(response.headers.get("x-request-id"), /^[a-f0-9]{32}$/);
 });
 
+test("unconfigured Vercel Preview blocks product APIs but keeps health probes", async () => {
+  const env = { VERCEL_ENV: "preview" };
+  const blocked = await runApiRoute(
+    new Request("https://habi.test/api/v1/players"),
+    "api.players.list",
+    async () => assert.fail("unconfigured preview must not run product APIs"),
+    () => {},
+    env,
+  );
+  assert.equal(blocked.status, 503);
+  assert.equal((await blocked.json()).code, "DEPENDENCY_UNAVAILABLE");
+
+  const health = await runApiRoute(
+    new Request("https://habi.test/api/health"),
+    "api.health",
+    async () => Response.json({ ok: true }),
+    () => {},
+    env,
+  );
+  assert.equal(health.status, 200);
+});
+
 test("maps known errors and emits content-free structured diagnostics", async () => {
   const lines = [];
   const response = await runApiRoute(

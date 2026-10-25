@@ -1,4 +1,8 @@
-import { createRequestId, toHabiErrorResponse } from "./error-response.mjs";
+import {
+  createRequestId,
+  HabiApiError,
+  toHabiErrorResponse,
+} from "./error-response.mjs";
 
 const OPERATION_PATTERN = /^[a-z][a-z0-9._-]{0,63}$/;
 const NEXT_CONTROL_FLOW_DIGESTS = new Set([
@@ -28,11 +32,38 @@ export async function runApiRoute(
   operation,
   handler,
   logger = console.error,
+  env = process.env,
 ) {
   const requestId = createRequestId();
   const safeOperation = OPERATION_PATTERN.test(operation)
     ? operation
     : "unknown";
+
+  if (
+    env.VERCEL_ENV === "preview" &&
+    !env.HG_ENVIRONMENT &&
+    !["api.health", "api.ready"].includes(safeOperation)
+  ) {
+    const response = toHabiErrorResponse(
+      new HabiApiError("DEPENDENCY_UNAVAILABLE"),
+      { requestId },
+    );
+    response.headers.set("X-Request-ID", requestId);
+    try {
+      logger(
+        JSON.stringify({
+          event: "habi.api.error",
+          operation: safeOperation,
+          requestId,
+          status: response.status,
+          code: "DEPENDENCY_UNAVAILABLE",
+        }),
+      );
+    } catch {
+      // Logging failure must not replace the fail-closed response.
+    }
+    return response;
+  }
 
   try {
     const response = await handler(request);

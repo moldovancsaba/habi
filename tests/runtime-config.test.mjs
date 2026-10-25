@@ -54,6 +54,14 @@ test("allows only synthetic localhost configuration for development", () => {
   );
 });
 
+test("an unconfigured Vercel Preview can render the disabled landing page", () => {
+  assert.doesNotThrow(() => validateRuntimeStartup({ VERCEL_ENV: "preview" }));
+  assert.throws(
+    () => validateRuntimeStartup({ VERCEL_ENV: "production" }),
+    /HG_ENVIRONMENT/,
+  );
+});
+
 test("allows an explicitly gated localhost synthetic workflow test database", () => {
   const config = validateRuntimeConfig({
     ...local,
