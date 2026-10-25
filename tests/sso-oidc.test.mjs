@@ -9,6 +9,7 @@ import {
   fetchSsoUserinfo,
   loadOidcDiscovery,
   verifyIdToken,
+  verifyIdTokenWithKeyRefresh,
 } from "../src/lib/auth/sso-oidc.mjs";
 
 const issuer = "https://sso.example";
@@ -183,6 +184,61 @@ test("RS256 verifier enforces issuer, audience, nonce, expiry and issue time", (
     ),
     null,
   );
+});
+
+test("ID token verification refreshes JWKS once for an unknown signing key", async () => {
+  const fixture = jwtFixture();
+  const options = {
+    keys: [],
+    issuer,
+    clientId: "habi-client",
+    nonce: "nonce-value",
+    nowSeconds: fixture.now,
+  };
+  let requests = 0;
+  const verified = await verifyIdTokenWithKeyRefresh(
+    fixture.token,
+    options,
+    { jwks_uri: `${issuer}/.well-known/jwks.json` },
+    async (_url, init) => {
+      requests += 1;
+      assert.equal(init.cache, "no-store");
+      assert.ok(init.signal);
+      return response({ keys: [fixture.jwk] });
+    },
+  );
+  assert.equal(verified.subject, "sso-subject-1");
+  assert.equal(requests, 1);
+
+  let invalidTokenRequests = 0;
+  assert.equal(
+    await verifyIdTokenWithKeyRefresh(
+      "not-a-jwt",
+      options,
+      { jwks_uri: `${issuer}/.well-known/jwks.json` },
+      async () => {
+        invalidTokenRequests += 1;
+        return response({ keys: [fixture.jwk] });
+      },
+    ),
+    null,
+  );
+  assert.equal(invalidTokenRequests, 0);
+
+  let missingKeyRequests = 0;
+  assert.equal(
+    await verifyIdTokenWithKeyRefresh(
+      fixture.token,
+      options,
+      { jwks_uri: `${issuer}/.well-known/jwks.json` },
+      async () => {
+        missingKeyRequests += 1;
+        return response({ keys: [] });
+      },
+    ),
+    null,
+  );
+  assert.equal(missingKeyRequests, 1);
 });
 
 test("JWKS, userinfo and app permission calls are bounded, no-store and fail closed", async () => {

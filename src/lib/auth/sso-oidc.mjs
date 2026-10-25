@@ -189,6 +189,44 @@ export function verifyIdToken(
   }
 }
 
+/**
+ * Verify an ID token using the cached key set, refreshing once only when its
+ * header names a key that is not present. This handles SSO signing-key rotation
+ * without turning ordinary invalid tokens into repeated network requests.
+ */
+export async function verifyIdTokenWithKeyRefresh(
+  idToken,
+  options,
+  discovery,
+  fetchImpl = fetch,
+) {
+  let header;
+  try {
+    const encodedHeader = idToken.split(".", 1)[0];
+    header = JSON.parse(
+      Buffer.from(encodedHeader, "base64url").toString("utf8"),
+    );
+  } catch {
+    return null;
+  }
+  if (header?.alg !== "RS256" || typeof header.kid !== "string") return null;
+
+  const hasSigningKey = (keys) =>
+    Array.isArray(keys) &&
+    keys.some(
+      (key) =>
+        key.kid === header.kid &&
+        key.kty === "RSA" &&
+        (!key.alg || key.alg === "RS256") &&
+        (!key.use || key.use === "sig"),
+    );
+  if (hasSigningKey(options.keys)) return verifyIdToken(idToken, options);
+
+  const refreshedKeys = await fetchSigningKeys(discovery, fetchImpl);
+  if (!hasSigningKey(refreshedKeys)) return null;
+  return verifyIdToken(idToken, { ...options, keys: refreshedKeys });
+}
+
 export async function fetchSsoUserinfo(
   discovery,
   accessToken,

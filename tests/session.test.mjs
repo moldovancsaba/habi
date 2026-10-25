@@ -28,6 +28,7 @@ test("session stores only a keyed hash and derives a session-bound CSRF token", 
   });
   assert.match(issued.token, /^[A-Za-z0-9_-]{43}$/);
   assert.equal(inserted.length, 1);
+  assert.match(inserted[0].id, /^[a-f0-9]{48}$/);
   assert.equal(inserted[0].tokenHash, sessionTokenHash(issued.token, hmacKey));
   assert.notEqual(inserted[0].tokenHash, issued.token);
   assert.equal(issued.csrfToken, deriveCsrfToken(issued.token, hmacKey));

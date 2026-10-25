@@ -51,7 +51,9 @@ export async function issueSession(
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(now.getTime() + SESSION_ABSOLUTE_MS);
   const document = {
-    id: randomBytes(24).toString("base64url"),
+    // Contract IDs must start with an alphanumeric character; hex is both
+    // unpredictable and guaranteed to satisfy that constraint.
+    id: randomBytes(24).toString("hex"),
     tenantId,
     schemaVersion: 2,
     revision: 1,

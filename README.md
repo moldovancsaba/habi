@@ -8,6 +8,8 @@ Ez a repository a Habi terméket a földről építi újra. A régi alkalmazás 
 
 A terméket a Vercel futtatja. A Mac worker kizárólag kifelé hívja a Vercel API-t és a helyi Ollamát; közvetlen Atlas-kapcsolatot nem kap. A meglévő modellt és hostzárat kell használni. Külső személyes AI-tartalékút nincs.
 
+Az OIDC alapprimitívek ismeretlen `kid` esetén egyszer frissítik a JWKS kulcslistát, majd újra ellenőrzik az aláírást; hibás token nem indít hálózati kérést. A sessionazonosító szerződéskompatibilis, kriptográfiailag véletlen hex érték. Ezek továbbra sem jelentenek kész bejelentkezési útvonalat.
+
 ## Helyi ellenőrzés
 
 Node.js 20.19+, 22.13+ vagy 24+.
