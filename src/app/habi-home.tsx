@@ -13,8 +13,24 @@ type ApiResponse = { payload?: AppPayload | null };
 
 type LoadState =
   | { status: "loading" }
-  | { status: "ready"; payload: AppPayload | null }
+  | {
+      status: "ready";
+      payload: AppPayload | null;
+      source: "cloud" | "device";
+    }
   | { status: "error" };
+
+function readDeviceState(): AppPayload | null {
+  try {
+    const raw = window.localStorage.getItem("habi-app-v1");
+    if (!raw) return null;
+    const app = JSON.parse(raw) as AppPayload["app"];
+    if (!app || typeof app !== "object") return null;
+    return { app };
+  } catch {
+    return null;
+  }
+}
 
 function countRecords(value: unknown): number {
   return Array.isArray(value) ? value.length : 0;
@@ -44,10 +60,26 @@ export default function HabiHome() {
       });
       if (!response.ok) throw new Error("Habi data is unavailable");
       const result = (await response.json()) as ApiResponse;
-      setState({ status: "ready", payload: result.payload ?? null });
+      const deviceState = readDeviceState();
+      const deviceHasUnsyncedChanges =
+        window.localStorage.getItem("habi-cloud-dirty") === "1";
+      if (!result.payload || deviceHasUnsyncedChanges) {
+        setState({
+          status: "ready",
+          payload: deviceState ?? result.payload ?? null,
+          source: deviceState ? "device" : "cloud",
+        });
+      } else {
+        setState({ status: "ready", payload: result.payload, source: "cloud" });
+      }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      setState({ status: "error" });
+      const deviceState = readDeviceState();
+      if (deviceState) {
+        setState({ status: "ready", payload: deviceState, source: "device" });
+      } else {
+        setState({ status: "error" });
+      }
     }
   }, []);
 
@@ -154,15 +186,16 @@ export default function HabiHome() {
                   <dd>{tasks.filter((task) => task.done === true).length}</dd>
                 </div>
                 <div className={styles.stat}>
-                  <dt>Beszélgetések</dt>
+                  <dt>Mentett kérések</dt>
                   <dd>{countRecords(app?.requests)}</dd>
                 </div>
               </dl>
             </section>
 
             <p className={styles.privacy}>
-              A naplód ehhez a böngészőhöz tartozó, már meglévő Habi-adatokból
-              töltődik be. Új mintabejegyzéseket nem készítünk.
+              {state.source === "device"
+                ? "Most a böngészőben korábban mentett adataid látszanak. A naplód egyezteti ezeket, amikor a kapcsolat helyreáll."
+                : "A naplód ehhez a böngészőhöz tartozó, már meglévő Habi-adatokból töltődik be. Új mintabejegyzéseket nem készítünk."}
             </p>
           </>
         )}

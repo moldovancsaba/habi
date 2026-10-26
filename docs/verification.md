@@ -10,6 +10,13 @@
 - A `codex/habi-ground-up` Preview deployment a vizsgálat idején `QUEUED` állapotban maradt, ezért hosted Preview adatírási teszt nem futott. A Production változtatás a tulajdonos korábbi, kifejezett `main`/Production utasítására került ki; Preview hiánya kockázati megjegyzés, nem sikeres Preview bizonyíték.
 - Visszaállítás: a Vercel projekt korábbi Production deploymentjének aliasra történő visszaállítása. Az adatbázison nem történt migráció, törlés vagy tesztírás.
 
+## Új Habi kezdőképernyő · 2026-10-26
+
+- A `b417686` a `/` útvonalat az új Habi Next.js kezdőképernyőre állítja; többé nem irányít át a régi kliensre. A meglévő napló továbbra is elérhető a `Megnyitom a naplómat` hivatkozással.
+- A kezdőképernyő a `/api/app` meglévő browser-owner munkamenetét olvassa, és csak mentett állapotjelzések, feladatok, beszélgetések darabszámát és a legutóbbi dátumot mutatja. Üres adatoknál üres állapotot jelenít meg, nem készít mintaadatot.
+- Ha a távoli API nem érhető el, vagy a korábbi kliens `habi-cloud-dirty=1` jelzővel nem szinkronizált helyi változást jelez, a felület a `habi-app-v1` böngészőbeli állapotot használja; ezt az állapotot külön jelöli. A kezdőlap nem ír adatot.
+- Éles böngésző ellenőrzés: a Habi címen a gyökérképernyő magyar címsorral és napló összesítővel jelenik meg; `/api/app` 200. A Habi szerepkörös végpontjai továbbra is fail-closed állapotban vannak, a teljes új player/parent/coach munkafolyamat UI-ja nincs ebben az MVP-ben.
+
 ## Aktuális ágállapot · 2026-10-25
 
 A jelenlegi, módosított API-kontraktus verziója 2.4.8. A T-HG-130 alatti végrehajtás a korábbi 2.4.1 verzióra vonatkozott.
