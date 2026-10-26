@@ -701,4 +701,7 @@ The signed-in administrator landing page now displays the active player, parent,
 | `npm run typecheck` | PASS, exit 0 | Local Habi checkout; TypeScript. |
 | `npm run build` | PASS, exit 0 | Local Habi checkout; Next.js 16.4.3 production build. |
 | `git diff --check` | PASS, exit 0 | Local Habi checkout. |
+| Production release `cc980a1` | READY, deployment `dpl_5hetheSBra3EnHu1r1ecKK2DpiZJ`; aliases include `habigoal.com` and `habi.doneisbetter.com` | Vercel project `narimato/habi`, Production. |
+| `GET /`, `/api/health`, `/api/ready` | PASS, HTTP 200 | `https://habigoal.com`; health and Atlas readiness confirmed. |
+| Production error log scan, previous hour | 7 errors, all `POST /api/v1/me/scope` returned 500; no question-flow verification evidence | Vercel project `narimato/habi`, Production. Role-scope errors are outside this UI change and remain an open investigation. |
 | Authenticated parent question → local worker → coach review → visible answer | Pending | Requires an active parent session, an available daily check-in, a running worker, and authorized coach review. |
