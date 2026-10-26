@@ -724,4 +724,5 @@ The signed-in administrator landing page now displays the active player, parent,
 - `cd worker && uv run --frozen python -m unittest discover -s tests -v` | PASS, exit 0; 18 tests | Worker config, local Ollama contract and service runtime tests.
 - `GET http://127.0.0.1:3000/legacy` | PASS, HTTP 200 | Local test app; exact user-facing path.
 - `git diff --check` | PASS, exit 0 | Local Habi checkout.
-- This records local verification only. Production release and live signed-in verification must be recorded after the change is pushed and Vercel reports the matching Production commit as Ready.
+- Production commit `97bc8ed39d1fd9494d611e4b44632b1c6da17afc` is Ready as deployment `dpl_EXrhgg1fAA41WpGBybn6huYjgoRA` in Vercel project `narimato/habi`; aliases include `habigoal.com` and `www.habigoal.com`.
+- Live unauthenticated route checks: `GET /`, `/legacy`, `/api/health`, and `/api/ready` all returned HTTP 200 at `https://habigoal.com`. The homepage shows the DoneIsBetter sign-in entry. A signed-in Production report upload was not performed in this check; the matching authenticated coach flow was exercised against the isolated synthetic local stack above.
