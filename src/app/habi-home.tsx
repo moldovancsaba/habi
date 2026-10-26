@@ -169,7 +169,9 @@ export default function HabiHome() {
             <section className={styles.summary} aria-labelledby="summary-title">
               <div className={styles.sectionHeading}>
                 <div>
-                  <p className={styles.eyebrow}>CSAK A TE ADATAID</p>
+                  <p className={styles.eyebrow}>
+                    EHHEZ A BÖNGÉSZŐHÖZ KAPCSOLVA
+                  </p>
                   <h2 id="summary-title">A naplód röviden</h2>
                 </div>
                 <span className={styles.ownerNote}>

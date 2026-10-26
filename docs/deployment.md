@@ -2,7 +2,7 @@
 
 ## Aktuális Production állapot · 2026-10-26
 
-A `bd63bec` commit felkerült a `main` ágra, és Ready Production deployment készült belőle: `dpl_CQKS2AdmiGeZJ4yn8oeMB7zJHgTf` (`https://habi.doneisbetter.com`). Az MVP a meglévő `habi` Atlas adatbázist és cookie-hash alapú browser-owner kompatibilitást használja, adatmodell-migráció nélkül. A Preview branch deploy ellenőrzéskor `QUEUED` maradt, ezért a Production smoke teszt csak read-only volt; részletek a [verification naplóban](verification.md). Az SSO-s szerepkörös funkciók továbbra sincsenek aktiválva.
+Az új Habi kezdőlap a `main` ágra került (`b417686`), az utolsó Production deployment `dpl_BMxXPM9hQDsLc92Pd6mQPQ2cMvhE` (`Ready`), alias: `https://habi.doneisbetter.com`. Az MVP a meglévő `habi` Atlas adatbázist és cookie-hash alapú browser-owner kompatibilitást használja, adatmodell-migráció nélkül. A kezdőlap valós adatot vagy üres állapotot mutat; az ellenőrző Chrome-profilban nem volt felismerhető korábbi rekord. A Preview branch deploy ellenőrzéskor `QUEUED` maradt, ezért Production adatírási próba nem történt; részletek a [verification naplóban](verification.md). Az SSO-s szerepkörös funkciók továbbra sincsenek aktiválva.
 
 ## Vercel
 
