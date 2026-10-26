@@ -68,7 +68,7 @@ export async function loadOidcDiscovery(issuer, fetchImpl = fetch) {
 
 export function buildAuthorizationRedirect(
   discovery,
-  { clientId, redirectUri, state, nonce, verifier },
+  { clientId, redirectUri, state, nonce, verifier, prompt },
 ) {
   const authorize = new URL(discovery.authorization_endpoint);
   const challenge = createHash("sha256")
@@ -85,6 +85,7 @@ export function buildAuthorizationRedirect(
     code_challenge_method: "S256",
   }))
     authorize.searchParams.set(key, value);
+  if (prompt === "login") authorize.searchParams.set("prompt", "login");
   return authorize.toString();
 }
 

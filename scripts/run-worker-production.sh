@@ -1,5 +1,6 @@
 #!/bin/zsh
 set -eu
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
 PROJECT_ROOT="/Users/Shared/Projects/habi"
 set -a
 source "$PROJECT_ROOT/worker/.env.production.local"

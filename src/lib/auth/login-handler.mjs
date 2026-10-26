@@ -52,6 +52,7 @@ export function createLoginHandler({
     const location = buildAuthorizationRedirect(discovery, {
       ...config,
       ...transaction,
+      prompt: url.searchParams.get("prompt") === "login" ? "login" : undefined,
     });
     const response = new Response(null, {
       status: 302,

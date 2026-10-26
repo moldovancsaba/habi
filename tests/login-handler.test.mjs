@@ -60,9 +60,12 @@ test("login route persists one-use server state and redirects with PKCE", async 
     now: () => new Date("2026-10-25T12:00:00.000Z"),
   });
   const response = await handler(
-    new Request("https://habi.example/auth/login?returnTo=%2Fplayers%2Fp1", {
-      headers: { Cookie: `${AUTH_TRANSACTION_COOKIE}=${binding}` },
-    }),
+    new Request(
+      "https://habi.example/auth/login?returnTo=%2Fplayers%2Fp1&prompt=login",
+      {
+        headers: { Cookie: `${AUTH_TRANSACTION_COOKIE}=${binding}` },
+      },
+    ),
   );
 
   assert.equal(response.status, 302);
@@ -80,6 +83,7 @@ test("login route persists one-use server state and redirects with PKCE", async 
     "https://habi.example/auth/callback",
   );
   assert.equal(location.searchParams.get("code_challenge_method"), "S256");
+  assert.equal(location.searchParams.get("prompt"), "login");
   assert.equal(
     location.searchParams.get("scope"),
     "openid profile email offline_access",
@@ -113,6 +117,10 @@ test("login route creates a browser binding and discards an external return targ
   assert.match(binding ?? "", /^[A-Za-z0-9_-]{43}$/);
   assert.equal(db.documents[0].returnTo, "/");
   assert.equal(db.documents[0].browserBindingHash.length, 64);
+  assert.equal(
+    new URL(response.headers.get("location")).searchParams.has("prompt"),
+    false,
+  );
 });
 
 test("login route fails closed when SSO discovery is unavailable", async () => {

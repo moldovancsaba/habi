@@ -294,10 +294,20 @@ export default function AdminConsole() {
             </>
           )}
           {state === "denied" && (
-            <p role="alert">
-              Ehhez a felülethez a DoneIsBetter Habi alkalmazás adminisztrátori
-              jogosultsága szükséges.
-            </p>
+            <>
+              <p role="alert">
+                Ezzel a fiókkal nincs Habi adminisztrátori hozzáférés. Ha az
+                adminjogot most adták hozzá, jelentkezz be újra. Ha ezután is
+                elutasítást kapsz, ellenőrizni kell a fiók Habi-alkalmazásbeli
+                adminjogát.
+              </p>
+              <a
+                className={styles.primary}
+                href="/auth/login?returnTo=%2Fadmin&prompt=login"
+              >
+                Újra bejelentkezem adminisztrátorként
+              </a>
+            </>
           )}
           {state === "error" && (
             <p role="alert">
