@@ -480,13 +480,21 @@ export async function listCheckinResults({
   limit = 20,
 }) {
   requirePathId(playerId);
-  if (!principal.playerId || principal.playerId !== playerId) {
+  if (
+    principal.role !== "coach" &&
+    (!principal.playerId || principal.playerId !== playerId)
+  ) {
     throw new HabiApiError("NOT_FOUND");
   }
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
     throw new HabiApiError("INVALID_INPUT");
   }
   const snapshotAt = new Date().toISOString();
+  const player = await db.collection("players").findOne({
+    tenantId: principal.tenantId,
+    id: playerId,
+  });
+  if (!player) throw new HabiApiError("NOT_FOUND");
   const items = await db
     .collection("checkin_results")
     .find({

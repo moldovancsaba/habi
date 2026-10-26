@@ -27,6 +27,7 @@ export async function GET(request: Request) {
         await runMigrations(db, new Date(), [
           "010-sso-browser-owner-sessions",
           "011-role-invitations",
+          "012-player-display-names",
         ]);
       },
       onFailure: (reasonCode: string) =>

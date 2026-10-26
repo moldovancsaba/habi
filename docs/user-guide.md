@@ -21,3 +21,11 @@ A régi naplórekordok átvitele nem előfeltétel, és nem része az új szerep
 3. A meghívott megnyitja az egyszer használatos linket, saját DoneIsBetter-fiókjával belép, majd elfogadja a hozzáférést.
 4. A játékos egy indítóképernyőről egyesével halad végig az elfogadott öt állapotjelző kérdésen; bármelyiket átugorhatja, visszaléphet, majd az érvényes válaszok mentődnek. Szülőnél megfigyelés, előzmények és forrásolt helyi AI-kérdés; edzőnél megfigyelés és játékosadat-hozzáférés jelenik meg.
 5. A szerepkör visszavonható az admin felületen; a visszavonás megszünteti a hozzáférést.
+
+## Szerepkörök és játékosazonosítás
+
+Az admin új játékosmeghívó létrehozásakor megadja a játékos nevét. A szülői meghívó egy névvel és teljes azonosítóval megjelenített játékoshoz kapcsolódik. Az edzői munkaterületen a kiválasztott játékos neve és teljes Habi-azonosítója mindig látható; a játékos saját munkaterülete is megmutatja a hozzá rendelt nevet és azonosítót. A korábban név nélkül létrejött játékosok azonosítója megmarad, a rendszer nem következtet nevet az SSO e-mail-címéből.
+
+## Előzmények és metróvonal
+
+Az **Előzmények** nézet a szerver jogosultság-ellenőrzött idővonalát használja. A közös fővonal és a szerepkör szerint színezett ágak a szerver által megadott folyamat-, válasz- és kapcsolódó rekord-azonosítókat követik; nem hoznak létre feltételezett kapcsolatokat. Egy állomás részletei a hozzá tartozó eseménykártyán nyithatók meg. Több előzmény esetén a **Korábbi események betöltése** gomb folytatja az idővonalat. Mobilon a fővonal bal oldalt, széles képernyőn középen fut.

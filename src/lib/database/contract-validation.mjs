@@ -127,6 +127,7 @@ const roleInvitationSchema = {
       pattern: "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
     },
     role: { enum: ["player", "parent", "coach"] },
+    playerDisplayName: { bsonType: "string", minLength: 1, maxLength: 100 },
     playerId: {
       bsonType: ["string", "null"],
       pattern: "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
@@ -328,6 +329,7 @@ function validateRoleInvitation(document) {
           "tenantId",
           "role",
           "playerId",
+          "playerDisplayName",
           "createdByIdentityHash",
           "createdAt",
           "expiresAt",
@@ -364,7 +366,12 @@ function validateRoleInvitation(document) {
         /^[a-f0-9]{64}$/.test(document.claimedIdentityHash)) &&
       (document.revokedAt === null || isIsoTimestamp(document.revokedAt)) &&
       ((document.role === "coach" && document.playerId === null) ||
-        (document.role !== "coach" && typeof document.playerId === "string")),
+        (document.role !== "coach" && typeof document.playerId === "string")) &&
+      (document.playerDisplayName === undefined ||
+        (document.role === "player" &&
+          typeof document.playerDisplayName === "string" &&
+          document.playerDisplayName.trim().length > 0 &&
+          document.playerDisplayName.length <= 100)),
   );
 }
 
@@ -409,8 +416,6 @@ export function mongoValidatorForCollection(collection) {
     return { $jsonSchema: ssoOwnerSessionSchema };
   if (collection === "habi_sso_owner_handoffs")
     return { $jsonSchema: ssoOwnerHandoffSchema };
-  if (collection === "habi_role_invitations")
-    return { $jsonSchema: roleInvitationSchema };
   if (collection === "habi_role_invitations")
     return { $jsonSchema: roleInvitationSchema };
   const definition = COLLECTION_SCHEMA[collection];

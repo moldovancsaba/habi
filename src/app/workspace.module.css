@@ -315,21 +315,49 @@
   padding: 14px 18px;
   line-height: 1.5;
 }
-.record {
-  padding: 16px 0;
-  border-top: 1px solid #e5ebf3;
+.playerContext {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr);
+  align-items: center;
+  gap: 8px 16px;
+  padding: 16px 20px;
+  margin: 0 0 20px;
+  background: #fff;
+  border: 1px solid #d8e4f5;
+  border-radius: 16px;
 }
-.recordType {
+.playerContext label {
+  color: #2b56a5;
   font-weight: 750;
 }
-.record time {
-  float: right;
-  color: #6b7d96;
+.playerContext select {
+  min-height: 44px;
+  border: 1px solid #ccdaef;
+  border-radius: 10px;
+  padding: 6px 10px;
+  background: #f8faff;
 }
-.record p {
-  margin: 8px 0 0;
-  color: #536680;
-  line-height: 1.5;
+.playerId {
+  color: #657790;
+  font-size: 0.86em;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+:global(.story-event-station) {
+  fill: var(--surface);
+  stroke: var(--actor, var(--teal));
+  stroke-width: var(--metro-station-stroke);
+  r: var(--metro-station-radius);
+  vector-effect: non-scaling-stroke;
+}
+:global(.story-more) {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  margin-block: var(--space-5);
+}
+:global(.story-more .secondary) {
+  width: auto;
 }
 @media (max-width: 700px) {
   .page {
@@ -359,9 +387,8 @@
   .heroCompact h1 {
     font-size: 38px;
   }
-  .record time {
-    float: none;
-    display: block;
-    margin-top: 5px;
+  .playerContext {
+    grid-template-columns: 1fr;
+    align-items: start;
   }
 }

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://habi.invalid/contracts/domain-schemas-v2.4.0.json",
-  "title": "Habi persistence contracts v2.4.0; schemas do not assert deployment",
+  "$id": "https://habi.invalid/contracts/domain-schemas-v2.4.1.json",
+  "title": "Habi persistence contracts v2.4.1; schemas do not assert deployment",
   "$defs": {
     "Ref": {
       "type": "object",
@@ -772,6 +772,11 @@
     "Player": {
       "type": "object",
       "properties": {
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
         "id": {
           "type": "string",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"

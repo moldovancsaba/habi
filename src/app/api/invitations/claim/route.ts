@@ -77,6 +77,7 @@ export async function POST(request: Request): Promise<Response> {
               tenantId: string;
               role: "player" | "parent" | "coach";
               playerId: string | null;
+              playerDisplayName?: string | null;
             })
           | null;
         if (!invitation) throw new HabiApiError("NOT_FOUND");
@@ -165,6 +166,9 @@ export async function POST(request: Request): Promise<Response> {
               actorId: actor.id,
               registeredAt: now.toISOString(),
               timeZone: DEFAULT_PLAYER_TIME_ZONE,
+              ...(invitation.playerDisplayName
+                ? { displayName: invitation.playerDisplayName }
+                : {}),
             };
             await db
               .collection("players")

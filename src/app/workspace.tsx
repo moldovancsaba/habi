@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import styles from "./workspace.module.css";
+import MetroTimeline, { type TimelinePage } from "./metro-timeline";
 
 type Role = "player" | "parent" | "coach";
 type Me = {
@@ -11,15 +12,27 @@ type Me = {
   playerIds: string[];
   csrfToken: string;
 };
+type PlayerProfile = {
+  id: string;
+  displayName: string | null;
+  profileState: "named" | "name_missing";
+};
 type RecordItem = {
   id: string;
   kind?: string;
   text?: string | null;
   occurredAt?: string;
+  completedAt?: string;
   revision?: number;
   answerCodes?: Array<{ metric: string; code: number }>;
+  recordedBy?: { role: Role };
 };
-type PlayerData = { id: string; checkins: RecordItem[]; records: RecordItem[] };
+type PlayerData = PlayerProfile & {
+  checkins: RecordItem[];
+  records: RecordItem[];
+};
+type HistoryItem = RecordItem & { label: string; sourceRole: Role };
+type TimelineResponse = TimelinePage & { snapshotAt?: string };
 type AppState =
   | { state: "loading" }
   | { state: "signed-out" }
@@ -71,12 +84,16 @@ export default function HabiWorkspace() {
   const [app, setApp] = useState<AppState>({ state: "loading" });
   const [signInFailure, setSignInFailure] = useState<string | null>(null);
   const [data, setData] = useState<PlayerData[]>([]);
+  const [timeline, setTimeline] = useState<TimelineResponse | null>(null);
+  const [players, setPlayers] = useState<PlayerProfile[]>([]);
+  const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [checkinIndex, setCheckinIndex] = useState<number | null>(null);
   const [observation, setObservation] = useState("");
   const [question, setQuestion] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [tab, setTab] = useState<"today" | "history">("today");
 
   async function logOutFromHabi() {
@@ -113,27 +130,22 @@ export default function HabiWorkspace() {
           (await response.json().catch(() => null))?.code ?? "LOAD_FAILED",
         );
       const me = (await response.json()) as Me;
-      setApp({ state: "ready", me });
-      const playerIds = me.playerIds.length ? me.playerIds : [me.actorId];
-      const loaded = await Promise.all(
-        playerIds.map(async (playerId) => {
-          const [checkins, records] = await Promise.all([
-            fetch(
-              `/api/v1/players/${encodeURIComponent(playerId)}/checkin-results`,
-              { cache: "no-store" },
-            ).then(async (r) => (r.ok ? r.json() : { items: [] })),
-            fetch(`/api/v1/players/${encodeURIComponent(playerId)}/records`, {
-              cache: "no-store",
-            }).then(async (r) => (r.ok ? r.json() : { items: [] })),
-          ]);
-          return {
-            id: playerId,
-            checkins: checkins.items ?? [],
-            records: records.items ?? [],
-          } as PlayerData;
-        }),
+      const playerResponse = await fetch("/api/v1/players", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      const playerResult = await playerResponse.json().catch(() => null);
+      if (!playerResponse.ok)
+        throw new Error(playerResult?.code ?? "PLAYER_LIST_FAILED");
+      const roster = (playerResult?.items ?? []) as PlayerProfile[];
+      setPlayers(roster);
+      setSelectedPlayerId((current) =>
+        roster.some((player) => player.id === current)
+          ? current
+          : (roster[0]?.id ?? ""),
       );
-      setData(loaded);
+      setData([]);
+      setApp({ state: "ready", me });
     } catch (error) {
       setNotice(messageFor(error));
       setApp({ state: "signed-out" });
@@ -141,16 +153,131 @@ export default function HabiWorkspace() {
   }, []);
 
   useEffect(() => {
+    if (app.state !== "ready" || !selectedPlayerId) {
+      setData([]);
+      setTimeline(null);
+      return;
+    }
+    setData([]);
+    setTimeline(null);
+    const player = players.find((item) => item.id === selectedPlayerId);
+    if (!player) return;
+    const controller = new AbortController();
+    void Promise.all([
+      fetch(
+        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/checkin-results`,
+        {
+          cache: "no-store",
+          credentials: "same-origin",
+          signal: controller.signal,
+        },
+      ),
+      fetch(`/api/v1/players/${encodeURIComponent(selectedPlayerId)}/records`, {
+        cache: "no-store",
+        credentials: "same-origin",
+        signal: controller.signal,
+      }),
+      fetch(
+        `/api/v1/timeline?playerId=${encodeURIComponent(selectedPlayerId)}&limit=50`,
+        {
+          cache: "no-store",
+          credentials: "same-origin",
+          signal: controller.signal,
+        },
+      ),
+    ])
+      .then(async ([checkinResponse, recordResponse, timelineResponse]) => {
+        const [checkins, records, timelinePage] = await Promise.all([
+          checkinResponse.json().catch(() => null),
+          recordResponse.json().catch(() => null),
+          timelineResponse.json().catch(() => null),
+        ]);
+        if (!checkinResponse.ok)
+          throw new Error(checkins?.code ?? "LOAD_FAILED");
+        if (!recordResponse.ok) throw new Error(records?.code ?? "LOAD_FAILED");
+        if (!timelineResponse.ok)
+          throw new Error(timelinePage?.code ?? "LOAD_FAILED");
+        setTimeline(timelinePage as TimelineResponse);
+        setData([
+          {
+            ...player,
+            checkins: checkins.items ?? [],
+            records: records.items ?? [],
+          },
+        ]);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Error && error.name === "AbortError") return;
+        setNotice(messageFor(error));
+        setData([]);
+        setTimeline(null);
+      });
+    return () => controller.abort();
+  }, [app, players, selectedPlayerId]);
+
+  useEffect(() => {
     void load();
   }, [load]);
 
   const active = app.state === "ready" ? app.me : null;
-  const playerId = useMemo(
-    () =>
-      active?.playerIds[0] ??
-      (active?.activeRole === "player" ? active.actorId : ""),
-    [active],
-  );
+  const playerId = selectedPlayerId;
+  const selectedPlayer =
+    players.find((player) => player.id === playerId) ?? null;
+  const historyItems: HistoryItem[] = data
+    .flatMap((person) => [
+      ...person.checkins.map((item) => ({
+        ...item,
+        occurredAt: item.completedAt,
+        label: "Állapotjelzés",
+        sourceRole: "player" as const,
+      })),
+      ...person.records.map((item) => ({
+        ...item,
+        label: item.kind === "observation" ? "Megfigyelés" : "Bejegyzés",
+        sourceRole: item.recordedBy?.role ?? ("player" as const),
+      })),
+    ])
+    .sort((a, b) =>
+      String(b.occurredAt ?? "").localeCompare(String(a.occurredAt ?? "")),
+    );
+
+  async function loadOlderTimeline() {
+    if (!timeline?.nextCursor || !playerId || loadingOlder) return;
+    setLoadingOlder(true);
+    setNotice("");
+    try {
+      const query = new URLSearchParams({
+        playerId,
+        limit: "50",
+        cursor: timeline.nextCursor,
+      });
+      const response = await fetch(`/api/v1/timeline?${query}`, {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      const nextPage = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(nextPage?.code ?? "LOAD_FAILED");
+      setTimeline((current) =>
+        current
+          ? {
+              ...current,
+              nodes: [...current.nodes, ...nextPage.nodes],
+              edges: [...current.edges, ...nextPage.edges],
+              processes: [...current.processes, ...nextPage.processes],
+              continuations: [
+                ...current.continuations,
+                ...nextPage.continuations,
+              ],
+              nextCursor: nextPage.nextCursor,
+            }
+          : current,
+      );
+    } catch (error) {
+      setNotice(messageFor(error));
+    } finally {
+      setLoadingOlder(false);
+    }
+  }
 
   async function submitCheckin(finalAnswers = answers) {
     if (!active || !playerId || Object.keys(finalAnswers).length === 0) {
@@ -354,11 +481,11 @@ export default function HabiWorkspace() {
             <span>Habi</span>
           </a>
           <span className={styles.headerLabel}>Közös sportolói támogatás</span>
-          {active ? (
+          {active || app.state === "admin" || app.state === "no-role" ? (
             <button
               type="button"
               className={styles.secondary}
-              onClick={() => void signOut()}
+              onClick={() => void (active ? signOut() : logOutFromHabi())}
             >
               Kilépés
             </button>
@@ -371,8 +498,24 @@ export default function HabiWorkspace() {
           </section>
         )}
         {app.state === "signed-out" && (
-          <section className={styles.hero}>
+          <section className={`${styles.hero} information-block`}>
+            <span className="route-motif" aria-hidden="true">
+              <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
+                <path d="M8 8v32h32" />
+                <circle cx="8" cy="8" />
+                <circle cx="8" cy="40" />
+                <circle cx="24" cy="40" />
+                <circle cx="40" cy="40" />
+              </svg>
+            </span>
             <p className={styles.eyebrow}>Sportolói támogatás</p>
+            <div className="story-legend">
+              {(["player", "parent", "coach"] as const).map((role) => (
+                <span className={`role-badge actor-${role}`} key={role}>
+                  {roleLabel(role)}
+                </span>
+              ))}
+            </div>
             {signInFailure === "APP_PERMISSION_SETUP_REQUIRED" ? (
               <>
                 <h1>A Habi SSO-beállítása még nem kész.</h1>
@@ -452,7 +595,16 @@ export default function HabiWorkspace() {
           </section>
         )}
         {app.state === "admin" && (
-          <section className={styles.hero}>
+          <section className={`${styles.hero} information-block`}>
+            <span className="route-motif" aria-hidden="true">
+              <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
+                <path d="M8 8v32h32" />
+                <circle cx="8" cy="8" />
+                <circle cx="8" cy="40" />
+                <circle cx="24" cy="40" />
+                <circle cx="40" cy="40" />
+              </svg>
+            </span>
             <p className={styles.eyebrow}>ADMINISZTRÁCIÓ</p>
             <h1>Üdv a Habiban.</h1>
             <p>
@@ -465,7 +617,23 @@ export default function HabiWorkspace() {
           </section>
         )}
         {app.state === "no-role" && (
-          <section className={styles.hero}>
+          <section className={`${styles.hero} information-block`}>
+            <span className="route-motif" aria-hidden="true">
+              <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
+                <path d="M8 8v32h32" />
+                <circle cx="8" cy="8" />
+                <circle cx="8" cy="40" />
+                <circle cx="24" cy="40" />
+                <circle cx="40" cy="40" />
+              </svg>
+            </span>
+            <div className="story-legend">
+              {(["player", "parent", "coach"] as const).map((role) => (
+                <span className={`role-badge actor-${role}`} key={role}>
+                  {roleLabel(role)}
+                </span>
+              ))}
+            </div>
             <p className={styles.eyebrow}>MEGHÍVÓ SZÜKSÉGES</p>
             <h1>Még nincs Habi-szerepköröd.</h1>
             <p>
@@ -493,7 +661,33 @@ export default function HabiWorkspace() {
                 Előzmények
               </button>
             </nav>
-            <section className={styles.heroCompact}>
+            <section className={`${styles.heroCompact} information-block`}>
+              <span className="route-motif" aria-hidden="true">
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
+                  <path d="M8 8v32h32" />
+                  <circle cx="8" cy="8" />
+                  <circle cx="8" cy="24" />
+                  <circle cx="8" cy="40" />
+                  <circle cx="24" cy="40" />
+                  <circle cx="40" cy="40" />
+                </svg>
+              </span>
+              <span className={`role-badge actor-${active.activeRole}`}>
+                <span className="ui-icon" aria-hidden="true">
+                  <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24">
+                    <path
+                      d={
+                        active.activeRole === "player"
+                          ? "M12 12a4 4 0 1 0 0-8a4 4 0 1 0 0 8M5 21v-3a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v3"
+                          : active.activeRole === "parent"
+                            ? "M21 11a9 8 0 0 1-13 7l-5 3 1-6A8 8 0 1 1 21 11"
+                            : "M8 5H5v16h14V5h-3M9 3h6v5H9ZM8 12h8M8 16h5"
+                      }
+                    />
+                  </svg>
+                </span>
+                {roleLabel(active.activeRole)}
+              </span>
               <p className={styles.eyebrow}>
                 {roleLabel(active.activeRole).toLocaleUpperCase("hu-HU")}{" "}
                 MUNKATERÜLET
@@ -511,13 +705,70 @@ export default function HabiWorkspace() {
                   : "Kövesd a megosztott állapotjelzéseket, és rögzítsd a megfigyeléseidet."}
               </p>
             </section>
+            {selectedPlayer && (
+              <section
+                className={`${styles.playerContext} information-block`}
+                aria-label="Kiválasztott játékos"
+              >
+                <span className="route-motif" aria-hidden="true">
+                  <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
+                    <path d="M8 8v32h32" />
+                    <circle cx="8" cy="8" />
+                    <circle cx="8" cy="40" />
+                    <circle cx="24" cy="40" />
+                    <circle cx="40" cy="40" />
+                  </svg>
+                </span>
+                <span className="role-badge actor-player">Játékos profil</span>
+                {active.activeRole !== "player" && players.length > 1 && (
+                  <>
+                    <label htmlFor="active-player">Játékos</label>
+                    <select
+                      id="active-player"
+                      value={playerId}
+                      onChange={(event) => {
+                        setSelectedPlayerId(event.target.value);
+                        setData([]);
+                        setTimeline(null);
+                        setNotice("");
+                      }}
+                    >
+                      {players.map((player) => (
+                        <option key={player.id} value={player.id}>
+                          {player.displayName ?? "Név nincs megadva"} ·{" "}
+                          {player.id.slice(0, 8)}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                )}
+                <strong>
+                  {selectedPlayer.displayName ?? "Név nincs megadva"}
+                </strong>
+                <span className={styles.playerId}>
+                  Játékosazonosító: {selectedPlayer.id}
+                </span>
+              </section>
+            )}
+            {!selectedPlayer &&
+              (active.activeRole === "coach" ||
+                active.activeRole === "parent") && (
+                <p className={styles.notice} role="status">
+                  Ehhez a fiókhoz még nincs kapcsolt játékos. Kérd meg a
+                  Habi-adminisztrátort, hogy rendelje hozzá a megfelelő
+                  játékost.
+                </p>
+              )}
             {notice && (
               <p className={styles.notice} role="status">
                 {notice}
               </p>
             )}
             {tab === "today" && active.activeRole === "player" && (
-              <section className={styles.panel}>
+              <section
+                className={`${styles.panel} workspace-section`}
+                data-area="timeline"
+              >
                 {checkinIndex === null ? (
                   <>
                     <p className={styles.eyebrow}>A TE NAPLÓD</p>
@@ -609,7 +860,8 @@ export default function HabiWorkspace() {
             )}
             {tab === "today" &&
               (active.activeRole === "parent" ||
-                active.activeRole === "coach") && (
+                active.activeRole === "coach") &&
+              selectedPlayer && (
                 <>
                   <section className={styles.panel}>
                     <p className={styles.eyebrow}>MEGFIGYELÉS</p>
@@ -666,54 +918,23 @@ export default function HabiWorkspace() {
               <section className={styles.panel}>
                 <p className={styles.eyebrow}>ELŐZMÉNYEK</p>
                 <h2>A napló eseményei</h2>
-                {data
-                  .flatMap((person) => [
-                    ...person.checkins.map((item) => ({
-                      ...item,
-                      label: "Állapotjelzés",
-                    })),
-                    ...person.records.map((item) => ({
-                      ...item,
-                      label:
-                        item.kind === "observation"
-                          ? "Megfigyelés"
-                          : "Bejegyzés",
-                    })),
-                  ])
-                  .sort((a, b) =>
-                    String(b.occurredAt ?? "").localeCompare(
-                      String(a.occurredAt ?? ""),
-                    ),
-                  )
-                  .map((item) => (
-                    <article className={styles.record} key={item.id}>
-                      <span className={styles.recordType}>{item.label}</span>
-                      <time>
-                        {item.occurredAt
-                          ? new Date(item.occurredAt).toLocaleDateString(
-                              "hu-HU",
-                            )
-                          : ""}
-                      </time>
-                      <p>
-                        {item.text ??
-                          (item.answerCodes
-                            ?.map(
-                              (answer) => `${answer.metric}: ${answer.code}`,
-                            )
-                            .join(" · ") ||
-                            "Rögzített esemény")}
-                      </p>
-                    </article>
+                <div className="story-legend">
+                  {(["player", "parent", "coach"] as const).map((role) => (
+                    <span className={`role-badge actor-${role}`} key={role}>
+                      {roleLabel(role)}
+                    </span>
                   ))}
-                {data.every(
-                  (person) =>
-                    person.checkins.length === 0 && person.records.length === 0,
-                ) && (
-                  <p className={styles.muted}>
-                    Még nincs megjeleníthető bejegyzés.
-                  </p>
-                )}
+                </div>
+                <MetroTimeline
+                  page={timeline}
+                  records={historyItems}
+                  playerName={
+                    selectedPlayer?.displayName ?? "Név nincs megadva"
+                  }
+                  playerId={playerId}
+                  onLoadMore={() => void loadOlderTimeline()}
+                  loadingMore={loadingOlder}
+                />
               </section>
             )}
           </>

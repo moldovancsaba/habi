@@ -1,5 +1,13 @@
 # Habi — ellenőrzési napló
 
+## Coach player scope, save error and metro history · 2026-10-26
+
+- Production request logs showed coach `record.create` and `checkin.results.list` requests returning `404 NOT_FOUND` for a value copied from the coach actor ID. The workspace had substituted the coach's own ID when the coach membership correctly had no single `playerId`; that ID is not a player record.
+- The workspace now loads the authenticated, tenant-scoped player roster from `GET /api/v1/players`, requires an explicit selected player, and shows the selected player's display name when supplied or the exact player ID when no name exists. It no longer converts a missing player association into the coach's actor ID.
+- Coach check-in history reads now use the tenant coach role against an existing player, while player and parent requests remain restricted to their session player. Coach observation writes validate the active tenant-level coach membership and target player existence; they no longer require a fabricated coach-to-player membership.
+- Replaced the plain history list with accessible expandable metro stations: a continuous line, role-colored branches, centered desktop line, left rail on small screens, and keyboard-operable station summaries. No player name is inferred from SSO identity or email.
+- Local checks: `npm run lint`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. A live authenticated save and visual browser review are still needed after deployment.
+
 ## Canonical host and signed-in workspace · 2026-10-26
 
 - Root cause: Habi session cookies use the secure `__Host-` prefix and are scoped to the host that issued them. Opening the app on a Vercel deployment URL or a legacy alias therefore showed the workspace shell while API requests such as `/api/v1/me` had no Habi session and returned `401 AUTHENTICATION_REQUIRED`.
@@ -591,3 +599,19 @@ The callback now returns to the original safe same-origin page with a fixed fail
 The owner showed that Production was landing on `/?signin=failed&reason=APP_PERMISSION_DENIED`, while the root role workspace ignored that query state. The page therefore displayed only the ordinary sign-in card and offered no account-switch or local sign-out action.
 
 The root and admin sign-in screens now render a prominent, accessible permission-denied message; offer a DoneIsBetter account selector (`prompt=select_account`); retain explicit retry; and provide **Kilépés a Habiból**, which clears Habi-local sessions/cookies. Local Habi sign-out does not claim to end the user's separate DoneIsBetter provider session. The access decision remains fail-closed. Unit coverage verifies the account-selection prompt in the generated authorization request.
+
+## T-HG-141 · Restore the accepted metro UI across the app · 2026-10-26
+
+The owner reported that pages were missing the accepted UI elements. The accepted CSS tokens and motif existed, but the signed-in history screen rendered a flat list rather than the approved relationship-aware metro route, and the current player identity was not consistently visible. The workspace now renders a responsive, keyboard-operable route from the authorized timeline's actual process, reply, relation, and edge data; marks events with the submitting role; and lets the user inspect each event. It identifies the selected player by name when provided and always shows the full player ID. Parent/coach roster selection is explicit. Admin and invitation claim pages now carry the same role badges and route motif; admin invitations collect the player's display name.
+
+The player name is optional, additive data. Migration 012 updates the strict player/invitation validators without rewriting existing player documents. Existing records are retained. No timezone prompt is shown in the invite UI.
+
+| Check | Result | Environment |
+| --- | --- | --- |
+| `npm run lint` | PASS, exit 0; 178 files | Local |
+| `npm run typecheck` | PASS, exit 0 | Local |
+| `npm run build` | PASS, exit 0; `/`, `/admin`, `/invite/claim`, player roster and timeline routes included | Local production build |
+| `git diff --check` | PASS, exit 0 | Local |
+| Authenticated player save / browser visual review at mobile and desktop widths | Not verified in this change | Requires an authenticated Habi account and browser review |
+
+The build emitted two `player.list` `INTERNAL_ERROR` log entries while statically generating pages, although it completed successfully and included `/api/v1/players` as a dynamic route. This is not evidence of a successful live roster request and needs runtime verification after deployment.

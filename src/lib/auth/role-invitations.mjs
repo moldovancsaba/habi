@@ -16,7 +16,7 @@ function tokenDigest(token, key) {
 
 /**
  * @param {import("mongodb").Collection<import("mongodb").Document>} collection
- * @param {{tenantId: string, role: "player" | "parent" | "coach", playerId?: string | null, createdByIdentityHash: string, hmacKey: string, now?: Date}} options
+ * @param {{tenantId: string, role: "player" | "parent" | "coach", playerId?: string | null, playerDisplayName?: string | null, createdByIdentityHash: string, hmacKey: string, now?: Date}} options
  */
 export async function issueRoleInvitation(
   collection,
@@ -24,6 +24,7 @@ export async function issueRoleInvitation(
     tenantId,
     role,
     playerId = null,
+    playerDisplayName = null,
     createdByIdentityHash,
     hmacKey,
     now = new Date(),
@@ -35,7 +36,12 @@ export async function issueRoleInvitation(
     !/^[a-f0-9]{64}$/.test(createdByIdentityHash ?? "") ||
     (role === "coach"
       ? playerId !== null
-      : !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(playerId ?? ""))
+      : !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(playerId ?? "")) ||
+    (playerDisplayName !== null &&
+      (role !== "player" ||
+        typeof playerDisplayName !== "string" ||
+        playerDisplayName.trim().length < 1 ||
+        playerDisplayName.trim().length > 100))
   ) {
     throw new Error("ROLE_INVITATION_INPUT_INVALID");
   }
@@ -46,6 +52,9 @@ export async function issueRoleInvitation(
     tenantId,
     role,
     playerId,
+    ...(playerDisplayName
+      ? { playerDisplayName: playerDisplayName.trim() }
+      : {}),
     createdByIdentityHash,
     createdAt: now.toISOString(),
     expiresAt: new Date(now.getTime() + ROLE_INVITATION_MS),
@@ -125,6 +134,9 @@ export async function readRoleInvitation(
   return Object.freeze({
     tenantId: invitation.tenantId,
     role: invitation.role,
+    ...(invitation.playerDisplayName
+      ? { playerDisplayName: invitation.playerDisplayName }
+      : {}),
     expiresAt: invitation.expiresAt,
   });
 }

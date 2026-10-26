@@ -10,6 +10,7 @@ type InviteBody = {
   tenantId: string;
   role: "player" | "parent" | "coach";
   playerId: string | null;
+  playerDisplayName: string | null;
 };
 
 function privateHeaders() {
@@ -84,7 +85,7 @@ export async function GET(request: Request): Promise<Response> {
       .find({ tenantId })
       .sort({ id: 1 })
       .limit(500)
-      .project({ id: 1 })
+      .project({ _id: 0, id: 1, displayName: 1 })
       .toArray();
     const memberships = await db
       .collection("memberships")
@@ -96,7 +97,10 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json(
       {
         tenantId,
-        players: players.map((player) => ({ id: player.id })),
+        players: players.map((player) => ({
+          id: player.id,
+          displayName: player.displayName ?? null,
+        })),
         memberships: memberships.map((membership) => ({
           id: membership.id,
           actorId: membership.actorId,
@@ -108,6 +112,7 @@ export async function GET(request: Request): Promise<Response> {
           id: item.id,
           role: item.role,
           playerId: item.playerId,
+          playerDisplayName: item.playerDisplayName ?? null,
           createdAt: item.createdAt,
           expiresAt: item.expiresAt,
           status: item.claimedAt
@@ -182,7 +187,8 @@ export async function POST(request: Request): Promise<Response> {
       !body ||
       typeof body !== "object" ||
       Array.isArray(body) ||
-      Object.keys(body).sort().join(",") !== "playerId,role,tenantId"
+      Object.keys(body).sort().join(",") !==
+        "playerDisplayName,playerId,role,tenantId"
     )
       throw new HabiApiError("INVALID_INPUT");
     const input = body as InviteBody;
@@ -193,7 +199,12 @@ export async function POST(request: Request): Promise<Response> {
       !["player", "parent", "coach"].includes(input.role) ||
       (input.role === "coach" && input.playerId !== null) ||
       (input.role === "parent" && !validId(input.playerId)) ||
-      (input.role === "player" && input.playerId !== null)
+      (input.role === "player" &&
+        (input.playerId !== null ||
+          typeof input.playerDisplayName !== "string" ||
+          input.playerDisplayName.trim().length < 1 ||
+          input.playerDisplayName.trim().length > 100)) ||
+      (input.role !== "player" && input.playerDisplayName !== null)
     )
       throw new HabiApiError("INVALID_INPUT");
 
@@ -219,6 +230,7 @@ export async function POST(request: Request): Promise<Response> {
         tenantId: input.tenantId,
         role: input.role,
         playerId,
+        playerDisplayName: input.playerDisplayName,
         createdByIdentityHash: session.identityHash,
         hmacKey,
       },
@@ -231,6 +243,7 @@ export async function POST(request: Request): Promise<Response> {
           id: issued.invitation.id,
           role: issued.invitation.role,
           playerId: issued.invitation.playerId,
+          playerDisplayName: issued.invitation.playerDisplayName ?? null,
           expiresAt: issued.invitation.expiresAt,
         },
         claimUrl: claimUrl.toString(),

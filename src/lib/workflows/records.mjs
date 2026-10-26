@@ -102,7 +102,7 @@ export async function createRecord({
         {
           tenantId: principal.tenantId,
           actorId: principal.actorId,
-          playerId,
+          playerId: principal.role === "coach" ? null : playerId,
           role: principal.role,
           status: "active",
         },

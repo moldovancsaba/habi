@@ -20,6 +20,9 @@ export default function InviteClaim() {
   const [view, setView] = useState<View>("loading");
   const [role, setRole] = useState<InviteRole | null>(null);
   const [tenantId, setTenantId] = useState("");
+  const [playerDisplayName, setPlayerDisplayName] = useState<string | null>(
+    null,
+  );
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const token =
@@ -38,11 +41,16 @@ export default function InviteClaim() {
       signal: controller.signal,
     })
       .then((response) =>
-        readResponse<{ role: InviteRole; tenantId: string }>(response),
+        readResponse<{
+          role: InviteRole;
+          tenantId: string;
+          playerDisplayName?: string;
+        }>(response),
       )
       .then((invitation) => {
         setRole(invitation.role);
         setTenantId(invitation.tenantId);
+        setPlayerDisplayName(invitation.playerDisplayName ?? null);
         setView("ready");
       })
       .catch((error: unknown) => {
@@ -98,12 +106,28 @@ export default function InviteClaim() {
           <p>Meghívó elfogadása</p>
         </header>
         <section
-          className={styles.panel}
+          className={`${styles.panel} ds-section`}
           aria-labelledby="invite-title"
           aria-live="polite"
         >
-          <p className={styles.eyebrow}>HABI-HOZZÁFÉRÉS</p>
-          <h1 id="invite-title">Meghívó elfogadása</h1>
+          <div className="information-block">
+            <span className="route-motif" aria-hidden="true">
+              <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
+                <path d="M8 8v32h32" />
+                <circle cx="8" cy="8" />
+                <circle cx="8" cy="40" />
+                <circle cx="24" cy="40" />
+                <circle cx="40" cy="40" />
+              </svg>
+            </span>
+            <p className={styles.eyebrow}>HABI-HOZZÁFÉRÉS</p>
+            <h1 id="invite-title">Meghívó elfogadása</h1>
+            {role && (
+              <span className={`role-badge actor-${role}`}>
+                {roleName(role)} hozzáférés
+              </span>
+            )}
+          </div>
           {view === "loading" && <p role="status">Ellenőrizzük a meghívót…</p>}
           {view === "invalid" && (
             <p role="alert">
@@ -118,6 +142,11 @@ export default function InviteClaim() {
                 <strong>{tenantId}</strong> szervezethez. A hozzáférés a saját,
                 ellenőrzött DoneIsBetter-identitásodhoz kapcsolódik.
               </p>
+              {playerDisplayName && (
+                <p>
+                  Játékos: <strong>{playerDisplayName}</strong>
+                </p>
+              )}
               {message && <p role="alert">{message}</p>}
               <button
                 className={styles.primary}

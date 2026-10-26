@@ -6,7 +6,7 @@ import styles from "./workspace.module.css";
 type State = "loading" | "signed-out" | "denied" | "ready" | "error";
 type Role = "player" | "parent" | "coach";
 type Tenant = { id: string; tenantId: string };
-type Player = { id: string };
+type Player = { id: string; displayName: string | null };
 type Membership = {
   id: string;
   actorId: string;
@@ -18,6 +18,7 @@ type Invitation = {
   id: string;
   role: Role;
   playerId: string | null;
+  playerDisplayName: string | null;
   status: "pending" | "claimed" | "revoked" | "expired";
   expiresAt: string;
 };
@@ -38,6 +39,7 @@ export default function AdminConsole() {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [role, setRole] = useState<Role>("player");
   const [playerId, setPlayerId] = useState("");
+  const [playerDisplayName, setPlayerDisplayName] = useState("");
   const [createdUrl, setCreatedUrl] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -140,6 +142,8 @@ export default function AdminConsole() {
           tenantId,
           role,
           playerId: role === "parent" ? playerId : null,
+          playerDisplayName:
+            role === "player" ? playerDisplayName.trim() : null,
         }),
       });
       const result = await jsonResponse<{ claimUrl: string }>(response);
@@ -284,14 +288,38 @@ export default function AdminConsole() {
             <span>Habi</span>
           </a>
           <p>Adminisztráció</p>
+          {state !== "loading" && (
+            <button
+              className={styles.secondary}
+              type="button"
+              onClick={() => void logOutFromHabi()}
+            >
+              Kilépés
+            </button>
+          )}
         </header>
         <section
-          className={styles.panel}
+          className={`${styles.panel} ds-section`}
           aria-labelledby="admin-title"
           aria-live="polite"
         >
-          <p className={styles.eyebrow}>HOZZÁFÉRÉSEK</p>
-          <h1 id="admin-title">Szerepkörök kezelése</h1>
+          <div className="information-block">
+            <span className="route-motif" aria-hidden="true">
+              <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
+                <path d="M8 8v32h32" />
+                <circle cx="8" cy="8" />
+                <circle cx="8" cy="24" />
+                <circle cx="8" cy="40" />
+                <circle cx="24" cy="40" />
+                <circle cx="40" cy="40" />
+              </svg>
+            </span>
+            <p className={styles.eyebrow}>HOZZÁFÉRÉSEK</p>
+            <h1 id="admin-title">Szerepkörök kezelése</h1>
+            <p>
+              Csak ellenőrzött DoneIsBetter-admin kezelhet Habi-hozzáférést.
+            </p>
+          </div>
           {state === "loading" && (
             <p role="status">Ellenőrizzük az adminisztrátori hozzáférést…</p>
           )}
@@ -417,6 +445,17 @@ export default function AdminConsole() {
                     <option value="parent">Szülő</option>
                     <option value="coach">Edző</option>
                   </select>
+                  <div className="story-legend">
+                    {(["player", "parent", "coach"] as const).map((item) => (
+                      <span key={item} className={`role-badge actor-${item}`}>
+                        {item === "player"
+                          ? "Játékos"
+                          : item === "parent"
+                            ? "Szülő"
+                            : "Edző"}
+                      </span>
+                    ))}
+                  </div>
                   {role === "parent" && (
                     <>
                       <label htmlFor="player">Kapcsolódó játékos</label>
@@ -428,10 +467,30 @@ export default function AdminConsole() {
                       >
                         {players.map((player) => (
                           <option key={player.id} value={player.id}>
+                            {player.displayName ?? "Név nincs megadva"} ·{" "}
                             {player.id}
                           </option>
                         ))}
                       </select>
+                    </>
+                  )}
+                  {role === "player" && (
+                    <>
+                      <label htmlFor="player-display-name">Játékos neve</label>
+                      <input
+                        id="player-display-name"
+                        value={playerDisplayName}
+                        onChange={(event) =>
+                          setPlayerDisplayName(event.target.value)
+                        }
+                        maxLength={100}
+                        autoComplete="name"
+                        required
+                      />
+                      <p className="muted">
+                        Ezt a nevet látják a kapcsolt szülők és edzők, amikor
+                        kiválasztják a játékost.
+                      </p>
                     </>
                   )}
                   <button
@@ -439,6 +498,7 @@ export default function AdminConsole() {
                     disabled={
                       busy ||
                       !tenantId ||
+                      (role === "player" && !playerDisplayName.trim()) ||
                       (role === "parent" && players.length === 0)
                     }
                     type="submit"
@@ -480,16 +540,26 @@ export default function AdminConsole() {
                     <ul>
                       {memberships.map((membership) => (
                         <li key={membership.id}>
-                          <span>
-                            {membership.role === "player"
-                              ? "Játékos"
-                              : membership.role === "parent"
-                                ? "Szülő"
-                                : "Edző"}
-                          </span>
+                          <div>
+                            <span
+                              className={`role-badge actor-${membership.role}`}
+                            >
+                              {membership.role === "player"
+                                ? "Játékos"
+                                : membership.role === "parent"
+                                  ? "Szülő"
+                                  : "Edző"}
+                            </span>
+                          </div>
                           <span>Habi-fiókazonosító: {membership.actorId}</span>
                           {membership.playerId && (
-                            <span>Játékosazonosító: {membership.playerId}</span>
+                            <span>
+                              Játékos:{" "}
+                              {players.find(
+                                (player) => player.id === membership.playerId,
+                              )?.displayName ?? "Név nincs megadva"}{" "}
+                              · {membership.playerId}
+                            </span>
                           )}
                           <button
                             className={styles.secondary}
@@ -515,7 +585,7 @@ export default function AdminConsole() {
                     <ul>
                       {invitations.map((invite) => (
                         <li key={invite.id}>
-                          <span>
+                          <span className={`role-badge actor-${invite.role}`}>
                             {invite.role === "player"
                               ? "Játékos"
                               : invite.role === "parent"
@@ -533,7 +603,15 @@ export default function AdminConsole() {
                             </button>
                           )}
                           {invite.playerId && (
-                            <span>Játékosazonosító: {invite.playerId}</span>
+                            <span>
+                              Játékos:{" "}
+                              {invite.playerDisplayName ??
+                                players.find(
+                                  (player) => player.id === invite.playerId,
+                                )?.displayName ??
+                                "Név nincs megadva"}{" "}
+                              · {invite.playerId}
+                            </span>
                           )}
                           <span>
                             {invite.status === "pending"

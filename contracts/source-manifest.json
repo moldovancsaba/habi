@@ -2,6 +2,6 @@
   "artifact": "domain-schemas.source.json",
   "sourceRepository": "https://github.com/moldovancsaba/habi",
   "sourcePath": "contracts/domain-schemas.source.json",
-  "sha256": "64533f0d4f88b0807cd0c59c371c90b6f71bce1a8a5fc2268189e262bd3f02ce",
+  "sha256": "a437063a76132f6b707fd2a7c58aee5d11faa2fbe61b5624b0273c41f9711d61",
   "purpose": "Habi-owned versioned persistence contracts. The local SHA-256 records snapshot integrity; no external repository is needed at runtime."
 }

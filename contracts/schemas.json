@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://habi.invalid/contracts/schemas-v2.4.8.json",
-  "title": "Habi API request and response schemas v2.4.8; contracts do not assert deployment",
+  "$id": "https://habi.invalid/contracts/schemas-v2.4.9.json",
+  "title": "Habi API request and response schemas v2.4.9; contracts do not assert deployment",
   "$defs": {
     "Ref": {
       "type": "object",
@@ -772,6 +772,11 @@
     "Player": {
       "type": "object",
       "properties": {
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
         "id": {
           "type": "string",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"

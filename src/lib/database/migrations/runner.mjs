@@ -11,6 +11,7 @@ import { migration as uploadChunks } from "./008-upload-chunks.mjs";
 import { migration as workerClaimIdempotency } from "./009-worker-claim-idempotency.mjs";
 import { migration as ssoBrowserOwnerSessions } from "./010-sso-browser-owner-sessions.mjs";
 import { migration as roleInvitations } from "./011-role-invitations.mjs";
+import { migration as playerDisplayNames } from "./012-player-display-names.mjs";
 
 const MIGRATIONS = [
   initialSchema,
@@ -24,6 +25,7 @@ const MIGRATIONS = [
   workerClaimIdempotency,
   ssoBrowserOwnerSessions,
   roleInvitations,
+  playerDisplayNames,
 ];
 
 /** @param {string[] | null} migrationIds */
