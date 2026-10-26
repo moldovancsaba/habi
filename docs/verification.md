@@ -623,3 +623,17 @@ The build emitted two `player.list` `INTERNAL_ERROR` log entries while staticall
 | Anonymous `GET /api/v1/players` | PASS, HTTP 401 | Expected authentication boundary |
 | Production signed-out home and admin gate | Rendered in browser; both show the updated Habi presentation and sign-in path | Desktop browser, unauthenticated |
 | Authenticated roster, event graph and save flow | Not verified | Requires an authorized Habi role session; anonymous checks cannot establish it |
+
+## T-HG-142 · Switch among granted player, parent and coach roles · 2026-10-26
+
+The owner needs one verified Habi identity to act in each role assigned to that identity. `GET /api/v1/me` now returns the caller's active, same-tenant memberships and linked player labels. The workspace shows a role/player selector only when more than one valid membership exists. `POST /api/v1/me/scope` accepts a membership ID plus its player ID, never a client-selected role or tenant. In one Mongo transaction it verifies the membership and player, updates the active session scope, and records a body-bound idempotency receipt. The existing SSO/session cookie is kept; following the switch, the client clears old player data and reloads the new role's authorized roster. No invitation or role was created for the owner during this change.
+
+The player-list `GET` route now explicitly uses request-time headers. Before this, local Next static generation attempted to execute its database-backed GET route and logged `player.list` internal errors; with the runtime API in place the production build completes without those errors.
+
+| Check | Result | Environment |
+| --- | --- | --- |
+| `npm run lint` | PASS, exit 0; 179 files | Local |
+| `npm run typecheck` | PASS, exit 0 | Local |
+| `npm run build` | PASS, exit 0; includes `/api/v1/me/scope`; no `player.list` error logs | Local production build |
+| `git diff --check` | PASS, exit 0 | Local |
+| Authenticated switch among multiple memberships | Not yet verified | Requires an identity with at least two active memberships |

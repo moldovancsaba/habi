@@ -39,6 +39,21 @@
   color: #5b6e8a;
   font-weight: 600;
 }
+.roleSwitcher {
+  min-width: 0;
+}
+.roleSwitcher select {
+  width: min(240px, 24vw);
+  min-height: 44px;
+  padding: 6px 34px 6px 12px;
+  border: 1px solid #ccdaef;
+  border-radius: 12px;
+  background: #fff;
+  color: #234f9e;
+  font: inherit;
+  font-weight: 700;
+  text-overflow: ellipsis;
+}
 .primary,
 .secondary {
   min-height: 48px;
@@ -369,6 +384,15 @@
   }
   .headerLabel {
     display: none;
+  }
+  .roleSwitcher {
+    margin-left: auto;
+  }
+  .roleSwitcher select {
+    width: min(156px, 38vw);
+    min-height: 40px;
+    padding-inline: 8px 26px;
+    font-size: 14px;
   }
   .hero {
     min-height: 270px;

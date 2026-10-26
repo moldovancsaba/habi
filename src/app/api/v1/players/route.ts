@@ -1,7 +1,9 @@
+import { headers } from "next/headers";
 import { HabiApiError } from "../../../../lib/api/error-response.mjs";
 import { runAuthorizedHabiRoute } from "../../../../lib/api/runtime-route";
 
 export async function GET(request: Request): Promise<Response> {
+  await headers();
   return runAuthorizedHabiRoute(
     request,
     "player.list",

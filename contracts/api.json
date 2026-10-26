@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.4.10",
+    "version": "2.4.11",
     "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
@@ -2668,7 +2668,7 @@
     "/v1/me/scope": {
       "post": {
         "operationId": "post_v1_me_scope",
-        "description": "Scope-váltás csak az aktív SSO identitás aktuális, aktív membershipje alapján. A kérés szerepet/tenantot nem állíthat és nem hozhat létre; session rotálás, accessRevision növelés, előző scope cache-ének érvénytelenítése. A CSRF token a GET /v1/me response-ban érkezik; scope-váltás után együtt rotálódik az új sessionnel.",
+        "description": "Aktív szerepkör és játékos scope váltása kizárólag az aktuális SSO-identitás aktív membershipje alapján. A szerep és tenant nem küldhető; a session scope egy tranzakcióban változik, a session-cookie és CSRF token megmarad. A kérés Idempotency-Key alapján ismételhető.",
         "security": [
           {
             "sessionCookie": []
@@ -2687,7 +2687,7 @@
             }
           },
           {
-            "name": "X-CSRF-Token",
+            "name": "x-habi-csrf",
             "in": "header",
             "required": true,
             "schema": {
@@ -2718,15 +2718,7 @@
         },
         "responses": {
           "200": {
-            "description": "Újraellenőrzött és rotált aktív scope",
-            "headers": {
-              "Set-Cookie": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "Rotált __Host-hg_session cookie"
-              }
-            },
+            "description": "Sikeresen frissített aktív szerepkör és player scope",
             "content": {
               "application/json": {
                 "schema": {

@@ -14,6 +14,8 @@ A működő MVP konfiguráció a jelenlegi tervezetek azonosítóira hivatkozik:
 
 A régi naplórekordok átvitele nem előfeltétel, és nem része az új szerepköri belépésnek. A player, parent és coach szerepköröket csak admin által kiadott meghívó adja; az SSO app `admin` permissionje önmagában nem ad termékoldali szerepkört.
 
+Ha ugyanahhoz az ellenőrzött DoneIsBetter-identitáshoz több aktív Habi-szerepkör tartozik, a felső sávban választhatsz közülük. A váltás csak a már kiosztott, aktív szerepkörre és játékoskapcsolatra engedélyezett; új hozzáférést nem ad. A váltás után a Habi újratölti az adott szerepkör játékoslistáját és nézetét. Ha a kívánt szerepkör nem látszik, a Habi-adminisztrátor adjon hozzáférést az `/admin` felületen.
+
 ## MVP-folyamat
 
 1. A Habi admin a `/admin` oldalon megnyitja a tenant előkészítését.

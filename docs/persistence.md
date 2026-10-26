@@ -6,7 +6,7 @@ This document describes the persistence code that exists in the ground-up Habi a
 
 - The Vercel server is the only Habi application component permitted to hold the Atlas URI.
 - The browser receives server-built DTOs. The Mac AI worker receives only its future outbound API credentials and approved job payloads; it will not receive an Atlas credential.
-- Database access is server-only. The implemented product and worker routes use scoped server-side workflows and allow-listed DTOs; the full non-SSO workflow is still awaiting its first acceptance run.
+- Database access is server-only. The signed-in workspace, roster, timeline and worker routes use scoped server-side workflows and allow-listed DTOs. Additional workflow slices still require their own end-to-end acceptance evidence.
 - The old Habi app and its database are not migration sources for this build. Any future legacy data migration needs an explicit source inventory, consent/retention review, reversible export plan and separately approved execution.
 
 ## Contract and validators
@@ -14,6 +14,8 @@ This document describes the persistence code that exists in the ground-up Habi a
 ## Current local workflow implementation · 2026-10-25
 
 `src/lib/api/runtime-route.ts` opens the shared Mongo client, authenticates the active session, and passes only the scoped principal into a workflow. The earlier check-in, record, and publication route slice has historic local proof. This worktree adds other role workflows, timeline, material publication, PDF upload/report/extraction and worker service routes; those additions are not yet verified. Worker endpoints use a separate Habi bearer service identity and current lease/fence; they never expose the Atlas URI. Every route uses the redacted request boundary. Local synthetic sessions and worker tokens are conditional on localhost test configuration.
+
+`POST /api/v1/me/scope` changes the current session to an already-active membership for the same actor and tenant. The body names the membership and its exact player scope; the server rechecks both, verifies the player belongs to that tenant (and, for `player`, to the actor), then updates `activeRole`, `playerId` and `retentionPolicyId` in the same transaction as the idempotency receipt. It does not accept a role or tenant from the browser, create a membership, or rotate the SSO/session cookie. The UI reloads the role-specific roster and clears data from the previous view. A new membership still requires an admin-issued invitation claimed with the verified identity.
 
 The check-in workflow writes answers as separate immutable records and commits an immutable `CheckinResult` snapshot with its session revision. Replays use a body-bound 24-hour idempotency receipt. Parent and coach reads use the authenticated active player/tenant scope. Observation records store `recordedBy`, `source`, and `sharingClass` independently. Player direct and parent shared records follow the policy; a coach record becomes visible to a parent only when a coach publishes that exact record revision. Listing returns only the read DTO, uses an HMAC-signed 30-minute cursor bound to tenant, player, access revision and snapshot time, and applies a role visibility filter before pagination.
 

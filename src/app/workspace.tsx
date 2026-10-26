@@ -8,8 +8,15 @@ type Role = "player" | "parent" | "coach";
 type Me = {
   actorId: string;
   activeRole: Role;
+  activeMembershipId: string | null;
   allowedRoles: Role[];
   playerIds: string[];
+  memberships: Array<{
+    id: string;
+    role: Role;
+    playerId: string | null;
+    playerDisplayName: string | null;
+  }>;
   csrfToken: string;
 };
 type PlayerProfile = {
@@ -76,7 +83,9 @@ function messageFor(error: unknown) {
   if (code === "DEPENDENCY_UNAVAILABLE")
     return "A Habi szolgáltatás még nincs teljesen bekapcsolva.";
   if (code === "REVISION_CONFLICT")
-    return "Az állapotjelzés közben megváltozott. Töltsd újra az oldalt, majd próbáld meg újra.";
+    return "A hozzáférés közben megváltozott. Töltsd újra az oldalt, majd próbáld újra.";
+  if (code === "NOT_FOUND")
+    return "Ehhez a szerepkörhöz már nincs aktív Habi-hozzáférés.";
   return "A művelet most nem sikerült. Próbáld újra.";
 }
 
@@ -240,6 +249,48 @@ export default function HabiWorkspace() {
     .sort((a, b) =>
       String(b.occurredAt ?? "").localeCompare(String(a.occurredAt ?? "")),
     );
+
+  async function switchMembership(membershipId: string) {
+    if (!active || membershipId === active.activeMembershipId || busy) return;
+    const membership = active.memberships.find(
+      (item) => item.id === membershipId,
+    );
+    if (!membership) return;
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/v1/me/scope", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "x-habi-csrf": active.csrfToken,
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+        body: JSON.stringify({
+          membershipId: membership.id,
+          playerId: membership.playerId,
+        }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.code ?? "SCOPE_SWITCH_FAILED");
+      setData([]);
+      setTimeline(null);
+      setPlayers([]);
+      setSelectedPlayerId("");
+      setCheckinIndex(null);
+      setAnswers({});
+      setObservation("");
+      setQuestion("");
+      setTab("today");
+      setNotice("Szerepkör módosítva.");
+      await load();
+    } catch (error) {
+      setNotice(messageFor(error));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function loadOlderTimeline() {
     if (!timeline?.nextCursor || !playerId || loadingOlder) return;
@@ -481,6 +532,31 @@ export default function HabiWorkspace() {
             <span>Habi</span>
           </a>
           <span className={styles.headerLabel}>Közös sportolói támogatás</span>
+          {active && active.memberships.length > 1 && (
+            <label className={styles.roleSwitcher}>
+              <span className={styles.srOnly}>Szerepkör és játékos</span>
+              <select
+                aria-label="Szerepkör és játékos váltása"
+                value={active.activeMembershipId ?? ""}
+                onChange={(event) => void switchMembership(event.target.value)}
+                disabled={busy}
+              >
+                {active.memberships.map((membership) => {
+                  const playerLabel = membership.playerDisplayName
+                    ? ` · ${membership.playerDisplayName}`
+                    : membership.playerId
+                      ? ` · ${membership.playerId}`
+                      : "";
+                  return (
+                    <option key={membership.id} value={membership.id}>
+                      {roleLabel(membership.role)}
+                      {playerLabel}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+          )}
           {active || app.state === "admin" || app.state === "no-role" ? (
             <button
               type="button"
