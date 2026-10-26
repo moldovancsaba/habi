@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { runApiRoute } from "@/lib/api/route-boundary.mjs";
 import { HabiApiError } from "@/lib/api/error-response.mjs";
 import { getDatabase } from "@/lib/database/mongo";
+import { runMigrations } from "@/lib/database/migrations/runner.mjs";
 import { createSsoBrowserCallbackHandler } from "@/lib/auth/sso-browser-callback.mjs";
 
 export async function GET(request: Request) {
@@ -17,10 +18,17 @@ export async function GET(request: Request) {
     if (!issuer || !clientId || !clientSecret || !redirectUri || !hmacKey) {
       throw new HabiApiError("DEPENDENCY_UNAVAILABLE");
     }
+    const db = await getDatabase();
     return createSsoBrowserCallbackHandler({
-      db: await getDatabase(),
+      db,
       config: { issuer, clientId, clientSecret, redirectUri },
       hmacKey,
+      prepareSession: async () => {
+        await runMigrations(db, new Date(), [
+          "010-sso-browser-owner-sessions",
+          "011-role-invitations",
+        ]);
+      },
       onFailure: (reasonCode: string) =>
         console.warn(
           JSON.stringify({

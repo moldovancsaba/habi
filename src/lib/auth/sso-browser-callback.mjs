@@ -48,6 +48,7 @@ export function createSsoBrowserCallbackHandler({
   hmacKey,
   fetchImpl = fetch,
   oidc = {},
+  prepareSession = async () => {},
   onFailure,
   now = () => new Date(),
 }) {
@@ -132,6 +133,7 @@ export function createSsoBrowserCallbackHandler({
       return failRedirect(request, reasonCode, onFailure);
     }
 
+    await prepareSession();
     let link;
     try {
       link = await resolveSsoOwnerLink(db.collection("habi_sso_owner_links"), {

@@ -219,6 +219,54 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
     );
   });
 
+  await t.test(
+    "SSO callback can install only its versioned session prerequisites before first login",
+    async () => {
+      const callbackDb = client.db(`${databaseName}_callback`);
+      try {
+        assert.deepEqual(
+          await runMigrations(
+            callbackDb,
+            new Date("2026-10-26T00:00:00.000Z"),
+            ["010-sso-browser-owner-sessions", "011-role-invitations"],
+          ),
+          {
+            applied: ["010-sso-browser-owner-sessions", "011-role-invitations"],
+            current: "011-role-invitations",
+          },
+        );
+        assert.deepEqual(
+          await callbackDb.collection("_habi_migrations").distinct("_id"),
+          ["010-sso-browser-owner-sessions", "011-role-invitations"],
+        );
+        const now = new Date("2026-10-26T00:00:00.000Z");
+        await callbackDb.collection("habi_sso_owner_sessions").insertOne({
+          _id: "a".repeat(48),
+          tokenHash: "b".repeat(64),
+          identityHash: "c".repeat(64),
+          ownerHash: "d".repeat(64),
+          issuer: "https://sso.example.test",
+          subject: "verified-owner",
+          permissionRole: "admin",
+          createdAt: now.toISOString(),
+          lastSeenAt: now.toISOString(),
+          expiresAt: new Date(now.getTime() + 60_000),
+          revokedAt: null,
+        });
+        assert.deepEqual(
+          await runMigrations(
+            callbackDb,
+            new Date("2026-10-26T00:00:01.000Z"),
+            ["010-sso-browser-owner-sessions", "011-role-invitations"],
+          ),
+          { applied: [], current: "011-role-invitations" },
+        );
+      } finally {
+        await callbackDb.dropDatabase();
+      }
+    },
+  );
+
   await t.test("deterministic two-tenant seed is idempotent", async () => {
     const first = await applySyntheticSeed(db);
     const second = await applySyntheticSeed(db);

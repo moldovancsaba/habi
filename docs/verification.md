@@ -545,3 +545,19 @@ Production commit `f3b2cc1` is deployed to `https://habigoal.com`. The root serv
 | Hosted worker claim API | PASS, HTTP 204 | Vercel request logs show repeated authenticated `POST /api/v1/worker/jobs/claim`; 204 means the worker is connected and no eligible work was waiting. |
 
 The admin screen previously showed an access-denied state without a way to reauthenticate. It now explains that the current SSO account lacks the Habi admin claim and provides **Újra bejelentkezem adminisztrátorként**, which requests a fresh DoneIsBetter login and returns to `/admin`. In the managed browser, `/admin` currently renders the sign-in option. A successful admin SSO login, tenant bootstrap, first invitation and role claim remain pending the owner completing sign-in as the DoneIsBetter account with the Habi `admin` permission. No Production tenant or role records were created by anonymous checks; no legacy records were modified.
+
+## T-HG-138 · First-login SSO migration deadlock · 2026-10-26
+
+The owner reported `INTERNAL_ERROR` for callback request `bdb24b20de75383486ecb60c09264dc3`. Vercel logs mapped it to Production `GET /api/oauth/callback` at `2026-10-26T14:53:48Z`. The session writer had begun storing the verified issuer, subject, and Habi permission role, while the Production Mongo validator still required migration 011. Since 011 had been gated behind successful admin login, the callback could not finish the login required to run that migration.
+
+The callback now runs the two ordered, versioned session prerequisites after OIDC identity and Habi permission validation, but before creating the identity link or session. It does not run the full migration set, create tenant `habi`, assign roles, or import/delete old records. Migration selection rejects duplicate or unknown IDs; migration checksums and normal idempotency remain enforced. The tenant bootstrap remains an explicit admin action after login.
+
+| Check | Result | Environment |
+| --- | --- | --- |
+| `npm run lint` | PASS, exit 0; 172 files | Local |
+| `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, 121 tests, 0 failures; includes the isolated callback-prerequisite schema/idempotency case | Disposable local Mongo replica set |
+| `npm run typecheck` | PASS, exit 0 | Local |
+| `npm run build` | PASS, exit 0; callback and admin routes included | Local production build |
+| Live SSO callback | Not yet re-verified | Requires the owner to complete DoneIsBetter sign-in after Production deployment |
+
+Rollback is an application deployment rollback only. Keep applied additive migration records and collections; do not delete migration ledger entries or old diary data.

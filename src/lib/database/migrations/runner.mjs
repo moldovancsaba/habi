@@ -26,11 +26,23 @@ const MIGRATIONS = [
   roleInvitations,
 ];
 
-export async function runMigrations(db, now = new Date()) {
+/** @param {string[] | null} migrationIds */
+export async function runMigrations(db, now = new Date(), migrationIds = null) {
   const ledger = db.collection("_habi_migrations");
   const applied = [];
+  const migrations = migrationIds
+    ? MIGRATIONS.filter(({ id }) => migrationIds.includes(id))
+    : MIGRATIONS;
 
-  for (const migration of MIGRATIONS) {
+  if (
+    migrationIds &&
+    (new Set(migrationIds).size !== migrationIds.length ||
+      migrations.length !== migrationIds.length)
+  ) {
+    throw new Error("MIGRATION_SELECTION_INVALID");
+  }
+
+  for (const migration of migrations) {
     const checksum = createHash("sha256")
       .update(await readFile(migration.sourceFile))
       .digest("hex");
@@ -58,7 +70,7 @@ export async function runMigrations(db, now = new Date()) {
     }
   }
 
-  return Object.freeze({ applied, current: MIGRATIONS.at(-1)?.id ?? null });
+  return Object.freeze({ applied, current: migrations.at(-1)?.id ?? null });
 }
 
 export function migrationList() {

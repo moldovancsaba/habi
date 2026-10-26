@@ -2,6 +2,8 @@
 
 ## Production status · 2026-10-26
 
+- SSO callback recovery: after validating the OIDC identity and Habi permission, the callback applies only the versioned prerequisites `010-sso-browser-owner-sessions` and `011-role-invitations` before writing the session. This breaks the first-login dependency cycle; it does not bootstrap the tenant or create user roles. See T-HG-138 in [verification](verification.md).
+
 - Product host: `https://habigoal.com`; `www.habigoal.com` redirects to the apex with HTTP 308 so the SSO callback and its host-only transaction cookie share one origin.
 - Vercel project: `narimato/habi`. The legacy host `habi.doneisbetter.com` remains on that same project for existing browser-session proof.
 - Production data target: the existing MongoDB Atlas database `habi`. Its `HG_ATLAS_URI` setting was preserved; the legacy `habi_mongodb_uri` variable was not changed.
