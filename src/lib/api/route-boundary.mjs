@@ -17,9 +17,11 @@ const SSO_BROWSER_OPERATIONS = new Set([
   "auth.login",
   "auth.callback",
   "auth.logout",
-  "auth.legacy-handoff",
-  "auth.legacy-handoff.accept",
   "api.legacy.storage",
+  "admin.me",
+  "admin.invitations",
+  "admin.memberships",
+  "identity.claim",
 ]);
 
 function isNextControlFlow(error) {

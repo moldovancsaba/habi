@@ -67,15 +67,16 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           "008-upload-chunks",
           "009-worker-claim-idempotency",
           "010-sso-browser-owner-sessions",
+          "011-role-invitations",
         ],
-        current: "010-sso-browser-owner-sessions",
+        current: "011-role-invitations",
       },
     );
     assert.deepEqual(
       await runMigrations(db, new Date("2026-10-25T00:00:01.000Z")),
       {
         applied: [],
-        current: "010-sso-browser-owner-sessions",
+        current: "011-role-invitations",
       },
     );
     const migrationRecord = await db

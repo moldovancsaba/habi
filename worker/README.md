@@ -10,7 +10,7 @@ A `run-service` a Habi worker API-t használja: egy jobot claimel, lease alatt i
 
 - `local_synthetic`: Ollama-verzió, modell, prompt hash, inference és kizárólagos hostzár ellenőrzése. Csak `development` + `HG_SYNTHETIC_DATA_ONLY=true`; felhő-, adatbázis- és felhasználói credentialt nem fogad el.
 - `local_test`: localhoston futó Habi API-val dolgozó end-to-end worker. Kizárólag `test`, localhost HTTP, szintetikus DB és a repository `.env.test.example` tokenje engedélyezett.
-- `hosted`: HTTPS Habi API és operátori konfiguráció kell. A nyers worker bearer csak a Macen marad; Vercelre kizárólag SHA-256 verifier kerül. E mód konfigurálása/indítása nincs része a helyi acceptance próbának.
+- `hosted`: HTTPS Habi API és operátori konfiguráció kell. A nyers worker bearer csak a Macen marad; Vercelre kizárólag SHA-256 verifier kerül. A Habi worker kifelé kapcsolódik a Vercel API-hoz; a Tailscale Funnel nem szükséges, mert az Ollama ugyanazon a Macen fut loopback címen.
 
 ## Helyi előfeltételek
 
@@ -38,6 +38,12 @@ macOS-en telepítés: `brew install clamav`, majd a Homebrew által jelzett `fre
 5. Leállítás: worker és app `Ctrl-C`, majd `npm run db:test:stop`.
 
 A `.env.test.example` értékei kizárólag localhoston és szintetikus adatokkal használhatók. Más környezetben új, véletlen bearer tokent kell generálni és külön out-of-band csatornán kezelni; a tokent ne commitold és ne másold ticketbe vagy chatbe.
+
+## Tartós macOS Production worker
+
+A Production worker külön, gitignored `worker/.env.production.local` fájlt használ 0600 jogosultsággal. Ebben csak a cloud API origin, a Habi worker service ID és bearer token, a lokális Ollama/model/prompt beállítás, a host lock és a ClamAV útvonala lehet. Atlas-, session- vagy SSO-kulcs tilos a worker környezetében. A bearer hash-ét a Habi Vercel Production `HG_WORKER_BEARER_SHA256` változója ellenőrzi.
+
+A `launchd/com.doneisbetter.habi-worker.plist` fájlt a `~/Library/LaunchAgents` könyvtárba kell telepíteni. A `scripts/run-worker-production.sh` beolvassa a lokális titkos env fájlt, majd a lockfile-os szolgáltatást indítja. Állapot: `launchctl print gui/$(id -u)/com.doneisbetter.habi-worker`; leállítás: `launchctl bootout gui/$(id -u)/com.doneisbetter.habi-worker`. A stdout és stderr a `~/Library/Logs/habi-worker*.log` fájlokba kerül; token, prompt és személyes forrásszöveg nem kerülhet bele.
 
 ## Hibák és helyreállítás
 

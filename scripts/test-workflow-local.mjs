@@ -74,7 +74,7 @@ async function signOut(session) {
 
 const home = await fetch(origin, { cache: "no-store" });
 assert.equal(home.status, 200);
-assert.match(await home.text(), /Napi állapotjelzés/);
+assert.match(await home.text(), /Közös sportolói támogatás/);
 
 const player = await signIn("seed-a-player-actor", "player");
 const playerId = "seed-player-001";

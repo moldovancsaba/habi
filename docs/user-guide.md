@@ -1,21 +1,23 @@
 # Habi — felhasználói útmutató
 
-A termék címe: [www.habigoal.com](https://www.habigoal.com). A felület magyar nyelvű. Ha korábbi bejegyzéseid a `habi.doneisbetter.com` böngésző-munkamenetéhez kötődnek, a Habi felületen válaszd a korábbi napló átvitelét, majd ugyanabban a böngészőben igazold a DoneIsBetter-fiókodat. A két ellenőrzés után a rendszer összekapcsolja a korábbi szerveroldali naplót az SSO-fiókkal.
+A termék címe: [habigoal.com](https://habigoal.com). A felület magyar nyelvű. A gyökéroldal a játékos/szülő/edző munkaterület; az admin belépési pont közvetlenül [habigoal.com/admin](https://habigoal.com/admin).
 
-## Mit tudsz használni?
+## Adminisztrátorok
 
-- **Ma:** elindíthatod a napi, hét kérdésből álló állapotjelzést. Bármelyik kérdést kihagyhatod. A befejezett válaszok mentésre kerülnek.
-- **Napló:** visszanézheted a korábbi jelzések dátumát és válaszait. Egy bejegyzéshez tartozó feladatot késznek jelölhetsz.
-- **Gyakorlatok:** megnyithatod a rövid, nem klinikai gyakorlatok leírását. A gyakorlatok önkéntesek.
+A Habi adminisztráció külön jogosultság, nem negyedik termékszerep. A `/admin` felületet csak a DoneIsBetter Habi alkalmazás aktuális `admin` permissionje nyithatja meg. A megvalósított meghívási folyamatban az admin szerepkört választ, a meghívott pedig a saját DoneIsBetter SSO-belépése után claimeli a lejáró, egyszer használatos linket. A szerepkör a pontos, ellenőrzött SSO issuer+subject identityhez kötődik; e-mail-cím alapján nincs automatikus párosítás.
 
-## Adatok és eszközök
+Az admin UI és a claim API a Habi Production alkalmazás része. A belépéskor a DoneIsBetter Habi alkalmazás aktuális `admin` jogosultságát ellenőrizzük; a termék nem email-cím alapján ad adminjogot. Ha a tenant még nincs előkészítve, az admin felület egyszeri gombbal alkalmazza a migrációkat és létrehozza a `habi` tenantot az MVP konfigurációval.
 
-Az éles MVP a meglévő Habi-adatokat a böngészőhöz tartozó, biztonságos munkamenet-cookie alapján tölti be. Használd ugyanazt a böngészőt és böngészőprofilt, ahol korábban is vezetted a naplót. Másik eszközön vagy böngészőben ezek az adatok nem jelennek meg. A fejlesztés alatt álló SSO-váltás nem módosítja automatikusan a rekordokat: az adatkapcsolás csak az SSO-fiók és a meglévő böngésző-cookie együttes igazolásakor történhet.
+A működő MVP konfiguráció a jelenlegi tervezetek azonosítóira hivatkozik: [adatmegőrzés és törlés](policies/2026-10-26-retention-policy-draft.md), [adatkezelői/adatfeldolgozói szerepek](policies/2026-10-26-controller-policy-draft.md). Ez funkcionális MVP-beállítás, nem állítás jogi megfelelőségről.
 
-Változtatás után az app jelzi, hogy az adat szerverre mentődött-e. Kapcsolat megszakadásakor a módosítás a böngészőben marad, és az app figyelmeztet a függőben lévő szinkronra. Ne töröld a böngésző helyi adatait, amíg a függőben lévő mentés nem rendeződött.
+## Adatok és hozzáférés
 
-Az app nem készít automatikus minta-bejegyzéseket, nem következtet a kihagyott válaszokból, és nem helyettesít edzőt, szülőt vagy egészségügyi szakembert.
+A régi naplórekordok átvitele nem előfeltétel, és nem része az új szerepköri belépésnek. A player, parent és coach szerepköröket csak admin által kiadott meghívó adja; az SSO app `admin` permissionje önmagában nem ad termékoldali szerepkört.
 
-## Mi nincs még az éles MVP-ben?
+## MVP-folyamat
 
-Nincs éles SSO, másik eszközre szinkronizálás, családi vagy edzői megosztás, AI-válasz, feltöltött riport feldolgozása, havi visszatekintés vagy trendgrafikon. A szerepkörös Habi munkafolyamatok külön, még nem élesített fázisban vannak.
+1. A Habi admin a `/admin` oldalon megnyitja a tenant előkészítését.
+2. Az admin létrehoz egy játékos-, szülő- vagy edzőmeghívót.
+3. A meghívott megnyitja az egyszer használatos linket, saját DoneIsBetter-fiókjával belép, majd elfogadja a hozzáférést.
+4. Játékosnál napi állapotjelzés és előzmények; szülőnél megfigyelés, előzmények és forrásolt helyi AI-kérdés; edzőnél megfigyelés és játékosadat-hozzáférés jelenik meg.
+5. A szerepkör visszavonható az admin felületen; a visszavonás megszünteti a hozzáférést.

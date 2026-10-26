@@ -39,7 +39,13 @@ test("unconfigured Vercel Preview blocks product APIs but keeps health probes", 
 
 test("legacy-browser MVP permits only health, readiness, and legacy storage", async () => {
   const env = { VERCEL_ENV: "production", HG_MVP_MODE: "legacy-browser" };
-  for (const operation of ["api.players.list", "api.v1.me", "api.auth.login"]) {
+  for (const operation of [
+    "api.players.list",
+    "api.v1.me",
+    "api.auth.login",
+    "auth.legacy-handoff",
+    "auth.legacy-handoff.accept",
+  ]) {
     const blocked = await runApiRoute(
       new Request("https://habi.doneisbetter.com/api/blocked"),
       operation,
@@ -73,7 +79,7 @@ test("legacy-browser MVP permits only health, readiness, and legacy storage", as
   assert.equal(previewStorage.status, 200);
 });
 
-test("SSO-browser MVP permits SSO and owner storage routes only", async () => {
+test("SSO-browser MVP permits SSO, admin, invite, and owner storage routes only", async () => {
   const env = { VERCEL_ENV: "production", HG_MVP_MODE: "sso-browser" };
   for (const operation of ["api.players.list", "api.v1.me", "api.auth.login"]) {
     const blocked = await runApiRoute(
@@ -92,14 +98,37 @@ test("SSO-browser MVP permits SSO and owner storage routes only", async () => {
     "auth.login",
     "auth.callback",
     "auth.logout",
-    "auth.legacy-handoff",
-    "auth.legacy-handoff.accept",
+    "admin.me",
+    "admin.invitations",
+    "admin.memberships",
+    "identity.claim",
   ]) {
     const allowed = await runApiRoute(
       new Request("https://www.habigoal.com/api/allowed"),
       operation,
       async () => Response.json({ ok: true }),
       () => assert.fail("SSO MVP route should not log on success"),
+      env,
+    );
+    assert.equal(allowed.status, 200);
+  }
+});
+
+test("role-workflow runtime opens authenticated product API operations", async () => {
+  const env = { VERCEL_ENV: "production", HG_MVP_MODE: "role-workflow" };
+  for (const operation of [
+    "api.v1.me",
+    "api.players.list",
+    "worker.jobs.claim",
+  ]) {
+    const allowed = await runApiRoute(
+      new Request("https://habigoal.com/api/role-workflow"),
+      operation,
+      async () => Response.json({ ok: true }),
+      () =>
+        assert.fail(
+          "configured role workflow should not be blocked at the route boundary",
+        ),
       env,
     );
     assert.equal(allowed.status, 200);

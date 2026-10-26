@@ -41,6 +41,8 @@ const NON_WEB_KEYS = [
   "HG_EXTERNAL_API_KEY",
 ];
 
+const TENANT_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
+
 function parseUrl(value, name) {
   try {
     return new URL(value);
@@ -172,7 +174,9 @@ export function validateRuntimeConfig(env) {
   }
   if (
     callback.origin !== appOrigin.origin ||
-    callback.pathname !== "/auth/callback" ||
+    !new Set(["/auth/callback", "/api/oauth/callback"]).has(
+      callback.pathname,
+    ) ||
     callback.search ||
     callback.hash
   ) {
@@ -209,6 +213,10 @@ export function validateRuntimeStartup(env) {
   if (env.NEXT_PHASE === "phase-production-build") return;
   if (env.HG_MVP_MODE === "sso-browser") {
     validateSsoBrowserMvpConfig(env);
+    return;
+  }
+  if (env.HG_MVP_MODE === "role-workflow") {
+    validateRuntimeConfig(env);
     return;
   }
   if (env.HG_MVP_MODE === "legacy-browser") {
@@ -264,7 +272,8 @@ function validateSsoBrowserMvpConfig(env) {
   const callbackHost = callback.hostname.replace(/^www\./, "");
   if (
     env.HG_ENVIRONMENT !== "production" ||
-    env.HG_APP_ORIGIN !== "https://www.habigoal.com" ||
+    !TENANT_ID_PATTERN.test(env.HG_TENANT_ID ?? "") ||
+    env.HG_APP_ORIGIN !== "https://habigoal.com" ||
     env.HG_LEGACY_APP_ORIGIN !== "https://habi.doneisbetter.com" ||
     appOrigin.protocol !== "https:" ||
     env.HG_ATLAS_DATABASE !== "habi" ||
@@ -273,7 +282,7 @@ function validateSsoBrowserMvpConfig(env) {
     !env.HG_SSO_CLIENT_ID?.trim() ||
     !env.HG_SSO_CLIENT_SECRET?.trim() ||
     callback.protocol !== "https:" ||
-    callback.hostname !== "habigoal.com" ||
+    callback.origin !== appOrigin.origin ||
     callback.pathname !== "/api/oauth/callback" ||
     callback.search ||
     callback.hash ||

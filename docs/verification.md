@@ -1,5 +1,14 @@
 # Habi — ellenőrzési napló
 
+## Apex SSO callback és napi kérdés-layout javítás · 2026-10-26 · még nem telepítve
+
+- A Vercel domain lekérdezése szerint a `habigoal.com` és `www.habigoal.com` is a `narimato/habi` projekthez tartozik. Az élő HTTP-próba: apex `/` → 200; `www` `/` → 308 a `https://habigoal.com/` címre; a callback útvonal próbakérése érvényes login-tranzakció nélkül `303 /?signin=failed` választ ad.
+- A kódban a canonical app origin és az SSO callback ugyanarra az apex originre van kötve. A callback host-only böngésző-cookie-t kap, és a feldolgozási hibákhoz rögzített, személyes adatot nem tartalmazó okkódot ír a Vercel runtime logba.
+- A hétkérdéses képernyő kártyája oszlopos elrendezést kapott, a kérdés és a válaszok tördelhetők, a fókuszjelölés látható. A régi adatátviteli üzenet és hivatkozás kikerült a kijelentkezett felületről.
+- Ellenőrzés a helyi Habi checkoutban: `npm run lint` exit 0; `npm run typecheck` exit 0; `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` exit 0 (112/112, 0 skip); `npm run build` exit 0; `git diff --check` exit 0. Nincs Production adatírás.
+- Korlát: jelenleg nem lett commitolva vagy telepítve. Az apex HTTP-próba az előző Production buildet vizsgálta; valós SSO callback/session, role UI, admin role/invitation workflow és mobil böngészős layout még nincs igazolva. A Production gyökér továbbra is a régi napi napló UI.
+- Visszaállítás telepítés után: a megelőző Vercel Production deployment visszaállítása. E változtatások nem módosítanak adatbázist vagy rekordot.
+
 ## SSO browser MVP production release and runtime logging · 2026-10-26
 
 - Production deployment `dpl_6i4T3VvT6Rz8TR6KyD7qw22hML7E` from commit `887fd9d` is Ready and aliased to `www.habigoal.com`, `habigoal.com`, and `habi.doneisbetter.com`.
@@ -435,3 +444,86 @@ Kanonikus forrás: Calvus `1f4c2fa45af5a4b8bf46e1eb6e9f2ae2948fb787`, API 2.3.0.
 - Az idővonal-loader az adapter előtt validálja a pinelt 2.3 oldalt, és megőrzi a játékos-/forrás-/erőforrás-hivatkozást.
 - A `loadTimelineRecord` az eseményből vett pontos referenciával hívja a jogosultság-ellenőrzött `/v1/players/{playerId}/records/{id}` útvonalat. Tartalmat csak érvényes DTO és egyező `playerId`, rekordazonosító, valamint revision esetén ad vissza. Eltérésnél és hibás eseménynél zártan hibára fut.
 - Ez kliensoldali szerződés- és loaderpróba, nem igazolja a telepített végpontot, szerveroldali jogosultságot, UI-integrációt, Atlas-t, SSO-t vagy személyesadat-feldolgozást. A backendnek ettől függetlenül kell tagságot és játékos-scope-ot ellenőriznie. Nem történt deploy vagy távoli adatelérés.
+
+## T-HG-132 · Admin permission gate and verified role invitations · 2026-10-26
+
+> Historical snapshot: statements below describe the worktree before the role-workflow implementation was completed. The current state and latest evidence are in T-HG-136.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, 118 tests, 0 failures | Isolated local Mongo replica-set integration; migration 011 applies twice safely. Synthetic data only. |
+| `npm run lint` | PASS, exit 0 | Biome over `src` and `tests`. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript. |
+| `npm run build` | PASS, exit 0 | Next.js 16.4.3; includes `/admin`, `/api/admin/*`, and `/invite/claim`. |
+| `git diff --check` | PASS, exit 0 | Local worktree. |
+
+The callback now records the verified issuer/subject and Habi app permission in the SSO owner session. Only an SSO `admin` permission creates the session-bound admin grant; no email address is hard-coded. Invitation tokens are random, seven-day, one-use links with only keyed hashes stored. Claim binds the invite to the exact verified identity and creates identity/actor/membership/player/role-session within one Mongo transaction. Focused tests cover token tampering, admin denial, invite expiry/revocation, role scope and same-identity retry. These are code/local DB proofs, not hosted SSO or a live user-flow proof.
+
+**Not delivered to Production:** the changes remain uncommitted; migration 011 is not applied there; no active tenant or approved retention/controller policy references are established; role API operations remain fail-closed in the current SSO-browser runtime; the local admin interface supports roster lookup and invitation/membership revocation; the root page still displays the old diary UI; and no production role workspace is connected. No Atlas records were changed. A real invitation cannot be issued until the tenant/policy inputs and role runtime cutover are resolved.
+
+## T-HG-133 · Initial tenant identifier `habi` · 2026-10-26
+
+> Historical snapshot: the tenant was not yet initialized at this point. The MVP bootstrap now uses the explicit draft policy references described below; see T-HG-136.
+
+- Added the non-secret Vercel Production setting `HG_TENANT_ID=habi` to the explicitly linked `narimato/habi` project. Verified the variable name and Production target with `vercel env ls`; secret values were not read.
+- Updated SSO runtime validation to require a valid `HG_TENANT_ID`. Admin invitation lookup now exposes only the configured tenant, and invitation creation rejects any different tenant identifier. The admin empty-state explains that tenant creation and approved data policies are still required.
+- This change is local and has not been deployed. No Atlas record or migration was written. The `habi` tenant identifier is configured, but a valid tenant document cannot be created until its approved retention and controller policies are supplied. The intended admin account is `moldovancsaba@gmail.com`; admin access remains based on the verified DoneIsBetter Habi application `admin` permission, never an email allowlist.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, 118 tests, 0 failures | Local synthetic replica set only; no production data touched. |
+| `npm run lint` | PASS, exit 0 | Biome checked 169 source/test files. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript. |
+| `npm run build` | PASS, exit 0 | Next.js 16.4.3; `/admin`, invitation, and claim routes compile. |
+| `git diff --check` | PASS, exit 0 | Current local worktree. |
+
+Owner selected “Draft policies for my review” on 2026-10-26. Two Hungarian policy drafts were prepared in `docs/policies/`. They propose operational retention values for review, explicitly mark the controller/processor model and lawful bases unresolved, and cannot be used as active tenant policy IDs. No tenant record was created and no personal data was enabled.
+
+## T-HG-134 · Local synthetic Habi MVP and Funnel smoke test · 2026-10-26
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| `npm run test:workflow:local` with `.env.test.example` | PASS, exit 0 | Local replica set database `habi_workflow_test`, synthetic tenant/player/parent/coach records only. |
+| `worker/.env.test.example` + `uv run python -m habi_worker.cli run-service` | PASS | Local-test worker claimed and completed one `personalInterpretation` and one `reportScan` job. ClamAV returned `clean`; the Qwen local model returned a `no_evidence` result for the synthetic question. |
+| `verify-local` and `smoke-local` with `worker/.env.example` | PASS, exit 0 | Verified Ollama `0.40.3`, `qwen2.5:7b` digest `845dbd…697e`, prompt hash, and one synthetic local inference. |
+| Anonymous request to Funnel `/api/tags` | Expected 401 | Public URL maps to `127.0.0.1:11435`; gateway denies a request without its bearer credential. |
+| Authenticated Funnel `/api/chat` with synthetic prompt | PASS, HTTP 200 | Model `qwen2.5:7b` returned exact marker `HABI_FUNNEL_TEST_OK`; the credential was read from its owner-only file and never printed. |
+
+The first acceptance attempt stopped before workflow execution because its homepage assertion expected client-rendered text in the server response. The test now checks the stable server-rendered app shell; the full acceptance was rerun successfully. Expected denials during the successful run included the designed 403/404/409 cases.
+
+This verifies the local synthetic Habi workflow and separately verifies that the existing authenticated Tailscale Funnel gateway can reach Ollama. The Funnel is currently the **ClassScout** gateway, not Habi configuration. Habi's tested worker still calls its local loopback Ollama directly; no Habi worker traffic was sent through Funnel. No Vercel/Atlas data, real identities, personal records, or Production deployment were used. The test app and worker were stopped after the run; the MongoDB listener was already running before the test and was left alone.
+
+### T-HG-135 · Local AI evidence-contract correction · 2026-10-26
+
+The `no_evidence` result above was traced to a model-format mismatch: Qwen returned a bare source ID while the worker correctly requires an exact `{id, revision, span}` reference. The worker prompt now states the exact object shape, exact manifest matching, and allowed claim kinds; the validator remains strict and does not accept bare IDs.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, 118 tests | Isolated local replica set and synthetic fixtures. |
+| `npm run lint` | PASS, exit 0 | Biome checked 169 source/test files. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript. |
+| `npm run build` | PASS, exit 0 | Next.js production build; admin, invite, API and worker routes compiled. |
+| `uv run python -m unittest discover -s tests -v` (`worker/`) | PASS, 18 tests | Synthetic fixtures and mocked model response; includes accepting an exact reference and rejecting a string-only reference. |
+| `npm run test:workflow:local` with `.env.test.example` and the local worker | PASS, exit 0 | Full synthetic browser/API/database/worker workflow; no production services or records. |
+| Worker interpretation log | PASS, `resultStatus=awaiting_review`, `claimCount=1` | Actual local `qwen2.5:7b` inference against the synthetic workflow question. |
+| Worker report-scan log | PASS, `verdict=clean` | Synthetic uploaded PDF scanned by local ClamAV `1.5.4/28164`. |
+| `git diff --check` | PASS, exit 0 | Current worktree. |
+
+The answer is source-backed but remains `awaiting_review`; it is not shown as an approved personal explanation. The test establishes that the model now returns a valid claim with a source reference through the local worker path. It does not test Habi over Funnel: the worker and Ollama are on the same Mac and use loopback, while the existing public Funnel belongs to the separate ClassScout Ollama gateway. The temporary app and worker were stopped after the run; the pre-existing local synthetic MongoDB process was left running.
+
+## T-HG-136 · Production Habi workspace and admin release candidate · 2026-10-26
+
+The production target remains Vercel project `narimato/habi`, with `https://habigoal.com` as the canonical Habi product origin. The release switches the hosted runtime to `role-workflow`, replaces the root legacy diary view with the Habi role workspace, and makes `/admin` the separate SSO-admin-only console. The owner has stated that legacy records do not need to be migrated. No old records are deleted by this release.
+
+The admin console includes an explicit, idempotent “Prepare Habi MVP” action. After the verified DoneIsBetter account has the Habi `admin` permission, it applies the versioned additive schema migrations and creates tenant `habi` only if absent, with the two clearly named MVP draft policy references. It does not overwrite a tenant with different policy references. The owner selected draft policies for MVP review and stated GDPR is not a blocker for MVP functional testing; these references do not claim legal approval or configure a final retention/controller decision.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, 120 tests, 0 failures | Isolated local replica set; synthetic records only. |
+| `npm run lint` | PASS, exit 0 | Biome checked 172 files. |
+| `npm run typecheck` | PASS, exit 0 | TypeScript. |
+| `npm run build` | PASS, exit 0 | Next.js production build includes `/`, `/admin`, bootstrap, invitation and claim routes. |
+| `uv run --frozen python -m unittest discover -s tests -v` (`worker/`) | PASS, 18 tests | Worker contract and local model-runtime fixtures. |
+| `git diff --check` | PASS, exit 0 | Current worktree. |
+
+Before production deploy, the changes are still local. The live-domain check, production `/admin` browser sign-in, tenant bootstrap, role invitation, and hosted local-worker connection are therefore not yet verified. After deploy, sign in at `https://habigoal.com/admin` with the DoneIsBetter account that has the Habi `admin` permission, select **Prepare Habi MVP**, and then issue role invitations. The owner-only worker credential is stored outside Git; the worker LaunchAgent still needs installation and a live claim/complete smoke check.

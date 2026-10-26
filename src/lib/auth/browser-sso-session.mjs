@@ -155,7 +155,15 @@ export async function resolveSsoOwnerLink(
 
 export async function createSsoOwnerSession(
   sessions,
-  { identityHash, ownerHash, hmacKey, now = new Date() },
+  {
+    identityHash,
+    ownerHash,
+    issuer = null,
+    subject = null,
+    permissionRole = null,
+    hmacKey,
+    now = new Date(),
+  },
 ) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(now.getTime() + SSO_OWNER_SESSION_MS);
@@ -164,6 +172,9 @@ export async function createSsoOwnerSession(
     tokenHash: digest(hmacKey, "habi-owner-session", token),
     identityHash,
     ownerHash,
+    ...(issuer ? { issuer } : {}),
+    ...(subject ? { subject } : {}),
+    ...(permissionRole ? { permissionRole } : {}),
     createdAt: now.toISOString(),
     lastSeenAt: now.toISOString(),
     expiresAt,

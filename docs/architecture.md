@@ -20,6 +20,12 @@ A terméknek pontosan három szerepe van: `player`, `parent`, `coach`. A jogosul
 - Az edző megfigyelése kezdetben `coach` besorolású. A szülő csak az adott rekord pontos revisionjának külön publikálása után láthatja.
 - Az idempotencia-bizonylat és az üzleti módosítás egy tranzakcióban mentődik. Revision-eltéréskor 409, a tenanton vagy látható jogosultsági körön kívüli erőforrásnál 404 a válasz.
 
+Az adminisztráció nem negyedik termékszerep: kizárólag a DoneIsBetter Habi alkalmazásra jóváhagyott `admin` permission birtokosa kezelhet szerepköröket. A player/parent/coach hozzárendelés egyszer használatos, lejáró meghívással történik; a meghívott saját SSO-bejelentkezése után, a pontos ellenőrzött issuer+subject identitásához claimeli. E-mail alapján nincs összekapcsolás, a termékoldali szerep nem ad adminjogot. Ezt a [D-HG-016 döntés](../contracts/decisions.json) rögzíti.
+
+Az admin callback a DoneIsBetter permission-eredményből ad adminjogot, nem egy beégetett e-mail-címből. Az admin grant a hitelesített SSO owner-session azonosítójához és identity hashéhez kötött, HttpOnly, Secure, host-only cookie; a `/admin` és az admin API minden kérésnél ellenőrzi. A `/admin` meghívót hoz létre, az egyszer használatos tokenből csak HMAC-hash kerül az adatbázisba. A claim egy tranzakcióban rögzíti az ellenőrzött identitást, actort, tagságot és role-sessiont; a session insert is a Mongo tranzakció része. Az admin UI, a claim és az adatbázis-migráció 011 kódban elkészült, de nincs Productionbe telepítve. Nincs aktív, igazolt tenant/policy-beállítás, így valódi meghívó nem adható ki.
+
+A régi böngészői napló adatai nem szükségesek az új Habi onboardinghoz és nem kerülnek át a role-fiókokba ([D-HG-017](../contracts/decisions.json)). A kompatibilitási adatok nem használhatók automatikus identitás-illesztésre.
+
 ## Kérésfeldolgozás és adattárolás
 
 1. A Next.js API-útvonal a `runAuthorizedHabiRoute()` közös hibakezelő és `no-store` rétegét használja.
@@ -35,17 +41,17 @@ A Mongo kliensfolyamatonként újrahasznált. A kezdeti pool-korlát `maxPoolSiz
 
 A `player → check-in indítása → válasz mentése → lezárás → változatlan CheckinResult` folyamat MongoDB tranzakciókat támogató helyi replica seten működik. `parent` és `coach` szerepben olvasható a mentett eredmény. A szülői és edzői megfigyelés, a rekordlista/részlet, az aláírt lapozás és az edzői megfigyelés pontos revisionjának közzététele helyi HTTP-folyamatban ellenőrzött. A szintetikus session csak `HG_ENVIRONMENT=test`, localhost app és Mongo, `_test` nevű adatbázis, szintetikus adatok és kikapcsolt külső AI mellett érhető el. Hosztolt környezetben tiltott.
 
-A DoneIsBetter SSO integráció kódja most az SSO-only browser MVP worktree-ben van, de még nincs Productionbe telepítve. A helyi szintetikus belépés továbbra sem production hitelesítés. A nem-SSO szerepköri bővítések kódban megvannak, de nem aktívak Productionben: terv és utánkövetés, kérdés/thread/job, idővonal, kézi extraction review, verziózott edzői anyag, PDF chunk-feltöltés/GridFS karantén és worker API. A Mac worker claim/lease/heartbeat/context/result és ClamAV riportvizsgálati ciklusa is implementálva van, de ez az MVP scope-on kívül áll.
+A DoneIsBetter SSO és a szerepkör-meghívás kódja ebben a forrásfában van. A role-workflow API-k Production módban továbbra is fail-closed állapotúak, és a főoldal még a régi naplófelületet szolgálja ki; ezért a bejelentkezés és egy sikeres invite-claim önmagában még nem jelent használható új szerepköri alkalmazást. A helyi szintetikus belépés továbbra sem production hitelesítés. A nem-SSO szerepköri bővítések kódban megvannak, de nem aktívak Productionben: terv és utánkövetés, kérdés/thread/job, idővonal, kézi extraction review, verziózott edzői anyag, PDF chunk-feltöltés/GridFS karantén és worker API.
 
 ## SSO és session
 
 A következő browser MVP a DoneIsBetter OIDC-integrációt használja; a módosítás a jelenlegi worktree-ben van, még nincs élesítve. A `/auth/login` tranzakciót indít state, nonce és PKCE-vel. Az `/api/oauth/callback` a rövid életű, böngészőhöz kötött tranzakciót egyszer használja fel, ellenőrzi az ID tokent/JWKS-t, userinfo subjectet és a Habi app engedélyezését. Siker esetén a szerver SSO-identity-hashhez rendelt owner-sessiont ad ki; provider tokent nem tárol.
 
-A korábbi `habi_states` tulajdonos-hash csak akkor kapcsolható SSO identityhez, ha ugyanabban a böngészőben rendelkezésre áll a régi érvényes HttpOnly owner-cookie, és a DoneIsBetter SSO identity is bizonyított. E-mail egyezés alapján nincs automatikus összekapcsolás. Egy régi owner legfeljebb egy SSO identityhez kapcsolható; másik identity igénye konfliktussal leáll. SSO-login nélkül az owner API 401-et ad; a role-workflow API-k továbbra is fail-closed állapotban vannak. A változás utáni session 8 órás abszolút és 30 perces inaktivitási határú, kijelentkezéskor visszavonható.
+Az új SSO-belépés új Habi owner-scope-ot hoz létre; a régi browser-cookie és `habi_states` rekordok nem kapcsolódnak hozzá és nem importálódnak. Nincs e-mail-alapú összekapcsolás vagy adatátviteli folyamat. Az owner API SSO nélkül 401-et ad; a role-workflow API-k továbbra is fail-closed állapotban vannak. A változás utáni session 8 órás abszolút és 30 perces inaktivitási határú, kijelentkezéskor visszavonható.
 
 ## Személyes és gyermekadatok
 
-Személyes vagy gyermekadatokkal végzett pilot előtt szükséges a jóváhagyott consent/retention szabályzat, a forrásjogok bizonyítéka, a felelős owner kijelölése és az elkülönített Atlas tesztkörnyezet. A szintetikus szerződéses fixture nem alakítható át valódi profilként. Exportot nem engedélyez a normál olvasási jogosultság; külön adatvédelmi folyamat szükséges.
+Személyes vagy gyermekadatokkal végzett pilot előtt szükséges a jóváhagyott consent/retention szabályzat, a forrásjogok bizonyítéka, a felelős owner kijelölése és az elkülönített Atlas tesztkörnyezet. A retention és adatkezelői szabályzat felülvizsgálati tervezetei: [adatmegőrzés](policies/2026-10-26-retention-policy-draft.md) és [adatkezelői szerepek](policies/2026-10-26-controller-policy-draft.md). Ezek nem jóváhagyott szabályok és nem használhatók tenant-aktiváláshoz. A szintetikus szerződéses fixture nem alakítható át valódi profilként. Exportot nem engedélyez a normál olvasási jogosultság; külön adatvédelmi folyamat szükséges.
 
 ## Normatív szerződések
 

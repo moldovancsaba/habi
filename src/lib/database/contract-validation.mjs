@@ -96,6 +96,59 @@ const ssoOwnerSessionSchema = {
       bsonType: ["string", "null"],
       pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
     },
+    issuer: { bsonType: "string", pattern: "^https://", maxLength: 500 },
+    subject: { bsonType: "string", minLength: 1, maxLength: 300 },
+    permissionRole: { enum: ["user", "admin"] },
+  },
+};
+
+const roleInvitationSchema = {
+  bsonType: "object",
+  required: [
+    "id",
+    "tokenHash",
+    "tenantId",
+    "role",
+    "playerId",
+    "createdByIdentityHash",
+    "createdAt",
+    "expiresAt",
+    "claimedAt",
+    "claimedIdentityHash",
+    "revokedAt",
+  ],
+  additionalProperties: false,
+  properties: {
+    _id: { bsonType: ["objectId", "string"] },
+    id: { bsonType: "string", pattern: "^[a-f0-9]{48}$" },
+    tokenHash: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
+    tenantId: {
+      bsonType: "string",
+      pattern: "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+    },
+    role: { enum: ["player", "parent", "coach"] },
+    playerId: {
+      bsonType: ["string", "null"],
+      pattern: "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+    },
+    createdByIdentityHash: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
+    createdAt: {
+      bsonType: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    },
+    expiresAt: { bsonType: "date" },
+    claimedAt: {
+      bsonType: ["string", "null"],
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    },
+    claimedIdentityHash: {
+      bsonType: ["string", "null"],
+      pattern: "^[a-f0-9]{64}$",
+    },
+    revokedAt: {
+      bsonType: ["string", "null"],
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    },
   },
 };
 
@@ -162,6 +215,11 @@ export function validateContractDocument(collection, document) {
       throw new Error("DOCUMENT_CONTRACT_INVALID:sso_owner_handoff");
     return true;
   }
+  if (collection === "habi_role_invitations") {
+    if (!validateRoleInvitation(document))
+      throw new Error("DOCUMENT_CONTRACT_INVALID:role_invitation");
+    return true;
+  }
   if (collection === "session_sso_credentials") {
     if (!validateSessionSsoCredential(document)) {
       throw new Error("DOCUMENT_CONTRACT_INVALID:session_sso_credential");
@@ -226,12 +284,15 @@ function validateSsoOwnerSession(document) {
     "expiresAt",
     "revokedAt",
   ];
+  const optional = ["issuer", "subject", "permissionRole"];
   return (
     document &&
     typeof document === "object" &&
     !Array.isArray(document) &&
     required.every((key) => Object.hasOwn(document, key)) &&
-    Object.keys(document).every((key) => required.includes(key)) &&
+    Object.keys(document).every(
+      (key) => required.includes(key) || optional.includes(key),
+    ) &&
     /^[a-f0-9]{48}$/.test(document._id) &&
     /^[a-f0-9]{64}$/.test(document.tokenHash) &&
     /^[a-f0-9]{64}$/.test(document.identityHash) &&
@@ -240,7 +301,70 @@ function validateSsoOwnerSession(document) {
     isIsoTimestamp(document.lastSeenAt) &&
     document.expiresAt instanceof Date &&
     Number.isFinite(document.expiresAt.getTime()) &&
+    (document.issuer === undefined ||
+      (typeof document.issuer === "string" &&
+        document.issuer.startsWith("https://") &&
+        document.issuer.length <= 500)) &&
+    (document.subject === undefined ||
+      (typeof document.subject === "string" &&
+        document.subject.length > 0 &&
+        document.subject.length <= 300)) &&
+    (document.permissionRole === undefined ||
+      ["user", "admin"].includes(document.permissionRole)) &&
     (document.revokedAt === null || isIsoTimestamp(document.revokedAt))
+  );
+}
+
+function validateRoleInvitation(document) {
+  return Boolean(
+    document &&
+      typeof document === "object" &&
+      !Array.isArray(document) &&
+      Object.keys(document).every((key) =>
+        [
+          "_id",
+          "id",
+          "tokenHash",
+          "tenantId",
+          "role",
+          "playerId",
+          "createdByIdentityHash",
+          "createdAt",
+          "expiresAt",
+          "claimedAt",
+          "claimedIdentityHash",
+          "revokedAt",
+        ].includes(key),
+      ) &&
+      [
+        "id",
+        "tokenHash",
+        "tenantId",
+        "role",
+        "playerId",
+        "createdByIdentityHash",
+        "createdAt",
+        "expiresAt",
+        "claimedAt",
+        "claimedIdentityHash",
+        "revokedAt",
+      ].every((key) => Object.hasOwn(document, key)) &&
+      /^[a-f0-9]{48}$/.test(document.id) &&
+      /^[a-f0-9]{64}$/.test(document.tokenHash) &&
+      /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(document.tenantId) &&
+      ["player", "parent", "coach"].includes(document.role) &&
+      (document.playerId === null ||
+        /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(document.playerId)) &&
+      /^[a-f0-9]{64}$/.test(document.createdByIdentityHash) &&
+      isIsoTimestamp(document.createdAt) &&
+      document.expiresAt instanceof Date &&
+      Number.isFinite(document.expiresAt.getTime()) &&
+      (document.claimedAt === null || isIsoTimestamp(document.claimedAt)) &&
+      (document.claimedIdentityHash === null ||
+        /^[a-f0-9]{64}$/.test(document.claimedIdentityHash)) &&
+      (document.revokedAt === null || isIsoTimestamp(document.revokedAt)) &&
+      ((document.role === "coach" && document.playerId === null) ||
+        (document.role !== "coach" && typeof document.playerId === "string")),
   );
 }
 
@@ -285,6 +409,10 @@ export function mongoValidatorForCollection(collection) {
     return { $jsonSchema: ssoOwnerSessionSchema };
   if (collection === "habi_sso_owner_handoffs")
     return { $jsonSchema: ssoOwnerHandoffSchema };
+  if (collection === "habi_role_invitations")
+    return { $jsonSchema: roleInvitationSchema };
+  if (collection === "habi_role_invitations")
+    return { $jsonSchema: roleInvitationSchema };
   const definition = COLLECTION_SCHEMA[collection];
   if (!definition) throw new Error("COLLECTION_SCHEMA_UNKNOWN");
   return {

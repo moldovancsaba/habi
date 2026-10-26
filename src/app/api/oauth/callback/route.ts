@@ -21,6 +21,14 @@ export async function GET(request: Request) {
       db: await getDatabase(),
       config: { issuer, clientId, clientSecret, redirectUri },
       hmacKey,
+      onFailure: (reasonCode: string) =>
+        console.warn(
+          JSON.stringify({
+            event: "habi.sso.callback_failure",
+            requestId: request.headers.get("x-vercel-id"),
+            reasonCode,
+          }),
+        ),
     })(request);
   });
 }

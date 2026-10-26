@@ -1,5 +1,5 @@
-import HabiHome from "./habi-home";
+import HabiWorkspace from "./workspace";
 
 export default function Home() {
-  return <HabiHome />;
+  return <HabiWorkspace />;
 }

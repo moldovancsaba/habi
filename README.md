@@ -4,11 +4,7 @@ A Habi fiatal sportolók, jogosult szülők és edzők közös támogatási term
 
 ## Állapot
 
-A Habi fiatal sportolók, jogosult szülők és edzők közös támogatási terméke. **Habigoal** a kliensbemutató prototípus és a specifikáció neve; a leszállítandó termék neve **Habi**. Ez a repository a Habi alkalmazás forrása.
-
-## Állapot
-
-A kiválasztott termékcím [www.habigoal.com](https://www.habigoal.com); az apex cím erre irányít át. Az SSO-only browser MVP és az ellenőrzött korábbi adatkapcsolás kódja elkészült; a Production SSO-konfiguráció és a csak hozzáadást végző 010-es migráció is be van állítva. A Vercel projekt `narimato/habi`; az adatcél a meglévő `habi` Atlas adatbázis. Az új alkalmazásbuild még nincs Productionbe telepítve, és a valós SSO belépés nincs igazolva. A régi `habi.doneisbetter.com` cím marad a korábbi browser-cookie munkamenet igazolására szolgáló átmeneti origin. Lásd [felhasználói útmutató](docs/user-guide.md), [ellenőrzési napló](docs/verification.md) és [telepítési állapot](docs/deployment.md).
+A kiválasztott termékcím [habigoal.com](https://habigoal.com); a `www` cím erre irányít át. A gyökéroldal a játékos/szülő/edző Habi-munkaterületre vezet, az adminisztráció címe [habigoal.com/admin](https://habigoal.com/admin). A szerepkör-hozzárendelés DoneIsBetter adminengedélyhez kötött meghívással és a meghívott ellenőrzött SSO-identitásának claimjével működik. A production tenant azonosítója `habi`, adatbázisa `habi`; a régi naplóadatok migrációja nem szükséges. A Habi worker a Macről HTTPS-en hívja a hosted API-t, és a helyi Ollamát használja. Lásd a [felhasználói útmutatót](docs/user-guide.md), az [ellenőrzési naplót](docs/verification.md) és a [telepítési állapotot](docs/deployment.md).
 
 - a játékos napi állapotjelzése, a válaszok mentése, az idempotens újrapróbálás és a változatlan lezárt visszajelzés;
 - a szülői és edzői megfigyelések külön rögzítővel és forrásmegjelöléssel;
@@ -21,7 +17,7 @@ A kiválasztott termékcím [www.habigoal.com](https://www.habigoal.com); az ape
 - PDF chunk-feltöltés GridFS karanténba, ClamAV-vizsgálat, kézi extraction és mezőnkénti coach-review.
 - Verziózott játékosi gyakorlatkönyvtár; a játékos visszajelzése újratölthető, saját diary rekordként mentődik.
 
-> **Jelenlegi Production határ:** az éles deployment még browser-cookie MVP; az SSO-only változás helyi kód és nem élő funkció. A teljes family/player/parent/coach workflow és Mac AI-worker nem aktív. A szerepkörös API-k fail-closed állapotban maradnak. A további funkciók állapotát a [legacy funkció-mátrix](docs/legacy-feature-migration.md) rögzíti.
+> **MVP:** a játékos napi állapotjelzést küldhet; a szülő és edző megfigyelést rögzíthet; a szülő forrásolt kérdést küldhet a helyi AI-nak; a riportfeltöltést helyi worker vizsgálja; az edző anyagokat publikálhat és vállalásokat követhet. A személyes AI-magyarázatok edzői ellenőrzésig nem jelennek meg kész válaszként. A `/admin` felület kezeli a meghívásokat és szerepkörök visszavonását.
 
 ## Szükséges eszközök
 

@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import test from "node:test";
 import {
   bindLegacyOwnerHandoff,
@@ -11,7 +10,6 @@ import {
   resolveSsoOwnerLink,
   revokeSsoOwnerSession,
   SSO_OWNER_SESSION_COOKIE,
-  ssoOwnerHandoffCookie,
 } from "../src/lib/auth/browser-sso-session.mjs";
 import {
   AUTH_TRANSACTION_COOKIE,
@@ -204,25 +202,13 @@ test("SSO browser sessions are opaque, idle-limited and revocable", async () => 
   );
 });
 
-test("SSO callback links the existing browser owner only after state, browser binding and approved identity", async () => {
+test("SSO callback creates a clean identity owner without importing browser-owned data", async () => {
   const db = memoryDb();
   const now = new Date("2026-10-26T10:00:00.000Z");
   const binding = "b".repeat(43);
   const transaction = createLoginTransaction({ returnTo: "/", binding, now });
   db.collection("auth_transactions").docs.push(
     structuredClone(transaction.document),
-  );
-  const oldCookie = "c".repeat(64);
-  const expectedOwner = createHash("sha256").update(oldCookie).digest("hex");
-  const handoff = await createLegacyOwnerHandoff(
-    db.collection("habi_sso_owner_handoffs"),
-    { ownerHash: expectedOwner, hmacKey: key, now },
-  );
-  const handoffBinding = await bindLegacyOwnerHandoff(
-    db.collection("habi_sso_owner_handoffs"),
-    handoff.token,
-    key,
-    now,
   );
   const handler = createSsoBrowserCallbackHandler({
     db,
@@ -249,27 +235,29 @@ test("SSO callback links the existing browser owner only after state, browser bi
         subject: "owner-subject",
       }),
       fetchSsoUserinfo: async () => ({ subject: "owner-subject" }),
-      fetchAppPermission: async () => ({ status: "approved", role: "user" }),
+      fetchAppPermission: async () => ({ status: "approved", role: "admin" }),
     },
   });
   const request = new Request(
-    `https://www.habigoal.com/api/oauth/callback?code=auth-code&state=${transaction.state}`,
+    `https://habigoal.com/api/oauth/callback?code=auth-code&state=${transaction.state}`,
     {
       headers: {
-        Cookie: `__Host-hg_auth_txn=${binding}; ${ssoOwnerHandoffCookie(handoffBinding).split(";")[0]}`,
+        Cookie: `__Host-hg_auth_txn=${binding}`,
       },
     },
   );
   const response = await handler(request);
   assert.equal(response.status, 303);
+  assert.equal(new URL(response.headers.get("location")).pathname, "/admin");
   assert.equal(
     new URL(response.headers.get("location")).searchParams.get("linked"),
-    "1",
+    null,
   );
   assert.match(response.headers.get("set-cookie"), /__Host-habi_sso=/);
+  assert.match(response.headers.get("set-cookie"), /__Host-habi_admin=/);
   assert.equal(
-    db.collection("habi_sso_owner_links").docs[0].ownerHash,
-    expectedOwner,
+    db.collection("habi_sso_owner_links").docs[0].linkMethod,
+    "sso_identity",
   );
   assert.equal(db.collection("habi_sso_owner_sessions").docs.length, 1);
   assert.equal(
@@ -314,7 +302,7 @@ test("failed SSO callback does not clear an existing owner session or link data"
     },
   });
   const request = new Request(
-    `https://www.habigoal.com/api/oauth/callback?code=auth-code&state=${transaction.state}`,
+    `https://habigoal.com/api/oauth/callback?code=auth-code&state=${transaction.state}`,
     {
       headers: {
         Cookie: `${AUTH_TRANSACTION_COOKIE}=${binding}; ${SSO_OWNER_SESSION_COOKIE}=existing-session-token`,

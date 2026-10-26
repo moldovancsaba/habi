@@ -1,10 +1,8 @@
 import { HabiApiError } from "../api/error-response.mjs";
 import {
   createSsoOwnerSession,
-  consumeLegacyOwnerHandoff,
   readCookie,
   resolveSsoOwnerLink,
-  SSO_OWNER_HANDOFF_COOKIE,
   expiredSsoOwnerHandoffCookie,
   ssoOwnerSessionCookie,
 } from "./browser-sso-session.mjs";
@@ -20,12 +18,17 @@ import {
   loadOidcDiscovery,
   verifyIdTokenWithKeyRefresh,
 } from "./sso-oidc.mjs";
+import {
+  adminPermissionCookie,
+  createAdminPermissionToken,
+} from "./admin-permission.mjs";
 
 function expiredCookie(name) {
   return `${name}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
 }
 
-function failRedirect(request) {
+function failRedirect(request, reasonCode, onFailure) {
+  onFailure?.(reasonCode);
   const response = new Response(null, {
     status: 303,
     headers: {
@@ -45,6 +48,7 @@ export function createSsoBrowserCallbackHandler({
   hmacKey,
   fetchImpl = fetch,
   oidc = {},
+  onFailure,
   now = () => new Date(),
 }) {
   if (!db || !config || typeof hmacKey !== "string") {
@@ -63,13 +67,15 @@ export function createSsoBrowserCallbackHandler({
       db.collection("auth_transactions"),
       { state, binding, now: now() },
     );
-    if (!transaction) return failRedirect(request);
+    if (!transaction)
+      return failRedirect(request, "LOGIN_TRANSACTION_INVALID", onFailure);
     if (url.searchParams.has("error") || !url.searchParams.get("code")) {
-      return failRedirect(request);
+      return failRedirect(request, "PROVIDER_DENIED", onFailure);
     }
 
     let claims;
     let userinfo;
+    let permission;
     try {
       const discover = oidc.loadOidcDiscovery ?? loadOidcDiscovery;
       const exchange =
@@ -103,10 +109,11 @@ export function createSsoBrowserCallbackHandler({
         discovery,
         fetchImpl,
       );
-      if (!claims) return failRedirect(request);
+      if (!claims) return failRedirect(request, "ID_TOKEN_INVALID", onFailure);
       userinfo = await readUserinfo(discovery, tokens.accessToken, fetchImpl);
-      if (userinfo.subject !== claims.subject) return failRedirect(request);
-      await readPermission(
+      if (userinfo.subject !== claims.subject)
+        return failRedirect(request, "USERINFO_SUBJECT_MISMATCH", onFailure);
+      permission = await readPermission(
         discovery,
         {
           subject: claims.subject,
@@ -115,39 +122,26 @@ export function createSsoBrowserCallbackHandler({
         },
         fetchImpl,
       );
-    } catch {
-      return failRedirect(request);
+    } catch (error) {
+      const reasonCode =
+        error?.message === "SSO_PERMISSION_DENIED"
+          ? "APP_PERMISSION_DENIED"
+          : error?.message === "SSO_DEPENDENCY_UNAVAILABLE"
+            ? "SSO_DEPENDENCY_UNAVAILABLE"
+            : "OIDC_VALIDATION_FAILED";
+      return failRedirect(request, reasonCode, onFailure);
     }
 
-    const handoffBinding = readCookie(
-      request.headers.get("cookie"),
-      SSO_OWNER_HANDOFF_COOKIE,
-    );
-    let handoff = null;
-    try {
-      if (handoffBinding) {
-        handoff = await consumeLegacyOwnerHandoff(
-          db.collection("habi_sso_owner_handoffs"),
-          handoffBinding,
-          hmacKey,
-          now(),
-        );
-      }
-    } catch {
-      return failRedirect(request);
-    }
-    const legacyOwnerHash = handoff?.ownerHash ?? null;
     let link;
     try {
       link = await resolveSsoOwnerLink(db.collection("habi_sso_owner_links"), {
         issuer: claims.issuer,
         subject: claims.subject,
-        legacyOwnerHash,
         hmacKey,
         now: now(),
       });
     } catch {
-      return failRedirect(request);
+      return failRedirect(request, "OWNER_IDENTITY_CONFLICT", onFailure);
     }
 
     const issued = await createSsoOwnerSession(
@@ -155,12 +149,19 @@ export function createSsoBrowserCallbackHandler({
       {
         identityHash: link.identityHash,
         ownerHash: link.ownerHash,
+        issuer: claims.issuer,
+        subject: claims.subject,
+        permissionRole: permission.role,
         hmacKey,
         now: now(),
       },
     );
     const target = new URL(transaction.returnTo, url.origin);
-    if (legacyOwnerHash) target.searchParams.set("linked", "1");
+    if (permission?.role === "admin" && target.pathname === "/") {
+      target.pathname = "/admin";
+      target.search = "";
+      target.hash = "";
+    }
     const response = new Response(null, {
       status: 303,
       headers: {
@@ -170,16 +171,20 @@ export function createSsoBrowserCallbackHandler({
       },
     });
     response.headers.append("Set-Cookie", ssoOwnerSessionCookie(issued.token));
+    const adminToken = createAdminPermissionToken(
+      issued.session,
+      permission?.role,
+      hmacKey,
+    );
+    if (adminToken)
+      response.headers.append("Set-Cookie", adminPermissionCookie(adminToken));
     response.headers.append(
       "Set-Cookie",
       expiredCookie(AUTH_TRANSACTION_COOKIE),
     );
     response.headers.append("Set-Cookie", expiredSsoOwnerHandoffCookie());
-    if (legacyOwnerHash)
-      response.headers.append(
-        "Set-Cookie",
-        expiredCookie("__Host-habi-session"),
-      );
+    response.headers.append("Set-Cookie", expiredSsoOwnerHandoffCookie());
+    response.headers.append("Set-Cookie", expiredCookie("__Host-habi-session"));
     return response;
   };
 }

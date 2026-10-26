@@ -76,6 +76,20 @@
       "rule": "Population aggregate learning, long-horizon auto-programmes, HABI account merge",
       "authority": "T-HG-098",
       "supersedes": []
+    },
+    {
+      "id": "D-HG-016",
+      "status": "accepted",
+      "rule": "Role administration is separate from player/parent/coach; only DoneIsBetter Habi app admins may issue one-time role invitations, claimed by the recipient after SSO with exact verified identity and no email matching",
+      "authority": "Owner approval 2026-10-26",
+      "supersedes": []
+    },
+    {
+      "id": "D-HG-017",
+      "status": "accepted",
+      "rule": "Legacy browser-owned records do not block new Habi onboarding and are not transferred into new role accounts",
+      "authority": "Owner approval 2026-10-26",
+      "supersedes": []
     }
   ]
 }

@@ -83,24 +83,13 @@ function ownerStorageKey(ownerKey: string, suffix: string) {
   return `habi-sso:${ownerKey}:${suffix}`;
 }
 
-function readDevicePayload(
-  ownerKey: string,
-  allowLegacyImport = false,
-): Payload | null {
+function readDevicePayload(ownerKey: string): Payload | null {
   try {
     const app = JSON.parse(
-      window.localStorage.getItem(ownerStorageKey(ownerKey, "app")) ??
-        (allowLegacyImport
-          ? window.localStorage.getItem("habi-app-v1")
-          : null) ??
-        "null",
+      window.localStorage.getItem(ownerStorageKey(ownerKey, "app")) ?? "null",
     ) as AppState | null;
     const chat = JSON.parse(
-      window.localStorage.getItem(ownerStorageKey(ownerKey, "chat")) ??
-        (allowLegacyImport
-          ? window.localStorage.getItem("habi-chat-v1")
-          : null) ??
-        "null",
+      window.localStorage.getItem(ownerStorageKey(ownerKey, "chat")) ?? "null",
     ) as unknown;
     return app && typeof app === "object" ? { app, chat } : null;
   } catch {
@@ -224,15 +213,11 @@ export default function HabiHome() {
       setSignInFailed(false);
       ownerKeyRef.current = result.ownerKey;
       setOwnerKey(result.ownerKey);
-      const linkedLegacyCookie =
-        new URLSearchParams(window.location.search).get("linked") === "1";
-      const device = readDevicePayload(result.ownerKey, linkedLegacyCookie);
+      const device = readDevicePayload(result.ownerKey);
       const dirty =
         window.localStorage.getItem(
           ownerStorageKey(result.ownerKey, "dirty"),
-        ) === "1" ||
-        (linkedLegacyCookie &&
-          window.localStorage.getItem("habi-cloud-dirty") === "1");
+        ) === "1";
       const nextPayload =
         dirty && device
           ? {
@@ -279,12 +264,6 @@ export default function HabiHome() {
             ownerStorageKey(result.ownerKey, "dirty"),
             "0",
           );
-          if (linkedLegacyCookie) {
-            window.localStorage.removeItem("habi-app-v1");
-            window.localStorage.removeItem("habi-chat-v1");
-            window.localStorage.removeItem("habi-cloud-dirty");
-            window.history.replaceState(null, "", window.location.pathname);
-          }
           setSaveState("Az adataid betöltődtek és szinkronizálódtak.");
         } else {
           window.localStorage.setItem(
@@ -301,8 +280,6 @@ export default function HabiHome() {
           );
           setSaveError("A helyi változások szinkronizálása még függőben van.");
         }
-      } else if (linkedLegacyCookie) {
-        window.history.replaceState(null, "", window.location.pathname);
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
@@ -326,37 +303,7 @@ export default function HabiHome() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const fragment = new URLSearchParams(window.location.hash.slice(1));
-    const handoffToken = fragment.get("legacyHandoff");
-    if (handoffToken) {
-      window.history.replaceState(null, "", window.location.pathname);
-      void fetch("/api/auth/legacy-handoff/accept", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: handoffToken }),
-        signal: controller.signal,
-      })
-        .then((response) => {
-          if (!response.ok)
-            throw new Error(
-              "A korábbi napló átvitele lejárt. Indítsd újra a régi Habi oldalon.",
-            );
-          window.location.assign("/auth/login?returnTo=%2F");
-        })
-        .catch((error) => {
-          if (error instanceof DOMException && error.name === "AbortError")
-            return;
-          setSaveError(
-            error instanceof Error
-              ? error.message
-              : "Az adatátvitel nem sikerült.",
-          );
-          setViewState("error");
-        });
-    } else {
-      void load(controller.signal);
-    }
+    void load(controller.signal);
     return () => controller.abort();
   }, [load]);
 
@@ -585,19 +532,12 @@ export default function HabiHome() {
             </p>
             {signInFailed && (
               <p role="alert">
-                A bejelentkezés nem sikerült. Próbáld újra, vagy ellenőrizd,
-                hogy a Habi hozzáférése engedélyezve van-e a fiókodban.
+                A bejelentkezés nem fejeződött be. Próbáld újra. Ha ismétlődik,
+                jelezd a Habi rendszergazdájának.
               </p>
             )}
             <a className={styles.primaryButton} href="/auth/login?returnTo=%2F">
               Bejelentkezés
-            </a>
-            <p>
-              Ha korábban a Habi régi címén mentettél adatokat, előbb igazold a
-              régi munkameneted, majd kapcsold össze a naplódat.
-            </p>
-            <a href="https://habi.doneisbetter.com/api/auth/legacy-handoff">
-              Korábbi Habi-napló átvitele
             </a>
           </section>
         )}
@@ -615,7 +555,7 @@ export default function HabiHome() {
 
             {questionIndex !== null ? (
               <section
-                className={styles.primaryCard}
+                className={`${styles.primaryCard} ${styles.questionCard}`}
                 aria-labelledby="question-title"
               >
                 <p className={styles.cardEyebrow}>

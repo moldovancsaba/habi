@@ -3,6 +3,8 @@ import { runApiRoute } from "@/lib/api/route-boundary.mjs";
 import { HabiApiError } from "@/lib/api/error-response.mjs";
 import { getDatabase } from "@/lib/database/mongo";
 import { createLogoutHandler } from "@/lib/auth/logout-handler.mjs";
+import { readActiveSession, revokeSession } from "@/lib/auth/session.mjs";
+import { expiredAdminPermissionCookie } from "@/lib/auth/admin-permission.mjs";
 import {
   expiredSsoOwnerSessionCookie,
   readCookie,
@@ -17,6 +19,49 @@ function expiredCookie(name: string) {
 export async function POST(request: Request) {
   await headers();
   return runApiRoute(request, "auth.logout", async () => {
+    if (process.env.HG_MVP_MODE === "role-workflow") {
+      const expectedOrigin = process.env.HG_APP_ORIGIN;
+      if (
+        !expectedOrigin ||
+        request.headers.get("origin") !== expectedOrigin ||
+        request.headers.get("sec-fetch-site") === "cross-site"
+      ) {
+        throw new HabiApiError("ACCESS_DENIED");
+      }
+      const hmacKey = process.env.HG_SESSION_HMAC_KEY ?? "";
+      const db = await getDatabase();
+      const roleToken = readCookie(
+        request.headers.get("cookie"),
+        "__Host-hg_session",
+      );
+      const roleSession = await readActiveSession(
+        db.collection("sessions"),
+        roleToken,
+        hmacKey,
+      );
+      if (roleSession) {
+        await revokeSession(db.collection("sessions"), roleSession);
+      }
+      const ownerToken = readCookie(
+        request.headers.get("cookie"),
+        SSO_OWNER_SESSION_COOKIE,
+      );
+      if (ownerToken) {
+        await revokeSsoOwnerSession(
+          db.collection("habi_sso_owner_sessions"),
+          ownerToken,
+          hmacKey,
+        );
+      }
+      const response = new Response(null, {
+        status: 204,
+        headers: { "Cache-Control": "no-store" },
+      });
+      response.headers.append("Set-Cookie", expiredSsoOwnerSessionCookie());
+      response.headers.append("Set-Cookie", expiredAdminPermissionCookie());
+      response.headers.append("Set-Cookie", expiredCookie("__Host-hg_session"));
+      return response;
+    }
     if (process.env.HG_MVP_MODE !== "sso-browser") {
       const hmacKey = process.env.HG_SESSION_HMAC_KEY;
       if (!hmacKey) throw new HabiApiError("DEPENDENCY_UNAVAILABLE");
@@ -50,6 +95,7 @@ export async function POST(request: Request) {
       headers: { "Cache-Control": "no-store" },
     });
     response.headers.append("Set-Cookie", expiredSsoOwnerSessionCookie());
+    response.headers.append("Set-Cookie", expiredAdminPermissionCookie());
     response.headers.append("Set-Cookie", expiredCookie("__Host-habi-session"));
     response.headers.append("Set-Cookie", expiredCookie("__Host-hg_auth_txn"));
     return response;

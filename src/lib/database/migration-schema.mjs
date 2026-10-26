@@ -46,6 +46,7 @@ export const INTERNAL_RUNTIME_COLLECTIONS = Object.freeze([
   "habi_sso_owner_links",
   "habi_sso_owner_sessions",
   "habi_sso_owner_handoffs",
+  "habi_role_invitations",
 ]);
 
 export const COLLECTION_SCHEMA = Object.freeze({
@@ -57,6 +58,7 @@ export const COLLECTION_SCHEMA = Object.freeze({
   habi_sso_owner_links: null,
   habi_sso_owner_sessions: null,
   habi_sso_owner_handoffs: null,
+  habi_role_invitations: null,
   sessions: "Session",
   memberships: "Membership",
   players: "Player",
@@ -166,6 +168,23 @@ export const INDEXES = Object.freeze({
     {
       key: { expiresAt: 1 },
       name: "habi_sso_owner_handoff_expiry_ttl",
+      expireAfterSeconds: 0,
+    },
+  ],
+  habi_role_invitations: [
+    {
+      key: { id: 1 },
+      name: "habi_role_invitation_id_unique",
+      unique: true,
+    },
+    {
+      key: { tokenHash: 1 },
+      name: "habi_role_invitation_token_unique",
+      unique: true,
+    },
+    {
+      key: { expiresAt: 1 },
+      name: "habi_role_invitation_expiry_ttl",
       expireAfterSeconds: 0,
     },
   ],

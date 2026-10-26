@@ -108,7 +108,8 @@ test("SSO browser MVP accepts only the production Habi origin and callback", () 
     VERCEL_ENV: "production",
     HG_ENVIRONMENT: "production",
     HG_MVP_MODE: "sso-browser",
-    HG_APP_ORIGIN: "https://www.habigoal.com",
+    HG_TENANT_ID: "habi",
+    HG_APP_ORIGIN: "https://habigoal.com",
     HG_LEGACY_APP_ORIGIN: "https://habi.doneisbetter.com",
     HG_ATLAS_URI: "mongodb+srv://example.invalid/db",
     HG_ATLAS_DATABASE: "habi",
@@ -123,7 +124,8 @@ test("SSO browser MVP accepts only the production Habi origin and callback", () 
   assert.doesNotThrow(() => validateRuntimeStartup(production));
   for (const invalid of [
     { HG_ATLAS_DATABASE: "habi_preview" },
-    { HG_APP_ORIGIN: "https://habi.doneisbetter.com" },
+    { HG_TENANT_ID: "not habi" },
+    { HG_APP_ORIGIN: "https://www.habigoal.com" },
     { HG_LEGACY_APP_ORIGIN: "https://old.example.com" },
     { HG_SSO_REDIRECT_URI: "https://www.habigoal.com/api/oauth/callback" },
     { HG_SESSION_HMAC_KEY: "too-short" },
@@ -137,6 +139,29 @@ test("SSO browser MVP accepts only the production Habi origin and callback", () 
   assert.throws(
     () => validateRuntimeStartup({ ...production, VERCEL_ENV: "preview" }),
     /enabled only in Production/,
+  );
+  assert.throws(() => {
+    const { HG_TENANT_ID: _tenantId, ...withoutTenant } = production;
+    validateRuntimeStartup(withoutTenant);
+  }, /configuration is invalid/);
+});
+
+test("role-workflow runtime requires the complete hosted contract", () => {
+  const production = {
+    ...hosted,
+    VERCEL_ENV: "production",
+    HG_ENVIRONMENT: "production",
+    HG_APP_ORIGIN: "https://habigoal.com",
+    HG_ATLAS_DATABASE: "habi",
+    HG_SSO_REDIRECT_URI: "https://habigoal.com/api/oauth/callback",
+    HG_SYNTHETIC_DATA_ONLY: "false",
+    HG_TENANT_ID: "habi",
+    HG_MVP_MODE: "role-workflow",
+  };
+  assert.doesNotThrow(() => validateRuntimeStartup(production));
+  assert.throws(
+    () => validateRuntimeStartup({ ...production, HG_CURSOR_HMAC_KEY: "" }),
+    /Missing required runtime configuration/,
   );
 });
 

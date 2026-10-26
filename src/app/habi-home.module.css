@@ -135,6 +135,20 @@
   padding: clamp(22px, 5vw, 44px);
   box-shadow: var(--shadow);
 }
+.primaryCard.questionCard {
+  min-height: 0;
+  align-items: stretch;
+  justify-content: flex-start;
+  flex-direction: column;
+  gap: 0;
+}
+.questionCard h2 {
+  max-width: 32ch;
+  margin: 0;
+  font-size: clamp(1.75rem, 3.2vw, 2.65rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
 .cardCopy {
   max-width: 630px;
 }
@@ -357,6 +371,7 @@
   margin-top: 22px;
 }
 .choice {
+  min-width: 0;
   min-height: 56px;
   padding: 12px 16px;
   border: 1px solid var(--line);
@@ -365,6 +380,7 @@
   text-align: start;
   font: inherit;
   font-weight: 650;
+  overflow-wrap: anywhere;
 }
 .choice:hover {
   border-color: var(--teal);
@@ -392,6 +408,15 @@
   font: inherit;
   font-weight: 650;
   text-decoration: underline;
+}
+.choice:focus-visible,
+.textButton:focus-visible,
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.doneButton:focus-visible,
+.logoutButton:focus-visible {
+  outline: 3px solid #174dbb;
+  outline-offset: 3px;
 }
 @media (max-width: 620px) {
   .page {

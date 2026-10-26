@@ -35,6 +35,10 @@ export function verifyCsrfToken(token, supplied, key) {
   );
 }
 
+/**
+ * @param {import("mongodb").Collection<import("mongodb").Document>} collection
+ * @param {{actorId: string, tenantId: string, retentionPolicyId: string, activeRole: "player" | "parent" | "coach", playerId?: string | null, accessRevision: number, hmacKey: string, now?: Date, mongoSession?: import("mongodb").ClientSession}} options
+ */
 export async function issueSession(
   collection,
   {
@@ -46,6 +50,7 @@ export async function issueSession(
     accessRevision,
     hmacKey,
     now = new Date(),
+    mongoSession = undefined,
   },
 ) {
   const token = randomBytes(32).toString("base64url");
@@ -71,7 +76,10 @@ export async function issueSession(
     revokedAt: null,
   };
   validateContractDocument("sessions", document);
-  await collection.insertOne(document);
+  await collection.insertOne(
+    document,
+    mongoSession ? { session: mongoSession } : undefined,
+  );
   return Object.freeze({
     token,
     csrfToken: deriveCsrfToken(token, hmacKey),
