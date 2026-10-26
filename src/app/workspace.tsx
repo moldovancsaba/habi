@@ -73,6 +73,7 @@ function messageFor(error: unknown) {
 
 export default function HabiWorkspace() {
   const [app, setApp] = useState<AppState>({ state: "loading" });
+  const [signInFailure, setSignInFailure] = useState<string | null>(null);
   const [data, setData] = useState<PlayerData[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [observation, setObservation] = useState("");
@@ -80,6 +81,14 @@ export default function HabiWorkspace() {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<"today" | "history">("today");
+
+  async function logOutFromHabi() {
+    await fetch("/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+    }).catch(() => undefined);
+    window.location.replace("/");
+  }
 
   const load = useCallback(async () => {
     setApp({ state: "loading" });
@@ -89,6 +98,10 @@ export default function HabiWorkspace() {
         credentials: "same-origin",
       });
       if (response.status === 401) {
+        const params = new URLSearchParams(window.location.search);
+        setSignInFailure(
+          params.get("signin") === "failed" ? params.get("reason") : null,
+        );
         const adminResponse = await fetch("/api/admin/me", {
           cache: "no-store",
           credentials: "same-origin",
@@ -340,11 +353,58 @@ export default function HabiWorkspace() {
         {app.state === "signed-out" && (
           <section className={styles.hero}>
             <p className={styles.eyebrow}>HABI · MVP</p>
-            <h1>Sportolói támogatás, közösen.</h1>
-            <p>Biztonságos munkaterület játékosoknak, szülőknek és edzőknek.</p>
-            <a className={styles.primary} href="/auth/login?returnTo=%2F">
-              Belépés DoneIsBetter-fiókkal
-            </a>
+            {signInFailure === "APP_PERMISSION_DENIED" ? (
+              <>
+                <h1>A fiók még nem fér hozzá a Habihoz.</h1>
+                <p role="alert" className={styles.signInAlert}>
+                  A DoneIsBetter-belépés megtörtént, de ehhez a fiókhoz nincs
+                  engedélyezve a Habi alkalmazás. Kérd a Habi-hozzáférés
+                  engedélyezését, vagy lépj be egy másik DoneIsBetter-fiókkal.
+                </p>
+                <div className={styles.actions}>
+                  <a
+                    className={styles.primary}
+                    href="/auth/login?returnTo=%2F&prompt=select_account"
+                  >
+                    Másik fiók használata
+                  </a>
+                  <a
+                    className={styles.secondary}
+                    href="/auth/login?returnTo=%2F&prompt=login"
+                  >
+                    Újrapróbálkozás
+                  </a>
+                  <button
+                    className={styles.secondary}
+                    type="button"
+                    onClick={() => void logOutFromHabi()}
+                  >
+                    Kilépés a Habiból
+                  </button>
+                </div>
+              </>
+            ) : signInFailure ? (
+              <>
+                <h1>A bejelentkezés nem fejeződött be.</h1>
+                <p role="alert" className={styles.signInAlert}>
+                  Próbáld újra. Ha a hiba ismétlődik, jelezd a Habi
+                  rendszergazdájának.
+                </p>
+                <a className={styles.primary} href="/auth/login?returnTo=%2F">
+                  Belépés DoneIsBetter-fiókkal
+                </a>
+              </>
+            ) : (
+              <>
+                <h1>Sportolói támogatás, közösen.</h1>
+                <p>
+                  Biztonságos munkaterület játékosoknak, szülőknek és edzőknek.
+                </p>
+                <a className={styles.primary} href="/auth/login?returnTo=%2F">
+                  Belépés DoneIsBetter-fiókkal
+                </a>
+              </>
+            )}
           </section>
         )}
         {app.state === "admin" && (

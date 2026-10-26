@@ -85,7 +85,9 @@ export function buildAuthorizationRedirect(
     code_challenge_method: "S256",
   }))
     authorize.searchParams.set(key, value);
-  if (prompt === "login") authorize.searchParams.set("prompt", "login");
+  if (prompt === "login" || prompt === "select_account") {
+    authorize.searchParams.set("prompt", prompt);
+  }
   return authorize.toString();
 }
 

@@ -79,6 +79,14 @@
   background: #f5f8ff;
 }
 
+.alert {
+  padding: 16px 18px;
+  border: 1px solid #e3b8b8;
+  border-radius: var(--radius-control);
+  background: #fff4f3;
+  color: #7f2929;
+}
+
 .notice h2 {
   margin-top: 0;
   font-size: clamp(1.25rem, 3vw, 1.8rem);

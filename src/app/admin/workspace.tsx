@@ -42,6 +42,14 @@ export default function AdminConsole() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
+  async function logOutFromHabi() {
+    await fetch("/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+    }).catch(() => undefined);
+    window.location.replace("/");
+  }
+
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/admin/me", {
@@ -290,14 +298,14 @@ export default function AdminConsole() {
           {state === "signed-out" && (
             <>
               {signInFailure === "APP_PERMISSION_DENIED" ? (
-                <p role="alert">
+                <p role="alert" className={styles.alert}>
                   A DoneIsBetter-belépés megtörtént, de ehhez a fiókhoz még
                   nincs engedélyezve a Habi alkalmazás. A folytatás előtt a
                   DoneIsBetter adminisztrátorának Habi-hozzáférést és admin
                   jogosultságot kell adnia. Ezután jelentkezz be újra.
                 </p>
               ) : signInFailure ? (
-                <p role="alert">
+                <p role="alert" className={styles.alert}>
                   A bejelentkezés nem fejeződött be. Próbáld újra; ha a hiba
                   ismétlődik, jelezd a Habi rendszergazdájának.
                 </p>
@@ -317,6 +325,23 @@ export default function AdminConsole() {
               >
                 {signInFailure ? "Újrapróbálkozás" : "Bejelentkezés"}
               </a>
+              {signInFailure === "APP_PERMISSION_DENIED" && (
+                <>
+                  <a
+                    className={styles.secondary}
+                    href="/auth/login?returnTo=%2Fadmin&prompt=select_account"
+                  >
+                    Másik DoneIsBetter-fiók használata
+                  </a>
+                  <button
+                    className={styles.secondary}
+                    type="button"
+                    onClick={() => void logOutFromHabi()}
+                  >
+                    Kilépés a Habiból
+                  </button>
+                </>
+              )}
             </>
           )}
           {state === "denied" && (

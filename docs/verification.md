@@ -578,3 +578,9 @@ The callback now returns to the original safe same-origin page with a fixed fail
 | `npm run typecheck` | PASS, exit 0 | Local |
 | `npm run build` | PASS, exit 0 | Local production build |
 | DoneIsBetter app permission for the owner | BLOCKED; provider returned denial | Must be granted in DoneIsBetter before another login attempt |
+
+## T-HG-140 · Visible sign-in denial and account switch · 2026-10-26
+
+The owner showed that Production was landing on `/?signin=failed&reason=APP_PERMISSION_DENIED`, while the root role workspace ignored that query state. The page therefore displayed only the ordinary sign-in card and offered no account-switch or local sign-out action.
+
+The root and admin sign-in screens now render a prominent, accessible permission-denied message; offer a DoneIsBetter account selector (`prompt=select_account`); retain explicit retry; and provide **Kilépés a Habiból**, which clears Habi-local sessions/cookies. Local Habi sign-out does not claim to end the user's separate DoneIsBetter provider session. The access decision remains fail-closed. Unit coverage verifies the account-selection prompt in the generated authorization request.

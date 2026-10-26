@@ -70,6 +70,19 @@
   color: #234f9e;
   border: 1px solid #ccdaef;
 }
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.signInAlert {
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid #e3b8b8;
+  border-radius: 14px;
+  background: #fff4f3;
+  color: #7f2929;
+}
 .hero,
 .panel {
   background: white;
@@ -111,6 +124,9 @@
   color: #60728d;
   max-width: 680px;
   margin: 0 0 24px;
+}
+.hero > p.signInAlert {
+  color: #7f2929;
 }
 .nav {
   display: flex;

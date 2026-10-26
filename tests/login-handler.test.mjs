@@ -123,6 +123,29 @@ test("login route creates a browser binding and discards an external return targ
   );
 });
 
+test("login route asks the identity provider to select a different account", async () => {
+  const db = memoryDb();
+  const handler = createLoginHandler({
+    db,
+    config: {
+      issuer: "https://sso.example",
+      clientId: "habi-test",
+      redirectUri: "https://habi.example/api/oauth/callback",
+    },
+    fetchImpl: discoveryFetch,
+  });
+  const response = await handler(
+    new Request(
+      "https://habi.example/auth/login?returnTo=%2F&prompt=select_account",
+    ),
+  );
+  assert.equal(response.status, 302);
+  assert.equal(
+    new URL(response.headers.get("location")).searchParams.get("prompt"),
+    "select_account",
+  );
+});
+
 test("login route fails closed when SSO discovery is unavailable", async () => {
   const db = memoryDb();
   const handler = createLoginHandler({
