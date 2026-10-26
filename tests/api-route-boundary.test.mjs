@@ -108,13 +108,17 @@ test("SSO-browser MVP permits SSO and owner storage routes only", async () => {
 
 test("maps known errors and emits content-free structured diagnostics", async () => {
   const lines = [];
+  const levels = [];
   const response = await runApiRoute(
     new Request("https://habi.test/api/private?token=must-not-log"),
     "api.private",
     async () => {
       throw new HabiApiError("ACCESS_DENIED");
     },
-    (line) => lines.push(line),
+    (line, level) => {
+      lines.push(line);
+      levels.push(level);
+    },
   );
   const body = await response.json();
   const log = JSON.parse(lines[0]);
@@ -124,12 +128,14 @@ test("maps known errors and emits content-free structured diagnostics", async ()
   assert.equal(response.headers.get("x-request-id"), body.requestId);
   assert.equal(log.requestId, body.requestId);
   assert.equal(log.code, "ACCESS_DENIED");
+  assert.equal(levels[0], "info");
   assert.equal(log.operation, "api.private");
   assert.equal(JSON.stringify(log).includes("must-not-log"), false);
 });
 
 test("records expected dependency-unavailable responses without response data", async () => {
   const lines = [];
+  const levels = [];
   const response = await runApiRoute(
     new Request("https://habi.test/api/ready"),
     "api.ready",
@@ -138,7 +144,10 @@ test("records expected dependency-unavailable responses without response data", 
         { ok: false, service: "habi", error: "DEPENDENCY_UNAVAILABLE" },
         { status: 503 },
       ),
-    (line) => lines.push(line),
+    (line, level) => {
+      lines.push(line);
+      levels.push(level);
+    },
   );
   const log = JSON.parse(lines[0]);
 
@@ -146,6 +155,7 @@ test("records expected dependency-unavailable responses without response data", 
   assert.equal(log.event, "habi.api.response_failure");
   assert.equal(log.operation, "api.ready");
   assert.equal(log.status, 503);
+  assert.equal(levels[0], "error");
   assert.equal(Object.hasOwn(log, "response"), false);
 });
 

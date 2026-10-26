@@ -30,6 +30,14 @@ function isNextControlFlow(error) {
   );
 }
 
+function emitLog(logger, line, level) {
+  if (logger) {
+    logger(line, level);
+    return;
+  }
+  console[level === "error" ? "error" : "info"](line);
+}
+
 /**
  * Add request correlation and a redacted exception boundary to an API route.
  * Logs contain only a fixed operation label, request ID, status, and public
@@ -39,7 +47,7 @@ export async function runApiRoute(
   request,
   operation,
   handler,
-  logger = console.error,
+  logger = null,
   env = process.env,
 ) {
   const requestId = createRequestId();
@@ -62,7 +70,8 @@ export async function runApiRoute(
     );
     response.headers.set("X-Request-ID", requestId);
     try {
-      logger(
+      emitLog(
+        logger,
         JSON.stringify({
           event: "habi.api.error",
           operation: safeOperation,
@@ -70,6 +79,7 @@ export async function runApiRoute(
           status: response.status,
           code: "DEPENDENCY_UNAVAILABLE",
         }),
+        "error",
       );
     } catch {
       // Logging failure must not replace the fail-closed response.
@@ -110,13 +120,15 @@ export async function runApiRoute(
     response.headers.set("X-Request-ID", requestId);
     if (response.status >= 500) {
       try {
-        logger(
+        emitLog(
+          logger,
           JSON.stringify({
             event: "habi.api.response_failure",
             operation: safeOperation,
             requestId,
             status: response.status,
           }),
+          "error",
         );
       } catch {
         // Logging failure must not replace the already-created API response.
@@ -129,7 +141,8 @@ export async function runApiRoute(
     response.headers.set("X-Request-ID", requestId);
     const payload = await response.clone().json();
     try {
-      logger(
+      emitLog(
+        logger,
         JSON.stringify({
           event: "habi.api.error",
           operation: safeOperation,
@@ -137,6 +150,7 @@ export async function runApiRoute(
           status: response.status,
           code: payload.code,
         }),
+        response.status >= 500 ? "error" : "info",
       );
     } catch {
       // Logging failure must not replace the already-redacted API response.
