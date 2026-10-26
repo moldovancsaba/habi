@@ -5,7 +5,7 @@
 - A fejléctördelés keskeny nézetben most külön sorba rendezi a szerepkör-váltót; szélesebb nézetben a cím, a szerepkör és a kilépés gomb külön rácsoszlopot kap. Így a fejléc elemei nem fedik egymást.
 - A sikeres műveleti üzenet korábban egyszerre jelent meg a fejléc piros hibaállapotában és az oldal kék állapotjelzésében. A fejlécből eltávolítottuk a másolatot; az oldal egyszer, szemantikai állapotával egyező színben jeleníti meg a sikert vagy hibát.
 - `npm run lint` — PASS, exit 0; `npm run typecheck` — PASS, exit 0; `npm test` — PASS, 115 pass / 0 fail / 1 skip (Atlas replica-set próba kihagyva, mert nem volt izolált URI); `npm run build` — PASS, exit 0; `git diff --check` — PASS, exit 0.
-- Production böngészős ellenőrzés a kiadás után még hátravan; éles SSO-sessiont ebben a munkamenetben nem használunk. Visszaállítás az előző Production deploymentre rollbackkel lehetséges; adatbázist ez a felületjavítás nem módosít.
+- A javítást a `226ed49` commitból a `dpl_23pDjdriYkpJbfCkYgEMQdV6JZnp` READY Production deployment szolgálja ki. `habigoal.com` `/`, `/legacy`, `/admin`, `/api/health` és `/api/ready` útvonalai HTTP 200-at adtak; a gyökéroldal HTML-je az új deploymentazonosítót tartalmazta. A bejelentkezett SSO-munkamenetű vizuális ellenőrzés még hátravan, mert az ellenőrző böngésző kijelentkezett. Visszaállítás az előző Production deploymentre rollbackkel lehetséges; adatbázist ez a felületjavítás nem módosít.
 
 ## Szerepköri munkaterület és edzői felmérés éles kiadása · 2026-10-26
 
