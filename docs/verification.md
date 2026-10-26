@@ -668,7 +668,10 @@ The OIDC callback previously verified the SSO `userinfo.sub` but discarded the v
 | `npm run typecheck` | PASS | Local |
 | `npm run build` | PASS; Next.js production build | Local |
 | `git diff --check` | PASS | Local |
-| Production role/profile browser check | Pending | Requires the owner's authenticated browser session and a fresh SSO login |
+| Git commit | `485c167` pushed to `main` | GitHub `moldovancsaba/habi` |
+| Production deployment | READY, `dpl_FvyXCT5DUWc7swQhM2P3K6W4nR2p`; aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com` | Vercel project `narimato/habi`, Production |
+| `GET /`, `/admin`, `/api/health` | PASS, HTTP 200 | `https://habigoal.com` |
+| Authenticated name display after fresh SSO login | Pending | The owner must log out and sign in again; a logged-in role session cannot expose the provider name that was discarded by the earlier callback |
 
 ## T-HG-143 · Show own roles and request a self-invitation · 2026-10-26
 
