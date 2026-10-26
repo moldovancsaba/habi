@@ -281,6 +281,9 @@ export default function HabiWorkspace() {
   const [clientNow, setClientNow] = useState<number | null>(null);
   const [guidedSituationId, setGuidedSituationId] = useState("");
   const [guidedAnswers, setGuidedAnswers] = useState<number[]>([]);
+  const [painStep, setPainStep] = useState<number | null>(null);
+  const [painAnswers, setPainAnswers] = useState<number[]>([]);
+  const [painPlaceDetail, setPainPlaceDetail] = useState("");
   const [trustedAdultPrep, setTrustedAdultPrep] = useState({
     person: "",
     topic: "",
@@ -1280,6 +1283,46 @@ export default function HabiWorkspace() {
     ].join("\n");
     if (await savePlayerDiary(text))
       setTrustedAdultPrep({ person: "", topic: "", ask: "" });
+  }
+
+  function startPainSupport() {
+    setPainAnswers([]);
+    setPainPlaceDetail("");
+    setPainStep(0);
+  }
+
+  function answerPainSupport(answer: number) {
+    if (painStep === null || painStep < 0 || painStep > 2) return;
+    const choices = [
+      [
+        "A lábamban vagy a lábfejemben.",
+        "A karomban vagy a vállamban.",
+        "Máshol, vagy nehéz megmondanom.",
+      ],
+      [
+        "Most kezdődött.",
+        "Ma már korábban is éreztem.",
+        "Több napja visszatér.",
+      ],
+      [
+        "Egy bizonyos mozdulatnál.",
+        "Mozgás közben többféle helyzetben.",
+        "Pihenés közben is, vagy nehéz megmondanom.",
+      ],
+    ][painStep];
+    if (
+      !choices ||
+      !Number.isInteger(answer) ||
+      answer < 0 ||
+      answer >= choices.length
+    )
+      return;
+    setPainAnswers((current) => {
+      const next = [...current];
+      next[painStep] = answer;
+      return next;
+    });
+    setPainStep(painStep === 2 ? 3 : painStep + 1);
   }
 
   function startGuidedSituation(id: string) {
@@ -3127,6 +3170,155 @@ export default function HabiWorkspace() {
                     )}
                   </div>
                   <div className={styles.formGroup}>
+                    <h3>Fájdalmat érzel?</h3>
+                    <p className={styles.muted}>
+                      Ez nem orvosi értékelés. Ha egy mozdulat fáj, ne ismételd
+                      meg csak azért, hogy teljesítsd a feladatot. Szólj egy
+                      megbízható felnőttnek; ha a fájdalom erős vagy
+                      rosszabbodik, kérj tőle segítséget most.
+                    </p>
+                    {painStep === null ? (
+                      <button
+                        className={styles.secondary}
+                        type="button"
+                        onClick={startPainSupport}
+                      >
+                        Segítségkérő mondat összeállítása
+                      </button>
+                    ) : painStep < 3 ? (
+                      <div className={styles.dataCard}>
+                        <p className={styles.eyebrow}>
+                          FÁJDALOMRÓL SZÓLÓ BESZÉLGETÉS · {painStep + 1}/3
+                        </p>
+                        <h4>
+                          {
+                            [
+                              "Hol érzed a fájdalmat?",
+                              "Mióta érzed?",
+                              "Mikor jelentkezik?",
+                            ][painStep]
+                          }
+                        </h4>
+                        <div className={styles.knowledgeList}>
+                          {[
+                            [
+                              "A lábamban vagy a lábfejemben.",
+                              "A karomban vagy a vállamban.",
+                              "Máshol, vagy nehéz megmondanom.",
+                            ],
+                            [
+                              "Most kezdődött.",
+                              "Ma már korábban is éreztem.",
+                              "Több napja visszatér.",
+                            ],
+                            [
+                              "Egy bizonyos mozdulatnál.",
+                              "Mozgás közben többféle helyzetben.",
+                              "Pihenés közben is, vagy nehéz megmondanom.",
+                            ],
+                          ][painStep]?.map((choice, index) => (
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              key={choice}
+                              onClick={() => answerPainSupport(index)}
+                            >
+                              {choice}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          className={styles.secondary}
+                          type="button"
+                          onClick={() =>
+                            painStep === 0
+                              ? setPainStep(null)
+                              : setPainStep(painStep - 1)
+                          }
+                        >
+                          Vissza
+                        </button>
+                        <button
+                          className={styles.secondary}
+                          type="button"
+                          onClick={() =>
+                            setPainStep(painStep === 2 ? 3 : painStep + 1)
+                          }
+                        >
+                          Kihagyom
+                        </button>
+                      </div>
+                    ) : (
+                      <div className={styles.dataCard}>
+                        <h4>Segítségkérő mondat</h4>
+                        <p>
+                          Fájdalmat érzek
+                          {painAnswers[0] !== undefined
+                            ? ` ${
+                                [
+                                  "a lábamban vagy a lábfejemben",
+                                  "a karomban vagy a vállamban",
+                                  "máshol",
+                                ][painAnswers[0] ?? 2]
+                              }`
+                            : ""}
+                          {painPlaceDetail.trim()
+                            ? ` (${painPlaceDetail.trim()})`
+                            : ""}
+                          {painAnswers[1] !== undefined
+                            ? ` ${[
+                                "Most kezdődött",
+                                "Ma már korábban is éreztem",
+                                "Több napja visszatér",
+                              ][painAnswers[1] ?? 0].toLowerCase()}`
+                            : ""}
+                          {painAnswers[2] !== undefined
+                            ? ` ${
+                                [
+                                  "egy bizonyos mozdulatnál",
+                                  "mozgás közben többféle helyzetben",
+                                  "pihenés közben is, vagy nem tudom pontosan mikor",
+                                ][painAnswers[2] ?? 0]
+                              }`
+                            : ""}
+                          . Szeretnék segítséget kérni.
+                        </p>
+                        <label
+                          className={styles.label}
+                          htmlFor="pain-place-detail"
+                        >
+                          Szeretnéd pontosítani, hol érzed? (nem kötelező)
+                        </label>
+                        <input
+                          id="pain-place-detail"
+                          maxLength={160}
+                          value={painPlaceDetail}
+                          onChange={(event) =>
+                            setPainPlaceDetail(event.target.value)
+                          }
+                        />
+                        <p className={styles.muted}>
+                          Ezt a mondatot itt nem mentjük el, és nem küldjük el
+                          senkinek. Te döntöd el, kinek mondod el.
+                        </p>
+                        <button
+                          className={styles.secondary}
+                          type="button"
+                          onClick={startPainSupport}
+                        >
+                          Újrakezdem
+                        </button>
+                        <button
+                          className={styles.secondary}
+                          type="button"
+                          onClick={() => setPainStep(null)}
+                        >
+                          Bezárom
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.formGroup}>
                     <h3>Beszéljünk egy konkrét helyzetről</h3>
                     <p className={styles.muted}>
                       A Habi vezeti ezt a rövid beszélgetést. A válaszaidból nem
@@ -3704,7 +3896,9 @@ export default function HabiWorkspace() {
                 {active.activeRole === "player" && (
                   <div className={styles.formGroup}>
                     <p className={styles.eyebrow}>A MAI ÁLLAPOTJELZÉSEDHEZ</p>
-                    <p className={styles.eyebrow}>A LEGUTÓBBI ÁLLAPOTJELZÉSEDHEZ</p>
+                    <p className={styles.eyebrow}>
+                      A LEGUTÓBBI ÁLLAPOTJELZÉSEDHEZ
+                    </p>
                     <h2>Válassz egy saját következő lépést</h2>
                     {!latestPlayerCheckin ? (
                       <p className={styles.emptyState}>
