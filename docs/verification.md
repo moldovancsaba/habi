@@ -1,5 +1,13 @@
 # Habi — ellenőrzési napló
 
+## Interaktív browser-owned MVP felület · 2026-10-26
+
+- A gyökérútvonal új Habi felületet szolgál ki: napi állapotjelzés, korábbi állapotjelzések és öt verziózott gyakorlat. A napi jelzés a meglévő `/api/app` route-on keresztül, revision-ellenőrzéssel menti az adatot a jelenlegi böngésző-tulajdonoshoz.
+- Helyi szintetikus végponttól végpontig próba: Chrome-ban a hét kérdés megválaszolása után `GET /api/app` → `PUT /api/app` mentés sikeres; a Napló mutatta mind a hét rögzített választ; frissítés után az aznapi bejegyzés újra betöltődött. A próba a már futó, izolált localhost `habiTestRs` teszt replica setben mentett; Production adatot nem írt.
+- `npm test`: PASS, 90/91; 1 meglévő Atlas-integrációs próba kihagyva, `0` fail. `npm run lint`: PASS, Biome 148 fájl. `npm run typecheck`: PASS. `npm run build`: PASS, Next.js 16.4.3. `git diff --check`: PASS.
+- Korlátok: másik eszköz/böngésző nem kap hozzáférést SSO nélkül; player/parent/coach workflow, Mac AI-worker, teljes régi HABI funkciókészlet és személyes pilot nincs ebben az MVP-ben. A kliens megmutatja és megőrzi a böngészői dirty állapotot; szinkronütközésnél frissítést kér, nem próbálja automatikusan felülírni a szerver rekordját.
+- Production kiadás/élő böngészőellenőrzés: **folyamatban**. A `main` push és Vercel deployment után az alábbi élő bizonyítékot kell frissíteni.
+
 ## Élő MVP ellenőrzés · 2026-10-26
 
 - `main` és `origin/main`: `3ddbbf3 Clarify Habi production MVP status` (az UI bevezető commitja: `b417686`, helyi adat fallback: `962f674`).

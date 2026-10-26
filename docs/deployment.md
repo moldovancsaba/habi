@@ -2,7 +2,7 @@
 
 ## Aktuális Production állapot · 2026-10-26
 
-Az új Habi kezdőlap a `main` ágra került (`b417686`); a legutóbbi Production deployment `dpl_6yhyapMfEZGNc8XMYXRGK6DUpyXJ` (`Ready`), alias: `https://habi.doneisbetter.com`. Az MVP a meglévő `habi` Atlas adatbázist és cookie-hash alapú browser-owner kompatibilitást használja, adatmodell-migráció nélkül. A kezdőlap valós adatot vagy üres állapotot mutat; az ellenőrző Chrome-profilban nem volt felismerhető korábbi rekord. A Preview branch deploy ellenőrzéskor `QUEUED` maradt, ezért Production adatírási próba nem történt; részletek a [verification naplóban](verification.md). Az SSO-s szerepkörös funkciók továbbra sincsenek aktiválva.
+Production MVP: `https://habi.doneisbetter.com`. A fő útvonal új, interaktív Habi-felületet szolgál ki: napi állapotjelzés, mentett napló és öt verziózott gyakorlat. A felület a `/api/app` browser-owner API-t használja; a meglévő `habi_states` adatok, cookie-hash tulajdonos és revision alapú írás változatlan, migráció nem történt. A szerepkörös API-k továbbra is fail-closed állapotúak, SSO és másik eszközök közötti hozzáférés nincs bekapcsolva. A konkrét release/ellenőrzési bizonyítékot a [verification napló](verification.md) tartalmazza.
 
 ## Vercel
 
