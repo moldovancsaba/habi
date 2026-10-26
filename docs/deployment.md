@@ -21,13 +21,14 @@ A környezetkulcsok kanonikus nevei: `development/environment.example`. A konfig
 - A tulajdonos megerősítette, hogy a Vercel `habi_mongodb_uri` az Habi által használható MongoDB-kapcsolat. A Vercel Development környezetből biztonságosan, ideiglenes, `0600` jogosultságú fájlba került; URI-érték nem került logba vagy dokumentumba.
 - A kapcsolattal sikeres MongoDB `ping` és adatbázis-listázási próba futott. Az új alkalmazásnak elkülönített `habi_preview` és `habi_production` adatbázisnevet választottunk; mindkettő üres volt az ellenőrzéskor. Nem futott migráció vagy seed, és legacy collection nem módosult.
 - A Vercel `narimato/habi` projekthez `HG_ATLAS_URI` és `HG_ATLAS_DATABASE` került hozzáadva: Preview célra kizárólag a `codex/habi-ground-up` branch kapta a `habi_preview` adatbázist; Production célra a `habi_production` adatbázis van beállítva. A meglévő `habi_mongodb_uri` változó érintetlen maradt.
-- Ezek az env-változók új deploymentekben érvényesülnek. A mostani Preview deployment `/api/ready` végpontja továbbra is 503, mert a Habi szerverfuttatáshoz szükséges többi konfiguráció (különösen `HG_ENVIRONMENT` és a DoneIsBetter SSO kliens) nincs beállítva. Az új alkalmazás még nem olvasott/írt Atlas-adatot Vercelről.
+- A `707cbca` commit Preview deploymentje Ready állapotú a `https://habi-git-codex-habi-ground-up-narimato.vercel.app` címen. A Habi alkalmazás `/api/ready` végpontja 200 választ adott; ez igazolja a Vercel runtime → MongoDB `habi_preview` kapcsolatot. Nem futott migráció vagy seed, és alkalmazásadatot nem írtunk.
+- A termék API-k továbbra is fail-closed állapotban vannak, mert `HG_ENVIRONMENT` és a DoneIsBetter SSO kliens-konfiguráció hiányzik; `/api/v1/me` 503 `DEPENDENCY_UNAVAILABLE`. A Production env-var készlet új deploymentre vár; az aktuális Production még a régi alkalmazás.
 - A `habi.doneisbetter.com` változatlanul a korábbi Production alkalmazást szolgálja ki. Production cutover előtt az SSO-integráció, teljes env-konfiguráció, biztonságos migráció/seed és hosted workflow-verifikáció szükséges.
 
 ## Kiadási előfeltételek
 
-1. A Habi projekthez dedikált, új sémájú Atlas adatbázist és DoneIsBetter kliens-konfigurációt kell biztosítani; a régi `habi_mongodb_uri` nem helyettesíti ezeket.
-2. Az env-kulcsok teljességét név szerint, értékek nélkül kell ellenőrizni.
+1. A `habi_preview` és `habi_production` adatbázisnév már külön van konfigurálva, de jelenleg ugyanazt a MongoDB felhasználót/URI-t használják. Production előtt külön least-privilege Atlas usereket kell adni Preview és Production számára, adatbázisonkénti jogosultsággal; a jelenlegi credential role-scope-ja nincs igazolva.
+2. A DoneIsBetter SSO kliens-konfigurációt biztosítani kell, majd az env-kulcsok teljességét név szerint, értékek nélkül ellenőrizni.
 3. Futtatni kell az idempotens migrációt, indexellenőrzést és determinisztikus, csak szintetikus seedet.
 4. Igazolni kell a böngésző → Vercel API → Atlas → Mac worker → válasz → újratöltés útvonalat, pozitív és jogosulatlan tesztesetekkel.
 5. Visszaállításnál a legutóbbi jó Vercel deploymentre és Atlas mentésre kell visszaállni; migrációs rollbacket külön kell validálni.

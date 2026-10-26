@@ -4,7 +4,7 @@ A Habi fiatal sportolók, jogosult szülők és edzők közös támogatási term
 
 ## Állapot
 
-A jelenlegi ág a nem-SSO szerepköri folyamat lokális, kizárólag szintetikus acceptance tesztelésére szolgál. A check-in, a változatlan napi snapshot, a szülői és edzői megfigyelés, valamint a szülői kérdés → API → MongoDB → Mac worker → helyi Ollama → eredmény útvonal helyi szintetikus acceptance teszten és böngészőpróbán ment át. A Habi Preview és Production környezethez a MongoDB URI és külön `habi_preview` / `habi_production` adatbázisnevek már fel vannak véve a Vercelbe; a hitelesítő adat kapcsolódási próbája sikeres volt. Az alkalmazás Vercelről még nem csatlakozott: a többi futásidejű beállítás és a DoneIsBetter SSO nincs konfigurálva.
+A jelenlegi ág a nem-SSO szerepköri folyamat lokális, kizárólag szintetikus acceptance tesztelésére szolgál. A check-in, a változatlan napi snapshot, a szülői és edzői megfigyelés, valamint a szülői kérdés → API → MongoDB → Mac worker → helyi Ollama → eredmény útvonal helyi szintetikus acceptance teszten és böngészőpróbán ment át. A Habi Preview és Production környezethez a MongoDB URI és külön `habi_preview` / `habi_production` adatbázisnevek már fel vannak véve a Vercelbe; a `707cbca` Preview deployment `/api/ready` válasza igazolja a Vercel → MongoDB kapcsolatot, alkalmazásadat írása nélkül. A többi futásidejű beállítás és a DoneIsBetter SSO nincs konfigurálva, ezért a termék API-k fail-closed állapotúak és a Production cutover még nem biztonságos.
 
 - a játékos napi állapotjelzése, a válaszok mentése, az idempotens újrapróbálás és a változatlan lezárt visszajelzés;
 - a szülői és edzői megfigyelések külön rögzítővel és forrásmegjelöléssel;
