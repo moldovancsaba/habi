@@ -266,6 +266,10 @@ export default function HabiWorkspace() {
   >("unknown");
   const [practiceSearch, setPracticeSearch] = useState("");
   const [playerGoalDraft, setPlayerGoalDraft] = useState("");
+  const [editingGoalId, setEditingGoalId] = useState("");
+  const [editingGoalText, setEditingGoalText] = useState("");
+  const [reviewingGoalId, setReviewingGoalId] = useState("");
+  const [goalReviewNote, setGoalReviewNote] = useState("");
   const [routineDraft, setRoutineDraft] = useState("");
   const [practiceFeedback, setPracticeFeedback] = useState("");
   const [monthlyReflection, setMonthlyReflection] = useState({
@@ -644,6 +648,58 @@ export default function HabiWorkspace() {
     .sort((a, b) =>
       String(a.completedAt ?? "").localeCompare(String(b.completedAt ?? "")),
     );
+  const latestPlayerCheckin = (ownPlayerData?.checkins ?? [])
+    .filter((item) => item.completedAt)
+    .slice()
+    .sort((a, b) =>
+      String(b.completedAt ?? "").localeCompare(String(a.completedAt ?? "")),
+    )[0];
+  const latestPlayerTask = latestPlayerCheckin
+    ? ownPlayerData?.records.find((record) =>
+        record.text?.startsWith(
+          `Mai saját lépés · ${latestPlayerCheckin.id} ·`,
+        ),
+      )
+    : null;
+  const latestPlayerTaskDone = latestPlayerCheckin
+    ? ownPlayerData?.records.some(
+        (record) =>
+          record.text === `Mai saját lépés kész · ${latestPlayerCheckin.id}`,
+      )
+    : false;
+  function ownGoalText(goal: RecordItem) {
+    const latestEdit = (ownPlayerData?.records ?? [])
+      .filter((record) =>
+        record.text?.startsWith(`Saját cél módosítva · ${goal.id} ·`),
+      )
+      .sort((a, b) =>
+        String(b.occurredAt ?? "").localeCompare(String(a.occurredAt ?? "")),
+      )[0];
+    return (
+      latestEdit?.text
+        ?.slice(`Saját cél módosítva · ${goal.id} ·`.length)
+        .trim() ??
+      goal.text?.slice("Saját cél:".length).trim() ??
+      ""
+    );
+  }
+  function ownGoalStatus(goal: RecordItem) {
+    const events = (ownPlayerData?.records ?? [])
+      .filter((record) =>
+        record.text?.startsWith(`Saját cél állapot · ${goal.id} ·`),
+      )
+      .sort((a, b) =>
+        String(b.occurredAt ?? "").localeCompare(String(a.occurredAt ?? "")),
+      );
+    const state = events[0]?.text?.split(" · ").at(-1);
+    if (state) return state;
+    const legacyText = goal.text?.slice("Saját cél:".length).trim();
+    return (ownPlayerData?.records ?? []).some(
+      (record) => record.text === `Cél lezárva: ${legacyText}`,
+    )
+      ? "closed"
+      : "active";
+  }
   const questionSource = data[0]?.checkins[0] ?? null;
   const historyItems: HistoryItem[] = data
     .flatMap((person) => [
@@ -1113,6 +1169,24 @@ export default function HabiWorkspace() {
     }
   }
 
+  async function chooseDailyPlayerTask(checkinId: string, action: string) {
+    if (!checkinId || !action) return;
+    const alreadyChosen = ownPlayerData?.records.some((record) =>
+      record.text?.startsWith(`Mai saját lépés · ${checkinId} ·`),
+    );
+    if (alreadyChosen) return;
+    await savePlayerDiary(`Mai saját lépés · ${checkinId} · ${action}`);
+  }
+
+  async function completeDailyPlayerTask(checkinId: string) {
+    if (!checkinId) return;
+    const alreadyCompleted = ownPlayerData?.records.some(
+      (record) => record.text === `Mai saját lépés kész · ${checkinId}`,
+    );
+    if (!alreadyCompleted)
+      await savePlayerDiary(`Mai saját lépés kész · ${checkinId}`);
+  }
+
   async function saveOwnGoal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const goal = playerGoalDraft.trim();
@@ -1120,8 +1194,34 @@ export default function HabiWorkspace() {
     if (await savePlayerDiary(`Saját cél: ${goal}`)) setPlayerGoalDraft("");
   }
 
-  async function closeOwnGoal(goal: string) {
-    await savePlayerDiary(`Cél lezárva: ${goal}`);
+  async function setOwnGoalState(
+    goalId: string,
+    state: "active" | "paused" | "closed" | "habit",
+  ) {
+    await savePlayerDiary(`Saját cél állapot · ${goalId} · ${state}`);
+  }
+
+  async function saveOwnGoalEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const text = editingGoalText.trim();
+    if (!editingGoalId || !text || text.length > 500) return;
+    if (
+      await savePlayerDiary(`Saját cél módosítva · ${editingGoalId} · ${text}`)
+    ) {
+      setEditingGoalId("");
+      setEditingGoalText("");
+    }
+  }
+
+  async function saveOwnGoalReview(goalId: string) {
+    const note = goalReviewNote.trim();
+    if (!goalId || !note) return;
+    if (
+      await savePlayerDiary(`Saját cél visszatekintés · ${goalId} · ${note}`)
+    ) {
+      setReviewingGoalId("");
+      setGoalReviewNote("");
+    }
   }
 
   async function saveRoutine(event: FormEvent<HTMLFormElement>) {
@@ -3227,15 +3327,20 @@ export default function HabiWorkspace() {
                           record.text?.startsWith("Saját cél:"),
                       )
                       .map((record) => {
-                        const goal =
-                          record.text?.slice("Saját cél:".length).trim() ?? "";
-                        const closed = ownPlayerData.records.some(
-                          (item) => item.text === `Cél lezárva: ${goal}`,
-                        );
+                        const goal = ownGoalText(record);
+                        const status = ownGoalStatus(record);
+                        const closed =
+                          status === "closed" || status === "habit";
                         return (
                           <article className={styles.taskCard} key={record.id}>
                             <p className={styles.eyebrow}>
-                              {closed ? "LEZÁRT SAJÁT CÉL" : "AKTÍV SAJÁT CÉL"}
+                              {status === "paused"
+                                ? "FÉLRETETT SAJÁT CÉL"
+                                : status === "habit"
+                                  ? "SZOKÁSKÉNT FOLYTATOTT CÉL"
+                                  : closed
+                                    ? "LEZÁRT SAJÁT CÉL"
+                                    : "AKTÍV SAJÁT CÉL"}
                             </p>
                             <h3>{goal}</h3>
                             <time dateTime={record.occurredAt}>
@@ -3248,14 +3353,132 @@ export default function HabiWorkspace() {
                                 : "—"}
                             </time>
                             {!closed && (
-                              <button
-                                className={styles.secondary}
-                                type="button"
-                                disabled={busy}
-                                onClick={() => void closeOwnGoal(goal)}
-                              >
-                                Ezt a célt lezárom
-                              </button>
+                              <>
+                                <div className={styles.actions}>
+                                  <button
+                                    className={styles.secondary}
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => {
+                                      setEditingGoalId(record.id);
+                                      setEditingGoalText(goal);
+                                    }}
+                                  >
+                                    Cél módosítása
+                                  </button>
+                                  <button
+                                    className={styles.secondary}
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      void setOwnGoalState(
+                                        record.id,
+                                        status === "paused"
+                                          ? "active"
+                                          : "paused",
+                                      )
+                                    }
+                                  >
+                                    {status === "paused"
+                                      ? "Újra előveszem"
+                                      : "Most félreteszem"}
+                                  </button>
+                                  <button
+                                    className={styles.secondary}
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => {
+                                      setReviewingGoalId(
+                                        reviewingGoalId === record.id
+                                          ? ""
+                                          : record.id,
+                                      );
+                                      setGoalReviewNote("");
+                                    }}
+                                  >
+                                    Visszatekintek
+                                  </button>
+                                  <button
+                                    className={styles.secondary}
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      void setOwnGoalState(record.id, "habit")
+                                    }
+                                  >
+                                    Szokásként folytatom
+                                  </button>
+                                  <button
+                                    className={styles.secondary}
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      void setOwnGoalState(record.id, "closed")
+                                    }
+                                  >
+                                    Ezt a célt lezárom
+                                  </button>
+                                </div>
+                                {editingGoalId === record.id && (
+                                  <form
+                                    onSubmit={saveOwnGoalEdit}
+                                    className={styles.formGroup}
+                                  >
+                                    <label
+                                      className={styles.label}
+                                      htmlFor={`edit-goal-${record.id}`}
+                                    >
+                                      A cél új szövege
+                                    </label>
+                                    <textarea
+                                      id={`edit-goal-${record.id}`}
+                                      rows={2}
+                                      maxLength={500}
+                                      value={editingGoalText}
+                                      onChange={(event) =>
+                                        setEditingGoalText(event.target.value)
+                                      }
+                                    />
+                                    <button
+                                      className={styles.primary}
+                                      type="submit"
+                                      disabled={busy || !editingGoalText.trim()}
+                                    >
+                                      Módosítás mentése
+                                    </button>
+                                  </form>
+                                )}
+                                {reviewingGoalId === record.id && (
+                                  <div className={styles.formGroup}>
+                                    <label
+                                      className={styles.label}
+                                      htmlFor={`review-goal-${record.id}`}
+                                    >
+                                      Mi segített, mi volt nehéz, vagy min
+                                      változtatnál?
+                                    </label>
+                                    <textarea
+                                      id={`review-goal-${record.id}`}
+                                      rows={3}
+                                      maxLength={1000}
+                                      value={goalReviewNote}
+                                      onChange={(event) =>
+                                        setGoalReviewNote(event.target.value)
+                                      }
+                                    />
+                                    <button
+                                      className={styles.primary}
+                                      type="button"
+                                      disabled={busy || !goalReviewNote.trim()}
+                                      onClick={() =>
+                                        void saveOwnGoalReview(record.id)
+                                      }
+                                    >
+                                      Visszatekintés mentése
+                                    </button>
+                                  </div>
+                                )}
+                              </>
                             )}
                           </article>
                         );
@@ -3478,6 +3701,76 @@ export default function HabiWorkspace() {
               )}
             {tab === "tasks-feedback" && selectedPlayer && (
               <section className={styles.panel}>
+                {active.activeRole === "player" && (
+                  <div className={styles.formGroup}>
+                    <p className={styles.eyebrow}>A MAI ÁLLAPOTJELZÉSEDHEZ</p>
+                    <p className={styles.eyebrow}>A LEGUTÓBBI ÁLLAPOTJELZÉSEDHEZ</p>
+                    <h2>Válassz egy saját következő lépést</h2>
+                    {!latestPlayerCheckin ? (
+                      <p className={styles.emptyState}>
+                        Először töltsd ki a napi állapotjelzésedet. Utána itt
+                        választhatsz egy neked megfelelő következő lépést.
+                      </p>
+                    ) : !latestPlayerTask ? (
+                      <>
+                        <p className={styles.muted}>
+                          A válaszaid alapján Habi nem dönt helyetted. Válaszd
+                          azt, ami ma neked hasznosnak tűnik.
+                        </p>
+                        <div className={styles.knowledgeList}>
+                          {[
+                            "Átgondolom, melyik válaszom a legfontosabb ma.",
+                            "Elmondom egy megbízható felnőttnek, hogyan vagyok.",
+                            "Kiválasztok egy rövid gyakorlatot.",
+                          ].map((action) => (
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              key={action}
+                              disabled={busy}
+                              onClick={() =>
+                                void chooseDailyPlayerTask(
+                                  latestPlayerCheckin.id,
+                                  action,
+                                )
+                              }
+                            >
+                              {action}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <article className={styles.taskCard}>
+                        <h3>
+                          {latestPlayerTask.text
+                            ?.split(" · ")
+                            .slice(2)
+                            .join(" · ")}
+                        </h3>
+                        <p className={styles.muted}>
+                          {latestPlayerTaskDone
+                            ? "Ezt a lépést elvégezted."
+                            : "Akkor jelöld késznek, amikor neked megfelel."}
+                        </p>
+                        {!latestPlayerTaskDone && (
+                          <button
+                            className={styles.primary}
+                            type="button"
+                            disabled={busy}
+                            onClick={() =>
+                              void completeDailyPlayerTask(
+                                latestPlayerCheckin.id,
+                              )
+                            }
+                          >
+                            Elvégeztem
+                          </button>
+                        )}
+                      </article>
+                    )}
+                  </div>
+                )}
                 <p className={styles.eyebrow}>KÖZÖS MUNKA</p>
                 <h2>Feladatok és visszajelzések</h2>
                 <p className={styles.muted}>

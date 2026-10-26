@@ -785,7 +785,7 @@ The signed-in administrator landing page now displays the active player, parent,
 
 The signed-in player workspace now exposes the five versioned legacy practices, durable practice feedback, player-owned goals with closure, simple routines with once-per-local-day completion, the three-prompt monthly reflection, four deterministic authored situation conversations, a private trusted-adult preparation note, and a 14/28/42-day view of actual completed check-in answers. The legacy redirect now selects these native features for a player; parent/coach roles land in native task feedback. The player entries use the existing SSO-authorized diary record endpoint and appear in the same player history. No old browser-owned data is imported.
 
-This is a functional migration slice, not complete legacy parity. Durable records are diary entries rather than independent practice/goal/reflection domain entities. Goal editing/pause/review history, continued drafts, old day-by-day archive, old text trend narrative, reminders/settings, HABI2, full daily-context guided support, and the pain/safety journey remain unimplemented. Do not describe those as delivered.
+This is a functional migration slice, not complete legacy parity. Durable records are diary entries rather than independent practice/goal/reflection domain entities. Continued drafts, old day-by-day archive, old text trend narrative, reminders/settings, HABI2, full daily-context guided support, and the pain/safety journey remain unimplemented. Do not describe those as delivered.
 
 | Check | Result | Environment |
 | --- | --- | --- |
@@ -793,6 +793,13 @@ This is a functional migration slice, not complete legacy parity. Durable record
 | `npm run lint` | PASS, exit 0 | Local Habi checkout; Biome, 187 files |
 | `npm test` | PASS, 117 passed, 0 failed, 1 Atlas-only integration test skipped | Local Habi checkout; no isolated replica-set URI |
 | `npm run build` | PASS, exit 0 | Local Habi checkout; Next.js production build |
-| `git diff --check` | Pending release gate | Local Habi checkout |
+| `git diff --check` | PASS, exit 0 | Local Habi checkout |
 | Authenticated browser interaction on production | Not yet verified | Requires the owner's active SSO session |
-| Production deployment | Not performed for this slice | Keep current production until release gate completes |
+| Production deployment | Ready to publish after this follow-up slice is committed | Current production predates these player additions |
+
+## Player task and goal workflows · 2026-10-26
+
+- The player can select one of three self-chosen next steps tied to the most recently completed check-in, then record completion. The task does not invent advice from answers and duplicate selection/completion is prevented in the client by checking the durable event log.
+- Player-owned goals now support edit, pause/resume, reflection, continue as a habit, and close. Every change is appended as a new diary record so earlier goal text and decisions remain in history. These are user-visible working operations, but the underlying records are still diary entries rather than a dedicated goal entity.
+- Verification on the local Habi checkout: `npm run typecheck` PASS; `npm run lint` PASS (187 files); `npm test` PASS (117 passed, 0 failed, 1 Atlas-only skip); `npm run build` PASS; `git diff --check` PASS. The suite is repository-level; no production SSO interaction was performed.
+- Production route verification before this change: `GET https://habigoal.com/legacy` redirects to `/?view=legacy` and the destination returns HTTP 200. These new task/goal changes are not yet deployed.
