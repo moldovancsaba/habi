@@ -641,6 +641,18 @@ The player-list `GET` route now explicitly uses request-time headers. Before thi
 | Anonymous `GET /api/v1/me/scope` | PASS, HTTP 405; route is POST-only | `https://habigoal.com` |
 | Authenticated switch among multiple memberships | Not yet verified | Requires an identity with at least two active memberships |
 
+## T-HG-144 · Enter an assigned role workspace from SSO admin landing · 2026-10-26
+
+The production admin landing showed the user's memberships as labels, without an action to start a role session. It now presents readable role cards and a **Belépés ebben a szerepben** button for every active membership. The button calls `POST /api/identity/activate-role`; the server derives the role, actor, tenant and player scope from the verified SSO identity and stored membership, then issues the Habi session cookie. Visible cards omit raw internal IDs. The in-workspace selector continues switching among memberships after entry.
+
+| Check | Result | Environment |
+| --- | --- | --- |
+| `npm run lint` | PASS, exit 0 | Local |
+| `npm run typecheck` | PASS, exit 0 | Local |
+| `npm run build` | PASS, exit 0; includes `/api/identity/activate-role` | Local production build |
+| API contract manifest digest/version | PASS; API contract `2.4.12` matches its manifest | Local |
+| Authenticated role activation and workspace entry | Not yet verified | Requires the owner's authenticated DoneIsBetter session |
+
 ## T-HG-143 · Show own roles and request a self-invitation · 2026-10-26
 
 The signed-in administrator landing page now displays the active player, parent, and coach memberships attached to the verified SSO identity. The admin page also shows those roles and offers a self-invitation form for a missing role. It uses the existing admin-only invitation route; the new membership is not active until the administrator opens and accepts the single-use invite while signed in with the same verified identity. Parent invitations require selecting an existing player. Player invitations create a player profile using the name entered. An already-active identical role/scope is disabled.

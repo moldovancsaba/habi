@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.4.11",
+    "version": "2.4.12",
     "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
@@ -10372,6 +10372,133 @@
           },
           "410": {
             "description": "Handoff invalid, expired or already used"
+          }
+        }
+      }
+    },
+    "/api/identity/activate-role": {
+      "post": {
+        "operationId": "post_identity_activate_role",
+        "description": "Activates an existing active role membership for the currently verified DoneIsBetter identity and creates the role-scoped Habi session. The client cannot supply a role, actor, tenant, or player scope. Membership, actor, tenant, and linked player are revalidated before session creation.",
+        "security": [
+          {
+            "ssoOwnerSessionCookie": []
+          }
+        ],
+        "x-domain-action": "authenticate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "membershipId"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "membershipId": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{48}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Role-scoped session created for the existing membership",
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "HttpOnly Habi role-session cookie"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "role",
+                    "playerId",
+                    "csrfToken"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "player",
+                        "parent",
+                        "coach"
+                      ]
+                    },
+                    "playerId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "csrfToken": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified DoneIsBetter session required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin rejected or identity not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Active membership or linked player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required service dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
           }
         }
       }

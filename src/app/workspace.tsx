@@ -6,6 +6,7 @@ import MetroTimeline, { type TimelinePage } from "./metro-timeline";
 
 type Role = "player" | "parent" | "coach";
 type OwnRole = {
+  id: string;
   role: Role;
   playerId: string | null;
   playerDisplayName: string | null;
@@ -107,6 +108,8 @@ export default function HabiWorkspace() {
   const [question, setQuestion] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [enteringRoleId, setEnteringRoleId] = useState<string | null>(null);
+  const [roleEntryError, setRoleEntryError] = useState("");
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [tab, setTab] = useState<"today" | "history">("today");
 
@@ -116,6 +119,26 @@ export default function HabiWorkspace() {
       credentials: "same-origin",
     }).catch(() => undefined);
     window.location.replace("/");
+  }
+
+  async function enterRole(membershipId: string) {
+    if (enteringRoleId) return;
+    setEnteringRoleId(membershipId);
+    setRoleEntryError("");
+    try {
+      const response = await fetch("/api/identity/activate-role", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ membershipId }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.code ?? "ROLE_ENTRY_FAILED");
+      window.location.replace("/");
+    } catch (error) {
+      setRoleEntryError(messageFor(error));
+      setEnteringRoleId(null);
+    }
   }
 
   const load = useCallback(async () => {
@@ -701,19 +724,33 @@ export default function HabiWorkspace() {
             </p>
             <h2>A saját Habi-szerepköreid</h2>
             {app.memberships.length ? (
-              <div className="story-legend">
-                {app.memberships.map((membership, index) => (
-                  <span
-                    className={`role-badge actor-${membership.role}`}
-                    key={`${membership.role}:${membership.playerId ?? index}`}
-                  >
-                    {roleLabel(membership.role)}
-                    {membership.playerDisplayName
-                      ? ` · ${membership.playerDisplayName}`
-                      : membership.playerId
-                        ? ` · ${membership.playerId}`
-                        : ""}
-                  </span>
+              <div className={styles.roleCards}>
+                {app.memberships.map((membership) => (
+                  <article className={styles.roleCard} key={membership.id}>
+                    <span className={`role-badge actor-${membership.role}`}>
+                      {roleLabel(membership.role)}
+                    </span>
+                    <p className={styles.roleDescription}>
+                      {membership.role === "coach"
+                        ? "Edzői munkaterület"
+                        : membership.role === "player"
+                          ? (membership.playerDisplayName ??
+                            "Saját sportolói napló")
+                          : membership.playerDisplayName
+                            ? `Szülői hozzáférés · ${membership.playerDisplayName}`
+                            : "Szülői hozzáférés a kapcsolódó játékoshoz"}
+                    </p>
+                    <button
+                      className={styles.primary}
+                      type="button"
+                      disabled={Boolean(enteringRoleId)}
+                      onClick={() => void enterRole(membership.id)}
+                    >
+                      {enteringRoleId === membership.id
+                        ? "Munkaterület megnyitása…"
+                        : "Belépés ebben a szerepben"}
+                    </button>
+                  </article>
                 ))}
               </div>
             ) : (
@@ -728,6 +765,11 @@ export default function HabiWorkspace() {
             <a className={styles.secondary} href="/admin#my-access">
               Szerepkör kérése a saját fiókomhoz
             </a>
+            {roleEntryError && (
+              <p className={styles.signInAlert} role="alert">
+                {roleEntryError}
+              </p>
+            )}
           </section>
         )}
         {app.state === "no-role" && (

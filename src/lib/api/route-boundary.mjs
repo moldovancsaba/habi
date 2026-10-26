@@ -22,6 +22,7 @@ const SSO_BROWSER_OPERATIONS = new Set([
   "admin.invitations",
   "admin.memberships",
   "identity.claim",
+  "identity.activate-role",
 ]);
 
 function isNextControlFlow(error) {

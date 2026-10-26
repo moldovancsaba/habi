@@ -14,7 +14,9 @@ A működő MVP konfiguráció a jelenlegi tervezetek azonosítóira hivatkozik:
 
 A régi naplórekordok átvitele nem előfeltétel, és nem része az új szerepköri belépésnek. A player, parent és coach szerepköröket csak admin által kiadott meghívó adja; az SSO app `admin` permissionje önmagában nem ad termékoldali szerepkört.
 
-Ha ugyanahhoz az ellenőrzött DoneIsBetter-identitáshoz több aktív Habi-szerepkör tartozik, a felső sávban választhatsz közülük. A váltás csak a már kiosztott, aktív szerepkörre és játékoskapcsolatra engedélyezett; új hozzáférést nem ad. A váltás után a Habi újratölti az adott szerepkör játékoslistáját és nézetét. Adminisztrátorként a kezdőlapon látod a saját aktív Habi-szerepköreidet; a **Szerepkör kérése a saját fiókomhoz** gomb az adminfelületen indít saját meghívót. Az elkészült meghívót ugyanazzal a DoneIsBetter-fiókkal kell elfogadni. Szülőként válaszd ki a kapcsolódó játékost; játékos-hozzáférésnél a megadott név új játékosprofilt hoz létre. Edzői hozzáférés a tenant játékosaihoz szól.
+Ha adminisztrátorként több aktív Habi-szerepköröd van, a kezdőlapon mindegyikhez külön **Belépés ebben a szerepben** gombot látsz. Válaszd ki a használni kívánt szerepet; a Habi ellenőrzi a meglévő tagságot, létrehozza a hozzá tartozó munkamenetet, és megnyitja a munkaterületet. A szerepkörön belül a felső sávban válthatsz a fiókodhoz tartozó többi szerepkör és játékos között. A váltás csak már kiosztott aktív tagságra engedélyezett, új hozzáférést nem ad. A kezdőlapon a szerepkörök érthető neve jelenik meg, belső azonosítók nem.
+
+Adminisztrátorként a **Szerepkör kérése a saját fiókomhoz** gombbal indíthatsz saját játékos-, szülői vagy edzőmeghívót. Az elkészült meghívót ugyanazzal a DoneIsBetter-fiókkal kell elfogadni. Szülőként válaszd ki a kapcsolódó játékost; játékos-hozzáférésnél a megadott név új játékosprofilt hoz létre. Edzői hozzáférés a tenant játékosaihoz szól.
 
 ## MVP-folyamat
 

@@ -49,6 +49,7 @@ export async function GET(request: Request): Promise<Response> {
       {
         permission: "admin",
         memberships: ownMemberships.map((membership) => ({
+          id: membership.id,
           role: membership.role,
           playerId: membership.playerId,
           playerDisplayName: membership.playerId
