@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import HabiHome from "./habi-home";
 
 export default function Home() {
-  redirect("/legacy/index.html");
+  return <HabiHome />;
 }
