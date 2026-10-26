@@ -19,5 +19,5 @@ A régi naplórekordok átvitele nem előfeltétel, és nem része az új szerep
 1. A Habi admin a `/admin` oldalon megnyitja a tenant előkészítését.
 2. Az admin létrehoz egy játékos-, szülő- vagy edzőmeghívót.
 3. A meghívott megnyitja az egyszer használatos linket, saját DoneIsBetter-fiókjával belép, majd elfogadja a hozzáférést.
-4. Játékosnál napi állapotjelzés és előzmények; szülőnél megfigyelés, előzmények és forrásolt helyi AI-kérdés; edzőnél megfigyelés és játékosadat-hozzáférés jelenik meg.
+4. A játékos egy indítóképernyőről egyesével halad végig az elfogadott öt állapotjelző kérdésen; bármelyiket átugorhatja, visszaléphet, majd az érvényes válaszok mentődnek. Szülőnél megfigyelés, előzmények és forrásolt helyi AI-kérdés; edzőnél megfigyelés és játékosadat-hozzáférés jelenik meg.
 5. A szerepkör visszavonható az admin felületen; a visszavonás megszünteti a hozzáférést.

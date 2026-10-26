@@ -29,32 +29,26 @@ type AppState =
 
 const metrics = [
   [
-    "mood",
-    "Hogy érzed magad?",
-    ["Nagyon jól", "Jól", "Lehangoltan", "Feszült"],
-  ],
-  ["sleep", "Hogyan aludtál?", ["Kiválóan", "Jól", "Keveset", "Rosszul"]],
-  [
     "energy",
     "Mennyi energiád van?",
     ["Sok", "Megfelelő", "Kevés", "Kimerültem"],
   ],
+  ["sleep", "Hogyan aludtál?", ["Kiválóan", "Jól", "Keveset", "Rosszul"]],
   [
     "focus",
     "Mennyire tudsz figyelni?",
     ["Nagyon jól", "Jól", "Nehezen", "Alig"],
   ],
   [
-    "result",
-    "Hogy ment az edzés?",
-    ["Nagyon jól", "Jól", "Vegyesen", "Rosszul"],
+    "mood",
+    "Hogy érzed magad?",
+    ["Nagyon jól", "Jól", "Lehangoltan", "Feszült"],
   ],
   [
     "load",
     "Mennyit edzettél?",
     ["Nem edzettem", "Keveset", "Közepesen", "Sokat"],
   ],
-  ["pain", "Van fájdalmad?", ["Nincs", "Enyhe", "Igen", "Erős"]],
 ] as const;
 
 function roleLabel(role: Role) {
@@ -76,6 +70,7 @@ export default function HabiWorkspace() {
   const [signInFailure, setSignInFailure] = useState<string | null>(null);
   const [data, setData] = useState<PlayerData[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [checkinIndex, setCheckinIndex] = useState<number | null>(null);
   const [observation, setObservation] = useState("");
   const [question, setQuestion] = useState("");
   const [notice, setNotice] = useState("");
@@ -155,9 +150,12 @@ export default function HabiWorkspace() {
     [active],
   );
 
-  async function submitCheckin() {
-    if (!active || !playerId || Object.keys(answers).length !== metrics.length)
+  async function submitCheckin(finalAnswers = answers) {
+    if (!active || !playerId || Object.keys(finalAnswers).length === 0) {
+      setNotice("Legalább egy választ adj meg az állapotjelzés mentéséhez.");
+      setCheckinIndex(null);
       return;
+    }
     setBusy(true);
     setNotice("");
     try {
@@ -181,6 +179,7 @@ export default function HabiWorkspace() {
       if (!start.ok) throw new Error(session.code ?? "SAVE_FAILED");
       let revision = 1;
       for (const [metric] of metrics) {
+        if (finalAnswers[metric] === undefined) continue;
         const saved = await fetch(
           `/api/v1/checkin-sessions/${encodeURIComponent(session.id)}/answers`,
           {
@@ -194,7 +193,7 @@ export default function HabiWorkspace() {
             body: JSON.stringify({
               expectedRevision: revision,
               metric,
-              answerCode: answers[metric],
+              answerCode: finalAnswers[metric],
             }),
           },
         );
@@ -218,6 +217,7 @@ export default function HabiWorkspace() {
       const result = await complete.json();
       if (!complete.ok) throw new Error(result.code ?? "SAVE_FAILED");
       setAnswers({});
+      setCheckinIndex(null);
       setNotice("A mai állapotjelzésed elmentve.");
       await load();
     } catch (error) {
@@ -225,6 +225,22 @@ export default function HabiWorkspace() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function answerCurrent(answer: number | null) {
+    if (checkinIndex === null) return;
+    const [metric] = metrics[checkinIndex] ?? [];
+    if (!metric) return;
+    const nextAnswers = { ...answers };
+    if (answer === null) delete nextAnswers[metric];
+    else nextAnswers[metric] = answer;
+    setAnswers(nextAnswers);
+    setNotice("");
+    if (checkinIndex + 1 < metrics.length) {
+      setCheckinIndex(checkinIndex + 1);
+      return;
+    }
+    void submitCheckin(nextAnswers);
   }
 
   async function submitObservation() {
@@ -498,47 +514,93 @@ export default function HabiWorkspace() {
             )}
             {tab === "today" && active.activeRole === "player" && (
               <section className={styles.panel}>
-                <p className={styles.eyebrow}>NAPI ÁLLAPOTJELZÉS</p>
-                <h2>Egy rövid megálló magadra.</h2>
-                <p className={styles.muted}>
-                  Bármelyik kérdést kihagyhatod. A válaszaid a naplódba
-                  kerülnek.
-                </p>
-                <div className={styles.questions}>
-                  {metrics.map(([key, prompt, choices]) => (
-                    <fieldset className={styles.question} key={key}>
-                      <legend>{prompt}</legend>
-                      <div className={styles.choices}>
-                        {choices.map((choice, index) => (
-                          <label key={choice}>
-                            <input
-                              type="radio"
-                              name={key}
-                              checked={answers[key] === index}
-                              onChange={() =>
-                                setAnswers((current) => ({
-                                  ...current,
-                                  [key]: index,
-                                }))
-                              }
-                            />
-                            <span>{choice}</span>
-                          </label>
-                        ))}
-                      </div>
+                {checkinIndex === null ? (
+                  <>
+                    <p className={styles.eyebrow}>A TE NAPLÓD</p>
+                    <h2>Egy rövid megálló magadra.</h2>
+                    <p className={styles.muted}>
+                      Öt rövid kérdés. Bármelyiket kihagyhatod, és a válaszaidat
+                      később visszanézheted.
+                    </p>
+                    <button
+                      type="button"
+                      className={styles.primary}
+                      onClick={() => {
+                        setAnswers({});
+                        setCheckinIndex(0);
+                        setNotice("");
+                      }}
+                    >
+                      Elkezdtem <span aria-hidden="true">→</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className={styles.eyebrow}>
+                      NAPI ÁLLAPOTJELZÉS · {checkinIndex + 1}/{metrics.length}
+                    </p>
+                    <progress
+                      className={styles.progress}
+                      max={metrics.length}
+                      value={checkinIndex + 1}
+                      aria-label="Állapotjelzés előrehaladása"
+                    />
+                    <h2 className={styles.currentQuestion}>
+                      {metrics[checkinIndex]?.[1]}
+                    </h2>
+                    <fieldset className={styles.questionChoices}>
+                      <legend className={styles.srOnly}>
+                        Válaszlehetőségek
+                      </legend>
+                      {metrics[checkinIndex]?.[2].map((choice, index) => (
+                        <button
+                          key={choice}
+                          type="button"
+                          className={styles.questionChoice}
+                          aria-pressed={
+                            answers[metrics[checkinIndex][0]] === index
+                          }
+                          disabled={busy}
+                          onClick={() => answerCurrent(index)}
+                        >
+                          {choice}
+                        </button>
+                      ))}
                     </fieldset>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className={styles.primary}
-                  disabled={
-                    busy || Object.keys(answers).length !== metrics.length
-                  }
-                  onClick={() => void submitCheckin()}
-                >
-                  {busy ? "Mentés…" : "Állapotjelzés mentése"}
-                </button>
+                    {busy && (
+                      <p className={styles.muted} role="status">
+                        Állapotjelzés mentése…
+                      </p>
+                    )}
+                    {notice && (
+                      <p className={styles.notice} role="status">
+                        {notice}
+                      </p>
+                    )}
+                    <div className={styles.questionActions}>
+                      <button
+                        type="button"
+                        className={styles.textButton}
+                        disabled={busy}
+                        onClick={() => answerCurrent(null)}
+                      >
+                        Most kihagyom
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.textButton}
+                        disabled={busy}
+                        onClick={() => {
+                          setNotice("");
+                          if (checkinIndex === 0) setCheckinIndex(null);
+                          else setCheckinIndex(checkinIndex - 1);
+                        }}
+                      >
+                        Vissza
+                      </button>
+                    </div>
+                  </>
+                )}
               </section>
             )}
             {tab === "today" &&
