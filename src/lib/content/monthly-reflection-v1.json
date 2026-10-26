@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "window": "Az elmúlt négy hét",
+  "choices": ["Szinte soha", "Ritkán", "Néha", "Gyakran", "Szinte mindig"],
+  "questions": [
+    {
+      "domain": "Figyelem",
+      "text": "Amikor elkalandozott a figyelmed, vissza tudtál térni a feladathoz?"
+    },
+    {
+      "domain": "Figyelem",
+      "text": "Ki tudtad választani, mire figyelj először?"
+    },
+    {
+      "domain": "Újrakezdés",
+      "text": "Egy hiba után újra meg tudtad próbálni?"
+    },
+    {
+      "domain": "Újrakezdés",
+      "text": "Egy nehéz nap után találtál valamit, ami segített továbblépni?"
+    },
+    {
+      "domain": "Ahogy magaddal beszélsz",
+      "text": "Tudtál magaddal kedvesen beszélni, amikor valami nem sikerült?"
+    },
+    {
+      "domain": "Ahogy magaddal beszélsz",
+      "text": "Találtál olyan mondatot, ami segített a következő próbálkozásban?"
+    },
+    {
+      "domain": "Önbizalom",
+      "text": "Észrevetted, amikor valamiben ügyesedtél?"
+    },
+    {
+      "domain": "Önbizalom",
+      "text": "Mertél olyasmit is kipróbálni, amiben még bizonytalan voltál?"
+    },
+    {
+      "domain": "Az érzéseid kezelése",
+      "text": "Amikor feszült vagy dühös lettél, találtál valamit, ami segített megnyugodni?"
+    },
+    {
+      "domain": "Az érzéseid kezelése",
+      "text": "Felismerted, amikor szünetre volt szükséged?"
+    },
+    {
+      "domain": "Segítségkérés",
+      "text": "El tudtad mondani valakinek, amikor nehéz volt?"
+    },
+    {
+      "domain": "Segítségkérés",
+      "text": "Meg tudtad mondani, milyen segítség esne jól?"
+    },
+    { "domain": "Öröm a sportban", "text": "Volt örömöd a sportban?" },
+    {
+      "domain": "Odatartozás",
+      "text": "Úgy érezted, hogy a többiek közé tartozol?"
+    },
+    {
+      "domain": "Meghallgatás",
+      "text": "Elmondhattad, ha valami sok volt neked?"
+    },
+    {
+      "domain": "Biztonság",
+      "text": "Biztonságban érezted magad azok között, akikkel sportoltál?"
+    }
+  ],
+  "skipped": "Most kihagyom.",
+  "notApplicable": "Nem volt ilyen helyzet."
+}

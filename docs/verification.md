@@ -816,3 +816,10 @@ This is a functional migration slice, not complete legacy parity. Durable record
 - The player can choose a daily reflection (two prompts) or weekly reflection (three prompts), leave individual prompts unanswered, and save the completed reflection to the authenticated player diary. Saved entries appear in the reflection history with date and time.
 - Verification on the local Habi checkout: `npm run typecheck` PASS; `npm run lint` PASS; `npm test` PASS (117 passed, 0 failed, 1 Atlas-only integration test skipped); `npm run build` PASS; `git diff --check` PASS.
 - Limitation: drafts remain in the current page until submitted and do not yet resume after refresh. Authenticated production interaction requires an owner SSO browser session.
+
+## Player 16-question monthly reflection · 2026-10-26
+
+- Restored the original 16 authored monthly questions from the preserved Habi content. The player answers one question at a time, can go back, explicitly skip or select “not applicable,” reviews all 16 answers, optionally records a next-month focus and a note, then saves the complete versioned response to the authenticated diary. The app does not create an interpretation, score, or recommendation from these answers.
+- Content is pinned in `src/lib/content/monthly-reflection-v1.json`; the record title includes its content version. Drafts do not yet resume after a full page reload.
+- Verification on the local Habi checkout: `npm run typecheck` PASS; `npm run lint` PASS (188 files); `npm test` PASS (117 passed, 0 failed, 1 Atlas-only integration test skipped); `npm run build` PASS; `git diff --check` PASS.
+- Production deployment and authenticated browser interaction are pending this change's release.

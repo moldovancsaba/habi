@@ -12,6 +12,7 @@ import MetroTimeline, { ActorBadge, type TimelinePage } from "./metro-timeline";
 import CoachReportWorkspace from "./coach-report-workspace";
 import practices from "../lib/content/practices-v1.json";
 import journeyContent from "../lib/content/journeys-v1.json";
+import monthlyReflectionContent from "../lib/content/monthly-reflection-v1.json";
 
 type Role = "player" | "parent" | "coach";
 type OwnRole = {
@@ -274,11 +275,12 @@ export default function HabiWorkspace() {
   const [goalReviewNote, setGoalReviewNote] = useState("");
   const [routineDraft, setRoutineDraft] = useState("");
   const [practiceFeedback, setPracticeFeedback] = useState("");
-  const [monthlyReflection, setMonthlyReflection] = useState({
-    proud: "",
-    hard: "",
-    next: "",
-  });
+  const [monthlyAnswers, setMonthlyAnswers] = useState<
+    Array<number | "skip" | "not-applicable" | null>
+  >(Array(monthlyReflectionContent.questions.length).fill(null));
+  const [monthlyReflectionStep, setMonthlyReflectionStep] = useState(0);
+  const [monthlyNextStep, setMonthlyNextStep] = useState("");
+  const [monthlyNote, setMonthlyNote] = useState("");
   const [reflectionType, setReflectionType] = useState<"daily" | "weekly">(
     "daily",
   );
@@ -1314,15 +1316,49 @@ export default function HabiWorkspace() {
 
   async function saveMonthlyReflection(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const { proud, hard, next } = monthlyReflection;
-    if (![proud, hard, next].some((value) => value.trim())) return;
+    if (monthlyReflectionStep !== monthlyReflectionContent.questions.length)
+      return;
     const month = new Date().toLocaleDateString("hu-HU", {
       year: "numeric",
       month: "long",
     });
-    const text = `Havi visszatekintés · ${month}\nAmire büszke vagyok: ${proud.trim() || "Kihagyva"}\nAmi nehéz volt: ${hard.trim() || "Kihagyva"}\nAmire legközelebb figyelek: ${next.trim() || "Kihagyva"}`;
-    if (await savePlayerDiary(text))
-      setMonthlyReflection({ proud: "", hard: "", next: "" });
+    const answers = monthlyReflectionContent.questions.map(
+      (question, index) => {
+        const value = monthlyAnswers[index];
+        const label =
+          typeof value === "number"
+            ? monthlyReflectionContent.choices[value - 1]
+            : value === "not-applicable"
+              ? monthlyReflectionContent.notApplicable
+              : monthlyReflectionContent.skipped;
+        return `${index + 1}. ${question.domain} · ${question.text}\nVálasz: ${label}`;
+      },
+    );
+    const text = [
+      `Havi visszatekintés v${monthlyReflectionContent.version} · ${month}`,
+      ...answers,
+      `Amire a következő hónapban figyelek: ${monthlyNextStep.trim() || "Most nem választottam."}`,
+      `Saját megjegyzés: ${monthlyNote.trim() || "Nem adtam hozzá."}`,
+    ].join("\n");
+    if (await savePlayerDiary(text)) {
+      setMonthlyAnswers(
+        Array(monthlyReflectionContent.questions.length).fill(null),
+      );
+      setMonthlyReflectionStep(0);
+      setMonthlyNextStep("");
+      setMonthlyNote("");
+    }
+  }
+
+  function answerMonthlyReflection(value: number | "skip" | "not-applicable") {
+    const index = monthlyReflectionStep;
+    if (index < 0 || index >= monthlyReflectionContent.questions.length) return;
+    setMonthlyAnswers((current) => {
+      const next = [...current];
+      next[index] = value;
+      return next;
+    });
+    setMonthlyReflectionStep(index + 1);
   }
 
   async function saveReflection(event: FormEvent<HTMLFormElement>) {
@@ -3948,55 +3984,157 @@ export default function HabiWorkspace() {
                   >
                     <h3>Havi visszatekintés</h3>
                     <p className={styles.muted}>
-                      Gondold végig a hónapot. Bármelyik kérdést kihagyhatod; a
-                      válaszaid a naplódban maradnak.
+                      Gondolj az elmúlt négy hétre. A 16 rövid kérdést egyenként
+                      nézheted végig; bármelyiket kihagyhatod.
                     </p>
-                    {(
-                      [
-                        ["proud", "Mire vagy büszke ebben a hónapban?"],
-                        ["hard", "Mi volt nehéz?"],
-                        ["next", "Mire figyelnél a következő hónapban?"],
-                      ] as const
-                    ).map(([key, label]) => (
-                      <div key={key}>
+                    <p className={styles.eyebrow}>
+                      {monthlyReflectionStep <
+                      monthlyReflectionContent.questions.length
+                        ? `HAVI VISSZATEKINTÉS · ${monthlyReflectionStep + 1}/${monthlyReflectionContent.questions.length}`
+                        : "HAVI VISSZATEKINTÉS · ÁTTEKINTÉS"}
+                    </p>
+                    {monthlyReflectionStep <
+                    monthlyReflectionContent.questions.length ? (
+                      <>
+                        <p className={styles.muted}>
+                          {
+                            monthlyReflectionContent.questions[
+                              monthlyReflectionStep
+                            ]?.domain
+                          }
+                        </p>
+                        <h4>
+                          {
+                            monthlyReflectionContent.questions[
+                              monthlyReflectionStep
+                            ]?.text
+                          }
+                        </h4>
+                        <div className={styles.knowledgeList}>
+                          {monthlyReflectionContent.choices.map(
+                            (choice, index) => (
+                              <button
+                                className={styles.secondary}
+                                type="button"
+                                key={choice}
+                                onClick={() =>
+                                  answerMonthlyReflection(index + 1)
+                                }
+                              >
+                                {choice}
+                              </button>
+                            ),
+                          )}
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            onClick={() =>
+                              answerMonthlyReflection("not-applicable")
+                            }
+                          >
+                            {monthlyReflectionContent.notApplicable}
+                          </button>
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            onClick={() => answerMonthlyReflection("skip")}
+                          >
+                            {monthlyReflectionContent.skipped}
+                          </button>
+                        </div>
+                        {monthlyReflectionStep > 0 && (
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            onClick={() =>
+                              setMonthlyReflectionStep((step) => step - 1)
+                            }
+                          >
+                            Vissza az előző kérdéshez
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <h4>Válaszaid áttekintése</h4>
+                        <div className={styles.knowledgeList}>
+                          {monthlyReflectionContent.questions.map(
+                            (item, index) => {
+                              const answer = monthlyAnswers[index];
+                              const label =
+                                typeof answer === "number"
+                                  ? monthlyReflectionContent.choices[answer - 1]
+                                  : answer === "not-applicable"
+                                    ? monthlyReflectionContent.notApplicable
+                                    : monthlyReflectionContent.skipped;
+                              return (
+                                <article
+                                  className={styles.dataCard}
+                                  key={`${item.domain}-${item.text}`}
+                                >
+                                  <h4>{item.text}</h4>
+                                  <p>{label}</p>
+                                </article>
+                              );
+                            },
+                          )}
+                        </div>
                         <label
                           className={styles.label}
-                          htmlFor={`reflection-${key}`}
+                          htmlFor="monthly-next-step"
                         >
-                          {label}
+                          Mire szeretnél figyelni a következő hónapban? (nem
+                          kötelező)
                         </label>
                         <textarea
-                          id={`reflection-${key}`}
+                          id="monthly-next-step"
                           rows={2}
-                          maxLength={1000}
-                          value={monthlyReflection[key]}
+                          maxLength={500}
+                          value={monthlyNextStep}
                           onChange={(event) =>
-                            setMonthlyReflection((current) => ({
-                              ...current,
-                              [key]: event.target.value,
-                            }))
+                            setMonthlyNextStep(event.target.value)
                           }
                         />
-                      </div>
-                    ))}
-                    <button
-                      className={styles.primary}
-                      type="submit"
-                      disabled={
-                        busy ||
-                        !Object.values(monthlyReflection).some((value) =>
-                          value.trim(),
-                        )
-                      }
-                    >
-                      Visszatekintés mentése
-                    </button>
+                        <label className={styles.label} htmlFor="monthly-note">
+                          Saját megjegyzés (nem kötelező)
+                        </label>
+                        <textarea
+                          id="monthly-note"
+                          rows={2}
+                          maxLength={1000}
+                          value={monthlyNote}
+                          onChange={(event) =>
+                            setMonthlyNote(event.target.value)
+                          }
+                        />
+                        <div className={styles.actions}>
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            onClick={() =>
+                              setMonthlyReflectionStep(
+                                monthlyReflectionContent.questions.length - 1,
+                              )
+                            }
+                          >
+                            Vissza az utolsó kérdéshez
+                          </button>
+                          <button
+                            className={styles.primary}
+                            type="submit"
+                            disabled={busy}
+                          >
+                            Havi visszatekintés mentése
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </form>
                   <div className={styles.formGroup}>
                     <h3>Korábbi visszatekintések</h3>
                     {ownPlayerData?.records
                       .filter((record) =>
-                        record.text?.startsWith("Havi visszatekintés ·"),
+                        record.text?.startsWith("Havi visszatekintés"),
                       )
                       .map((record) => (
                         <article className={styles.dataCard} key={record.id}>
