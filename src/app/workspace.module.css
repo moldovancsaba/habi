@@ -90,6 +90,13 @@
   flex-wrap: wrap;
   gap: 12px;
 }
+.adminActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
 .signInAlert {
   width: 100%;
   padding: 16px 18px;
@@ -510,5 +517,12 @@
   .playerContextHeading,
   .playerContext > strong {
     grid-column: 1;
+  }
+  .adminActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .adminActions > a {
+    width: 100%;
   }
 }

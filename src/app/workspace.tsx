@@ -948,12 +948,14 @@ export default function HabiWorkspace() {
                 ehhez a fiókhoz.
               </p>
             )}
-            <a className={styles.primary} href="/admin">
-              Adminfelület megnyitása
-            </a>
-            <a className={styles.secondary} href="/admin#my-access">
-              Szerepkör kérése a saját fiókomhoz
-            </a>
+            <div className={styles.adminActions}>
+              <a className={styles.primary} href="/admin">
+                Adminfelület megnyitása
+              </a>
+              <a className={styles.secondary} href="/admin#my-access">
+                Szerepkör kérése a saját fiókomhoz
+              </a>
+            </div>
             {roleEntryError && (
               <p className={styles.signInAlert} role="alert">
                 {roleEntryError}
