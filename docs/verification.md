@@ -21,7 +21,7 @@
 
 - A `/api/app` korábban `application/json` Content-Type-ot küldött charset paraméter nélkül; egyes közvetlen mobilböngészős megjelenítések UTF-8 helyett egybájtos kódolással dekódolták az ékezeteket.
 - A katalógus forrása UTF-8, az API válasza UTF-8-ként dekódolva helyes magyar karaktereket tartalmazott. A javítás explicit `Content-Type: application/json; charset=utf-8` fejlécet ad a sikeres és alkalmazásszintű hibaválaszhoz.
-- Ellenőrzés: a telepített `/api/app` válasz fejlécének `application/json; charset=utf-8`-at kell mutatnia; a `Válassz` karakterláncnak UTF-8 dekódolással helyesnek kell maradnia.
+- A `ec3afa0` javítás Productionbe került. Élő ellenőrzés: HTTP 200, `Content-Type: application/json; charset=utf-8`; UTF-8 dekódolással a `Válassz egyetlen, gyakorolható célt` szöveg helyes, a `VÃ¡lassz` mojibake-szöveg hiányzik.
 
 ## Aktuális ágállapot · 2026-10-25
 
