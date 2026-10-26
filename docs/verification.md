@@ -558,6 +558,9 @@ The callback now runs the two ordered, versioned session prerequisites after OID
 | `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, 121 tests, 0 failures; includes the isolated callback-prerequisite schema/idempotency case | Disposable local Mongo replica set |
 | `npm run typecheck` | PASS, exit 0 | Local |
 | `npm run build` | PASS, exit 0; callback and admin routes included | Local production build |
-| Live SSO callback | Not yet re-verified | Requires the owner to complete DoneIsBetter sign-in after Production deployment |
+| Production deployment `dpl_5CAdY57PGmJEYVucP8UwXfeuiRQo` | READY; commit `0c58afd` | Vercel Production project `narimato/habi`; aliased to `https://habigoal.com` |
+| Production `GET /`, `/admin`, `/api/health`, `/api/ready` | PASS, HTTP 200 | `https://habigoal.com` |
+| Production callback without a login transaction | PASS, HTTP 303 to `/?signin=failed` | Expected fail-closed response; does not prove a real SSO login |
+| Live authenticated SSO callback | Not yet re-verified | Requires the owner to complete DoneIsBetter sign-in after Production deployment |
 
 Rollback is an application deployment rollback only. Keep applied additive migration records and collections; do not delete migration ledger entries or old diary data.
