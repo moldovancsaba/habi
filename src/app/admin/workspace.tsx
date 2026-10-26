@@ -14,6 +14,11 @@ type Membership = {
   role: Role;
   status: "active";
 };
+type OwnMembership = {
+  role: Role;
+  playerId: string | null;
+  playerDisplayName: string | null;
+};
 type Invitation = {
   id: string;
   role: Role;
@@ -37,12 +42,18 @@ export default function AdminConsole() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [ownMemberships, setOwnMemberships] = useState<OwnMembership[]>([]);
   const [role, setRole] = useState<Role>("player");
   const [playerId, setPlayerId] = useState("");
   const [playerDisplayName, setPlayerDisplayName] = useState("");
   const [createdUrl, setCreatedUrl] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [ownRole, setOwnRole] = useState<Role>("player");
+  const [ownPlayerId, setOwnPlayerId] = useState("");
+  const [ownPlayerName, setOwnPlayerName] = useState("");
+  const [ownInviteUrl, setOwnInviteUrl] = useState("");
+  const [ownRoleMessage, setOwnRoleMessage] = useState("");
 
   async function logOutFromHabi() {
     await fetch("/auth/logout", {
@@ -71,6 +82,9 @@ export default function AdminConsole() {
         if (!response.ok) return setState("error");
         const body = await response.json().catch(() => null);
         if (body?.permission !== "admin") return setState("denied");
+        setOwnMemberships(
+          Array.isArray(body.memberships) ? body.memberships : [],
+        );
         setState("ready");
         const result = await jsonResponse<{ tenants: Tenant[] }>(
           await fetch("/api/admin/invitations", {
@@ -175,6 +189,51 @@ export default function AdminConsole() {
       setBusy(false);
     }
   }
+
+  async function requestOwnRole(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (
+      !tenantId ||
+      (ownRole === "parent" && !ownPlayerId) ||
+      (ownRole === "player" && !ownPlayerName.trim())
+    )
+      return;
+    setBusy(true);
+    setOwnRoleMessage("");
+    setOwnInviteUrl("");
+    try {
+      const result = await jsonResponse<{ claimUrl: string }>(
+        await fetch("/api/admin/invitations", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tenantId,
+            role: ownRole,
+            playerId: ownRole === "parent" ? ownPlayerId : null,
+            playerDisplayName:
+              ownRole === "player" ? ownPlayerName.trim() : null,
+          }),
+        }),
+      );
+      setOwnInviteUrl(result.claimUrl);
+      setOwnRoleMessage(
+        "A meghívó elkészült. Nyisd meg, és fogadd el ugyanazzal a DoneIsBetter-fiókkal, amellyel most be vagy jelentkezve.",
+      );
+    } catch {
+      setOwnRoleMessage(
+        "A szerepkör meghívója nem készült el. Ellenőrizd a kiválasztást, majd próbáld újra.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const ownRoleAlreadyAssigned = ownMemberships.some(
+    (membership) =>
+      membership.role === ownRole &&
+      (ownRole !== "parent" || membership.playerId === ownPlayerId),
+  );
 
   async function setupTenant() {
     if (
@@ -422,6 +481,122 @@ export default function AdminConsole() {
               </div>
             ) : (
               <>
+                <section
+                  className={styles.notice}
+                  id="my-access"
+                  aria-labelledby="my-access-heading"
+                >
+                  <p className={styles.eyebrow}>A SAJÁT FIÓKOD</p>
+                  <h2 id="my-access-heading">Saját Habi-szerepköreim</h2>
+                  {ownMemberships.length ? (
+                    <ul className={styles.ownRoles}>
+                      {ownMemberships.map((membership, index) => (
+                        <li
+                          key={`${membership.role}:${membership.playerId ?? index}`}
+                        >
+                          <span
+                            className={`role-badge actor-${membership.role}`}
+                          >
+                            {membership.role === "player"
+                              ? "Játékos"
+                              : membership.role === "parent"
+                                ? "Szülő"
+                                : "Edző"}
+                          </span>
+                          {membership.playerDisplayName ??
+                            membership.playerId ??
+                            ""}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>
+                      Jelenleg csak DoneIsBetter-admin jogosultságod van. Habi
+                      játékos, szülői vagy edzői munkaterületed még nincs.
+                    </p>
+                  )}
+                  <h3>Szerepkör kérése a saját fiókodhoz</h3>
+                  <p>
+                    Adminisztrátorként létrehozhatsz egy meghívót magadnak. A
+                    szerepkör csak akkor aktiválódik, ha ugyanazzal az
+                    ellenőrzött fiókkal elfogadod.
+                  </p>
+                  <form className={styles.form} onSubmit={requestOwnRole}>
+                    <label htmlFor="own-role">Kért szerepkör</label>
+                    <select
+                      id="own-role"
+                      value={ownRole}
+                      onChange={(event) =>
+                        setOwnRole(event.target.value as Role)
+                      }
+                    >
+                      <option value="player">Játékos</option>
+                      <option value="parent">Szülő</option>
+                      <option value="coach">Edző</option>
+                    </select>
+                    {ownRole === "parent" && (
+                      <>
+                        <label htmlFor="own-player">Kapcsolódó játékos</label>
+                        <select
+                          id="own-player"
+                          value={ownPlayerId}
+                          onChange={(event) =>
+                            setOwnPlayerId(event.target.value)
+                          }
+                          required
+                        >
+                          <option value="">Válassz játékost</option>
+                          {players.map((player) => (
+                            <option key={player.id} value={player.id}>
+                              {player.displayName ?? "Név nincs megadva"} ·{" "}
+                              {player.id}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+                    {ownRole === "player" && (
+                      <>
+                        <label htmlFor="own-player-name">
+                          Játékosként használt név
+                        </label>
+                        <input
+                          id="own-player-name"
+                          value={ownPlayerName}
+                          onChange={(event) =>
+                            setOwnPlayerName(event.target.value)
+                          }
+                          autoComplete="name"
+                          maxLength={100}
+                          required
+                        />
+                      </>
+                    )}
+                    <button
+                      className={styles.primary}
+                      type="submit"
+                      disabled={
+                        busy ||
+                        !tenantId ||
+                        ownRoleAlreadyAssigned ||
+                        (ownRole === "parent" && players.length === 0) ||
+                        (ownRole === "player" && !ownPlayerName.trim())
+                      }
+                    >
+                      {busy
+                        ? "Meghívó készül…"
+                        : ownRoleAlreadyAssigned
+                          ? "Ez a szerepkör már aktív"
+                          : "Szerepkör kérése a saját fiókomhoz"}
+                    </button>
+                    {ownRoleMessage && <p role="status">{ownRoleMessage}</p>}
+                    {ownInviteUrl && (
+                      <a className={styles.primary} href={ownInviteUrl}>
+                        Meghívó megnyitása és elfogadása
+                      </a>
+                    )}
+                  </form>
+                </section>
                 <form className={styles.form} onSubmit={createInvitation}>
                   <label htmlFor="tenant">Szervezet</label>
                   <select

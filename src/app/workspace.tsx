@@ -5,6 +5,11 @@ import styles from "./workspace.module.css";
 import MetroTimeline, { type TimelinePage } from "./metro-timeline";
 
 type Role = "player" | "parent" | "coach";
+type OwnRole = {
+  role: Role;
+  playerId: string | null;
+  playerDisplayName: string | null;
+};
 type Me = {
   actorId: string;
   activeRole: Role;
@@ -44,7 +49,7 @@ type AppState =
   | { state: "loading" }
   | { state: "signed-out" }
   | { state: "no-role" }
-  | { state: "admin" }
+  | { state: "admin"; memberships: OwnRole[] }
   | { state: "ready"; me: Me };
 
 const metrics = [
@@ -129,8 +134,15 @@ export default function HabiWorkspace() {
           cache: "no-store",
           credentials: "same-origin",
         });
-        if (adminResponse.ok) setApp({ state: "admin" });
-        else if (adminResponse.status === 403) setApp({ state: "no-role" });
+        if (adminResponse.ok) {
+          const admin = await adminResponse.json().catch(() => null);
+          setApp({
+            state: "admin",
+            memberships: Array.isArray(admin?.memberships)
+              ? admin.memberships
+              : [],
+          });
+        } else if (adminResponse.status === 403) setApp({ state: "no-role" });
         else setApp({ state: "signed-out" });
         return;
       }
@@ -687,8 +699,34 @@ export default function HabiWorkspace() {
               Az adminisztrátori fiókoddal felhasználói meghívókat és
               szerepköröket kezelhetsz.
             </p>
+            <h2>A saját Habi-szerepköreid</h2>
+            {app.memberships.length ? (
+              <div className="story-legend">
+                {app.memberships.map((membership, index) => (
+                  <span
+                    className={`role-badge actor-${membership.role}`}
+                    key={`${membership.role}:${membership.playerId ?? index}`}
+                  >
+                    {roleLabel(membership.role)}
+                    {membership.playerDisplayName
+                      ? ` · ${membership.playerDisplayName}`
+                      : membership.playerId
+                        ? ` · ${membership.playerId}`
+                        : ""}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p>
+                Még nincs játékos, szülői vagy edzői hozzáférés hozzárendelve
+                ehhez a fiókhoz.
+              </p>
+            )}
             <a className={styles.primary} href="/admin">
               Adminfelület megnyitása
+            </a>
+            <a className={styles.secondary} href="/admin#my-access">
+              Szerepkör kérése a saját fiókomhoz
             </a>
           </section>
         )}

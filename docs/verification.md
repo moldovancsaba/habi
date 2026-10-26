@@ -640,3 +640,15 @@ The player-list `GET` route now explicitly uses request-time headers. Before thi
 | `GET /`, `/admin`, `/api/health`, `/api/ready` | PASS, HTTP 200 | `https://habigoal.com` |
 | Anonymous `GET /api/v1/me/scope` | PASS, HTTP 405; route is POST-only | `https://habigoal.com` |
 | Authenticated switch among multiple memberships | Not yet verified | Requires an identity with at least two active memberships |
+
+## T-HG-143 · Show own roles and request a self-invitation · 2026-10-26
+
+The signed-in administrator landing page now displays the active player, parent, and coach memberships attached to the verified SSO identity. The admin page also shows those roles and offers a self-invitation form for a missing role. It uses the existing admin-only invitation route; the new membership is not active until the administrator opens and accepts the single-use invite while signed in with the same verified identity. Parent invitations require selecting an existing player. Player invitations create a player profile using the name entered. An already-active identical role/scope is disabled.
+
+| Check | Result | Environment |
+| --- | --- | --- |
+| `npm run lint` | PASS, exit 0; 179 files | Local |
+| `npm run typecheck` | PASS, exit 0 | Local |
+| `npm run build` | PASS, exit 0; `/api/admin/me` remains request-time | Local production build |
+| `git diff --check` | PASS, exit 0 | Local |
+| Logged-in account role display and invitation claim | Not yet verified | Requires the owner's authenticated admin session |
