@@ -89,6 +89,7 @@ export async function readTimeline({
     publications,
     sessions,
     threads,
+    turns,
   ] = await Promise.all([
     db
       .collection("records")
@@ -162,6 +163,14 @@ export async function readTimeline({
       .collection("threads")
       .find({ tenantId: principal.tenantId, playerId })
       .toArray(),
+    db
+      .collection("turns")
+      .find({
+        tenantId: principal.tenantId,
+        playerId,
+        createdAt: { $lte: snapshotAt },
+      })
+      .toArray(),
   ]);
   const nodes = [];
   const processMap = new Map();
@@ -175,6 +184,7 @@ export async function readTimeline({
       id: thread.id,
       closedAt: thread.closedAt ?? null,
     });
+  const turnsById = new Map(turns.map((turn) => [turn.id, turn]));
   for (const record of records)
     if (!record.sessionId)
       processMap.set(record.id, { id: record.id, closedAt: null });
@@ -235,6 +245,7 @@ export async function readTimeline({
             ? "proxy"
             : "observation",
       kind: "thread.message",
+      summary: item.text,
       resourceRef: { id: item.id, revision: item.revision },
       processId: item.threadId,
       replyTo: item.replyTo,
@@ -277,8 +288,19 @@ export async function readTimeline({
     });
   }
   for (const item of interpretations) {
+    const turn = turnsById.get(item.turnId);
+    const questionMessage = turn
+      ? messages.find(
+          (message) =>
+            message.threadId === item.threadId &&
+            message.text === turn.question &&
+            message.submittedAt === turn.createdAt,
+        )
+      : null;
+    const noEvidence = item.answer?.status === "no_evidence";
     if (
       principal.role !== "coach" &&
+      !(principal.role === "parent" && noEvidence) &&
       !(item.answer?.status === "ready" && item.answer?.validity === "current")
     )
       continue;
@@ -287,13 +309,16 @@ export async function readTimeline({
       revision: item.revision,
       playerId,
       submittedAt: item.updatedAt,
-      actorRole: "parent",
+      actorRole: questionMessage?.recordedBy?.role ?? "parent",
       sourceKind: "proxy",
-      kind: "interpretation.ready",
+      kind: noEvidence ? "interpretation.no_evidence" : "interpretation.ready",
+      summary: noEvidence
+        ? "A Habi nem talált ellenőrizhető, forrásolt választ. Nem vont le következtetést."
+        : "A kérdésre forrásolt magyarázat készült.",
       resourceRef: { id: item.id, revision: item.revision },
       processId: item.threadId,
       replyTo: null,
-      relatedId: null,
+      relatedId: questionMessage?.id ?? null,
     });
   }
   const filtered = nodes

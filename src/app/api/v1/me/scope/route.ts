@@ -118,7 +118,10 @@ export async function POST(request: Request): Promise<Response> {
           );
           if (switched.modifiedCount !== 1)
             throw new HabiApiError("REVISION_CONFLICT");
-          return { status: 200, resultRef: { id: membership.id } };
+          return {
+            status: 200,
+            resultRef: { id: membership.id, revision: membership.revision },
+          };
         },
       });
 

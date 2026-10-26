@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.4.12",
+    "version": "2.4.13",
     "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
@@ -8643,7 +8643,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/TimelinePageReadDTO"
+                  "$ref": "./api-response-schemas.json#/$defs/TimelinePageReadDTO"
                 }
               }
             }

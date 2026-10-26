@@ -70,6 +70,7 @@ export function adaptTimelinePage(page) {
       at: node.submittedAt,
       role: node.actorRole,
       type: node.kind,
+      ...(typeof node.summary === "string" ? { summary: node.summary } : {}),
       playerId: node.playerId,
       sourceKind: node.sourceKind,
       resourceRef: Object.freeze({

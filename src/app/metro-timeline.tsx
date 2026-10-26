@@ -15,6 +15,7 @@ export type TimelineNode = {
   processId: string;
   replyTo: string | null;
   relatedId: string | null;
+  summary?: string;
 };
 export type TimelineProcess = { id: string; closedAt?: string | null };
 export type TimelinePage = {
@@ -85,6 +86,7 @@ const labels: Record<string, string> = {
   observation: "Megfigyelés",
   "thread.message": "Beszélgetés",
   "interpretation.ready": "Ellenőrzött magyarázat",
+  "interpretation.no_evidence": "Nem találtunk forrásolt választ",
   "plan.proposed": "Edzői terv",
   "plan.accepted": "Elfogadott edzői terv",
   "plan.completed": "Lezárt edzői terv",
@@ -188,9 +190,10 @@ function makeBranches(page: TimelinePage, events: TimelineNode[]) {
     const origin = [...group.events].sort(
       (a, b) => Date.parse(a.submittedAt) - Date.parse(b.submittedAt),
     )[0];
-    const conversation = ["message", "thread", "interpretation"].includes(
-      origin.kind,
-    );
+    const conversation =
+      ["message", "thread"].includes(origin.kind) ||
+      origin.kind.startsWith("thread.") ||
+      origin.kind.startsWith("interpretation.");
     return {
       id,
       role: origin.actorRole,
@@ -516,13 +519,16 @@ export default function MetroTimeline({
         {events.map((event) => {
           const branch = graph?.byEvent.get(event.id);
           const record = byResourceId.get(event.resourceRef.id);
-          const date = new Date(event.submittedAt).toLocaleDateString("hu-HU", {
+          const dateTime = new Date(event.submittedAt).toLocaleString("hu-HU", {
             year: "numeric",
             month: "long",
             day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
           });
           const title = labels[record?.kind ?? event.kind] ?? "Naplóesemény";
           const summary =
+            event.summary?.trim() ||
             record?.text?.trim() ||
             (record?.answerCodes?.length ? "A napi válaszaid rögzítve." : "");
           const isOpen = openIds.has(event.id);
@@ -533,7 +539,7 @@ export default function MetroTimeline({
               data-event-id={event.id}
               data-side={branch?.role === "coach" ? "right" : "left"}
             >
-              <h3 className="story-date">{date}</h3>
+              <h3 className="story-date">{dateTime}</h3>
               <div className="story-card">
                 <article className="event-card">
                   <div className="event-meta">
@@ -564,6 +570,7 @@ export default function MetroTimeline({
                       <span>{summary}</span>
                     </summary>
                     <div className="event-details">
+                      {event.summary ? <p>{event.summary}</p> : null}
                       {record?.text ? <p>{record.text}</p> : null}
                       {record?.answerCodes?.length ? (
                         <dl className="event-checkin-answers">
@@ -582,7 +589,7 @@ export default function MetroTimeline({
                         </dl>
                       ) : null}
                       <p className="event-meta">
-                        Rögzítette: {roleLabels[event.actorRole]} · {date}
+                        Rögzítette: {roleLabels[event.actorRole]} · {dateTime}
                       </p>
                     </div>
                   </details>

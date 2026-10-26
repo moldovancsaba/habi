@@ -188,6 +188,7 @@ export default function HabiWorkspace() {
   const [checkinIndex, setCheckinIndex] = useState<number | null>(null);
   const [observation, setObservation] = useState("");
   const [question, setQuestion] = useState("");
+  const [submittedQuestion, setSubmittedQuestion] = useState("");
   const [observationFeedback, setObservationFeedback] = useState<{
     kind: "success" | "error";
     message: string;
@@ -650,6 +651,31 @@ export default function HabiWorkspace() {
       if (timer) clearTimeout(timer);
     };
   }, [questionJob?.jobId, questionJob?.status]);
+
+  useEffect(() => {
+    if (
+      !questionJob?.jobId ||
+      !playerId ||
+      !["queued", "ready"].includes(questionJob.status)
+    )
+      return;
+    const controller = new AbortController();
+    void fetch(
+      `/api/v1/timeline?playerId=${encodeURIComponent(playerId)}&limit=50`,
+      {
+        cache: "no-store",
+        credentials: "same-origin",
+        signal: controller.signal,
+      },
+    )
+      .then(async (response) => {
+        const body = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(body?.code ?? "TIMELINE_LOAD_FAILED");
+        if (!controller.signal.aborted) setTimeline(body as TimelineResponse);
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [playerId, questionJob?.jobId, questionJob?.status]);
 
   async function switchMembership(membershipId: string) {
     if (!active || membershipId === active.activeMembershipId || busy) return;
@@ -1192,6 +1218,7 @@ export default function HabiWorkspace() {
         reasonCode: null,
         resultRef: null,
       });
+      setSubmittedQuestion(question.trim());
       setQuestionAnswer(null);
       setQuestionStatusUnavailable(false);
       setQuestion("");
@@ -1957,6 +1984,11 @@ export default function HabiWorkspace() {
                             className={styles.questionResult}
                             aria-label="A kérés eredménye"
                           >
+                            {submittedQuestion && (
+                              <p className={styles.questionPrompt}>
+                                <strong>Kérdésed:</strong> {submittedQuestion}
+                              </p>
+                            )}
                             <h3>
                               {questionJob.status === "queued"
                                 ? "A kérdés várakozik"

@@ -19,9 +19,9 @@ test("API contract and response schemas are pinned to their canonical versions",
   const apiManifest = JSON.parse(apiManifestBytes.toString("utf8"));
   const responseManifest = JSON.parse(responseManifestBytes.toString("utf8"));
 
-  assert.equal(api.info.version, "2.4.12");
-  assert.equal(apiManifest.apiVersion, "2.4.12");
-  assert.equal(responseManifest.apiVersion, "2.4.10");
+  assert.equal(api.info.version, "2.4.13");
+  assert.equal(apiManifest.apiVersion, "2.4.13");
+  assert.equal(responseManifest.apiVersion, "2.4.13");
   assert.equal(
     createHash("sha256").update(apiBytes).digest("hex"),
     apiManifest.sha256,
@@ -38,7 +38,10 @@ test("API contract and response schemas are pinned to their canonical versions",
   const recordOperation = api.paths["/v1/players/{playerId}/records/{id}"].get;
   const recordSchema =
     recordOperation.responses["200"].content["application/json"].schema.$ref;
-  assert.equal(timelineSchema, "./schemas.json#/$defs/TimelinePageReadDTO");
+  assert.equal(
+    timelineSchema,
+    "./api-response-schemas.json#/$defs/TimelinePageReadDTO",
+  );
   assert.equal(recordSchema, "./schemas.json#/$defs/RecordReadDTO");
   assert.deepEqual(recordOperation.security, [{ sessionCookie: [] }]);
   assert.ok(api.paths["/v1/checkin-sessions/{id}/answers"].post);

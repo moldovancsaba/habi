@@ -2,7 +2,7 @@
   "artifact": "api.json",
   "sourceRepository": "https://github.com/moldovancsaba/habi",
   "sourcePath": "contracts/api.json",
-  "apiVersion": "2.4.12",
-  "sha256": "c9d69a8160d96b7e359a65492971774b43bf656a008c250ff0d0e6a8c9faf419",
+  "apiVersion": "2.4.13",
+  "sha256": "8ee3b4fe5df794be47405a2cb594ba3409506a98ea9058b86c9e6af55b5e985d",
   "purpose": "Habi-owned product API contract; digest records the local artifact version and does not assert deployment."
 }

@@ -23,6 +23,7 @@ function dto() {
         actorRole: "coach",
         sourceKind: "observation",
         kind: "observation",
+        summary: "A timeline event summary",
         resourceRef: { id: "record-1", revision: 3 },
         processId: "process-1",
         replyTo: null,
@@ -59,7 +60,7 @@ test("timeline schema snapshot matches its canonical source manifest", async () 
       "utf8",
     ),
   );
-  assert.equal(manifest.apiVersion, "2.4.10");
+  assert.equal(manifest.apiVersion, "2.4.13");
   assert.equal(
     manifest.sourceRepository,
     "https://github.com/moldovancsaba/habi",
@@ -121,6 +122,7 @@ test("timeline loader uses same-origin transport, validates, and adapts the DTO"
     at: "2026-10-25T10:00:00.000Z",
     role: "coach",
     type: "observation",
+    summary: "A timeline event summary",
     playerId: "player-1",
     sourceKind: "observation",
     resourceRef: { id: "record-1", revision: 3 },

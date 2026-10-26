@@ -750,3 +750,21 @@ The signed-in administrator landing page now displays the active player, parent,
 - `git diff --check` | PASS, exit 0 | Local Habi checkout.
 - Production commit `97bc8ed39d1fd9494d611e4b44632b1c6da17afc` is Ready as deployment `dpl_EXrhgg1fAA41WpGBybn6huYjgoRA` in Vercel project `narimato/habi`; aliases include `habigoal.com` and `www.habigoal.com`.
 - Live unauthenticated route checks: `GET /`, `/legacy`, `/api/health`, and `/api/ready` all returned HTTP 200 at `https://habigoal.com`. The homepage shows the DoneIsBetter sign-in entry. A signed-in Production report upload was not performed in this check; the matching authenticated coach flow was exercised against the isolated synthetic local stack above.
+
+## Timeline question story, event times, and role-switch receipt · 2026-10-26
+
+- The workspace now repeats the submitted question in the result card after the input clears. It refreshes the authorized timeline after submission and completion.
+- Timeline message events include the actual question text. A completed `no_evidence` interpretation is shown to its authorized parent and coach as a separate linked event with the explicit result; no conclusion is invented. Other nonapproved personal answers remain hidden from parents.
+- Timeline cards show the event's date and hour/minute. The value is derived from the persisted event timestamp; no timezone preference or setting was introduced.
+- Production `POST /api/v1/me/scope` was returning `INTERNAL_ERROR`: the idempotency receipt omitted the required reference revision. The receipt now carries the active membership revision.
+- API contract 2.4.13 now points the timeline operation at the exact response DTO schema, which permits the optional event summary. Manifest digests are updated.
+
+| Check | Result | Environment |
+| --- | --- | --- |
+| `npm run lint` | PASS, exit 0; 183 files | Local Habi checkout |
+| `npm test` | PASS, exit 0; 116 passed, 0 failed, 1 Atlas-only skip | Local Habi checkout; no isolated Atlas test URI configured |
+| `npm run typecheck` | PASS, exit 0 | Local Habi checkout |
+| `npm run build` | PASS, exit 0 | Local Habi checkout; Next.js production build |
+| `git diff --check` | PASS, exit 0 | Local Habi checkout |
+| Targeted timeline regression | PASS; parent question and no-evidence result are separate, linked events | Local test with synthetic records |
+| Production authenticated question/reload and role switch | Pending release verification | Requires authenticated account and live local worker |
