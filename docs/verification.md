@@ -1,5 +1,13 @@
 # Habi — ellenőrzési napló
 
+## Habigoal munkaterületek és edzői felmérés → helyi AI · 2026-10-26
+
+- A `/` munkaterület most az elfogadott wireframe szerkezetének szerepköri nézeteit szolgálja ki: Áttekintés, Napló, Állapotjelzés, Beszélgetések, Idővonal, Riportok és tervek, Felmérések és Tudástár. A képernyők a Habi jogosultság-ellenőrzött API-jait és a kiválasztott játékos valós adatait használják; a prototípus fiktív Dani adatai nem kerülnek át.
+- Az edzői Felmérések nézeten végigjárható a PDF feltöltés → ClamAV vizsgálat → kézi mező/oldal/nyers érték rögzítése → coach review → jóváhagyott extractionből forrásolt helyi AI-értelmezés. A UI a job állapotát lekérdezi; hálózati megszakításnál vár, és visszakapcsolódás után folytatja a lekérdezést.
+- `npm run lint` — PASS, exit 0; `npm run typecheck` — PASS, exit 0; `npm test` — PASS, 115 pass / 0 fail / 1 skip (az izolált Mongo replica-set integration kihagyva, mert ebben a parancsfutásban nem volt `HABI_TEST_MONGODB_URI`); `npm run build` — PASS, exit 0; `git diff --check` — PASS, exit 0.
+- `set -a; source .env.test.example; set +a; npm run test:workflow:local` — PASS, exit 0. Environment: localhost Next.js 16.4.3, szintetikus `habi_workflow_test` Mongo replica set, helyi Qwen 2.5 7B worker és ClamAV; Production Atlas/SSO-adatot nem használt. A folyamat ellenőrizte a jelentés biztonsági vizsgálatát, coach által bevitt mezők jóváhagyását, a jóváhagyott extractionre hivatkozó coach értelmezési kérés API → worker → eredmény útját, valamint a többi check-in, role visibility, plan, publication, feedback, follow-up és tenant isolation acceptance lépést.
+- Környezetbeli korlát: ez lokális szintetikus acceptance, nem bizonyítja az új felület éles böngészős vizuális vagy Vercel Production működését. A változás nem módosít adatbázis-sémát; rollbackhez az app és a acceptance script előző commitra állítható. Éles kiadás után még szükséges a bejelentkezett coach munkamenetben a kérdőívfeltöltés és szerepköri képernyők kézi vizuális ellenőrzése.
+
 ## Coach player scope, save error and metro history · 2026-10-26
 
 - Production request logs showed coach `record.create` and `checkin.results.list` requests returning `404 NOT_FOUND` for a value copied from the coach actor ID. The workspace had substituted the coach's own ID when the coach membership correctly had no single `playerId`; that ID is not a player record.

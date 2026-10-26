@@ -153,6 +153,55 @@
   border-top: 1px solid #dce5f1;
   padding-top: 16px;
 }
+.interpretation {
+  margin-top: 28px;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid #d8e4f5;
+  border-radius: 18px;
+  background: #f7f9fd;
+}
+.interpretation h3 {
+  margin: 0 0 8px;
+  color: #172b4d;
+  font-size: clamp(20px, 3vw, 26px);
+}
+.interpretation > label {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0 8px;
+  font-weight: 700;
+}
+.interpretation select,
+.interpretation textarea {
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid #cfdaeb;
+  border-radius: 11px;
+  background: white;
+  color: #20324a;
+  font: inherit;
+}
+.interpretationResult {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid #d8e4f5;
+  border-radius: 14px;
+  background: white;
+}
+.interpretationResult li {
+  margin: 12px 0;
+  line-height: 1.55;
+}
+.interpretationResult p {
+  line-height: 1.55;
+}
+.interpretation select:focus-visible,
+.interpretation textarea:focus-visible {
+  outline: 3px solid #9b5e00;
+  outline-offset: 3px;
+}
 .fieldRow {
   display: grid;
   grid-template-columns: minmax(150px, 1.3fr) minmax(82px, 0.5fr) minmax(

@@ -36,6 +36,31 @@ type InputField = {
   rawValue: string;
   unit: string;
 };
+type SourceRef = { id: string; revision: number; span: null };
+type Interpretation = {
+  id: string;
+  revision: number;
+  answerState: string;
+  reviewState: string;
+  answer: {
+    status: string;
+    claims: Array<{
+      id: string;
+      text: string;
+      kind: string;
+      evidenceRefs: SourceRef[];
+    }>;
+    unknowns: string[];
+    clarifyingQuestions: string[];
+    manifest: { sourceRefs: SourceRef[] };
+  } | null;
+};
+type InterpretationJob = {
+  jobId: string;
+  status: string;
+  reasonCode: string | null;
+  resultRef: { id: string; revision: number } | null;
+};
 
 const CHUNK_SIZE = 1_048_576;
 const MAX_FILE_SIZE = 10 * 1_048_576;
@@ -91,6 +116,13 @@ export default function CoachReportWorkspace({
   const [messageKind, setMessageKind] = useState<"success" | "error">(
     "success",
   );
+  const [interpretationQuestion, setInterpretationQuestion] = useState("");
+  const [interpretationJob, setInterpretationJob] =
+    useState<InterpretationJob | null>(null);
+  const [interpretation, setInterpretation] = useState<Interpretation | null>(
+    null,
+  );
+  const [interpretationSource, setInterpretationSource] = useState("");
 
   const loadReports = useCallback(async () => {
     const response = await fetch(
@@ -135,6 +167,137 @@ export default function CoachReportWorkspace({
     }, 8000);
     return () => window.clearInterval(timer);
   }, [loadReports]);
+
+  useEffect(() => {
+    const jobId = interpretationJob?.jobId;
+    const currentStatus = interpretationJob?.status;
+    if (
+      !jobId ||
+      !["queued", "processing", "waiting"].includes(currentStatus ?? "")
+    )
+      return;
+    let stopped = false;
+    let timer: number | undefined;
+    let delay = 1500;
+    const poll = async () => {
+      if (stopped) return;
+      try {
+        const job = (await fetch(`/api/v1/jobs/${encodeURIComponent(jobId)}`, {
+          cache: "no-store",
+          credentials: "same-origin",
+        }).then(readResponse)) as InterpretationJob;
+        if (stopped) return;
+        if (["ready", "review"].includes(job.status) && job.resultRef) {
+          const result = (await fetch(
+            `/api/v1/interpretations/${encodeURIComponent(job.resultRef.id)}`,
+            { cache: "no-store", credentials: "same-origin" },
+          ).then(readResponse)) as Interpretation;
+          if (stopped) return;
+          setInterpretation(result);
+          setInterpretationJob(job);
+          setMessage(
+            "Az értelmezés elkészült. Ellenőrizd a forrásokat és a jelzett bizonytalanságokat.",
+          );
+          setMessageKind("success");
+          return;
+        }
+        if (["failed", "cancelled"].includes(job.status)) {
+          setInterpretationJob(job);
+          setMessage(
+            job.reasonCode === "DEPENDENCY_UNAVAILABLE"
+              ? "A helyi feldolgozás jelenleg nem érhető el. A kérdőív adatai megmaradtak; később újra kérheted az értelmezést."
+              : "Az értelmezési folyamat lezárult válasz nélkül. A feltöltött és ellenőrzött adatok megmaradtak.",
+          );
+          setMessageKind("error");
+          return;
+        }
+        setInterpretationJob((current) =>
+          current &&
+          current.status === job.status &&
+          current.reasonCode === job.reasonCode &&
+          current.resultRef?.id === job.resultRef?.id
+            ? current
+            : job,
+        );
+        delay = Math.min(10000, Math.round(delay * 1.5));
+      } catch {
+        if (!stopped) {
+          setInterpretationJob((current) =>
+            current && current.status !== "waiting"
+              ? { ...current, status: "waiting" }
+              : current,
+          );
+          setMessage(
+            "A kapcsolat átmenetileg megszakadt. Az értelmezési állapotot újra ellenőrizzük.",
+          );
+          setMessageKind("success");
+          delay = Math.min(10000, Math.round(delay * 1.5));
+        }
+      }
+      if (!stopped) timer = window.setTimeout(poll, delay);
+    };
+    timer = window.setTimeout(poll, delay);
+    return () => {
+      stopped = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [interpretationJob]);
+
+  async function requestInterpretation() {
+    const source = reports
+      .map((report) => ({ report, extraction: extractions[report.id] }))
+      .find(
+        ({ extraction }) => extraction?.id === interpretationSource,
+      )?.extraction;
+    if (source?.status !== "verified" || !interpretationQuestion.trim() || busy)
+      return;
+    setBusy(true);
+    setMessage("Az értelmezési kérés elküldése…");
+    setMessageKind("success");
+    setInterpretation(null);
+    try {
+      const response = await fetch(
+        `/api/v1/players/${encodeURIComponent(playerId)}/interpretations`,
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "x-habi-csrf": csrfToken,
+            "Idempotency-Key": crypto.randomUUID(),
+          },
+          body: JSON.stringify({
+            threadId: crypto.randomUUID(),
+            parentTurnId: null,
+            intent: "new_question",
+            question: interpretationQuestion.trim(),
+            sourceRefs: [
+              { id: source.id, revision: source.revision, span: null },
+            ],
+          }),
+        },
+      ).then(readResponse);
+      setInterpretationQuestion("");
+      setInterpretationJob({
+        jobId: response.jobId,
+        status: "queued",
+        reasonCode: null,
+        resultRef: null,
+      });
+      setMessage(
+        "A kérés sorba állt a helyi AI-feldolgozáshoz. Az állapotot automatikusan frissítjük.",
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Az értelmezési kérés nem küldhető el.",
+      );
+      setMessageKind("error");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function uploadReport() {
     if (!file || busy) return;
@@ -581,6 +744,134 @@ export default function CoachReportWorkspace({
           );
         })}
       </div>
+
+      <section
+        className={styles.interpretation}
+        aria-labelledby="report-interpretation-heading"
+      >
+        <h3 id="report-interpretation-heading">
+          Mit szeretnél megérteni a felmérésből?
+        </h3>
+        <p className={styles.intro}>
+          Csak ellenőrzött adatmezőből kérhető forrásolt magyarázat. Az
+          AI-válasz nem diagnózis; a bizonytalanságot és az ellenőrzési
+          állapotot külön jelezzük.
+        </p>
+        <label htmlFor="interpretation-source">Ellenőrzött adatforrás</label>
+        <select
+          id="interpretation-source"
+          value={interpretationSource}
+          onChange={(event) => setInterpretationSource(event.target.value)}
+        >
+          <option value="">Válassz ellenőrzött felmérési adatot</option>
+          {reports.flatMap((report) => {
+            const extraction = extractions[report.id];
+            return report.status === "ready" &&
+              extraction?.status === "verified"
+              ? [
+                  <option key={extraction.id} value={extraction.id}>
+                    Felmérési eredmény · {extraction.fields.length} ellenőrzött
+                    mező
+                  </option>,
+                ]
+              : [];
+          })}
+        </select>
+        <label htmlFor="interpretation-question">Kérdés</label>
+        <textarea
+          id="interpretation-question"
+          rows={3}
+          maxLength={2000}
+          value={interpretationQuestion}
+          onChange={(event) => setInterpretationQuestion(event.target.value)}
+          placeholder="Például: Mit mondanak az ellenőrzött értékek, és mit nem lehet belőlük megállapítani?"
+        />
+        <button
+          type="button"
+          className={styles.primary}
+          disabled={
+            busy ||
+            !interpretationQuestion.trim() ||
+            !interpretationSource ||
+            Boolean(
+              interpretationJob &&
+                ["queued", "processing", "waiting"].includes(
+                  interpretationJob.status,
+                ),
+            )
+          }
+          onClick={() => void requestInterpretation()}
+        >
+          {interpretationJob &&
+          ["queued", "processing", "waiting"].includes(interpretationJob.status)
+            ? "Helyi feldolgozás folyamatban…"
+            : "Forrásolt értelmezés kérése"}
+        </button>
+        {!interpretationSource && (
+          <p className={styles.intro}>
+            Az értelmezéshez előbb tölts fel PDF-et, rögzítsd a mezőket, majd
+            ellenőrizd és hagyd jóvá azokat.
+          </p>
+        )}
+        {interpretation && (
+          <article className={styles.interpretationResult} aria-live="polite">
+            <p className={styles.eyebrow}>
+              HABI ·{" "}
+              {interpretation.reviewState === "pending"
+                ? "EDZŐI ELLENŐRZÉSRE VÁR"
+                : interpretation.answerState.toLocaleUpperCase("hu-HU")}
+            </p>
+            {interpretation.answer ? (
+              <>
+                {interpretation.answer.claims.length ? (
+                  <ul>
+                    {interpretation.answer.claims.map((claim) => (
+                      <li key={claim.id}>
+                        <strong>
+                          {claim.kind === "inference"
+                            ? "Értelmezés"
+                            : claim.kind === "general"
+                              ? "Általános háttér"
+                              : "Forrás állítása"}
+                          :
+                        </strong>{" "}
+                        {claim.text}
+                        <p className={styles.intro}>
+                          Források:{" "}
+                          {claim.evidenceRefs
+                            .map((ref) => `${ref.id} · ${ref.revision}`)
+                            .join(", ") || "nincs hivatkozott bizonyíték"}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className={styles.intro}>
+                    Nincs forrásokkal alátámasztható állítás. A rendszer nem
+                    következtet hiányzó adatra.
+                  </p>
+                )}
+                {interpretation.answer.unknowns.length > 0 && (
+                  <p>
+                    <strong>Ami nem állapítható meg:</strong>{" "}
+                    {interpretation.answer.unknowns.join(" ")}
+                  </p>
+                )}
+                {interpretation.answer.clarifyingQuestions.length > 0 && (
+                  <p>
+                    <strong>Tisztázó kérdések:</strong>{" "}
+                    {interpretation.answer.clarifyingQuestions.join(" ")}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className={styles.intro}>
+                A feldolgozás elkészült, de válasz nem tehető elérhetővé.
+              </p>
+            )}
+          </article>
+        )}
+      </section>
     </section>
   );
 }

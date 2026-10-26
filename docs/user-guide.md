@@ -26,6 +26,20 @@ Adminisztrátorként a **Szerepkör kérése a saját fiókomhoz** gombbal indí
 4. A játékos egy indítóképernyőről egyesével halad végig az elfogadott öt állapotjelző kérdésen; bármelyiket átugorhatja, visszaléphet, majd az érvényes válaszok mentődnek. Szülőnél megfigyelés, előzmények és forrásolt helyi AI-kérdés jelenik meg. Kérdéshez előbb elérhető napi állapotjelzés kell; enélkül a küldés kikapcsolt, és a magyarázat közvetlenül az űrlapnál látható. Küldés után ugyanott követhető a várakozás, feldolgozás és edzői ellenőrzés, majd a jóváhagyott válasz is. Edzőnél megfigyelés és játékosadat-hozzáférés jelenik meg.
 5. A szerepkör visszavonható az admin felületen; a visszavonás megszünteti a hozzáférést.
 
+## A Habigoal-prototípus munkaterületei a Habi-ban
+
+A Habigoal wireframe jóváhagyott képernyőszerkezetét a Habi szerepkörönkénti navigációja valósítja meg. A prototípusban szereplő Dani és az eseményei bemutatóadatok; a Habi nem másolja ezeket az éles munkaterületre. A kezdőoldal a bejelentkezett tagság és az API-ból ténylegesen elérhető adatok szerint mutat profilt, állapotjelzést, szereplőket és metróvonalas eseménytörténetet.
+
+- **Játékos:** Áttekintés, Napló, Állapotjelzés, Idővonal. A napi jelzés öt kérdése egyenként jelenik meg; a Naplóban saját bejegyzés rögzíthető.
+- **Szülő:** Áttekintés, Napló, Beszélgetések, Idővonal, Tervek. A szülői bejegyzés külön szülői forrással kerül mentésre; a Beszélgetések képernyőn forrásolt kérdés küldhető a helyi AI-nak, és követhető a feldolgozás/edzői ellenőrzés.
+- **Edző:** Áttekintés, Napló, Állapotjelzés, Beszélgetések, Idővonal, Riportok és tervek, Felmérések, Tudástár. A coach a játékos saját megosztott válaszait olvashatja; külön forrásként rögzítheti a megfigyelését.
+
+Az **Idővonal** az API által visszaadott, jogosultság-ellenőrzött eseményeket a szerepkör szerinti metróágakon mutatja. Az Áttekintés a legutóbbi tényleges eseményeket is megjeleníti; nincs behelyettesített mintajátékos vagy demoesemény.
+
+Az edző a **Felmérések** résznél PDF-et tölthet fel, vagy az eredeti dokumentummal összevetve kézzel rögzítheti a mezőket, oldalt és nyers értéket. A helyi worker vírusvizsgálata után a mezők ellenőrizhetők és jóváhagyhatók. Ezután ugyanitt egy ellenőrzött mezőből forrásolt értelmezési kérdést küldhet a helyi AI-nak, és követheti a feldolgozás állapotát és válaszát. A válasz a hivatkozott mezőt és a bizonytalanságokat mutatja; nem diagnózis, és nem tesz ellenőrizetlen állítást kész eredményként elérhetővé. A **Riportok és tervek** résznél a coach forráshoz kapcsolt következő lépést készíthet, majd forrással ellátott, verziózott edzői anyagot menthet piszkozatként és külön megoszthatja. A játékos és a szülő a hozzájuk publikált tervet elfogadhatja vagy elutasíthatja, majd az aktív tervhez utánkövetést rögzíthet. A **Tudástár** kereshető, általános gyakorlatokat mutat; ezek nem egyéni diagnózisok.
+
+A korábbi feladat- és visszajelzésfunkciók továbbra is a felső navigáció **Feladatok és visszajelzések** hivatkozásáról, illetve a `/legacy` útvonalon érhetők el. Ezek a funkciók nem helyettesítik az új szerepköri naplót, idővonalat, kérdőívfeltöltést vagy coach-tervezést.
+
 ## Feladatok, visszajelzések és kérdőíveredmények
 
 - A napi feladatok és a korábbi Habi-visszajelzések a [Feladatok és visszajelzések](/legacy) oldalon érhetők el. A Habi kezdőlap felső nézetsorában válaszd ezt a hivatkozást. A `/legacy` cím közvetlenül is megnyitható.

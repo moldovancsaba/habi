@@ -250,6 +250,9 @@
   display: flex;
   gap: 20px;
   border-bottom: 1px solid #d6e0ef;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
 }
 .nav button,
 .navLink {
@@ -422,6 +425,118 @@
 .navLink:focus-visible {
   outline: 3px solid #87a8f5;
   outline-offset: 3px;
+}
+
+.summaryMetrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 175px), 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+.summaryMetrics > div {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid #e1e9f4;
+  border-radius: 14px;
+  background: #f7f9fd;
+}
+.summaryMetrics dt {
+  color: #60728d;
+  font-size: 0.92rem;
+}
+.summaryMetrics dd {
+  margin: 5px 0 0;
+  color: #172b4d;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+.dataCard {
+  margin: 16px 0;
+  padding: 18px;
+  border: 1px solid #d8e4f5;
+  border-radius: 18px;
+  background: #fff;
+}
+.dataCard h3 {
+  margin: 4px 0 10px;
+  font-size: 1.2rem;
+}
+.dataCard p {
+  line-height: 1.55;
+}
+.emptyState {
+  padding: 18px;
+  border-radius: 14px;
+  background: #f2f6fc;
+  color: #5b6e8a;
+  line-height: 1.55;
+}
+.messageList {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 18px 0;
+  padding: 0;
+}
+.messageList li {
+  padding: 16px;
+  border: 1px solid #e1e9f4;
+  border-radius: 16px;
+  background: #f8faff;
+}
+.messageList li p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.messageList time {
+  color: #657790;
+  font-size: 0.9rem;
+}
+.knowledgeList {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+.knowledgeList .dataCard {
+  margin: 0;
+}
+.knowledgeList summary {
+  display: grid;
+  gap: 8px;
+  cursor: pointer;
+}
+.knowledgeList .dataCard .knowledgeCardTitle {
+  color: #172b4d;
+  font-size: 1.1rem;
+}
+.knowledgeList .dataCard .practiceDescription {
+  color: #60728d;
+  line-height: 1.5;
+}
+.formGroup {
+  padding: 18px;
+  margin: 20px 0;
+  border: 1px solid #e1e9f4;
+  border-radius: 16px;
+  background: #f8faff;
+}
+.panel select,
+.panel input[type="search"] {
+  width: 100%;
+  min-height: 48px;
+  margin: 8px 0 16px;
+  padding: 10px 12px;
+  border: 1px solid #cedbeb;
+  border-radius: 12px;
+  background: #fff;
+  color: #172b4d;
+  font: inherit;
+}
+.panel select:focus-visible,
+.panel input[type="search"]:focus-visible,
+.panel textarea:focus-visible {
+  outline: 3px solid #b3c8fb;
+  outline-offset: 2px;
 }
 :global(textarea) {
   display: block;

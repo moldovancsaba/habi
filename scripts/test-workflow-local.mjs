@@ -770,9 +770,59 @@ const extractionReviewed = await jsonRequest(
 );
 assert.equal(extractionReviewed.response.status, 200);
 assert.equal(extractionReviewed.payload.status, "verified");
+const reportQuestion = await jsonRequest(
+  `/api/v1/players/${playerId}/interpretations`,
+  {
+    method: "POST",
+    cookie: extractionCoach.cookie,
+    csrf: extractionCoach.csrf,
+    key: `${idempotencyPrefix}-report-interpretation`,
+    body: {
+      threadId: randomUUID(),
+      parentTurnId: null,
+      intent: "new_question",
+      question: "Mit lehet megállapítani az ellenőrzött felmérési mezőből?",
+      sourceRefs: [
+        {
+          id: extraction.payload.id,
+          revision: extractionReviewed.payload.revision,
+          span: null,
+        },
+      ],
+    },
+  },
+);
+assert.equal(reportQuestion.response.status, 202);
+let reportQuestionStatus;
+const reportQuestionDeadline = Date.now() + 240_000;
+do {
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  reportQuestionStatus = await jsonRequest(
+    `/api/v1/jobs/${reportQuestion.payload.jobId}`,
+    { cookie: extractionCoach.cookie },
+  );
+  assert.equal(reportQuestionStatus.response.status, 200);
+} while (
+  ["queued", "processing"].includes(reportQuestionStatus.payload.status) &&
+  Date.now() < reportQuestionDeadline
+);
+assert.ok(
+  ["ready", "review"].includes(reportQuestionStatus.payload.status),
+  `local report interpretation did not finish: ${reportQuestionStatus.payload.status}/${reportQuestionStatus.payload.reasonCode}`,
+);
+const reportInterpretation = await jsonRequest(
+  `/api/v1/interpretations/${reportQuestionStatus.payload.resultRef.id}`,
+  { cookie: extractionCoach.cookie },
+);
+assert.equal(reportInterpretation.response.status, 200);
+assert.ok(
+  ["no_evidence", "awaiting_review", "ready"].includes(
+    reportInterpretation.payload.answerState,
+  ),
+);
 await signOut(extractionCoach);
 await signOut(player);
 
 process.stdout.write(
-  "PASS local synthetic role workflow: check-in, immutable result, versioned player practice feedback, observations, local-worker Q&A and reloadable thread history, report scan and extraction review, coach materials, plan acceptance/follow-up, visibility rules, write denial, and cross-tenant isolation.\n",
+  "PASS local synthetic role workflow: check-in, immutable result, versioned player practice feedback, observations, local-worker Q&A and reloadable thread history, report scan, coach-entered extraction review and source-grounded report interpretation, coach materials, plan acceptance/follow-up, visibility rules, write denial, and cross-tenant isolation.\n",
 );

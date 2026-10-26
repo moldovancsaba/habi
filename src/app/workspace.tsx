@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./workspace.module.css";
 import MetroTimeline, { ActorBadge, type TimelinePage } from "./metro-timeline";
 import CoachReportWorkspace from "./coach-report-workspace";
+import practices from "../lib/content/practices-v1.json";
 
 type Role = "player" | "parent" | "coach";
 type OwnRole = {
@@ -46,6 +47,51 @@ type PlayerData = PlayerProfile & {
   records: RecordItem[];
 };
 type HistoryItem = RecordItem & { label: string; sourceRole: Role };
+type WorkspaceView =
+  | "overview"
+  | "journal"
+  | "checkin"
+  | "conversations"
+  | "timeline"
+  | "reports"
+  | "assessments"
+  | "knowledge";
+type ThreadSummary = {
+  id: string;
+  revision: number;
+  status: string;
+  latestActivityAt: string;
+};
+type ThreadMessage = {
+  id: string;
+  revision: number;
+  text: string;
+  submittedAt: string;
+  recordedBy: { role: Role; displayName?: string | null };
+};
+type PlanSummary = {
+  id: string;
+  revision: number;
+  status: string;
+  actions: Array<{
+    id: string;
+    what: string;
+    why: string;
+    ownerActorId: string;
+    dueAt: string;
+    stopCondition: string;
+  }>;
+  sourceRefs: Array<{ id: string; revision: number }>;
+  acceptances: Array<{ role: Role; decision: string }>;
+};
+type MaterialSummary = {
+  id: string;
+  revision: number;
+  title: string;
+  text: string;
+  version: number;
+  status: string;
+};
 type TimelineResponse = TimelinePage & { snapshotAt?: string };
 type QuestionJob = {
   jobId: string;
@@ -163,7 +209,105 @@ export default function HabiWorkspace() {
   const [enteringRoleId, setEnteringRoleId] = useState<string | null>(null);
   const [roleEntryError, setRoleEntryError] = useState("");
   const [loadingOlder, setLoadingOlder] = useState(false);
-  const [tab, setTab] = useState<"today" | "history">("today");
+  const [tab, setTab] = useState<WorkspaceView>("overview");
+  const [threads, setThreads] = useState<ThreadSummary[]>([]);
+  const [selectedThreadId, setSelectedThreadId] = useState("");
+  const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
+  const [threadDraft, setThreadDraft] = useState("");
+  const [plans, setPlans] = useState<PlanSummary[]>([]);
+  const [materials, setMaterials] = useState<MaterialSummary[]>([]);
+  const [planDraft, setPlanDraft] = useState("");
+  const [materialTitle, setMaterialTitle] = useState("");
+  const [materialText, setMaterialText] = useState("");
+  const [followupText, setFollowupText] = useState("");
+  const [followupOutcome, setFollowupOutcome] = useState<
+    "helped" | "not_helped" | "unknown" | "adjust"
+  >("unknown");
+  const [practiceSearch, setPracticeSearch] = useState("");
+
+  useEffect(() => {
+    if (app.state !== "ready" || !selectedPlayerId) return;
+    const controller = new AbortController();
+    const fetchList = async (url: string) => {
+      const response = await fetch(url, {
+        cache: "no-store",
+        credentials: "same-origin",
+        signal: controller.signal,
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.code ?? "LOAD_FAILED");
+      return body;
+    };
+    if (tab === "conversations") {
+      void fetchList(
+        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/threads`,
+      )
+        .then((body) => {
+          const items = Array.isArray(body.items) ? body.items : [];
+          setThreads(items);
+          setSelectedThreadId((current) =>
+            items.some((item: ThreadSummary) => item.id === current)
+              ? current
+              : (items[0]?.id ?? ""),
+          );
+        })
+        .catch((error: unknown) => {
+          if (!(error instanceof Error && error.name === "AbortError"))
+            setNotice(messageFor(error));
+        });
+    }
+    if (tab === "reports") {
+      void fetchList(
+        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/plans`,
+      )
+        .then((body) => setPlans(Array.isArray(body.items) ? body.items : []))
+        .catch((error: unknown) => {
+          if (!(error instanceof Error && error.name === "AbortError"))
+            setNotice(messageFor(error));
+        });
+      if (app.state === "ready" && app.me.activeRole === "coach") {
+        void fetchList(
+          `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/materials`,
+        )
+          .then((body) =>
+            setMaterials(Array.isArray(body.items) ? body.items : []),
+          )
+          .catch((error: unknown) => {
+            if (!(error instanceof Error && error.name === "AbortError"))
+              setNotice(messageFor(error));
+          });
+      }
+    }
+    return () => controller.abort();
+  }, [app, selectedPlayerId, tab]);
+
+  useEffect(() => {
+    if (tab !== "conversations" || !selectedThreadId) {
+      setThreadMessages([]);
+      return;
+    }
+    const controller = new AbortController();
+    void fetch(
+      `/api/v1/threads/${encodeURIComponent(selectedThreadId)}/messages`,
+      {
+        cache: "no-store",
+        credentials: "same-origin",
+        signal: controller.signal,
+      },
+    )
+      .then(async (response) => {
+        const body = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(body?.code ?? "LOAD_FAILED");
+        setThreadMessages(
+          Array.isArray(body.items) ? [...body.items].reverse() : [],
+        );
+      })
+      .catch((error: unknown) => {
+        if (!(error instanceof Error && error.name === "AbortError"))
+          setNotice(messageFor(error));
+      });
+    return () => controller.abort();
+  }, [selectedThreadId, tab]);
 
   async function logOutFromHabi() {
     await fetch("/auth/logout", {
@@ -337,6 +481,32 @@ export default function HabiWorkspace() {
     .sort((a, b) =>
       String(b.occurredAt ?? "").localeCompare(String(a.occurredAt ?? "")),
     );
+  const workspaceViews: Array<{ id: WorkspaceView; label: string }> =
+    active?.activeRole === "player"
+      ? [
+          { id: "overview", label: "Áttekintés" },
+          { id: "journal", label: "Napló" },
+          { id: "checkin", label: "Állapotjelzés" },
+          { id: "timeline", label: "Idővonal" },
+        ]
+      : active?.activeRole === "parent"
+        ? [
+            { id: "overview", label: "Áttekintés" },
+            { id: "journal", label: "Napló" },
+            { id: "conversations", label: "Beszélgetések" },
+            { id: "timeline", label: "Idővonal" },
+            { id: "reports", label: "Tervek" },
+          ]
+        : [
+            { id: "overview", label: "Áttekintés" },
+            { id: "journal", label: "Napló" },
+            { id: "checkin", label: "Állapotjelzés" },
+            { id: "conversations", label: "Beszélgetések" },
+            { id: "timeline", label: "Idővonal" },
+            { id: "reports", label: "Riportok és tervek" },
+            { id: "assessments", label: "Felmérések" },
+            { id: "knowledge", label: "Tudástár" },
+          ];
 
   useEffect(() => {
     if (observationFeedback) {
@@ -653,12 +823,16 @@ export default function HabiWorkspace() {
             "Idempotency-Key": crypto.randomUUID(),
           },
           body: JSON.stringify({
-            kind: "observation",
+            kind: active.activeRole === "coach" ? "observation" : "diary",
             text: observation.trim(),
             occurredAt: new Date().toISOString(),
             timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             sourceKind:
-              active.activeRole === "parent" ? "proxy" : "observation",
+              active.activeRole === "player"
+                ? "self"
+                : active.activeRole === "parent"
+                  ? "proxy"
+                  : "observation",
             sessionId: null,
             metric: null,
             answerCode: null,
@@ -685,8 +859,279 @@ export default function HabiWorkspace() {
     }
   }
 
+  async function sendThreadMessage() {
+    if (!active || !selectedThreadId || !threadDraft.trim() || busy) return;
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch(
+        `/api/v1/threads/${encodeURIComponent(selectedThreadId)}/messages`,
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "x-habi-csrf": active.csrfToken,
+            "Idempotency-Key": crypto.randomUUID(),
+          },
+          body: JSON.stringify({ text: threadDraft.trim(), replyTo: null }),
+        },
+      );
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.code ?? "MESSAGE_FAILED");
+      setThreadDraft("");
+      const refreshed = await fetch(
+        `/api/v1/threads/${encodeURIComponent(selectedThreadId)}/messages`,
+        { cache: "no-store", credentials: "same-origin" },
+      );
+      const body = await refreshed.json().catch(() => null);
+      if (!refreshed.ok) throw new Error(body?.code ?? "LOAD_FAILED");
+      setThreadMessages(
+        Array.isArray(body.items) ? [...body.items].reverse() : [],
+      );
+      setNotice("Az üzenet bekerült a beszélgetésbe.");
+    } catch (error) {
+      setNotice(messageFor(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createSharedPlan() {
+    if (
+      active?.activeRole !== "coach" ||
+      !playerId ||
+      !planDraft.trim() ||
+      busy
+    )
+      return;
+    const source = questionSource;
+    if (!source) {
+      setNotice(
+        "Terv készítéséhez előbb válassz egy forrásolt játékos-beszámolót.",
+      );
+      return;
+    }
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch(
+        `/api/v1/players/${encodeURIComponent(playerId)}/plans`,
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "x-habi-csrf": active.csrfToken,
+            "Idempotency-Key": crypto.randomUUID(),
+          },
+          body: JSON.stringify({
+            sourceRefs: [{ id: source.id, revision: source.revision }],
+            answerRef: null,
+            actions: [
+              {
+                id: crypto.randomUUID(),
+                what: planDraft.trim(),
+                why: "A játékossal egyeztetett, kipróbálható következő lépés.",
+                ownerActorId: active.actorId,
+                dueAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+                stopCondition:
+                  "A játékos vagy az edző jelzi, ha a lépés nem megfelelő vagy módosítani kell.",
+              },
+            ],
+          }),
+        },
+      );
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.code ?? "PLAN_FAILED");
+      setPlans((items) => [body, ...items]);
+      setPlanDraft("");
+      setNotice(
+        "A közös terv mentve. A játékos és a kapcsolt szülő a jóváhagyás után látja.",
+      );
+    } catch (error) {
+      setNotice(messageFor(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveCoachMaterial() {
+    if (
+      active?.activeRole !== "coach" ||
+      !playerId ||
+      !materialTitle.trim() ||
+      !materialText.trim() ||
+      busy
+    )
+      return;
+    const source = questionSource;
+    if (!source) {
+      setNotice("Edzői anyaghoz előbb kapcsolj egy ellenőrizhető forrást.");
+      return;
+    }
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch(
+        `/api/v1/players/${encodeURIComponent(playerId)}/materials`,
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "x-habi-csrf": active.csrfToken,
+            "Idempotency-Key": crypto.randomUUID(),
+          },
+          body: JSON.stringify({
+            title: materialTitle.trim(),
+            text: materialText.trim(),
+            sourceRefs: [{ id: source.id, revision: source.revision }],
+            supersedesRef: null,
+          }),
+        },
+      );
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.code ?? "MATERIAL_SAVE_FAILED");
+      setMaterials((items) => [body, ...items]);
+      setMaterialTitle("");
+      setMaterialText("");
+      setNotice(
+        "Az edzői anyag piszkozatként mentve. Megosztás előtt ellenőrizd a szöveget és a forrást.",
+      );
+    } catch (error) {
+      setNotice(messageFor(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function publishCoachMaterial(material: MaterialSummary) {
+    if (active?.activeRole !== "coach" || busy) return;
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/v1/publications", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "x-habi-csrf": active.csrfToken,
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+        body: JSON.stringify({
+          resourceRef: { id: material.id, revision: material.revision },
+        }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.code ?? "PUBLISH_FAILED");
+      setMaterials((items) =>
+        items.map((item) =>
+          item.id === material.id ? { ...item, status: "published" } : item,
+        ),
+      );
+      setNotice(
+        "Az edzői anyag megosztva a kapcsolt játékosokkal és szülőkkel.",
+      );
+    } catch (error) {
+      setNotice(messageFor(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function decidePlan(plan: PlanSummary, decision: "accept" | "decline") {
+    if (!active || busy) return;
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch(
+        `/api/v1/plans/${encodeURIComponent(plan.id)}/acceptance`,
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "x-habi-csrf": active.csrfToken,
+            "Idempotency-Key": crypto.randomUUID(),
+            "If-Match": String(plan.revision),
+          },
+          body: JSON.stringify({ expectedRevision: plan.revision, decision }),
+        },
+      );
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.code ?? "PLAN_DECISION_FAILED");
+      setPlans((items) =>
+        items.map((item) => (item.id === plan.id ? body : item)),
+      );
+      setNotice(
+        decision === "accept"
+          ? "Elfogadtad a közös tervet."
+          : "A tervet elutasítottad.",
+      );
+    } catch (error) {
+      setNotice(messageFor(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitFollowUp(plan: PlanSummary, actionId: string) {
+    if (!active || !playerId || !followupText.trim() || busy) return;
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch(
+        `/api/v1/players/${encodeURIComponent(playerId)}/follow-ups`,
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "x-habi-csrf": active.csrfToken,
+            "Idempotency-Key": crypto.randomUUID(),
+          },
+          body: JSON.stringify({
+            planRef: { id: plan.id, revision: plan.revision },
+            actionId,
+            occurredAt: new Date().toISOString(),
+            context: {
+              setting: active.activeRole === "parent" ? "home" : "training",
+              activity: null,
+              durationMinutes: null,
+            },
+            sourceKind:
+              active.activeRole === "player"
+                ? "self"
+                : active.activeRole === "parent"
+                  ? "proxy"
+                  : "observation",
+            outcome: followupOutcome,
+            text: followupText.trim(),
+            comparable: false,
+            comparabilityReason:
+              "Az utánkövetés nem hasonlítható össze automatikusan más helyzetekkel.",
+          }),
+        },
+      );
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.code ?? "FOLLOWUP_FAILED");
+      setFollowupText("");
+      setNotice("Az utánkövetés rögzítve, a tervhez kapcsolva.");
+    } catch (error) {
+      setNotice(messageFor(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function askQuestion() {
-    if (active?.activeRole !== "parent" || !playerId || !question.trim())
+    if (
+      !active ||
+      !["parent", "coach"].includes(active.activeRole) ||
+      !playerId ||
+      !question.trim()
+    )
       return;
     setNotice("");
     const source = questionSource;
@@ -1004,20 +1449,20 @@ export default function HabiWorkspace() {
         {active && (
           <>
             <nav className={styles.nav} aria-label="Munkaterület nézetei">
-              <button
-                type="button"
-                className={tab === "today" ? styles.navActive : ""}
-                onClick={() => setTab("today")}
-              >
-                Áttekintés
-              </button>
-              <button
-                type="button"
-                className={tab === "history" ? styles.navActive : ""}
-                onClick={() => setTab("history")}
-              >
-                Előzmények
-              </button>
+              {workspaceViews.map((view) => (
+                <button
+                  key={view.id}
+                  type="button"
+                  aria-current={tab === view.id ? "page" : undefined}
+                  className={tab === view.id ? styles.navActive : ""}
+                  onClick={() => {
+                    setTab(view.id);
+                    setNotice("");
+                  }}
+                >
+                  {view.label}
+                </button>
+              ))}
               <a className={styles.navLink} href="/legacy">
                 Feladatok és visszajelzések
               </a>
@@ -1123,7 +1568,115 @@ export default function HabiWorkspace() {
                 {notice}
               </p>
             )}
-            {tab === "today" && active.activeRole === "player" && (
+            {tab === "overview" && active.activeRole === "player" && (
+              <section className={`${styles.panel} workspace-section`}>
+                <p className={styles.eyebrow}>A TE NAPLÓD</p>
+                <h2>Egy rövid megálló magadra.</h2>
+                <p className={styles.muted}>
+                  {data[0]?.checkins.length
+                    ? `Legutóbbi állapotjelzés: ${new Date(data[0].checkins[0].completedAt ?? "").toLocaleDateString("hu-HU")}. A korábbi válaszaidat az Idővonalon nézheted meg.`
+                    : "Még nincs állapotjelzésed. Öt rövid kérdés segít rögzíteni, hogyan vagy ma."}
+                </p>
+                <button
+                  type="button"
+                  className={styles.primary}
+                  onClick={() => setTab("checkin")}
+                >
+                  {data[0]?.checkins.length
+                    ? "Új állapotjelzés"
+                    : "Állapotjelzés indítása"}
+                </button>
+                <button
+                  type="button"
+                  className={styles.secondary}
+                  onClick={() => setTab("timeline")}
+                >
+                  Megnyitom az idővonalat
+                </button>
+              </section>
+            )}
+            {tab === "overview" && active.activeRole !== "player" && (
+              <section className={`${styles.panel} workspace-section`}>
+                <p className={styles.eyebrow}>
+                  {active.activeRole === "coach"
+                    ? "CSAPATKÖVETÉS"
+                    : "KAPCSOLÓDÓ JÁTÉKOS"}
+                </p>
+                <h2>{selectedPlayer?.displayName ?? "Válassz játékost"}</h2>
+                {data[0]?.checkins[0] ? (
+                  <>
+                    <p className={styles.muted}>
+                      A legutóbbi elérhető saját beszámoló.
+                    </p>
+                    <dl className={styles.summaryMetrics}>
+                      {data[0].checkins[0].answerCodes?.map(
+                        ({ metric, code }) => {
+                          const definition = metrics.find(
+                            ([key]) => key === metric,
+                          );
+                          return definition ? (
+                            <div key={metric}>
+                              <dt>{definition[1]}</dt>
+                              <dd>{definition[2][code] ?? "Nincs válasz"}</dd>
+                            </div>
+                          ) : null;
+                        },
+                      )}
+                    </dl>
+                  </>
+                ) : (
+                  <p className={styles.muted}>
+                    Ehhez a játékoshoz még nincs elérhető napi állapotjelzés.
+                  </p>
+                )}
+                <div className={styles.actions}>
+                  <button
+                    type="button"
+                    className={styles.secondary}
+                    onClick={() => setTab("timeline")}
+                  >
+                    A történet megnyitása
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.secondary}
+                    onClick={() =>
+                      setTab(
+                        active.activeRole === "coach"
+                          ? "reports"
+                          : "conversations",
+                      )
+                    }
+                  >
+                    {active.activeRole === "coach"
+                      ? "Riportok és tervek"
+                      : "Beszélgetések"}
+                  </button>
+                </div>
+              </section>
+            )}
+            {tab === "overview" && selectedPlayer && (
+              <section className={`${styles.panel} workspace-section`}>
+                <p className={styles.eyebrow}>A KÖZÖS TÖRTÉNET</p>
+                <h2>A közelmúlt fontos eseményei</h2>
+                <MetroTimeline
+                  page={timeline}
+                  records={historyItems}
+                  playerName={selectedPlayer.displayName ?? "Játékos"}
+                  playerId={selectedPlayer.id}
+                  onLoadMore={() => void loadOlderTimeline()}
+                  loadingMore={loadingOlder}
+                />
+                <button
+                  type="button"
+                  className={styles.secondary}
+                  onClick={() => setTab("timeline")}
+                >
+                  A teljes idővonal megnyitása
+                </button>
+              </section>
+            )}
+            {tab === "checkin" && active.activeRole === "player" && (
               <section
                 className={`${styles.panel} workspace-section`}
                 data-area="timeline"
@@ -1222,187 +1775,613 @@ export default function HabiWorkspace() {
                 )}
               </section>
             )}
-            {tab === "today" &&
-              (active.activeRole === "parent" ||
-                active.activeRole === "coach") &&
+            {tab === "checkin" &&
+              active.activeRole !== "player" &&
+              selectedPlayer && (
+                <section className={styles.panel}>
+                  <p className={styles.eyebrow}>A JÁTÉKOS SAJÁT BESZÁMOLÓI</p>
+                  <h2>Állapotjelzések</h2>
+                  <p className={styles.muted}>
+                    A válaszok a játékos tapasztalatai. Ne kezeld őket külső
+                    értékelésként.
+                  </p>
+                  {data[0]?.checkins.length ? (
+                    data[0].checkins.map((item) => (
+                      <article className={styles.dataCard} key={item.id}>
+                        <h3>
+                          {item.completedAt
+                            ? new Date(item.completedAt).toLocaleDateString(
+                                "hu-HU",
+                              )
+                            : "Dátum nélkül"}
+                        </h3>
+                        <dl className={styles.summaryMetrics}>
+                          {item.answerCodes?.map(({ metric, code }) => {
+                            const definition = metrics.find(
+                              ([key]) => key === metric,
+                            );
+                            return definition ? (
+                              <div key={metric}>
+                                <dt>{definition[1]}</dt>
+                                <dd>{definition[2][code] ?? "Nincs válasz"}</dd>
+                              </div>
+                            ) : null;
+                          })}
+                        </dl>
+                      </article>
+                    ))
+                  ) : (
+                    <p className={styles.emptyState}>
+                      Még nincs a szerepkörödnek megosztott állapotjelzés.
+                    </p>
+                  )}
+                </section>
+              )}
+            {(tab === "journal" ||
+              (tab === "conversations" &&
+                (active.activeRole === "parent" ||
+                  active.activeRole === "coach"))) &&
               selectedPlayer && (
                 <>
-                  {active.activeRole === "coach" && (
-                    <CoachReportWorkspace
-                      playerId={selectedPlayer.id}
-                      playerName={
-                        selectedPlayer.displayName ?? "A kiválasztott játékos"
-                      }
-                      csrfToken={active.csrfToken}
-                    />
-                  )}
-                  <section className={styles.panel}>
-                    <p className={styles.eyebrow}>MEGFIGYELÉS</p>
-                    <h2>Rögzíts egy észrevételt</h2>
-                    <label className={styles.label} htmlFor="observation">
-                      Mit figyeltél meg?
-                    </label>
-                    <textarea
-                      id="observation"
-                      value={observation}
-                      onChange={(event) => {
-                        setObservation(event.target.value);
-                        setObservationFeedback(null);
-                      }}
-                      rows={4}
-                      maxLength={2000}
-                    />
-                    <button
-                      type="button"
-                      className={styles.primary}
-                      disabled={busy || !observation.trim()}
-                      onClick={() => void submitObservation()}
-                    >
-                      Megfigyelés mentése
-                    </button>
-                    {observationFeedback && (
-                      <p
-                        ref={observationFeedbackRef}
-                        className={styles.actionFeedback}
-                        data-state={observationFeedback.kind}
-                        role={
-                          observationFeedback.kind === "error"
-                            ? "alert"
-                            : "status"
-                        }
-                      >
-                        {observationFeedback.message}
-                      </p>
-                    )}
-                  </section>
-                  {active.activeRole === "parent" && (
+                  {tab === "journal" && (
                     <section className={styles.panel}>
-                      <p className={styles.eyebrow}>KÉRDÉS A HABINAK</p>
-                      <h2>Mit szeretnél jobban megérteni?</h2>
-                      <label className={styles.label} htmlFor="question">
-                        Kérdés
+                      <p className={styles.eyebrow}>
+                        {active.activeRole === "coach"
+                          ? "EDZŐI MEGFIGYELÉS"
+                          : active.activeRole === "parent"
+                            ? "SZÜLŐI NAPLÓ"
+                            : "JÁTÉKOSNAPLÓ"}
+                      </p>
+                      <h2>
+                        {active.activeRole === "player"
+                          ? "Rögzíts egy saját bejegyzést"
+                          : "Rögzíts egy észrevételt"}
+                      </h2>
+                      <label className={styles.label} htmlFor="observation">
+                        {active.activeRole === "player"
+                          ? "Mit szeretnél megőrizni a naplódban?"
+                          : "Milyen konkrét helyzetet szeretnél megosztani?"}
                       </label>
                       <textarea
-                        id="question"
-                        value={question}
+                        id="observation"
+                        value={observation}
                         onChange={(event) => {
-                          setQuestion(event.target.value);
-                          setQuestionFeedback(null);
+                          setObservation(event.target.value);
+                          setObservationFeedback(null);
                         }}
-                        rows={3}
-                        maxLength={1000}
+                        rows={4}
+                        maxLength={2000}
                       />
                       <button
                         type="button"
-                        className={styles.secondary}
-                        disabled={busy || !question.trim() || !questionSource}
-                        onClick={() => void askQuestion()}
+                        className={styles.primary}
+                        disabled={busy || !observation.trim()}
+                        onClick={() => void submitObservation()}
                       >
-                        Kérdés elküldése a helyi AI-nak
+                        Megfigyelés mentése
                       </button>
-                      {!questionSource && (
-                        <p className={styles.actionInfo} role="note">
-                          A kérdés elküldéséhez előbb a játékosnak ki kell
-                          töltenie egy napi állapotjelzést. Utána a választ a
-                          Habi ezen a helyen mutatja meg, az edzői ellenőrzés
-                          után.
-                        </p>
-                      )}
-                      {questionFeedback && (
+                      {observationFeedback && (
                         <p
-                          ref={questionFeedbackRef}
+                          ref={observationFeedbackRef}
                           className={styles.actionFeedback}
-                          data-state={questionFeedback.kind}
+                          data-state={observationFeedback.kind}
                           role={
-                            questionFeedback.kind === "error"
+                            observationFeedback.kind === "error"
                               ? "alert"
                               : "status"
                           }
                         >
-                          {questionFeedback.message}
+                          {observationFeedback.message}
                         </p>
                       )}
-                      {questionJob && (
-                        <section
-                          ref={questionResultRef}
-                          className={styles.questionResult}
-                          aria-label="A kérés eredménye"
-                        >
-                          <h3>
-                            {questionJob.status === "queued"
-                              ? "A kérdés várakozik"
-                              : questionJob.status === "processing"
-                                ? "A Habi feldolgozza a kérdést"
-                                : questionJob.status === "review"
-                                  ? "Edzői ellenőrzésre vár"
-                                  : questionJob.status === "ready"
-                                    ? "Elkészült a válasz"
-                                    : questionJob.status === "cancelled"
-                                      ? "A kérés megszakadt"
-                                      : "A kérés feldolgozása megállt"}
-                          </h3>
-                          {questionStatusUnavailable ? (
-                            <p role="status">
-                              Most nem érjük el az állapotot. A kérésed
-                              megmaradt, és újra próbáljuk ellenőrizni.
-                            </p>
-                          ) : questionJob.status === "queued" ? (
-                            <p role="status">
-                              A helyi feldolgozó elindulására vár. Ez még nem
-                              hiba.
-                            </p>
-                          ) : questionJob.status === "processing" ? (
-                            <p role="status">A helyi feldolgozó dolgozik.</p>
-                          ) : questionJob.status === "review" ? (
-                            <p role="status">
-                              A válasz elkészült. Az edző ellenőrzi a
-                              forrásokat; jóváhagyás után itt jelenik meg.
-                            </p>
-                          ) : questionJob.status === "ready" &&
-                            questionAnswer?.answerState === "no_evidence" ? (
-                            <p role="status">
-                              A Habi nem talált ellenőrizhető, forrásolt
-                              választ. Nem vont le következtetést.
-                            </p>
-                          ) : questionJob.status === "ready" &&
-                            questionAnswer?.answer ? (
-                            <div aria-live="polite">
-                              {questionAnswer.answer.unknowns.length > 0 && (
-                                <p>
-                                  {questionAnswer.answer.unknowns.join(" ")}
-                                </p>
-                              )}
-                              <ul>
-                                {questionAnswer.answer.claims.map((claim) => (
-                                  <li key={claim.id}>{claim.text}</li>
-                                ))}
-                              </ul>
-                              <p className={styles.muted}>
-                                Forrásolt, edző által ellenőrzött válasz.
-                              </p>
-                            </div>
-                          ) : questionJob.status === "ready" ? (
-                            <p role="status">
-                              A választ nem tettük közzé. Kérd meg az edzőt,
-                              hogy ellenőrizze a forrásokat.
-                            </p>
-                          ) : (
-                            <p role="alert">
-                              A feladat nem készült el. Próbáld újra később,
-                              vagy kérj segítséget az edzőtől.
-                            </p>
-                          )}
-                        </section>
-                      )}
-                      <p className={styles.muted}>
-                        A személyes válasz forrásolt, és edzői jóváhagyás után
-                        jelenik meg.
-                      </p>
                     </section>
                   )}
+                  {(active.activeRole === "parent" ||
+                    active.activeRole === "coach") &&
+                    tab === "conversations" && (
+                      <section className={styles.panel}>
+                        <p className={styles.eyebrow}>
+                          {active.activeRole === "coach"
+                            ? "EDZŐI SEGÍTSÉGKÉRÉS"
+                            : "KÉRDÉS A HABINAK"}
+                        </p>
+                        <h2>
+                          {active.activeRole === "coach"
+                            ? "Mit szeretnél jobban megérteni a forrásokból?"
+                            : "Mit szeretnél jobban megérteni?"}
+                        </h2>
+                        <label className={styles.label} htmlFor="question">
+                          Kérdés
+                        </label>
+                        <textarea
+                          id="question"
+                          value={question}
+                          onChange={(event) => {
+                            setQuestion(event.target.value);
+                            setQuestionFeedback(null);
+                          }}
+                          rows={3}
+                          maxLength={1000}
+                        />
+                        <button
+                          type="button"
+                          className={styles.secondary}
+                          disabled={busy || !question.trim() || !questionSource}
+                          onClick={() => void askQuestion()}
+                        >
+                          Kérdés elküldése a helyi AI-nak
+                        </button>
+                        {!questionSource && (
+                          <p className={styles.actionInfo} role="note">
+                            A kérdés elküldéséhez előbb a játékosnak ki kell
+                            töltenie egy napi állapotjelzést. Utána a választ a
+                            Habi ezen a helyen mutatja meg, az edzői ellenőrzés
+                            után.
+                          </p>
+                        )}
+                        {questionFeedback && (
+                          <p
+                            ref={questionFeedbackRef}
+                            className={styles.actionFeedback}
+                            data-state={questionFeedback.kind}
+                            role={
+                              questionFeedback.kind === "error"
+                                ? "alert"
+                                : "status"
+                            }
+                          >
+                            {questionFeedback.message}
+                          </p>
+                        )}
+                        {questionJob && (
+                          <section
+                            ref={questionResultRef}
+                            className={styles.questionResult}
+                            aria-label="A kérés eredménye"
+                          >
+                            <h3>
+                              {questionJob.status === "queued"
+                                ? "A kérdés várakozik"
+                                : questionJob.status === "processing"
+                                  ? "A Habi feldolgozza a kérdést"
+                                  : questionJob.status === "review"
+                                    ? "Edzői ellenőrzésre vár"
+                                    : questionJob.status === "ready"
+                                      ? "Elkészült a válasz"
+                                      : questionJob.status === "cancelled"
+                                        ? "A kérés megszakadt"
+                                        : "A kérés feldolgozása megállt"}
+                            </h3>
+                            {questionStatusUnavailable ? (
+                              <p role="status">
+                                Most nem érjük el az állapotot. A kérésed
+                                megmaradt, és újra próbáljuk ellenőrizni.
+                              </p>
+                            ) : questionJob.status === "queued" ? (
+                              <p role="status">
+                                A helyi feldolgozó elindulására vár. Ez még nem
+                                hiba.
+                              </p>
+                            ) : questionJob.status === "processing" ? (
+                              <p role="status">A helyi feldolgozó dolgozik.</p>
+                            ) : questionJob.status === "review" ? (
+                              <p role="status">
+                                A válasz elkészült. Az edző ellenőrzi a
+                                forrásokat; jóváhagyás után itt jelenik meg.
+                              </p>
+                            ) : questionJob.status === "ready" &&
+                              questionAnswer?.answerState === "no_evidence" ? (
+                              <p role="status">
+                                A Habi nem talált ellenőrizhető, forrásolt
+                                választ. Nem vont le következtetést.
+                              </p>
+                            ) : questionJob.status === "ready" &&
+                              questionAnswer?.answer ? (
+                              <div aria-live="polite">
+                                {questionAnswer.answer.unknowns.length > 0 && (
+                                  <p>
+                                    {questionAnswer.answer.unknowns.join(" ")}
+                                  </p>
+                                )}
+                                <ul>
+                                  {questionAnswer.answer.claims.map((claim) => (
+                                    <li key={claim.id}>{claim.text}</li>
+                                  ))}
+                                </ul>
+                                <p className={styles.muted}>
+                                  Forrásolt, edző által ellenőrzött válasz.
+                                </p>
+                              </div>
+                            ) : questionJob.status === "ready" ? (
+                              <p role="status">
+                                A választ nem tettük közzé. Kérd meg az edzőt,
+                                hogy ellenőrizze a forrásokat.
+                              </p>
+                            ) : (
+                              <p role="alert">
+                                A feladat nem készült el. Próbáld újra később,
+                                vagy kérj segítséget az edzőtől.
+                              </p>
+                            )}
+                          </section>
+                        )}
+                        <p className={styles.muted}>
+                          A személyes válasz forrásolt, és edzői jóváhagyás után
+                          jelenik meg.
+                        </p>
+                      </section>
+                    )}
                 </>
               )}
-            {tab === "history" && (
+            {tab === "conversations" &&
+              active.activeRole !== "parent" &&
+              selectedPlayer && (
+                <section className={styles.panel}>
+                  <p className={styles.eyebrow}>KÖZÖS BESZÉLGETÉSEK</p>
+                  <h2>Beszéljétek meg a helyzeteket</h2>
+                  {threads.length ? (
+                    <>
+                      <label
+                        className={styles.label}
+                        htmlFor="conversation-select"
+                      >
+                        Beszélgetés
+                      </label>
+                      <select
+                        id="conversation-select"
+                        value={selectedThreadId}
+                        onChange={(event) =>
+                          setSelectedThreadId(event.target.value)
+                        }
+                      >
+                        {threads.map((thread) => (
+                          <option key={thread.id} value={thread.id}>
+                            {new Date(
+                              thread.latestActivityAt,
+                            ).toLocaleDateString("hu-HU")}{" "}
+                            · {thread.status === "open" ? "Nyitott" : "Lezárt"}
+                          </option>
+                        ))}
+                      </select>
+                      <ol className={styles.messageList} aria-live="polite">
+                        {threadMessages.map((message) => (
+                          <li key={message.id}>
+                            <span
+                              className={`role-badge actor-${message.recordedBy.role}`}
+                            >
+                              {roleLabel(message.recordedBy.role)}
+                            </span>
+                            <p>{message.text}</p>
+                            <time dateTime={message.submittedAt}>
+                              {new Date(message.submittedAt).toLocaleString(
+                                "hu-HU",
+                              )}
+                            </time>
+                          </li>
+                        ))}
+                      </ol>
+                      {threads.find((thread) => thread.id === selectedThreadId)
+                        ?.status === "open" && (
+                        <>
+                          <label
+                            className={styles.label}
+                            htmlFor="thread-message"
+                          >
+                            Üzenet
+                          </label>
+                          <textarea
+                            id="thread-message"
+                            rows={3}
+                            maxLength={4000}
+                            value={threadDraft}
+                            onChange={(event) =>
+                              setThreadDraft(event.target.value)
+                            }
+                          />
+                          <button
+                            className={styles.primary}
+                            type="button"
+                            disabled={busy || !threadDraft.trim()}
+                            onClick={() => void sendThreadMessage()}
+                          >
+                            Üzenet küldése
+                          </button>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <p className={styles.emptyState}>
+                      Még nincs közös beszélgetés. Szülői kérdésből vagy edzői
+                      válaszból indulhat új beszélgetés.
+                    </p>
+                  )}
+                </section>
+              )}
+            {tab === "reports" && selectedPlayer && (
+              <section className={styles.panel}>
+                <p className={styles.eyebrow}>
+                  {active.activeRole === "coach"
+                    ? "KÖZÖS TERVEK"
+                    : "EDZŐI TERVEK"}
+                </p>
+                <h2>Megértésből következő lépés</h2>
+                {active.activeRole === "coach" && (
+                  <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="plan-action">
+                      Mi legyen a következő kipróbálható lépés?
+                    </label>
+                    <textarea
+                      id="plan-action"
+                      rows={3}
+                      maxLength={1000}
+                      value={planDraft}
+                      onChange={(event) => setPlanDraft(event.target.value)}
+                      placeholder="Egy konkrét, a játékossal egyeztetett teendő"
+                    />
+                    <button
+                      className={styles.primary}
+                      type="button"
+                      disabled={busy || !planDraft.trim() || !questionSource}
+                      onClick={() => void createSharedPlan()}
+                    >
+                      Közös terv készítése
+                    </button>
+                    {!questionSource && (
+                      <p className={styles.actionInfo}>
+                        Tervet akkor lehet létrehozni, ha van hozzá kapcsolható,
+                        forrásolt játékos-beszámoló.
+                      </p>
+                    )}
+                  </div>
+                )}
+                {plans.length ? (
+                  plans.map((plan) => (
+                    <article className={styles.dataCard} key={plan.id}>
+                      <p className={styles.eyebrow}>
+                        ÁLLAPOT:{" "}
+                        {plan.status === "proposed"
+                          ? "JÓVÁHAGYÁSRA VÁR"
+                          : plan.status === "active"
+                            ? "AKTÍV"
+                            : plan.status.toLocaleUpperCase("hu-HU")}
+                      </p>
+                      {plan.actions.map((action) => (
+                        <div key={action.id}>
+                          <h3>{action.what}</h3>
+                          <p>{action.why}</p>
+                          <p className={styles.muted}>
+                            Határidő:{" "}
+                            {new Date(action.dueAt).toLocaleDateString("hu-HU")}{" "}
+                            · Leállítási feltétel: {action.stopCondition}
+                          </p>
+                          {plan.status === "active" && (
+                            <div className={styles.formGroup}>
+                              <label
+                                className={styles.label}
+                                htmlFor={`followup-outcome-${plan.id}-${action.id}`}
+                              >
+                                Hogyan alakult a kipróbálás?
+                              </label>
+                              <select
+                                id={`followup-outcome-${plan.id}-${action.id}`}
+                                value={followupOutcome}
+                                onChange={(event) =>
+                                  setFollowupOutcome(
+                                    event.target
+                                      .value as typeof followupOutcome,
+                                  )
+                                }
+                              >
+                                <option value="helped">Segített</option>
+                                <option value="not_helped">Nem segített</option>
+                                <option value="adjust">Módosítani kell</option>
+                                <option value="unknown">Még nem tudom</option>
+                              </select>
+                              <label
+                                className={styles.label}
+                                htmlFor={`followup-text-${plan.id}-${action.id}`}
+                              >
+                                Mit szeretnél hozzáfűzni?
+                              </label>
+                              <textarea
+                                id={`followup-text-${plan.id}-${action.id}`}
+                                rows={2}
+                                maxLength={4000}
+                                value={followupText}
+                                onChange={(event) =>
+                                  setFollowupText(event.target.value)
+                                }
+                              />
+                              <button
+                                className={styles.secondary}
+                                type="button"
+                                disabled={busy || !followupText.trim()}
+                                onClick={() =>
+                                  void submitFollowUp(plan, action.id)
+                                }
+                              >
+                                Utánkövetés rögzítése
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {plan.status === "proposed" &&
+                        (active.activeRole === "player" ||
+                          active.activeRole === "parent") && (
+                          <div className={styles.actions}>
+                            <button
+                              className={styles.primary}
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void decidePlan(plan, "accept")}
+                            >
+                              Elfogadom
+                            </button>
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void decidePlan(plan, "decline")}
+                            >
+                              Nem ezt javaslom
+                            </button>
+                          </div>
+                        )}
+                      <p className={styles.muted}>
+                        Forrásolt terv · {plan.sourceRefs.length} kapcsolt
+                        forrás · {plan.acceptances.length} válasz
+                      </p>
+                    </article>
+                  ))
+                ) : (
+                  <p className={styles.emptyState}>
+                    Még nincs rögzített közös terv.
+                  </p>
+                )}
+                {active.activeRole === "coach" && (
+                  <div className={styles.formGroup}>
+                    <p className={styles.eyebrow}>EDZŐI ANYAG</p>
+                    <h3>Ossz meg egy pontosan verziózott anyagot</h3>
+                    <label className={styles.label} htmlFor="material-title">
+                      Anyag címe
+                    </label>
+                    <input
+                      id="material-title"
+                      value={materialTitle}
+                      maxLength={200}
+                      onChange={(event) => setMaterialTitle(event.target.value)}
+                    />
+                    <label className={styles.label} htmlFor="material-text">
+                      Az edzői anyag szövege
+                    </label>
+                    <textarea
+                      id="material-text"
+                      rows={5}
+                      maxLength={8000}
+                      value={materialText}
+                      onChange={(event) => setMaterialText(event.target.value)}
+                    />
+                    <button
+                      className={styles.secondary}
+                      type="button"
+                      disabled={
+                        busy ||
+                        !materialTitle.trim() ||
+                        !materialText.trim() ||
+                        !questionSource
+                      }
+                      onClick={() => void saveCoachMaterial()}
+                    >
+                      Piszkozat mentése forrással
+                    </button>
+                    {!questionSource && (
+                      <p className={styles.actionInfo}>
+                        Az anyag csak ellenőrizhető, kapcsolt forrással
+                        menthető.
+                      </p>
+                    )}
+                    {materials.map((material) => (
+                      <article className={styles.dataCard} key={material.id}>
+                        <p className={styles.eyebrow}>
+                          EDZŐI ANYAG ·{" "}
+                          {material.status === "published"
+                            ? "MEGOSZTVA"
+                            : "PISZKOZAT"}{" "}
+                          · {material.version}. VERZIÓ
+                        </p>
+                        <h3>{material.title}</h3>
+                        <p>{material.text}</p>
+                        {material.status !== "published" && (
+                          <button
+                            className={styles.primary}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void publishCoachMaterial(material)}
+                          >
+                            Megosztom a szülőkkel
+                          </button>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+            {tab === "assessments" &&
+              active.activeRole === "coach" &&
+              selectedPlayer && (
+                <>
+                  <section className={styles.panel}>
+                    <p className={styles.eyebrow}>FELMÉRÉSEK ÉS EREDMÉNYEK</p>
+                    <h2>Rögzítsd a forrást és ellenőrizd az adatokat</h2>
+                    <p className={styles.muted}>
+                      Tölts fel egy kérdőíveredményt, vagy vidd be kézzel a
+                      mezőket az eredeti dokumentum alapján. Az értékeket a Habi
+                      nem következteti ki.
+                    </p>
+                  </section>
+                  <CoachReportWorkspace
+                    playerId={selectedPlayer.id}
+                    playerName={
+                      selectedPlayer.displayName ?? "A kiválasztott játékos"
+                    }
+                    csrfToken={active.csrfToken}
+                  />
+                </>
+              )}
+            {tab === "knowledge" && active.activeRole === "coach" && (
+              <section className={styles.panel}>
+                <p className={styles.eyebrow}>TUDÁSTÁR</p>
+                <h2>Segítség konkrét helyzetekhez</h2>
+                <p className={styles.muted}>
+                  Válassz egy kapcsolódó gyakorlatot. Ezek általános támogatási
+                  ötletek, nem diagnózisok és nem egyéni értékelések.
+                </p>
+                <label className={styles.label} htmlFor="practice-search">
+                  Keresés a tudástárban
+                </label>
+                <input
+                  id="practice-search"
+                  type="search"
+                  value={practiceSearch}
+                  onChange={(event) => setPracticeSearch(event.target.value)}
+                />
+                <div className={styles.knowledgeList}>
+                  {(
+                    practices.items as Array<{
+                      id: string;
+                      title: string;
+                      what: string;
+                      how: string;
+                    }>
+                  )
+                    .filter((practice) =>
+                      `${practice.title} ${practice.what} ${practice.how}`
+                        .toLocaleLowerCase("hu-HU")
+                        .includes(practiceSearch.toLocaleLowerCase("hu-HU")),
+                    )
+                    .map((practice) => (
+                      <details className={styles.dataCard} key={practice.id}>
+                        <summary>
+                          <strong className={styles.knowledgeCardTitle}>
+                            {practice.title}
+                          </strong>
+                          <span className={styles.practiceDescription}>
+                            {practice.what}
+                          </span>
+                        </summary>
+                        <p>{practice.how}</p>
+                        <p className={styles.muted}>
+                          Általános gyakorlat · a helyzethez való
+                          alkalmazhatóságot az edzőnek kell mérlegelnie.
+                        </p>
+                      </details>
+                    ))}
+                </div>
+              </section>
+            )}
+            {tab === "timeline" && (
               <section className={styles.panel}>
                 <p className={styles.eyebrow}>ELŐZMÉNYEK</p>
                 <h2>A napló eseményei</h2>

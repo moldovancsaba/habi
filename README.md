@@ -12,9 +12,9 @@ A kiválasztott termékcím [habigoal.com](https://habigoal.com); a `www` cím e
 - a szerepkör szerinti láthatóság, az aláírt lapozókurzor és a tenantok közötti hozzáférés megtagadása (korábbi ellenőrzött alap);
 - edzői tervjavaslat, szülői/játékosi elfogadás és vállalt tervhez kapcsolt utánkövetés;
 - tartós szülői kérdés/thread/job; a Mac worker helyi Ollamával dolgozik, internet/API/AI függőséghibánál késleltetetten újrapróbálja a jobot, bizonyíték nélküli választ pedig `no_evidence` állapotban tart;
-- idővonal-végpont és szintetikus UI-idővonal;
+- szerepkör szerinti áttekintés, napló, állapotjelzés, beszélgetés, metróvonalas idővonal, riport-/terv- és felmérésfelület, valamint kereshető Tudástár;
 - verziózott edzői anyag és pontos verzió publikálása;
-- PDF chunk-feltöltés GridFS karanténba, ClamAV-vizsgálat, kézi extraction és mezőnkénti coach-review.
+- PDF chunk-feltöltés GridFS karanténba, ClamAV-vizsgálat, kézi extraction és coach-review; ellenőrzött extractionből forrásolt kérés a helyi AI felé, állapotkövetéssel.
 - Verziózott játékosi gyakorlatkönyvtár; a játékos visszajelzése újratölthető, saját diary rekordként mentődik.
 - Feladatok és visszajelzések a `/legacy` útvonalon; edzői kérdőív-PDF feltöltése, a mérési adatok kézi rögzítése és jóváhagyása a játékos munkaterületén.
 
