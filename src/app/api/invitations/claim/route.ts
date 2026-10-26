@@ -10,7 +10,8 @@ import {
 import { issueSession, SESSION_ABSOLUTE_MS } from "@/lib/auth/session.mjs";
 import type { Document } from "mongodb";
 
-type ClaimBody = { token: string; timeZone: string | null };
+type ClaimBody = { token: string };
+const DEFAULT_PLAYER_TIME_ZONE = "Europe/Budapest";
 
 function setSessionCookie(token: string) {
   return `__Host-hg_session=${token}; Path=/; Max-Age=${SESSION_ABSOLUTE_MS / 1000}; HttpOnly; Secure; SameSite=Lax`;
@@ -42,12 +43,8 @@ export async function POST(request: Request): Promise<Response> {
       !body ||
       typeof body !== "object" ||
       Array.isArray(body) ||
-      Object.keys(body).sort().join(",") !== "timeZone,token" ||
-      typeof (body as ClaimBody).token !== "string" ||
-      !(
-        (body as ClaimBody).timeZone === null ||
-        typeof (body as ClaimBody).timeZone === "string"
-      )
+      Object.keys(body).join(",") !== "token" ||
+      typeof (body as ClaimBody).token !== "string"
     )
       throw new HabiApiError("INVALID_INPUT");
 
@@ -92,20 +89,6 @@ export async function POST(request: Request): Promise<Response> {
           { session: mongoSession },
         );
         if (!tenant) throw new HabiApiError("NOT_FOUND");
-        if (invitation.role === "player") {
-          try {
-            new Intl.DateTimeFormat("en", {
-              timeZone: (body as ClaimBody).timeZone ?? undefined,
-            }).format(now);
-          } catch {
-            throw new HabiApiError("INVALID_INPUT");
-          }
-          if (!(body as ClaimBody).timeZone)
-            throw new HabiApiError("INVALID_INPUT");
-        } else if ((body as ClaimBody).timeZone !== null) {
-          throw new HabiApiError("INVALID_INPUT");
-        }
-
         let identity: Document | null = await db
           .collection("identities")
           .findOne(
@@ -181,7 +164,7 @@ export async function POST(request: Request): Promise<Response> {
               retentionPolicyId: tenant.retentionPolicyId,
               actorId: actor.id,
               registeredAt: now.toISOString(),
-              timeZone: (body as ClaimBody).timeZone as string,
+              timeZone: DEFAULT_PLAYER_TIME_ZONE,
             };
             await db
               .collection("players")

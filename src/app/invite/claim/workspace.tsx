@@ -20,7 +20,6 @@ export default function InviteClaim() {
   const [view, setView] = useState<View>("loading");
   const [role, setRole] = useState<InviteRole | null>(null);
   const [tenantId, setTenantId] = useState("");
-  const [timeZone, setTimeZone] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const token =
@@ -63,10 +62,7 @@ export default function InviteClaim() {
           method: "POST",
           credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            token,
-            timeZone: role === "player" ? timeZone : null,
-          }),
+          body: JSON.stringify({ token }),
         }),
       );
       setView("claimed");
@@ -81,7 +77,7 @@ export default function InviteClaim() {
       }
       setMessage(
         code === "INVALID_INPUT"
-          ? "Játékosmeghívásnál adj meg érvényes IANA időzónát, például Europe/Budapest."
+          ? "A meghívó adatai nem érvényesek. Próbáld újra, vagy kérj új meghívót a Habi adminisztrátorától."
           : "A meghívó nem használható. Kérj új meghívót a Habi adminisztrátorától.",
       );
     } finally {
@@ -122,28 +118,12 @@ export default function InviteClaim() {
                 <strong>{tenantId}</strong> szervezethez. A hozzáférés a saját,
                 ellenőrzött DoneIsBetter-identitásodhoz kapcsolódik.
               </p>
-              {role === "player" && (
-                <div className={styles.form}>
-                  <label htmlFor="timezone">Időzóna (IANA név)</label>
-                  <input
-                    id="timezone"
-                    value={timeZone}
-                    onChange={(event) => setTimeZone(event.target.value)}
-                    placeholder="Europe/Budapest"
-                    autoComplete="off"
-                  />
-                  <p>
-                    Az időzónát a játékos napi bejegyzéseinek dátumához
-                    használjuk.
-                  </p>
-                </div>
-              )}
               {message && <p role="alert">{message}</p>}
               <button
                 className={styles.primary}
                 type="button"
                 onClick={claim}
-                disabled={busy || (role === "player" && !timeZone.trim())}
+                disabled={busy}
               >
                 {busy
                   ? "Hozzáférés aktiválása…"
