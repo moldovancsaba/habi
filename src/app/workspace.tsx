@@ -62,6 +62,8 @@ function messageFor(error: unknown) {
   if (code === "ACCESS_DENIED") return "Ehhez a művelethez nincs hozzáférésed.";
   if (code === "DEPENDENCY_UNAVAILABLE")
     return "A Habi szolgáltatás még nincs teljesen bekapcsolva.";
+  if (code === "REVISION_CONFLICT")
+    return "Az állapotjelzés közben megváltozott. Töltsd újra az oldalt, majd próbáld meg újra.";
   return "A művelet most nem sikerült. Próbáld újra.";
 }
 
@@ -199,7 +201,9 @@ export default function HabiWorkspace() {
         );
         const result = await saved.json();
         if (!saved.ok) throw new Error(result.code ?? "SAVE_FAILED");
-        revision = result.revision;
+        // The answer DTO revision belongs to the record. The session revision
+        // advances once on each successful answer write.
+        revision += 1;
       }
       const complete = await fetch(
         `/api/v1/checkin-sessions/${encodeURIComponent(session.id)}/complete`,
