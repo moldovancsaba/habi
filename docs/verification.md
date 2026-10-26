@@ -2,8 +2,8 @@
 
 ## Élő MVP ellenőrzés · 2026-10-26
 
-- `main` és `origin/main`: `962f674 Use existing Habi device data on home screen` (az UI bevezető commitja: `b417686`).
-- Vercel Production deployment: `dpl_BMxXPM9hQDsLc92Pd6mQPQ2cMvhE`, állapot `Ready`, alias: `https://habi.doneisbetter.com`.
+- `main` és `origin/main`: `3ddbbf3 Clarify Habi production MVP status` (az UI bevezető commitja: `b417686`, helyi adat fallback: `962f674`).
+- Vercel Production deployment: `dpl_6yhyapMfEZGNc8XMYXRGK6DUpyXJ`, állapot `Ready`, alias: `https://habi.doneisbetter.com`.
 - Production build: `npm run build` — PASS; Vercel Production deployment state `Ready`.
 - Élő, böngészőben ellenőrzött UI: `/` új Habi kezdőképernyőt jelenít meg (nem irányít át); `/api/health` → 200; `/api/ready` → 200; `/api/app` → 200; `/api/v1/me` → 503, a szerepkörös API-k az MVP-ben szándékosan fail-closed állapotban maradnak.
 - Az ellenőrző Chrome-profilban a kezdőképernyő üres állapotot mutatott: ehhez a profilhoz nem talált mentett Habi-adatot sem az API, sem a helyi böngészőtár. Ez nem igazolja, hogy más eszköz vagy más böngésző-cookie rekordjai betöltődnek. Az élő ellenőrzés nem írt felhasználói rekordot; a korábbi `habi_states` formátum, cookie-hash tulajdonoskulcs és tartalomgyűjtemény migráció nélkül marad.
