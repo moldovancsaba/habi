@@ -526,4 +526,22 @@ The admin console includes an explicit, idempotent “Prepare Habi MVP” action
 | `uv run --frozen python -m unittest discover -s tests -v` (`worker/`) | PASS, 18 tests | Worker contract and local model-runtime fixtures. |
 | `git diff --check` | PASS, exit 0 | Current worktree. |
 
-Before production deploy, the changes are still local. The live-domain check, production `/admin` browser sign-in, tenant bootstrap, role invitation, and hosted local-worker connection are therefore not yet verified. After deploy, sign in at `https://habigoal.com/admin` with the DoneIsBetter account that has the Habi `admin` permission, select **Prepare Habi MVP**, and then issue role invitations. The owner-only worker credential is stored outside Git; the worker LaunchAgent still needs installation and a live claim/complete smoke check.
+Historical release candidate note. The completed production checks and remaining admin action are recorded in T-HG-137.
+
+## T-HG-137 · Production release, local worker and admin reauthentication · 2026-10-26
+
+Production commit `f3b2cc1` is deployed to `https://habigoal.com`. The root serves the new role workspace and `/admin` serves the separate SSO-admin console. Legacy diary data does not need to be moved; this release does not delete it.
+
+| Check | Result | Evidence/scope |
+| --- | --- | --- |
+| `npm run lint` | PASS, exit 0 | Biome checked 172 source/test files. |
+| `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, 120 tests, 0 failures | Isolated local Mongo replica set; synthetic data. |
+| `npm run build` | PASS, exit 0 | Next.js production build includes `/admin` and the Habi workspace. |
+| `uv run --frozen python -m unittest discover -s tests -v` (`worker/`) | PASS, 18 tests | Worker contract/runtime unit tests. |
+| Worker `verify-local` | PASS | Qwen `qwen2.5:7b`, expected local model digest and prompt hash verified without printing credentials. |
+| Production `GET /`, `GET /admin`, `GET /api/health`, `GET /api/ready` | PASS, HTTP 200 | Vercel production domain and deployment `dpl_3tjGFXU3QfoUMao7ZqvxzGPqFC7E`. |
+| Production SSO sign-in route | PASS | Admin reauthentication link includes `prompt=login`, returns to `/admin`, and opens the DoneIsBetter login screen. No password was entered by the agent. |
+| Local Mac LaunchAgent | PASS, running | `com.doneisbetter.habi-worker`; logs show hosted mode and model verification. Initial missing Homebrew PATH was corrected in the launch script. |
+| Hosted worker claim API | PASS, HTTP 204 | Vercel request logs show repeated authenticated `POST /api/v1/worker/jobs/claim`; 204 means the worker is connected and no eligible work was waiting. |
+
+The admin screen previously showed an access-denied state without a way to reauthenticate. It now explains that the current SSO account lacks the Habi admin claim and provides **Újra bejelentkezem adminisztrátorként**, which requests a fresh DoneIsBetter login and returns to `/admin`. In the managed browser, `/admin` currently renders the sign-in option. A successful admin SSO login, tenant bootstrap, first invitation and role claim remain pending the owner completing sign-in as the DoneIsBetter account with the Habi `admin` permission. No Production tenant or role records were created by anonymous checks; no legacy records were modified.
