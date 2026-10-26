@@ -4,7 +4,8 @@
 
 - Root cause: Habi session cookies use the secure `__Host-` prefix and are scoped to the host that issued them. Opening the app on a Vercel deployment URL or a legacy alias therefore showed the workspace shell while API requests such as `/api/v1/me` had no Habi session and returned `401 AUTHENTICATION_REQUIRED`.
 - Fix: Next.js Proxy redirects all non-local, noncanonical hosts to `https://habigoal.com`, preserving the requested path and query. The redirect destination is fixed in code; incoming host values are never used to construct it. Localhost remains usable for development.
-- Verification: covered canonical/local host pass-through, alias and Vercel hostname redirects, OAuth callback query preservation, malformed paths, and untrusted host input in `tests/canonical-host.test.mjs`. Full verification results and live deployment identity are recorded below after release.
+- Verification: `npm run lint` passed; `npm test` passed (114 passed, 1 skipped); `npm run typecheck` passed; `npm run build` passed; `git diff --check` passed. The dedicated cases cover canonical/local host pass-through, alias and Vercel hostname redirects, OAuth callback query preservation, malformed paths, and untrusted host input.
+- Production: commit `5995fbc` is deployed as `dpl_7mUfDVmYXH3FzsL4AeQjGGJQUpoW` (Ready), aliased to `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`. Live `HEAD` requests to both the deployment URL and `habi.doneisbetter.com` returned HTTP 308 to `https://habigoal.com/api/v1/me?probe=host`, preserving path and query.
 - Recovery: open or refresh `https://habigoal.com`. If the browser only has a session cookie on a different host, sign in once on the canonical domain; the browser cannot send another host’s host-only cookie.
 
 ## Check-in wizard restoration and production save bug · 2026-10-26
