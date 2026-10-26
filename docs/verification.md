@@ -784,7 +784,7 @@ The signed-in administrator landing page now displays the active player, parent,
 
 The signed-in player workspace now exposes the five versioned legacy practices, durable practice feedback, player-owned goals with closure, simple routines with once-per-local-day completion, the three-prompt monthly reflection, four deterministic authored situation conversations, a private trusted-adult preparation note, and a 14/28/42-day view of actual completed check-in answers. The legacy redirect now selects these native features for a player; parent/coach roles land in native task feedback. The player entries use the existing SSO-authorized diary record endpoint and appear in the same player history. No old browser-owned data is imported.
 
-This is a functional migration slice, not complete legacy parity. Durable records are diary entries rather than independent practice/goal/reflection domain entities. Continued drafts, old day-by-day archive, old text trend narrative, reminders/settings, HABI2, and full daily-context guided support remain unimplemented. Do not describe those as delivered.
+This is a functional migration slice, not complete legacy parity. Durable records are diary entries rather than independent practice/goal/reflection domain entities. Continued drafts, old day-by-day archive, old text trend narrative, reminders/settings, HABI2, and full daily-context guided support remain unimplemented. The separate pain-support route is delivered; see its verification record below.
 
 | Check                                           | Result                                                                                                                        | Environment                                      |
 | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
@@ -794,7 +794,7 @@ This is a functional migration slice, not complete legacy parity. Durable record
 | `npm run build`                                 | PASS, exit 0                                                                                                                  | Local Habi checkout; Next.js production build    |
 | `git diff --check`                              | PASS, exit 0                                                                                                                  | Local Habi checkout                              |
 | Authenticated browser interaction on production | Not yet verified                                                                                                              | Requires the owner's active SSO session          |
-| Production deployment                           | Ready; deployment `dpl_3bjexYAF8gUdfHD7Mbp8detdMYrs`, commit `5eb91d2`; aliases include `habigoal.com` and `www.habigoal.com` | Vercel project `narimato/habi`, Production       |
+| Production deployment for task/goal commit `5eb91d2` | READY; deployment `dpl_3bjexYAF8gUdfHD7Mbp8detdMYrs`; aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com` | Vercel project `narimato/habi`, Production |
 
 ## Player task and goal workflows · 2026-10-26
 
@@ -807,4 +807,12 @@ This is a functional migration slice, not complete legacy parity. Durable record
 
 - The player tools now include a three-step, optional pain-support conversation based on the preserved Habi content. It helps a young athlete put location, timing, and activity context into their own words and tells them not to repeat a painful movement just to complete an exercise. The close-out encourages asking a trusted adult for help, especially if pain is strong or worsening.
 - This route is not a diagnosis, treatment plan, or AI prompt. The composed sentence remains on screen only; it is not saved in the shared diary and is not sent to anyone. The guidance was checked against the preserved Habi copy and the [NHS young-person return-to-sport leaflet](https://www.wsh.nhs.uk/CMS-Documents/Patient-leaflets/Physiotherapy/6579-1-Return-to-sport-post-injury-top-tips-for-young-people.pdf), accessed 2026-10-26.
-- Code and documentation changes are in the current worktree only at this point. Typecheck, lint, repository tests, build, and production deployment are pending for this slice.
+- Verification on the local Habi checkout: `npm run typecheck` PASS; `npm run lint` PASS (187 files); `npm test` PASS (117 passed, 0 failed, 1 Atlas-only integration test skipped); `npm run build` PASS; `git diff --check` PASS.
+- Production deployment for commit `ecd9c8f`: READY; deployment `dpl_AErq8YT2RvK9B5YgWuiCjbTXvHGe`; aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`. `/legacy` redirects to the native workspace and it returns HTTP 200.
+- Limitation: authenticated interaction with the deployed player flow was not performed in an owner browser session.
+
+## Player daily and weekly reflections · 2026-10-26
+
+- The player can choose a daily reflection (two prompts) or weekly reflection (three prompts), leave individual prompts unanswered, and save the completed reflection to the authenticated player diary. Saved entries appear in the reflection history with date and time.
+- Verification on the local Habi checkout: `npm run typecheck` PASS; `npm run lint` PASS; `npm test` PASS (117 passed, 0 failed, 1 Atlas-only integration test skipped); `npm run build` PASS; `git diff --check` PASS.
+- Limitation: drafts remain in the current page until submitted and do not yet resume after refresh. Authenticated production interaction requires an owner SSO browser session.

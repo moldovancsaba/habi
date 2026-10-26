@@ -209,6 +209,8 @@ export default function HabiWorkspace() {
   const [app, setApp] = useState<AppState>({ state: "loading" });
   const [signInFailure, setSignInFailure] = useState<string | null>(null);
   const [data, setData] = useState<PlayerData[]>([]);
+  const [recordCursor, setRecordCursor] = useState<string | null>(null);
+  const [loadingOlderRecords, setLoadingOlderRecords] = useState(false);
   const [timeline, setTimeline] = useState<TimelineResponse | null>(null);
   const [players, setPlayers] = useState<PlayerProfile[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
@@ -276,6 +278,16 @@ export default function HabiWorkspace() {
     proud: "",
     hard: "",
     next: "",
+  });
+  const [reflectionType, setReflectionType] = useState<"daily" | "weekly">(
+    "daily",
+  );
+  const [reflectionAnswers, setReflectionAnswers] = useState<{
+    daily: Record<string, string>;
+    weekly: Record<string, string>;
+  }>({
+    daily: { moment: "", helped: "" },
+    weekly: { helped: "", hard: "", next: "" },
   });
   const [trendPeriod, setTrendPeriod] = useState<14 | 28 | 42>(14);
   const [clientNow, setClientNow] = useState<number | null>(null);
@@ -570,10 +582,12 @@ export default function HabiWorkspace() {
     if (app.state !== "ready" || !selectedPlayerId) {
       setData([]);
       setTimeline(null);
+      setRecordCursor(null);
       return;
     }
     setData([]);
     setTimeline(null);
+    setRecordCursor(null);
     const player = players.find((item) => item.id === selectedPlayerId);
     if (!player) return;
     const controller = new AbortController();
@@ -586,11 +600,14 @@ export default function HabiWorkspace() {
           signal: controller.signal,
         },
       ),
-      fetch(`/api/v1/players/${encodeURIComponent(selectedPlayerId)}/records`, {
-        cache: "no-store",
-        credentials: "same-origin",
-        signal: controller.signal,
-      }),
+      fetch(
+        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/records?limit=50`,
+        {
+          cache: "no-store",
+          credentials: "same-origin",
+          signal: controller.signal,
+        },
+      ),
       fetch(
         `/api/v1/timeline?playerId=${encodeURIComponent(selectedPlayerId)}&limit=50`,
         {
@@ -612,6 +629,7 @@ export default function HabiWorkspace() {
         if (!timelineResponse.ok)
           throw new Error(timelinePage?.code ?? "LOAD_FAILED");
         setTimeline(timelinePage as TimelineResponse);
+        setRecordCursor(records.nextCursor ?? null);
         setData([
           {
             ...player,
@@ -628,6 +646,46 @@ export default function HabiWorkspace() {
       });
     return () => controller.abort();
   }, [app, players, selectedPlayerId, setNotice]);
+
+  async function loadOlderRecords() {
+    if (
+      !recordCursor ||
+      !selectedPlayerId ||
+      loadingOlderRecords ||
+      app.state !== "ready"
+    )
+      return;
+    setLoadingOlderRecords(true);
+    try {
+      const response = await fetch(
+        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/records?limit=50&cursor=${encodeURIComponent(recordCursor)}`,
+        { cache: "no-store", credentials: "same-origin" },
+      );
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.code ?? "LOAD_FAILED");
+      setData((current) =>
+        current.map((item) =>
+          item.id === selectedPlayerId
+            ? {
+                ...item,
+                records: [
+                  ...item.records,
+                  ...(body.items ?? []).filter(
+                    (next: RecordItem) =>
+                      !item.records.some((existing) => existing.id === next.id),
+                  ),
+                ],
+              }
+            : item,
+        ),
+      );
+      setRecordCursor(body.nextCursor ?? null);
+    } catch (error) {
+      setNotice(messageFor(error));
+    } finally {
+      setLoadingOlderRecords(false);
+    }
+  }
 
   useEffect(() => {
     void load();
@@ -1265,6 +1323,38 @@ export default function HabiWorkspace() {
     const text = `Havi visszatekintés · ${month}\nAmire büszke vagyok: ${proud.trim() || "Kihagyva"}\nAmi nehéz volt: ${hard.trim() || "Kihagyva"}\nAmire legközelebb figyelek: ${next.trim() || "Kihagyva"}`;
     if (await savePlayerDiary(text))
       setMonthlyReflection({ proud: "", hard: "", next: "" });
+  }
+
+  async function saveReflection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const answers = reflectionAnswers[reflectionType];
+    if (!Object.values(answers).some((value) => value.trim())) return;
+    const date = new Date().toLocaleDateString("hu-HU", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const questions =
+      reflectionType === "daily"
+        ? [
+            ["A napodból mi maradt meg?", reflectionAnswers.daily.moment],
+            ["Mi segített ma?", reflectionAnswers.daily.helped],
+          ]
+        : [
+            ["Mi segített ezen a héten?", reflectionAnswers.weekly.helped],
+            ["Mi volt sok vagy nehéz?", reflectionAnswers.weekly.hard],
+            ["Mit próbálnál ki jövő héten?", reflectionAnswers.weekly.next],
+          ];
+    const text = `${reflectionType === "daily" ? "Napi visszatekintés" : "Heti visszatekintés"} · ${date}\n${questions.map(([questionText, answer]) => `${questionText} ${answer.trim() || "Kihagyva"}`).join("\n")}`;
+    if (await savePlayerDiary(text)) {
+      setReflectionAnswers((current) => ({
+        ...current,
+        [reflectionType]:
+          reflectionType === "daily"
+            ? { moment: "", helped: "" }
+            : { helped: "", hard: "", next: "" },
+      }));
+    }
   }
 
   async function saveTrustedAdultPrep(event: FormEvent<HTMLFormElement>) {
@@ -3737,6 +3827,121 @@ export default function HabiWorkspace() {
                         })}
                     </div>
                   </form>
+                  <form className={styles.formGroup} onSubmit={saveReflection}>
+                    <h3>Napi és heti visszatekintés</h3>
+                    <p className={styles.muted}>
+                      Írd le, amit szeretnél megőrizni a napodból vagy a
+                      hetedből. Bármelyik kérdést kihagyhatod; a kész
+                      visszatekintés a naplódban jelenik meg.
+                    </p>
+                    <label className={styles.label} htmlFor="reflection-type">
+                      Melyikre tekintenél vissza?
+                    </label>
+                    <select
+                      id="reflection-type"
+                      value={reflectionType}
+                      onChange={(event) =>
+                        setReflectionType(
+                          event.target.value as "daily" | "weekly",
+                        )
+                      }
+                    >
+                      <option value="daily">A napom</option>
+                      <option value="weekly">A hetem</option>
+                    </select>
+                    {(reflectionType === "daily"
+                      ? ([
+                          ["moment", "Mi maradt meg a mai napból?"],
+                          ["helped", "Mi segített ma?"],
+                        ] as const)
+                      : ([
+                          ["helped", "Mi segített ezen a héten?"],
+                          ["hard", "Mi volt sok vagy nehéz?"],
+                          ["next", "Mit próbálnál ki jövő héten?"],
+                        ] as const)
+                    ).map(([key, label]) => (
+                      <div key={`${reflectionType}-${key}`}>
+                        <label
+                          className={styles.label}
+                          htmlFor={`reflection-${reflectionType}-${key}`}
+                        >
+                          {label}
+                        </label>
+                        <textarea
+                          id={`reflection-${reflectionType}-${key}`}
+                          rows={2}
+                          maxLength={1000}
+                          value={reflectionAnswers[reflectionType][key]}
+                          onChange={(event) =>
+                            setReflectionAnswers((current) => ({
+                              ...current,
+                              [reflectionType]: {
+                                ...current[reflectionType],
+                                [key]: event.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+                    ))}
+                    <button
+                      className={styles.primary}
+                      type="submit"
+                      disabled={
+                        busy ||
+                        !Object.values(reflectionAnswers[reflectionType]).some(
+                          (value) => value.trim(),
+                        )
+                      }
+                    >
+                      Visszatekintés mentése a naplóba
+                    </button>
+                  </form>
+                  <section
+                    className={styles.formGroup}
+                    aria-labelledby="reflection-history-heading"
+                  >
+                    <h3 id="reflection-history-heading">
+                      Korábbi napi és heti visszatekintéseid
+                    </h3>
+                    {(ownPlayerData?.records ?? [])
+                      .filter(
+                        (record) =>
+                          record.text?.startsWith("Napi visszatekintés ·") ||
+                          record.text?.startsWith("Heti visszatekintés ·"),
+                      )
+                      .map((record) => (
+                        <article className={styles.dataCard} key={record.id}>
+                          <p>{record.text}</p>
+                          <time dateTime={record.occurredAt}>
+                            {record.occurredAt
+                              ? new Date(record.occurredAt).toLocaleString(
+                                  "hu-HU",
+                                  { dateStyle: "medium", timeStyle: "short" },
+                                )
+                              : ""}
+                          </time>
+                        </article>
+                      ))}
+                    {recordCursor ? (
+                      <button
+                        className={styles.secondary}
+                        type="button"
+                        disabled={loadingOlderRecords}
+                        onClick={() => void loadOlderRecords()}
+                      >
+                        {loadingOlderRecords
+                          ? "Régebbi bejegyzések betöltése…"
+                          : "Régebbi naplóbejegyzések betöltése"}
+                      </button>
+                    ) : (
+                      <p className={styles.muted}>
+                        {ownPlayerData?.records.length
+                          ? "A betöltött naplóbejegyzések végére értél."
+                          : "Még nincs naplóbejegyzés."}
+                      </p>
+                    )}
+                  </section>
                   <form
                     className={styles.formGroup}
                     onSubmit={saveMonthlyReflection}
