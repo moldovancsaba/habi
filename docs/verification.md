@@ -1,5 +1,14 @@
 # Habi — ellenőrzési napló
 
+## SSO browser MVP production release and runtime logging · 2026-10-26
+
+- Production deployment `dpl_6i4T3VvT6Rz8TR6KyD7qw22hML7E` from commit `887fd9d` is Ready and aliased to `www.habigoal.com`, `habigoal.com`, and `habi.doneisbetter.com`.
+- Live smoke checks from the Habi workspace: `/` → 200; `/api/health` → 200; `/api/ready` → 200 (Atlas readiness); signed-out `/api/app` → 401 with only `AUTHENTICATION_REQUIRED`; `/auth/login?returnTo=%2F` → 302 to DoneIsBetter SSO with browser-bound state and PKCE parameters. Environment: production HTTPS. No production user records were written.
+- The apex OAuth callback redirect preserves `/api/oauth/callback` and its query string when forwarding to `www`. This checks URL routing only; a real SSO callback/session, authenticated save/reload/logout, and verified transfer of existing records still require the owner’s live browser session and legacy cookie.
+- The Vercel runtime log query for this deployment returned no error/fatal events in the smoke-check window. Expected handled 4xx errors now use informational-level diagnostics; 5xx and fail-closed dependency failures remain error-level. The check confirms current deployment behavior, not future availability.
+- Validation before release: `npm run lint` exit 0 (155 files); `npm run typecheck` exit 0; `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` exit 0 (112/112, 0 skipped); `npm run build` exit 0; `git diff --check` exit 0. The change was committed as `887fd9d` and pushed to `origin/main`.
+- Runtime log improvement is code-only and has no database/data rollback effect. To revert it, restore the prior logging behavior in `src/lib/api/route-boundary.mjs` and deploy; expected 4xx events would again be classified as errors by the default logger.
+
 ## SSO-only browser MVP and verified legacy transfer · 2026-10-26
 
 - Implemented in the Habi worktree: `/auth/login`, `/api/oauth/callback`, owner session/logout, SSO-only `/api/app`, and one-use legacy handoff. Existing records link only when the legacy browser cookie is verified on `habi.doneisbetter.com`, the handoff is bound on canonical Habi, and DoneIsBetter verifies identity plus Habi permission. No email matching is used.

@@ -7,7 +7,8 @@
 - Production data target: the existing MongoDB Atlas database `habi`. Its `HG_ATLAS_URI` setting was preserved; the legacy `habi_mongodb_uri` variable was not changed.
 - Production SSO configuration is present in the Vercel secret store: `HG_MVP_MODE=sso-browser`, canonical and legacy origins, DoneIsBetter OIDC settings, and a newly generated session HMAC key. Secret values are not stored in this repository or local `.env` files.
 - Additive migration `010-sso-browser-owner-sessions` has been applied to Production. It created/updated only `auth_transactions`, `habi_sso_owner_links`, `habi_sso_owner_sessions`, and `habi_sso_owner_handoffs`. The existing `habi_states` count remained 37 and `habi_content` remained 1 before and after; no user documents were rewritten.
-- The new build is not yet deployed. A real DoneIsBetter login, callback relay through the apex redirect, first SSO session, and verified legacy-record transfer still require live release verification. See [verification](verification.md).
+- Production deployment `dpl_6i4T3VvT6Rz8TR6KyD7qw22hML7E` is Ready from commit `887fd9d` and serves the product domains. Live checks confirmed `/` 200, `/api/health` 200, `/api/ready` 200, signed-out `/api/app` 401, and `/auth/login` redirects to the configured DoneIsBetter authorization endpoint.
+- The apex callback relay was checked separately: `habigoal.com/api/oauth/callback?…` redirects to the canonical `www` host while preserving the callback path and query. A real browser SSO callback/session and verified legacy-record transfer still require the owner to complete sign-in with the original legacy browser cookie. See [verification](verification.md).
 
 ## Release procedure
 
@@ -21,7 +22,11 @@
 
 ## SSO and legacy transfer behavior
 
-The login starts on `www.habigoal.com` and uses the registered callback `https://habigoal.com/api/oauth/callback`. The verified Vercel domain redirects the apex to `www`; the callback query is expected to arrive at the canonical host with the browser-bound login cookie. This relay is an explicit live verification item.
+The login starts on `www.habigoal.com` and uses the registered callback `https://habigoal.com/api/oauth/callback`. The verified Vercel apex redirects to `www` and preserves the callback path and query. The live redirect was checked, but a real browser callback remains an owner sign-in verification item because it depends on the SSO session and browser-bound transaction cookie.
+
+## Runtime log levels
+
+API boundary diagnostics contain only a fixed operation label, request ID, status, and public error code. Expected request denials and other handled 4xx errors are logged at informational level; 5xx responses, thrown server errors, and fail-closed dependency/configuration failures are logged at error level. Do not treat a signed-out `/api/app` 401 as a service outage. Investigate error-level events using the request ID and deployment ID; never log request bodies, credentials, or exception messages.
 
 A legacy transfer starts only when `habi.doneisbetter.com` receives the user's existing valid HttpOnly browser cookie. It issues a random token with a 30-minute lifetime. The token is placed in the destination URL fragment, removed from browser history by the client, and exchanged for a short-lived HttpOnly browser-binding cookie. The SSO callback consumes it only after issuer, signature, nonce, userinfo subject, and Habi permission checks succeed. The system never links by email. Tokens are hash-only in MongoDB and single-use.
 
