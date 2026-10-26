@@ -651,6 +651,10 @@ The production admin landing showed the user's memberships as labels, without an
 | `npm run typecheck` | PASS, exit 0 | Local |
 | `npm run build` | PASS, exit 0; includes `/api/identity/activate-role` | Local production build |
 | API contract manifest digest/version | PASS; API contract `2.4.12` matches its manifest | Local |
+| Production deployment `dpl_CjEtdER6xdD7752YJjEUCuzYpVFi` | READY; aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`; commit `0551059` | Vercel project `narimato/habi`, Production |
+| `GET /`, `/admin`, `/api/health` | PASS, HTTP 200 | `https://habigoal.com` |
+| `GET /api/identity/activate-role` | PASS, HTTP 405; route is POST-only | `https://habigoal.com` |
+| Anonymous valid-shaped `POST /api/identity/activate-role` | PASS, HTTP 401 | Expected SSO authentication boundary |
 | Authenticated role activation and workspace entry | Not yet verified | Requires the owner's authenticated DoneIsBetter session |
 
 ## T-HG-143 · Show own roles and request a self-invitation · 2026-10-26
