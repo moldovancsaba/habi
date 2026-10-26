@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.4.13",
+    "version": "2.4.14",
     "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
@@ -10499,6 +10499,164 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/identity/role-requests": {
+      "get": {
+        "operationId": "get_identity_role_requests",
+        "description": "Reads the current verified SSO identity’s latest Habi role request and its status.",
+        "security": [
+          {
+            "ssoOwnerSessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Latest request or null"
+          },
+          "401": {
+            "description": "Verified SSO session required"
+          },
+          "503": {
+            "description": "Storage dependency unavailable"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_identity_role_requests",
+        "description": "Submits a player, parent or coach access request bound to the exact verified SSO identity. An admin invitation and verified claim are still required to activate access.",
+        "security": [
+          {
+            "ssoOwnerSessionCookie": []
+          }
+        ],
+        "x-domain-action": "request-access",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "role",
+                  "displayName"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "player",
+                      "parent",
+                      "coach"
+                    ]
+                  },
+                  "displayName": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Request submitted"
+          },
+          "200": {
+            "description": "Existing pending request returned"
+          },
+          "401": {
+            "description": "Verified SSO session required"
+          },
+          "403": {
+            "description": "Origin rejected"
+          },
+          "409": {
+            "description": "Requested role is already active"
+          },
+          "503": {
+            "description": "Storage dependency unavailable"
+          }
+        }
+      }
+    },
+    "/api/admin/role-requests": {
+      "get": {
+        "operationId": "get_admin_role_requests",
+        "description": "Lists pending Habi role requests for the configured tenant; requires current DoneIsBetter Habi admin permission.",
+        "security": [
+          {
+            "ssoOwnerSessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pending requests"
+          },
+          "401": {
+            "description": "Verified SSO session required"
+          },
+          "403": {
+            "description": "Habi admin permission required"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_admin_role_request_invitation",
+        "description": "Creates an invitation for a pending request, bound to its exact verified SSO identity. Parent requests require an admin-selected player.",
+        "security": [
+          {
+            "ssoOwnerSessionCookie": []
+          }
+        ],
+        "x-domain-action": "issue-invitation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "playerId"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "requestId": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{48}$"
+                  },
+                  "playerId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Identity-bound invitation created"
+          },
+          "401": {
+            "description": "Verified SSO session required"
+          },
+          "403": {
+            "description": "Habi admin permission required"
+          },
+          "404": {
+            "description": "Pending request or player not found"
+          },
+          "409": {
+            "description": "Request changed while invitation was issued"
           }
         }
       }

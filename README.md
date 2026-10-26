@@ -16,7 +16,7 @@ A kiválasztott termékcím [habigoal.com](https://habigoal.com); a `www` cím e
 - verziózott edzői anyag és pontos verzió publikálása;
 - PDF chunk-feltöltés GridFS karanténba, ClamAV-vizsgálat, kézi extraction és coach-review; ellenőrzött extractionből forrásolt kérés a helyi AI felé, állapotkövetéssel.
 - Verziózott játékosi gyakorlatkönyvtár; a játékos visszajelzése újratölthető, saját diary rekordként mentődik.
-- Feladatok és visszajelzések a `/legacy` útvonalon; edzői kérdőív-PDF feltöltése, a mérési adatok kézi rögzítése és jóváhagyása a játékos munkaterületén.
+- Feladatok és visszajelzések a natív, szerepkörös munkaterületen: elfogadható/elutasítható edzői feladatok, mentett utánkövetés és feladathoz rendelt visszajelzési előzmény. Edzői kérdőív-PDF feltöltése, mérési adatok kézi rögzítése és jóváhagyása.
 
 > **MVP:** a játékos napi állapotjelzést küldhet; a szülő és edző megfigyelést rögzíthet; a szülő forrásolt kérdést küldhet a helyi AI-nak; a riportfeltöltést helyi worker vizsgálja; az edző anyagokat publikálhat és vállalásokat követhet. A személyes AI-magyarázatok edzői ellenőrzésig nem jelennek meg kész válaszként. A `/admin` felület kezeli a meghívásokat és szerepkörök visszavonását.
 

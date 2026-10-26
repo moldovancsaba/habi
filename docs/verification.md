@@ -771,3 +771,12 @@ The signed-in administrator landing page now displays the active player, parent,
 | `GET /api/health`, `/api/ready`, `/api/v1/timeline`, `GET /api/v1/me/scope` | PASS: 200, 200, 401, 405 respectively | `https://habigoal.com`; unauthenticated access boundaries are expected |
 | Production runtime errors for `/api/v1/me/scope` after release | None found in the 30-minute window | Vercel project `narimato/habi`; no authenticated switch attempt occurred in that window |
 | Authenticated question → worker no-evidence result → timeline reload, and signed-in role switch | Not yet verified end-to-end | Requires the owner's authenticated session and a live local worker; no authenticated browser session was available for this verification |
+
+
+## Natív feladatok/visszajelzések és szerepkör-kérelem · 2026-10-26
+
+- A `/legacy` átmeneti URL most a natív munkaterületi nézetre irányít. Mindhárom szerepköri munkaterületen natív **Feladatok és visszajelzések** nézet van. A nézet a kiválasztott játékos jogosultságával olvassa a terveket és utánkövetéseket; a javasolt terv elfogadható vagy elutasítható, az aktív feladathoz időbélyeges visszajelzés menthető. A tervhez kötött visszajelzés az idővonal eseményei közé kerül.
+- A hozzáférés nélküli, SSO-val bejelentkezett felhasználó kiválaszthatja a játékos/szülő/edző szerepkört és kérelmet küldhet. Az adminisztrátor áttekinti, szükség esetén játékost kapcsol hozzá, majd a meghívót a pontos SSO-identitáshoz köti. Az önkérelem nem ad automatikus szerepkört.
+- Az új `013-role-requests` migráció az admin „Adatbázis frissítése” műveletén keresztül hozza létre a kérelmi kollekciót/sémát/indexet és bővíti a meghívó validátorát. Ezt a production DB-migrációt még nem futtattuk.
+- Helyi ellenőrzés, Habi repository, 2026-10-26: `npm run lint` — PASS, exit 0; `npm test` — PASS, 117 passed / 0 failed / 1 skipped (izolált Atlas replica-set URI nélkül); `npm run typecheck` — PASS, exit 0; `npm run build` — PASS, exit 0. `npm run test:workflow:local` — BLOCKED, exit 1, mert a környezet `LOCAL_TEST_MIGRATION_ONLY` értékkel tiltja a workflow-szkriptet; adatbázis-reset nem történt. Hosted SSO, production DB-migráció és böngészős vizuális próba nincs igazolva.
+- Visszaállítás: a kód visszaállítható és a Vercel korábbi deploymentje aktiválható. A 013-as migráció előrefelé kompatibilis; alkalmazás rollback esetén az új kollekció és index érintetlenül marad, kézi adat-visszaírás nem szükséges.

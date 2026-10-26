@@ -16,7 +16,7 @@ function tokenDigest(token, key) {
 
 /**
  * @param {import("mongodb").Collection<import("mongodb").Document>} collection
- * @param {{tenantId: string, role: "player" | "parent" | "coach", playerId?: string | null, playerDisplayName?: string | null, createdByIdentityHash: string, hmacKey: string, now?: Date}} options
+ * @param {{tenantId: string, role: "player" | "parent" | "coach", playerId?: string | null, playerDisplayName?: string | null, targetIdentityHash?: string | null, createdByIdentityHash: string, hmacKey: string, now?: Date}} options
  */
 export async function issueRoleInvitation(
   collection,
@@ -25,6 +25,7 @@ export async function issueRoleInvitation(
     role,
     playerId = null,
     playerDisplayName = null,
+    targetIdentityHash = null,
     createdByIdentityHash,
     hmacKey,
     now = new Date(),
@@ -34,6 +35,8 @@ export async function issueRoleInvitation(
     !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(tenantId ?? "") ||
     !["player", "parent", "coach"].includes(role) ||
     !/^[a-f0-9]{64}$/.test(createdByIdentityHash ?? "") ||
+    (targetIdentityHash !== null &&
+      !/^[a-f0-9]{64}$/.test(targetIdentityHash)) ||
     (role === "coach"
       ? playerId !== null
       : !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(playerId ?? "")) ||
@@ -56,6 +59,7 @@ export async function issueRoleInvitation(
       ? { playerDisplayName: playerDisplayName.trim() }
       : {}),
     createdByIdentityHash,
+    ...(targetIdentityHash ? { targetIdentityHash } : {}),
     createdAt: now.toISOString(),
     expiresAt: new Date(now.getTime() + ROLE_INVITATION_MS),
     claimedAt: null,
@@ -85,6 +89,10 @@ export async function claimRoleInvitation(
   const invitation = await collection.findOneAndUpdate(
     {
       tokenHash: tokenDigest(token, hmacKey),
+      $or: [
+        { targetIdentityHash: { $exists: false } },
+        { targetIdentityHash: identityHash },
+      ],
       expiresAt: { $gt: now },
       claimedAt: null,
       claimedIdentityHash: null,

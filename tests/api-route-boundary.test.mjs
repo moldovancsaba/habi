@@ -100,8 +100,10 @@ test("SSO-browser MVP permits SSO, admin, invite, and owner storage routes only"
     "auth.logout",
     "admin.me",
     "admin.invitations",
+    "admin.role-requests",
     "admin.memberships",
     "identity.claim",
+    "identity.role-requests",
   ]) {
     const allowed = await runApiRoute(
       new Request("https://www.habigoal.com/api/allowed"),

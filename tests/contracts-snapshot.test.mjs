@@ -27,6 +27,11 @@ test("runtime contract snapshot is pinned and covers every persisted collection"
   );
   assert.equal(COLLECTION_SCHEMA.auth_transactions, null);
   assert.equal(COLLECTION_SCHEMA.session_sso_credentials, null);
+  assert.equal(COLLECTION_SCHEMA.habi_role_requests, null);
+  assert.equal(
+    INTERNAL_RUNTIME_COLLECTIONS.includes("habi_role_requests"),
+    true,
+  );
   assert.equal(INTERNAL_COLLECTIONS.includes("session_sso_credentials"), false);
   assert.equal(
     Object.values(COLLECTION_SCHEMA).filter(Boolean).length,
@@ -45,6 +50,23 @@ test("runtime validation rejects a document outside the accepted contract", () =
   assert.throws(
     () => validateContractDocument("players", { id: "player-without-tenant" }),
     /DOCUMENT_CONTRACT_INVALID/,
+  );
+
+  assert.equal(
+    validateContractDocument("habi_role_requests", {
+      id: "e".repeat(48),
+      tenantId: "habi",
+      actorId: "actor_1",
+      identityHash: "f".repeat(64),
+      role: "coach",
+      displayName: "Moldován Csaba",
+      status: "pending",
+      invitationId: null,
+      createdAt: "2026-10-26T10:00:00.000Z",
+      updatedAt: "2026-10-26T10:00:00.000Z",
+      retentionPolicyId: "habi-retention-v1-draft",
+    }),
+    true,
   );
 });
 

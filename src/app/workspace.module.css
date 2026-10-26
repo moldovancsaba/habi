@@ -121,6 +121,56 @@
   box-shadow: 0 12px 40px rgba(29, 54, 91, 0.05);
   margin-bottom: 22px;
 }
+
+.roleRequest {
+  width: min(100%, 48rem);
+  margin-top: clamp(24px, 5vw, 48px);
+  padding: clamp(20px, 4vw, 36px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.roleRequest h2 {
+  margin: 0 0 12px;
+  font-size: clamp(1.35rem, 3.8vw, 2rem);
+}
+
+.roleRequestForm {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.roleRequestForm select,
+.roleRequestForm input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.roleRequestForm button,
+.roleRequest button {
+  min-height: 48px;
+  justify-self: start;
+}
+
+@media (max-width: 600px) {
+  .roleRequest {
+    padding: 20px;
+  }
+
+  .roleRequestForm button,
+  .roleRequest button {
+    width: 100%;
+  }
+}
 .hero {
   min-height: 320px;
   display: flex;
@@ -226,6 +276,55 @@
   min-height: 48px;
   margin-top: auto;
   white-space: normal;
+}
+.taskList {
+  display: grid;
+  gap: 18px;
+  margin-top: 24px;
+}
+.taskCard {
+  min-width: 0;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+}
+.taskHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.taskHeading h3 {
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+}
+.taskHeading time {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: var(--font-small);
+}
+.feedbackList {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.feedbackList h4 {
+  margin: 0 0 12px;
+}
+.feedbackList article + article {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.feedbackList p {
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .taskHeading {
+    flex-direction: column;
+  }
 }
 .eyebrow {
   color: #2b56a5;

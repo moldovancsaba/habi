@@ -161,6 +161,7 @@ export async function createSsoOwnerSession(
     issuer = null,
     subject = null,
     permissionRole = null,
+    displayName = null,
     hmacKey,
     now = new Date(),
   },
@@ -175,6 +176,9 @@ export async function createSsoOwnerSession(
     ...(issuer ? { issuer } : {}),
     ...(subject ? { subject } : {}),
     ...(permissionRole ? { permissionRole } : {}),
+    ...(typeof displayName === "string" && displayName.trim()
+      ? { displayName: displayName.trim().replace(/\s+/gu, " ").slice(0, 100) }
+      : {}),
     createdAt: now.toISOString(),
     lastSeenAt: now.toISOString(),
     expiresAt,

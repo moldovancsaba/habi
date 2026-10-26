@@ -20,9 +20,11 @@ const SSO_BROWSER_OPERATIONS = new Set([
   "api.legacy.storage",
   "admin.me",
   "admin.invitations",
+  "admin.role-requests",
   "admin.memberships",
   "identity.claim",
   "identity.activate-role",
+  "identity.role-requests",
 ]);
 
 function isNextControlFlow(error) {

@@ -47,6 +47,7 @@ export const INTERNAL_RUNTIME_COLLECTIONS = Object.freeze([
   "habi_sso_owner_sessions",
   "habi_sso_owner_handoffs",
   "habi_role_invitations",
+  "habi_role_requests",
 ]);
 
 export const COLLECTION_SCHEMA = Object.freeze({
@@ -59,6 +60,7 @@ export const COLLECTION_SCHEMA = Object.freeze({
   habi_sso_owner_sessions: null,
   habi_sso_owner_handoffs: null,
   habi_role_invitations: null,
+  habi_role_requests: null,
   sessions: "Session",
   memberships: "Membership",
   players: "Player",

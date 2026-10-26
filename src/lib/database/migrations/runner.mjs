@@ -12,6 +12,7 @@ import { migration as workerClaimIdempotency } from "./009-worker-claim-idempote
 import { migration as ssoBrowserOwnerSessions } from "./010-sso-browser-owner-sessions.mjs";
 import { migration as roleInvitations } from "./011-role-invitations.mjs";
 import { migration as playerDisplayNames } from "./012-player-display-names.mjs";
+import { migration as roleRequests } from "./013-role-requests.mjs";
 
 const MIGRATIONS = [
   initialSchema,
@@ -26,6 +27,7 @@ const MIGRATIONS = [
   ssoBrowserOwnerSessions,
   roleInvitations,
   playerDisplayNames,
+  roleRequests,
 ];
 
 /** @param {string[] | null} migrationIds */

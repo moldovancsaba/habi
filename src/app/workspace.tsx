@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import styles from "./workspace.module.css";
 import MetroTimeline, { ActorBadge, type TimelinePage } from "./metro-timeline";
 import CoachReportWorkspace from "./coach-report-workspace";
@@ -54,6 +60,7 @@ type WorkspaceView =
   | "conversations"
   | "timeline"
   | "reports"
+  | "tasks-feedback"
   | "assessments"
   | "knowledge";
 type ThreadSummary = {
@@ -83,6 +90,18 @@ type PlanSummary = {
   }>;
   sourceRefs: Array<{ id: string; revision: number }>;
   acceptances: Array<{ role: Role; decision: string }>;
+};
+type FollowUpSummary = {
+  id: string;
+  revision: number;
+  playerId: string;
+  planRef: { id: string; revision: number };
+  actionId: string;
+  recordedBy: { role: Role };
+  source: { kind: string };
+  occurredAt: string;
+  outcome: "helped" | "not_helped" | "unknown" | "adjust";
+  text: string;
 };
 type MaterialSummary = {
   id: string;
@@ -114,6 +133,13 @@ type AppState =
   | { state: "no-role" }
   | { state: "admin"; memberships: OwnRole[] }
   | { state: "ready"; me: Me };
+type RoleRequest = {
+  id: string;
+  role: Role;
+  displayName: string;
+  status: "pending" | "invitation-issued" | "declined" | "active";
+  createdAt: string;
+};
 
 const metrics = [
   [
@@ -226,6 +252,8 @@ export default function HabiWorkspace() {
   const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
   const [threadDraft, setThreadDraft] = useState("");
   const [plans, setPlans] = useState<PlanSummary[]>([]);
+  const [followUps, setFollowUps] = useState<FollowUpSummary[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
   const [materials, setMaterials] = useState<MaterialSummary[]>([]);
   const [planDraft, setPlanDraft] = useState("");
   const [materialTitle, setMaterialTitle] = useState("");
@@ -235,6 +263,87 @@ export default function HabiWorkspace() {
     "helped" | "not_helped" | "unknown" | "adjust"
   >("unknown");
   const [practiceSearch, setPracticeSearch] = useState("");
+  const [requestedRole, setRequestedRole] = useState<Role>("player");
+  const [requesterName, setRequesterName] = useState("");
+  const [roleRequest, setRoleRequest] = useState<RoleRequest | null>(null);
+  const [roleRequestMessage, setRoleRequestMessage] = useState("");
+  const [roleRequestBusy, setRoleRequestBusy] = useState(false);
+
+  useEffect(() => {
+    if (app.state !== "ready") return;
+    if (
+      new URLSearchParams(window.location.search).get("view") ===
+      "tasks-feedback"
+    ) {
+      setTab("tasks-feedback");
+    }
+  }, [app.state]);
+
+  useEffect(() => {
+    if (app.state !== "no-role") return;
+    const controller = new AbortController();
+    void fetch("/api/identity/role-requests", {
+      cache: "no-store",
+      credentials: "same-origin",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const body = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(body?.code ?? "LOAD_FAILED");
+        if (body?.request) {
+          setRoleRequest(body.request as RoleRequest);
+          setRequestedRole(body.request.role);
+          setRequesterName(body.request.displayName ?? "");
+        } else if (typeof body?.identity?.displayName === "string")
+          setRequesterName(body.identity.displayName);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setRoleRequestMessage(
+            "A kérelmi állapot most nem tölthető be. Próbáld újra.",
+          );
+      });
+    return () => controller.abort();
+  }, [app.state]);
+
+  async function submitRoleRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setRoleRequestBusy(true);
+    setRoleRequestMessage("");
+    try {
+      const response = await fetch("/api/identity/role-requests", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: requestedRole,
+          displayName: requesterName.trim(),
+        }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        if (body?.code === "CONFLICT")
+          throw new Error("Ehhez a szerepkörhöz már van aktív hozzáférésed.");
+        if (body?.code === "AUTHENTICATION_REQUIRED")
+          throw new Error(
+            "A bejelentkezés lejárt. Jelentkezz be újra, majd küldd el a kérelmet.",
+          );
+        throw new Error("A kérelem most nem küldhető el. Próbáld újra.");
+      }
+      setRoleRequest(body.request as RoleRequest);
+      setRoleRequestMessage(
+        "A kérelmedet elküldtük a Habi adminisztrátorának. A hozzáférés csak a meghívó elfogadása után aktiválódik.",
+      );
+    } catch (error) {
+      setRoleRequestMessage(
+        error instanceof Error
+          ? error.message
+          : "A kérelem most nem küldhető el. Próbáld újra.",
+      );
+    } finally {
+      setRoleRequestBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (app.state !== "ready" || !selectedPlayerId) return;
@@ -288,6 +397,28 @@ export default function HabiWorkspace() {
               setNotice(messageFor(error));
           });
       }
+    }
+    if (tab === "tasks-feedback" || tab === "reports") {
+      setTasksLoading(true);
+      void Promise.all([
+        fetchList(
+          `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/plans`,
+        ),
+        fetchList(
+          `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/follow-ups`,
+        ),
+      ])
+        .then(([planBody, followUpBody]) => {
+          setPlans(Array.isArray(planBody.items) ? planBody.items : []);
+          setFollowUps(
+            Array.isArray(followUpBody.items) ? followUpBody.items : [],
+          );
+        })
+        .catch((error: unknown) => {
+          if (!(error instanceof Error && error.name === "AbortError"))
+            setNotice(messageFor(error));
+        })
+        .finally(() => setTasksLoading(false));
     }
     return () => controller.abort();
   }, [app, selectedPlayerId, setNotice, tab]);
@@ -499,6 +630,7 @@ export default function HabiWorkspace() {
           { id: "journal", label: "Napló" },
           { id: "checkin", label: "Állapotjelzés" },
           { id: "timeline", label: "Idővonal" },
+          { id: "tasks-feedback", label: "Feladatok és visszajelzések" },
         ]
       : active?.activeRole === "parent"
         ? [
@@ -507,6 +639,7 @@ export default function HabiWorkspace() {
             { id: "conversations", label: "Beszélgetések" },
             { id: "timeline", label: "Idővonal" },
             { id: "reports", label: "Tervek" },
+            { id: "tasks-feedback", label: "Feladatok és visszajelzések" },
           ]
         : [
             { id: "overview", label: "Áttekintés" },
@@ -517,6 +650,7 @@ export default function HabiWorkspace() {
             { id: "reports", label: "Riportok és tervek" },
             { id: "assessments", label: "Felmérések" },
             { id: "knowledge", label: "Tudástár" },
+            { id: "tasks-feedback", label: "Feladatok és visszajelzések" },
           ];
 
   useEffect(() => {
@@ -1157,6 +1291,7 @@ export default function HabiWorkspace() {
       const body = await response.json().catch(() => null);
       if (!response.ok) throw new Error(body?.code ?? "FOLLOWUP_FAILED");
       setFollowupText("");
+      setFollowUps((items) => [body, ...items]);
       setNotice("Az utánkövetés rögzítve, a tervhez kapcsolva.", "success");
     } catch (error) {
       setNotice(messageFor(error));
@@ -1466,20 +1601,144 @@ export default function HabiWorkspace() {
                 <circle cx="40" cy="40" />
               </svg>
             </span>
-            <div className="story-legend">
-              {(["player", "parent", "coach"] as const).map((role) => (
-                <span className={`role-badge actor-${role}`} key={role}>
-                  {roleLabel(role)}
-                </span>
-              ))}
-            </div>
             <p className={styles.eyebrow}>MEGHÍVÓ SZÜKSÉGES</p>
             <h1>Még nincs Habi-szerepköröd.</h1>
             <p>
-              Kérj játékos, szülői vagy edzői meghívót a Habi
-              adminisztrátorától. A szerepkör a saját ellenőrzött
-              SSO-identitásodhoz kapcsolódik.
+              Itt közvetlenül kérhetsz játékos, szülői vagy edzői hozzáférést. A
+              kérelmet a Habi adminisztrátora nézi át; a szerepkör csak a saját,
+              ellenőrzött SSO-fiókoddal elfogadott meghívó után aktiválódik.
             </p>
+            <section
+              className={styles.roleRequest}
+              aria-labelledby="role-request-title"
+            >
+              {roleRequest ? (
+                <>
+                  <p className={styles.eyebrow}>HOZZÁFÉRÉSI KÉRELEM</p>
+                  <h2 id="role-request-title">
+                    {roleRequest.status === "active"
+                      ? "A hozzáférésed aktív"
+                      : roleRequest.status === "invitation-issued"
+                        ? "Elkészült a meghívód"
+                        : roleRequest.status === "declined"
+                          ? "A kérelmet lezárták"
+                          : "A kérelmed megérkezett"}
+                  </h2>
+                  <p>
+                    Kért szerepkör:{" "}
+                    <strong>{roleLabel(roleRequest.role)}</strong> · a név, amit
+                    megadtál: <strong>{roleRequest.displayName}</strong>
+                  </p>
+                  <p role="status" aria-live="polite">
+                    {roleRequest.status === "active"
+                      ? "Frissítsd az oldalt a munkaterület megnyitásához."
+                      : roleRequest.status === "invitation-issued"
+                        ? "Az adminisztrátor elkészítette a meghívót. Kérd el tőle a meghívó hivatkozását, majd fogadd el ezzel az SSO-fiókkal."
+                        : roleRequest.status === "declined"
+                          ? "Ha továbbra is hozzáférésre van szükséged, küldhetsz új kérelmet."
+                          : "Az adminisztrátor áttekinti a kérelmet. A hozzáférés még nem aktív."}
+                  </p>
+                  {roleRequest.status !== "pending" &&
+                    roleRequest.status !== "invitation-issued" && (
+                      <button
+                        type="button"
+                        className={styles.secondary}
+                        onClick={() => {
+                          setRoleRequest(null);
+                          setRoleRequestMessage("");
+                        }}
+                      >
+                        Új kérelem indítása
+                      </button>
+                    )}
+                  {roleRequest.status === "pending" && (
+                    <button
+                      type="button"
+                      className={styles.secondary}
+                      onClick={() =>
+                        void fetch("/api/identity/role-requests", {
+                          cache: "no-store",
+                          credentials: "same-origin",
+                        })
+                          .then((response) => response.json())
+                          .then((body) => {
+                            if (body?.request) setRoleRequest(body.request);
+                          })
+                      }
+                    >
+                      Kérelem állapotának frissítése
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className={styles.eyebrow}>HOZZÁFÉRÉS KÉRÉSE</p>
+                  <h2 id="role-request-title">
+                    Milyen szerepben használnád a Habi-t?
+                  </h2>
+                  <form
+                    className={styles.roleRequestForm}
+                    onSubmit={(event) => void submitRoleRequest(event)}
+                  >
+                    <label className={styles.label} htmlFor="requested-role">
+                      Kért szerepkör
+                    </label>
+                    <select
+                      id="requested-role"
+                      value={requestedRole}
+                      onChange={(event) =>
+                        setRequestedRole(event.target.value as Role)
+                      }
+                    >
+                      <option value="player">
+                        Játékos – saját sportolói napló
+                      </option>
+                      <option value="parent">
+                        Szülő – kapcsolódó játékos támogatása
+                      </option>
+                      <option value="coach">Edző – játékosok támogatása</option>
+                    </select>
+                    <label
+                      className={styles.label}
+                      htmlFor="request-display-name"
+                    >
+                      A neved, amelyen az adminisztrátor felismer
+                    </label>
+                    <input
+                      id="request-display-name"
+                      autoComplete="name"
+                      maxLength={100}
+                      minLength={2}
+                      required
+                      value={requesterName}
+                      readOnly={Boolean(requesterName)}
+                      onChange={(event) => setRequesterName(event.target.value)}
+                    />
+                    <p className={styles.muted}>
+                      Ezt a nevet csak a kérelem elbírálásához használjuk. A
+                      jogosultságot az adminisztrátor állítja be; ez az űrlap
+                      önmagában nem ad hozzáférést.
+                    </p>
+                    <button
+                      className={styles.primary}
+                      type="submit"
+                      disabled={
+                        roleRequestBusy || requesterName.trim().length < 2
+                      }
+                    >
+                      {roleRequestBusy
+                        ? "Kérelem küldése…"
+                        : "Szerepkör kérése"}
+                    </button>
+                  </form>
+                </>
+              )}
+              {roleRequestMessage && (
+                <p role="status" aria-live="polite">
+                  {roleRequestMessage}
+                </p>
+              )}
+            </section>
           </section>
         )}
         {active && (
@@ -1499,9 +1758,6 @@ export default function HabiWorkspace() {
                   {view.label}
                 </button>
               ))}
-              <a className={styles.navLink} href="/legacy">
-                Feladatok és visszajelzések
-              </a>
             </nav>
             <section className={styles.heroCompact}>
               <div className={styles.roleHeading}>
@@ -2455,6 +2711,182 @@ export default function HabiWorkspace() {
                   onLoadMore={() => void loadOlderTimeline()}
                   loadingMore={loadingOlder}
                 />
+              </section>
+            )}
+            {tab === "tasks-feedback" && selectedPlayer && (
+              <section className={styles.panel}>
+                <p className={styles.eyebrow}>KÖZÖS MUNKA</p>
+                <h2>Feladatok és visszajelzések</h2>
+                <p className={styles.muted}>
+                  A közös tervhez kapcsolt teendők, döntések és utánkövetések.
+                  Minden visszajelzés a naplóban is megjelenik.
+                </p>
+                {tasksLoading ? (
+                  <p className={styles.emptyState} role="status">
+                    A feladatok és visszajelzések betöltése…
+                  </p>
+                ) : plans.length === 0 ? (
+                  <p className={styles.emptyState}>
+                    Még nincs közös feladat. Az edző által készített terv itt
+                    jelenik meg, miután kapcsolódó játékos vagy szülő elfogadta.
+                  </p>
+                ) : (
+                  <div className={styles.taskList}>
+                    {plans.flatMap((plan) =>
+                      plan.actions.map((action) => {
+                        const feedback = followUps.filter(
+                          (item) =>
+                            item.planRef.id === plan.id &&
+                            item.actionId === action.id,
+                        );
+                        const outcomeLabel: Record<string, string> = {
+                          helped: "Segített",
+                          not_helped: "Nem segített",
+                          unknown: "Még nem tudom",
+                          adjust: "Módosítani kell",
+                        };
+                        return (
+                          <article
+                            className={styles.taskCard}
+                            key={`${plan.id}:${action.id}`}
+                          >
+                            <div className={styles.taskHeading}>
+                              <div>
+                                <p className={styles.eyebrow}>
+                                  {plan.status === "proposed"
+                                    ? "JÓVÁHAGYÁSRA VÁR"
+                                    : plan.status === "active"
+                                      ? "AKTÍV FELADAT"
+                                      : "LEZÁRT TERV"}
+                                </p>
+                                <h3>{action.what}</h3>
+                              </div>
+                              <time dateTime={action.dueAt}>
+                                Határidő:{" "}
+                                {new Date(action.dueAt).toLocaleDateString(
+                                  "hu-HU",
+                                )}
+                              </time>
+                            </div>
+                            <p>{action.why}</p>
+                            <p className={styles.muted}>
+                              Leállítási feltétel: {action.stopCondition}
+                            </p>
+                            {plan.status === "proposed" &&
+                              (active.activeRole === "player" ||
+                                active.activeRole === "parent") && (
+                                <div className={styles.actions}>
+                                  <button
+                                    className={styles.primary}
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      void decidePlan(plan, "accept")
+                                    }
+                                  >
+                                    Elfogadom
+                                  </button>
+                                  <button
+                                    className={styles.secondary}
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      void decidePlan(plan, "decline")
+                                    }
+                                  >
+                                    Nem ezt javaslom
+                                  </button>
+                                </div>
+                              )}
+                            {plan.status === "active" && (
+                              <div className={styles.formGroup}>
+                                <label
+                                  className={styles.label}
+                                  htmlFor={`task-outcome-${plan.id}-${action.id}`}
+                                >
+                                  Hogyan alakult?
+                                </label>
+                                <select
+                                  id={`task-outcome-${plan.id}-${action.id}`}
+                                  value={followupOutcome}
+                                  onChange={(event) =>
+                                    setFollowupOutcome(
+                                      event.target
+                                        .value as typeof followupOutcome,
+                                    )
+                                  }
+                                >
+                                  <option value="helped">Segített</option>
+                                  <option value="not_helped">
+                                    Nem segített
+                                  </option>
+                                  <option value="adjust">
+                                    Módosítani kell
+                                  </option>
+                                  <option value="unknown">Még nem tudom</option>
+                                </select>
+                                <label
+                                  className={styles.label}
+                                  htmlFor={`task-feedback-${plan.id}-${action.id}`}
+                                >
+                                  Visszajelzés
+                                </label>
+                                <textarea
+                                  id={`task-feedback-${plan.id}-${action.id}`}
+                                  rows={3}
+                                  maxLength={4000}
+                                  value={followupText}
+                                  onChange={(event) =>
+                                    setFollowupText(event.target.value)
+                                  }
+                                />
+                                <button
+                                  className={styles.primary}
+                                  type="button"
+                                  disabled={busy || !followupText.trim()}
+                                  onClick={() =>
+                                    void submitFollowUp(plan, action.id)
+                                  }
+                                >
+                                  Visszajelzés mentése
+                                </button>
+                              </div>
+                            )}
+                            <div className={styles.feedbackList}>
+                              <h4>Korábbi visszajelzések</h4>
+                              {feedback.length ? (
+                                feedback.map((item) => (
+                                  <article key={item.id}>
+                                    <p>
+                                      <strong>
+                                        {outcomeLabel[item.outcome] ??
+                                          item.outcome}
+                                      </strong>
+                                      {" · "}
+                                      <time dateTime={item.occurredAt}>
+                                        {new Date(
+                                          item.occurredAt,
+                                        ).toLocaleString("hu-HU", {
+                                          dateStyle: "medium",
+                                          timeStyle: "short",
+                                        })}
+                                      </time>
+                                    </p>
+                                    <p>{item.text}</p>
+                                  </article>
+                                ))
+                              ) : (
+                                <p className={styles.muted}>
+                                  Ehhez a feladathoz még nincs visszajelzés.
+                                </p>
+                              )}
+                            </div>
+                          </article>
+                        );
+                      }),
+                    )}
+                  </div>
+                )}
               </section>
             )}
           </>

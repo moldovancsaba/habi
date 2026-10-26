@@ -18,6 +18,8 @@ Ha adminisztrátorként több aktív Habi-szerepköröd van, a kezdőlapon minde
 
 Adminisztrátorként a **Szerepkör kérése a saját fiókomhoz** gombbal indíthatsz saját játékos-, szülői vagy edzőmeghívót. Az elkészült meghívót ugyanazzal a DoneIsBetter-fiókkal kell elfogadni. Szülőként válaszd ki a kapcsolódó játékost; játékos-hozzáférésnél a megadott név új játékosprofilt hoz létre. Edzői hozzáférés a tenant játékosaihoz szól.
 
+Ha be vagy jelentkezve, de még nincs Habi-szerepköröd, a kezdőlapon a **Szerepkör kérése** űrlapon kérhetsz játékos-, szülői vagy edzői hozzáférést. A kérelem a pontos, ellenőrzött SSO-identitáshoz kapcsolódik; az SSO-ból érkező hitelesített név automatikusan megjelenik. Az admin a `/admin` oldalon ellenőrzi a kérelmet, és személyre kötött meghívót adhat ki. A hozzáférés csak akkor indul el, ha ugyanazzal az SSO-fiókkal elfogadod a meghívót. Szülői kérelemnél az admin rendeli a kérelmet a megfelelő játékoshoz.
+
 ## MVP-folyamat
 
 1. A Habi admin a `/admin` oldalon megnyitja a tenant előkészítését.
@@ -30,23 +32,24 @@ Adminisztrátorként a **Szerepkör kérése a saját fiókomhoz** gombbal indí
 
 A Habigoal wireframe jóváhagyott képernyőszerkezetét a Habi szerepkörönkénti navigációja valósítja meg. A prototípusban szereplő Dani és az eseményei bemutatóadatok; a Habi nem másolja ezeket az éles munkaterületre. A kezdőoldal a bejelentkezett tagság és az API-ból ténylegesen elérhető adatok szerint mutat profilt, állapotjelzést, szereplőket és metróvonalas eseménytörténetet.
 
-- **Játékos:** Áttekintés, Napló, Állapotjelzés, Idővonal. A napi jelzés öt kérdése egyenként jelenik meg; a Naplóban saját bejegyzés rögzíthető.
-- **Szülő:** Áttekintés, Napló, Beszélgetések, Idővonal, Tervek. A szülői bejegyzés külön szülői forrással kerül mentésre; a Beszélgetések képernyőn forrásolt kérdés küldhető a helyi AI-nak, és követhető a feldolgozás/edzői ellenőrzés.
-- **Edző:** Áttekintés, Napló, Állapotjelzés, Beszélgetések, Idővonal, Riportok és tervek, Felmérések, Tudástár. A coach a játékos saját megosztott válaszait olvashatja; külön forrásként rögzítheti a megfigyelését.
+- **Játékos:** Áttekintés, Napló, Állapotjelzés, Idővonal, Feladatok és visszajelzések. A napi jelzés öt kérdése egyenként jelenik meg; a Naplóban saját bejegyzés rögzíthető.
+- **Szülő:** Áttekintés, Napló, Beszélgetések, Idővonal, Tervek, Feladatok és visszajelzések. A szülői bejegyzés külön szülői forrással kerül mentésre; a Beszélgetések képernyőn forrásolt kérdés küldhető a helyi AI-nak, és követhető a feldolgozás/edzői ellenőrzés.
+- **Edző:** Áttekintés, Napló, Állapotjelzés, Beszélgetések, Idővonal, Riportok és tervek, Felmérések, Tudástár, Feladatok és visszajelzések. A coach a játékos saját megosztott válaszait olvashatja; külön forrásként rögzítheti a megfigyelését.
 
 Az **Idővonal** az API által visszaadott, jogosultság-ellenőrzött eseményeket a szerepkör szerinti metróágakon mutatja. Minden kártyán a dátum és az esemény időpontja is látható. A Habihoz intézett kérdés és a feldolgozás eredménye – akkor is, ha nem található ellenőrizhető forrásolt válasz – külön, egymáshoz kapcsolt eseményként része a történetnek. Az Áttekintés a legutóbbi tényleges eseményeket is megjeleníti; nincs behelyettesített mintajátékos vagy demoesemény.
 
 Az edző a **Felmérések** résznél PDF-et tölthet fel, vagy az eredeti dokumentummal összevetve kézzel rögzítheti a mezőket, oldalt és nyers értéket. A helyi worker vírusvizsgálata után a mezők ellenőrizhetők és jóváhagyhatók. Ezután ugyanitt egy ellenőrzött mezőből forrásolt értelmezési kérdést küldhet a helyi AI-nak, és követheti a feldolgozás állapotát és válaszát. A válasz a hivatkozott mezőt és a bizonytalanságokat mutatja; nem diagnózis, és nem tesz ellenőrizetlen állítást kész eredményként elérhetővé. A **Riportok és tervek** résznél a coach forráshoz kapcsolt következő lépést készíthet, majd forrással ellátott, verziózott edzői anyagot menthet piszkozatként és külön megoszthatja. A játékos és a szülő a hozzájuk publikált tervet elfogadhatja vagy elutasíthatja, majd az aktív tervhez utánkövetést rögzíthet. A **Tudástár** kereshető, általános gyakorlatokat mutat; ezek nem egyéni diagnózisok.
 
-A korábbi feladat- és visszajelzésfunkciók továbbra is a felső navigáció **Feladatok és visszajelzések** hivatkozásáról, illetve a `/legacy` útvonalon érhetők el. Ezek a funkciók nem helyettesítik az új szerepköri naplót, idővonalat, kérdőívfeltöltést vagy coach-tervezést.
+## Korábbi Habi-funkciók migrációja
+
+A `/legacy` átmeneti útvonal a natív **Feladatok és visszajelzések** nézetre irányít át; nem nyitja meg a régi demófelületet. A natív funkció Habi-szerepköröket és tartós API-kat használ. A célok, havi visszatekintés, trendek, fennmaradó gyakorlatok, emlékeztetők és a nyilvántartásban még hiányzó tételek továbbra is nyitott migrációs munka. Az igazolt állapotot a [funkciómigrációs nyilvántartás](legacy-feature-migration.md) rögzíti.
 
 ## Feladatok, visszajelzések és kérdőíveredmények
 
-- A napi feladatok és a korábbi Habi-visszajelzések a [Feladatok és visszajelzések](/legacy) oldalon érhetők el. A Habi kezdőlap felső nézetsorában válaszd ezt a hivatkozást. A `/legacy` cím közvetlenül is megnyitható.
+- A **Feladatok és visszajelzések** nézet a szerepkörök navigációjából nyílik. A tervek és utánkövetések a Habi API-ból töltődnek be; az elfogadás, elutasítás és visszajelzés mentése a játékos napló-idővonalához kapcsolódik.
 - Edzőként az **Áttekintés** oldalon válaszd ki a játékost. A **Kérdőívek és eredmények** résznél PDF-kérdőívet tölthetsz fel (legfeljebb 10 MB). A fájl a helyi worker ClamAV-vizsgálatáig karanténban marad.
 - Sikeres vizsgálat után válaszd az **Új mező** gombot, és minden adatnál add meg a mező nevét, eredeti oldalszámát, az eredeti értéket és – ha szerepel – a mértékegységet. A Habi nem talál ki hiányzó értéket, és nem értelmezi át a kérdőív számait.
 - Az **Adatbevitel mentése** után a rögzített adatokat ellenőrizheted. A **Mezők ellenőrzése és jóváhagyása** gomb az összes megjelenített mezőt ellenőrzöttként rögzíti. Ezt csak az eredeti PDF-fel összevetve használd.
-- A jelenlegi `/legacy` funkciók új munkamenetben indulnak; korábbi böngészőadat importja nincs bekapcsolva. A régi adatok átvitele nem szükséges a funkciók használatához.
 
 ## Szerepkörök és játékosazonosítás
 

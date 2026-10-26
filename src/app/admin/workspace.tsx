@@ -27,6 +27,12 @@ type Invitation = {
   status: "pending" | "claimed" | "revoked" | "expired";
   expiresAt: string;
 };
+type RoleRequest = {
+  id: string;
+  role: Role;
+  displayName: string;
+  createdAt: string;
+};
 
 async function jsonResponse<T>(response: Response): Promise<T> {
   const body = await response.json().catch(() => null);
@@ -54,6 +60,11 @@ export default function AdminConsole() {
   const [ownPlayerName, setOwnPlayerName] = useState("");
   const [ownInviteUrl, setOwnInviteUrl] = useState("");
   const [ownRoleMessage, setOwnRoleMessage] = useState("");
+  const [roleRequests, setRoleRequests] = useState<RoleRequest[]>([]);
+  const [requestPlayers, setRequestPlayers] = useState<Record<string, string>>(
+    {},
+  );
+  const [requestInviteUrl, setRequestInviteUrl] = useState("");
 
   async function logOutFromHabi() {
     await fetch("/auth/logout", {
@@ -140,6 +151,66 @@ export default function AdminConsole() {
       });
     return () => controller.abort();
   }, [tenantId, state, playerId]);
+
+  useEffect(() => {
+    if (state !== "ready" || !tenantId) return;
+    const controller = new AbortController();
+    fetch("/api/admin/role-requests", {
+      cache: "no-store",
+      credentials: "same-origin",
+      signal: controller.signal,
+    })
+      .then((response) => jsonResponse<{ items: RoleRequest[] }>(response))
+      .then((result) =>
+        setRoleRequests(Array.isArray(result.items) ? result.items : []),
+      )
+      .catch((error: unknown) => {
+        if (!(error instanceof Error && error.name === "AbortError"))
+          setMessage("A szerepkörkérelmek most nem tölthetők be.");
+      });
+    return () => controller.abort();
+  }, [state, tenantId]);
+
+  async function issueRequestInvitation(item: RoleRequest) {
+    if (item.role === "parent" && !requestPlayers[item.id]) {
+      setMessage("Szülői meghívóhoz előbb válaszd ki a kapcsolódó játékost.");
+      return;
+    }
+    setBusy(true);
+    setMessage("");
+    setRequestInviteUrl("");
+    try {
+      const response = await fetch("/api/admin/role-requests", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId: item.id,
+          playerId: item.role === "parent" ? requestPlayers[item.id] : null,
+        }),
+      });
+      const result = await jsonResponse<{ claimUrl: string }>(response);
+      setRequestInviteUrl(result.claimUrl);
+      setMessage(
+        "A meghívó a kérelmező ellenőrzött SSO-identitásához kötődik. Másold ki, és küldd el neki biztonságos csatornán.",
+      );
+      const refreshed = await jsonResponse<{ items: RoleRequest[] }>(
+        await fetch("/api/admin/role-requests", {
+          cache: "no-store",
+          credentials: "same-origin",
+        }),
+      );
+      setRoleRequests(refreshed.items ?? []);
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "A meghívó most nem készíthető el.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function createInvitation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -238,7 +309,7 @@ export default function AdminConsole() {
   async function setupTenant() {
     if (
       !window.confirm(
-        "Előkészíted a Habi tenantot az MVP-hez és alkalmazod az adatbázis-migrációkat?",
+        "Futtassuk az idempotens Habi-adatbázisfrissítést? A meglévő naplóbejegyzéseket nem törli vagy írja át.",
       )
     )
       return;
@@ -263,7 +334,16 @@ export default function AdminConsole() {
       );
       setTenants(result.tenants);
       setTenantId(result.tenants[0]?.tenantId ?? "");
-      setMessage("Habi előkészítve. Most létrehozhatod az első meghívót.");
+      const requests = await jsonResponse<{ items: RoleRequest[] }>(
+        await fetch("/api/admin/role-requests", {
+          cache: "no-store",
+          credentials: "same-origin",
+        }),
+      );
+      setRoleRequests(requests.items ?? []);
+      setMessage(
+        "Az adatbázisfrissítés befejeződött. A meglévő naplóbejegyzések változatlanok maradtak.",
+      );
     } catch (error) {
       setMessage(
         error instanceof Error && error.message === "REVISION_CONFLICT"
@@ -483,6 +563,30 @@ export default function AdminConsole() {
               <>
                 <section
                   className={styles.notice}
+                  aria-labelledby="schema-refresh-heading"
+                >
+                  <h2 id="schema-refresh-heading">Habi működési állapota</h2>
+                  <p>
+                    Az adatbázis-frissítés az új szerepkörkérelmek tárolóját és
+                    a Habi jelenlegi szerződéseit készíti elő. Meglévő
+                    naplóadatot nem töröl.
+                  </p>
+                  <button
+                    className={styles.secondary}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void setupTenant()}
+                  >
+                    {busy ? "Frissítés folyamatban…" : "Adatbázis frissítése"}
+                  </button>
+                  {message && (
+                    <p role="status" aria-live="polite">
+                      {message}
+                    </p>
+                  )}
+                </section>
+                <section
+                  className={styles.notice}
                   id="my-access"
                   aria-labelledby="my-access-heading"
                 >
@@ -596,6 +700,81 @@ export default function AdminConsole() {
                       </a>
                     )}
                   </form>
+                </section>
+                <section
+                  className={styles.notice}
+                  aria-labelledby="role-requests-heading"
+                >
+                  <p className={styles.eyebrow}>FELHASZNÁLÓI KÉRELMEK</p>
+                  <h2 id="role-requests-heading">Várakozó szerepkörkérelmek</h2>
+                  {roleRequests.length ? (
+                    <div className={styles.created}>
+                      {roleRequests.map((item) => (
+                        <article className={styles.notice} key={item.id}>
+                          <p>
+                            <strong>{item.displayName}</strong> ·{" "}
+                            {item.role === "player"
+                              ? "Játékos"
+                              : item.role === "parent"
+                                ? "Szülő"
+                                : "Edző"}
+                          </p>
+                          <p className={styles.eyebrow}>
+                            Érkezett:{" "}
+                            {new Date(item.createdAt).toLocaleString("hu-HU")}
+                          </p>
+                          {item.role === "parent" && (
+                            <label className={styles.form}>
+                              Kapcsolódó játékos
+                              <select
+                                value={requestPlayers[item.id] ?? ""}
+                                onChange={(event) =>
+                                  setRequestPlayers((current) => ({
+                                    ...current,
+                                    [item.id]: event.target.value,
+                                  }))
+                                }
+                              >
+                                <option value="">Válassz játékost</option>
+                                {players.map((player) => (
+                                  <option key={player.id} value={player.id}>
+                                    {player.displayName ?? "Név nincs megadva"}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          )}
+                          <button
+                            className={styles.primary}
+                            type="button"
+                            disabled={
+                              busy ||
+                              (item.role === "parent" &&
+                                !requestPlayers[item.id])
+                            }
+                            onClick={() => void issueRequestInvitation(item)}
+                          >
+                            Meghívó létrehozása és a kérelmezőhöz kötése
+                          </button>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p>Most nincs elbírálásra váró kérelem.</p>
+                  )}
+                  {requestInviteUrl && (
+                    <div className={styles.created}>
+                      <label htmlFor="request-invite-url">
+                        Személyre kötött meghívó hivatkozása
+                      </label>
+                      <input
+                        id="request-invite-url"
+                        readOnly
+                        value={requestInviteUrl}
+                        onFocus={(event) => event.currentTarget.select()}
+                      />
+                    </div>
+                  )}
                 </section>
                 <form className={styles.form} onSubmit={createInvitation}>
                   <label htmlFor="tenant">Szervezet</label>

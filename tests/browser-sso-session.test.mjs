@@ -172,6 +172,7 @@ test("SSO browser sessions are opaque, idle-limited and revocable", async () => 
   const issued = await createSsoOwnerSession(sessions, {
     identityHash: "a".repeat(64),
     ownerHash: "b".repeat(64),
+    displayName: " Moldován   Csaba ",
     hmacKey: key,
     now,
   });
@@ -189,6 +190,7 @@ test("SSO browser sessions are opaque, idle-limited and revocable", async () => 
     now,
   });
   assert.equal(active.ownerHash, "b".repeat(64));
+  assert.equal(active.displayName, "Moldován Csaba");
   assert.equal(
     await readActiveSsoOwnerSession(
       sessions,

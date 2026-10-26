@@ -60,7 +60,7 @@ test("timeline schema snapshot matches its canonical source manifest", async () 
       "utf8",
     ),
   );
-  assert.equal(manifest.apiVersion, "2.4.13");
+  assert.equal(manifest.apiVersion, "2.4.14");
   assert.equal(
     manifest.sourceRepository,
     "https://github.com/moldovancsaba/habi",

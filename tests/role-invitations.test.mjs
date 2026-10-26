@@ -12,7 +12,11 @@ const now = new Date("2026-10-26T12:00:00.000Z");
 
 function matches(document, query) {
   return Object.entries(query).every(([keyName, expected]) => {
+    if (keyName === "$or")
+      return expected.some((branch) => matches(document, branch));
     const actual = document[keyName];
+    if (expected && typeof expected === "object" && "$exists" in expected)
+      return (actual !== undefined) === expected.$exists;
     if (expected && typeof expected === "object" && "$gt" in expected)
       return actual > expected.$gt;
     if (expected && typeof expected === "object" && "$ne" in expected)
@@ -76,6 +80,35 @@ test("role invitations persist only a keyed token hash and enforce exact role sc
     }),
     { message: "ROLE_INVITATION_INPUT_INVALID" },
   );
+});
+
+test("role-request invitations are claimable only by the exact verified SSO identity", async () => {
+  const collection = memoryCollection();
+  const target = "d".repeat(64);
+  const { token } = await issueRoleInvitation(collection, {
+    tenantId: "habi-test",
+    role: "coach",
+    targetIdentityHash: target,
+    createdByIdentityHash: "a".repeat(64),
+    hmacKey: key,
+    now,
+  });
+  assert.equal(
+    await claimRoleInvitation(collection, {
+      token,
+      identityHash: "e".repeat(64),
+      hmacKey: key,
+      now,
+    }),
+    null,
+  );
+  const claimed = await claimRoleInvitation(collection, {
+    token,
+    identityHash: target,
+    hmacKey: key,
+    now,
+  });
+  assert.equal(claimed.claimedIdentityHash, target);
 });
 
 test("invite claim is single-identity, single-use, and retry-safe for the claimant", async () => {

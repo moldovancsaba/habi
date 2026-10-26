@@ -99,6 +99,7 @@ const ssoOwnerSessionSchema = {
     issuer: { bsonType: "string", pattern: "^https://", maxLength: 500 },
     subject: { bsonType: "string", minLength: 1, maxLength: 300 },
     permissionRole: { enum: ["user", "admin"] },
+    displayName: { bsonType: "string", minLength: 1, maxLength: 100 },
   },
 };
 
@@ -133,6 +134,7 @@ const roleInvitationSchema = {
       pattern: "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
     },
     createdByIdentityHash: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
+    targetIdentityHash: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
     createdAt: {
       bsonType: "string",
       pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
@@ -149,6 +151,53 @@ const roleInvitationSchema = {
     revokedAt: {
       bsonType: ["string", "null"],
       pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    },
+  },
+};
+
+const roleRequestSchema = {
+  bsonType: "object",
+  required: [
+    "id",
+    "tenantId",
+    "actorId",
+    "identityHash",
+    "role",
+    "displayName",
+    "status",
+    "invitationId",
+    "createdAt",
+    "updatedAt",
+    "retentionPolicyId",
+  ],
+  additionalProperties: false,
+  properties: {
+    _id: { bsonType: ["objectId", "string"] },
+    id: { bsonType: "string", pattern: "^[a-f0-9]{48}$" },
+    tenantId: {
+      bsonType: "string",
+      pattern: "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+    },
+    actorId: {
+      bsonType: "string",
+      pattern: "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+    },
+    identityHash: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
+    role: { enum: ["player", "parent", "coach"] },
+    displayName: { bsonType: "string", minLength: 2, maxLength: 100 },
+    status: { enum: ["pending", "invitation-issued", "declined"] },
+    invitationId: { bsonType: ["string", "null"], pattern: "^[a-f0-9]{48}$" },
+    createdAt: {
+      bsonType: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    },
+    updatedAt: {
+      bsonType: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    },
+    retentionPolicyId: {
+      bsonType: "string",
+      pattern: "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
     },
   },
 };
@@ -221,6 +270,11 @@ export function validateContractDocument(collection, document) {
       throw new Error("DOCUMENT_CONTRACT_INVALID:role_invitation");
     return true;
   }
+  if (collection === "habi_role_requests") {
+    if (!validateRoleRequest(document))
+      throw new Error("DOCUMENT_CONTRACT_INVALID:role_request");
+    return true;
+  }
   if (collection === "session_sso_credentials") {
     if (!validateSessionSsoCredential(document)) {
       throw new Error("DOCUMENT_CONTRACT_INVALID:session_sso_credential");
@@ -285,7 +339,7 @@ function validateSsoOwnerSession(document) {
     "expiresAt",
     "revokedAt",
   ];
-  const optional = ["issuer", "subject", "permissionRole"];
+  const optional = ["issuer", "subject", "permissionRole", "displayName"];
   return (
     document &&
     typeof document === "object" &&
@@ -312,6 +366,10 @@ function validateSsoOwnerSession(document) {
         document.subject.length <= 300)) &&
     (document.permissionRole === undefined ||
       ["user", "admin"].includes(document.permissionRole)) &&
+    (document.displayName === undefined ||
+      (typeof document.displayName === "string" &&
+        document.displayName.trim().length > 0 &&
+        document.displayName.length <= 100)) &&
     (document.revokedAt === null || isIsoTimestamp(document.revokedAt))
   );
 }
@@ -331,6 +389,7 @@ function validateRoleInvitation(document) {
           "playerId",
           "playerDisplayName",
           "createdByIdentityHash",
+          "targetIdentityHash",
           "createdAt",
           "expiresAt",
           "claimedAt",
@@ -358,6 +417,8 @@ function validateRoleInvitation(document) {
       (document.playerId === null ||
         /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(document.playerId)) &&
       /^[a-f0-9]{64}$/.test(document.createdByIdentityHash) &&
+      (document.targetIdentityHash === undefined ||
+        /^[a-f0-9]{64}$/.test(document.targetIdentityHash)) &&
       isIsoTimestamp(document.createdAt) &&
       document.expiresAt instanceof Date &&
       Number.isFinite(document.expiresAt.getTime()) &&
@@ -372,6 +433,57 @@ function validateRoleInvitation(document) {
           typeof document.playerDisplayName === "string" &&
           document.playerDisplayName.trim().length > 0 &&
           document.playerDisplayName.length <= 100)),
+  );
+}
+
+function validateRoleRequest(document) {
+  return Boolean(
+    document &&
+      typeof document === "object" &&
+      !Array.isArray(document) &&
+      Object.keys(document).every((key) =>
+        [
+          "_id",
+          "id",
+          "tenantId",
+          "actorId",
+          "identityHash",
+          "role",
+          "displayName",
+          "status",
+          "invitationId",
+          "createdAt",
+          "updatedAt",
+          "retentionPolicyId",
+        ].includes(key),
+      ) &&
+      [
+        "id",
+        "tenantId",
+        "actorId",
+        "identityHash",
+        "role",
+        "displayName",
+        "status",
+        "invitationId",
+        "createdAt",
+        "updatedAt",
+        "retentionPolicyId",
+      ].every((key) => Object.hasOwn(document, key)) &&
+      /^[a-f0-9]{48}$/.test(document.id) &&
+      /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(document.tenantId) &&
+      /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(document.actorId) &&
+      /^[a-f0-9]{64}$/.test(document.identityHash) &&
+      ["player", "parent", "coach"].includes(document.role) &&
+      typeof document.displayName === "string" &&
+      document.displayName.trim().length >= 2 &&
+      document.displayName.length <= 100 &&
+      ["pending", "invitation-issued", "declined"].includes(document.status) &&
+      (document.invitationId === null ||
+        /^[a-f0-9]{48}$/.test(document.invitationId)) &&
+      isIsoTimestamp(document.createdAt) &&
+      isIsoTimestamp(document.updatedAt) &&
+      /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(document.retentionPolicyId),
   );
 }
 
@@ -418,6 +530,8 @@ export function mongoValidatorForCollection(collection) {
     return { $jsonSchema: ssoOwnerHandoffSchema };
   if (collection === "habi_role_invitations")
     return { $jsonSchema: roleInvitationSchema };
+  if (collection === "habi_role_requests")
+    return { $jsonSchema: roleRequestSchema };
   const definition = COLLECTION_SCHEMA[collection];
   if (!definition) throw new Error("COLLECTION_SCHEMA_UNKNOWN");
   return {

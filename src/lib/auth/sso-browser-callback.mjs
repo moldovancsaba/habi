@@ -251,6 +251,7 @@ export function createSsoBrowserCallbackHandler({
         issuer: claims.issuer,
         subject: claims.subject,
         permissionRole: permission.role,
+        displayName,
         hmacKey,
         now: now(),
       },

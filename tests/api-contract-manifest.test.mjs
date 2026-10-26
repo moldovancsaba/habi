@@ -19,9 +19,9 @@ test("API contract and response schemas are pinned to their canonical versions",
   const apiManifest = JSON.parse(apiManifestBytes.toString("utf8"));
   const responseManifest = JSON.parse(responseManifestBytes.toString("utf8"));
 
-  assert.equal(api.info.version, "2.4.13");
-  assert.equal(apiManifest.apiVersion, "2.4.13");
-  assert.equal(responseManifest.apiVersion, "2.4.13");
+  assert.equal(api.info.version, "2.4.14");
+  assert.equal(apiManifest.apiVersion, "2.4.14");
+  assert.equal(responseManifest.apiVersion, "2.4.14");
   assert.equal(
     createHash("sha256").update(apiBytes).digest("hex"),
     apiManifest.sha256,

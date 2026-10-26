@@ -23,7 +23,7 @@ A Habi termékben a kliensprototípus neve Habigoal. A kód és a szolgáltatás
 | Megbízható felnőttel való beszélgetés előkészítése | `support.js`, `journeys.js`, `habi2.js` | Még nincs átültetve. | Helyben szerkeszthető előkészítés; semmi nem küldhető automatikusan. A játékos dönthesse el, mit oszt meg. |
 | Emlékeztetők és felhasználói beállítások | `app.js`, `experience.js` | Még nincs új implementáció. | Alapértelmezés kikapcsolva; lokális időzóna és visszautasítás tartós; értesítésből nem szivároghat személyes állapot. |
 | HABI2 beszélgetésközpontú felület | `habi2.js`, `habi2.html`, `docs/HABI2-research-and-journey.md` | Még nincs új UI. | A HABI2 kutatási és interakciós szabályai megőrzendők: egy aktív kérdés, folytatható piszkozat, könnyű kilépés, nincs függőséget célzó UX; ugyanazokat a kanonikus rekordokat használja. |
-| Korábbi személyes naplóadatok | `storage-migration.js`, `cloud.js`, `server/` | Az új Habi-folyamat üres adatkészlettel indul. Korábbi naplóadat importja nincs bekapcsolva, és az MVP működésének nem feltétele. | A régi adatok nem kerülnek át az új role-workflow adatmodellbe. A `/legacy` útvonal a funkciókat adja, nem a régi adatokat. |
+| Korábbi személyes naplóadatok | `storage-migration.js`, `cloud.js`, `server/` | Az új Habi-folyamat üres adatkészlettel indul. Korábbi naplóadat-import nincs bekapcsolva; a `/legacy` a natív feladatnézetre irányít, a régi browser-owned app nem nyílik meg onnan. | A régi adatok nem kerülnek át az új role-workflow adatmodellbe; a funkciómigráció nem követeli meg az adatimportot. |
 
 ## Már igazolt új rendszerfunkciók
 
@@ -34,7 +34,7 @@ A Habi termékben a kliensprototípus neve Habigoal. A kód és a szolgáltatás
 - Ha a modell nem ad forrásolható claimet, a rendszer `no_evidence` állapotot ad; ezt nem mutatja jóváhagyott válaszként.
 - Újratölthető szülői beszélgetéstörténet, szerepkör szerinti idővonal, edzői verziózott anyag és publikáció, terv/elfogadás/utánkövetés, PDF karantén/ClamAV-vizsgálat és kézi extraction-mező review.
 - Öt örökölt nem klinikai játékosi gyakorlat verziózott katalógusa és tartós diary-visszajelzése.
-- Feladat- és visszajelzésfelület a `/legacy` útvonalon; edzői kérdőív PDF-feltöltése és kézi, jóváhagyásig függő mezőrögzítése.
+- Natív feladat- és visszajelzésnézet a szerepköri munkaterületen; a feladat elfogadása, utánkövetése és időbélyeges visszajelzése jogosultság-ellenőrzött API-t használ. Edzői kérdőív PDF-feltöltése és kézi, jóváhagyásig függő mezőrögzítése.
 
 Az acceptance kizárólag localhoston, szintetikus családi rekordokkal és szintetikus PDF-fel futott. Ez a technikai folyamatot bizonyítja, nem valódi sportjelentések értelmezését, klinikai vagy edzői minőséget, hosted telepítést, SSO-t vagy személyes pilotot.
 
