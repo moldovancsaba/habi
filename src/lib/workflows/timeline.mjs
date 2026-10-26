@@ -262,7 +262,7 @@ export async function readTimeline({
       id: item.id,
       revision: item.revision,
       playerId,
-      submittedAt: item.updatedAt,
+      submittedAt: item.createdAt,
       actorRole: "coach",
       sourceKind: "observation",
       kind: `plan.${item.status}`,

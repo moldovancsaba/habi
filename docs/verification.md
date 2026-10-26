@@ -767,4 +767,7 @@ The signed-in administrator landing page now displays the active player, parent,
 | `npm run build` | PASS, exit 0 | Local Habi checkout; Next.js production build |
 | `git diff --check` | PASS, exit 0 | Local Habi checkout |
 | Targeted timeline regression | PASS; parent question and no-evidence result are separate, linked events | Local test with synthetic records |
-| Production authenticated question/reload and role switch | Pending release verification | Requires authenticated account and live local worker |
+| Production deployment for code commit `254667b` | READY; deployment `dpl_BZM4aSgnpfwDMhTbUKDGjrJ1NCD8`; aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com` | Vercel project `narimato/habi`, Production |
+| `GET /api/health`, `/api/ready`, `/api/v1/timeline`, `GET /api/v1/me/scope` | PASS: 200, 200, 401, 405 respectively | `https://habigoal.com`; unauthenticated access boundaries are expected |
+| Production runtime errors for `/api/v1/me/scope` after release | None found in the 30-minute window | Vercel project `narimato/habi`; no authenticated switch attempt occurred in that window |
+| Authenticated question → worker no-evidence result → timeline reload, and signed-in role switch | Not yet verified end-to-end | Requires the owner's authenticated session and a live local worker; no authenticated browser session was available for this verification |
