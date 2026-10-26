@@ -1,5 +1,15 @@
 # Habi — ellenőrzési napló
 
+## Élő MVP ellenőrzés · 2026-10-26
+
+- `main` és `origin/main`: `bd63bec Enable browser-owned Habi MVP`.
+- Vercel Production deployment: `dpl_CQKS2AdmiGeZJ4yn8oeMB7zJHgTf`, állapot `Ready`, alias: `https://habi.doneisbetter.com`.
+- Production build: `vercel pull --yes --environment production` és `vercel build --prod --yes` — PASS. A CLI build a Habi Production konfigurációt használta.
+- Élő read-only smoke: `/` → HTTP 307 `/legacy/index.html`; `/api/health` → 200; `/api/ready` → 200; `/api/app` → 200, érvényes catalog/payload/revision válasz; `/api/v1/me` → 503, a szerepkörös API-k az MVP-ben szándékosan fail-closed állapotban maradnak.
+- Az élő ellenőrzés nem írt adatot a Habi adatbázisba. Az `/api/app` próba nem használt és nem olvasott felhasználói cookie-t, ezért nem igazolja valamely konkrét meglévő személyes állapot visszaolvasását. A korábbi `habi_states` formátum, cookie-hash tulajdonoskulcs és tartalomgyűjtemény migráció nélkül marad.
+- A `codex/habi-ground-up` Preview deployment a vizsgálat idején `QUEUED` állapotban maradt, ezért hosted Preview adatírási teszt nem futott. A Production változtatás a tulajdonos korábbi, kifejezett `main`/Production utasítására került ki; Preview hiánya kockázati megjegyzés, nem sikeres Preview bizonyíték.
+- Visszaállítás: a Vercel projekt korábbi Production deploymentjének aliasra történő visszaállítása. Az adatbázison nem történt migráció, törlés vagy tesztírás.
+
 ## Aktuális ágállapot · 2026-10-25
 
 A jelenlegi, módosított API-kontraktus verziója 2.4.8. A T-HG-130 alatti végrehajtás a korábbi 2.4.1 verzióra vonatkozott.

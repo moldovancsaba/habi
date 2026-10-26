@@ -1,5 +1,9 @@
 # Habi — környezet és kiadás
 
+## Aktuális Production állapot · 2026-10-26
+
+A `bd63bec` commit felkerült a `main` ágra, és Ready Production deployment készült belőle: `dpl_CQKS2AdmiGeZJ4yn8oeMB7zJHgTf` (`https://habi.doneisbetter.com`). Az MVP a meglévő `habi` Atlas adatbázist és cookie-hash alapú browser-owner kompatibilitást használja, adatmodell-migráció nélkül. A Preview branch deploy ellenőrzéskor `QUEUED` maradt, ezért a Production smoke teszt csak read-only volt; részletek a [verification naplóban](verification.md). Az SSO-s szerepkörös funkciók továbbra sincsenek aktiválva.
+
 ## Vercel
 
 A Habi a termék és a leszállítandó Vercel-alkalmazás. A Habigoal a bemutató/prototípus és specifikációs forrás, nem a futó termék célneve. A Habi célrepoja `moldovancsaba/habi`; a `codex/habi-ground-up` ág szándékosan lecseréli a korábbi prototípus-forrásfát. A korábbi commitok auditálható Git-előzményként megmaradnak, a korábbi alkalmazás nem megőrzendő célállapot.

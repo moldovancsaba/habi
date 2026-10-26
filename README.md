@@ -4,7 +4,7 @@ A Habi fiatal sportolók, jogosult szülők és edzők közös támogatási term
 
 ## Állapot
 
-A jelenlegi ág az MVP-ben a korábbi, működő Habi kliensfelületet és browser-owner adatmodellt szolgálja ki a Next.js alkalmazásból. A meglévő `habi_states` rekordok ugyanazzal a HttpOnly cookie-hash tulajdonoskulccsal olvashatók és írhatók; migráció nem történik, a hiányzó napokra szintetikus mintatörténet nem készül. A Production adatcél a jelenlegi Habi által használt `habi` adatbázis; a Preview külön `habi_preview` adatbázist használ. Az új player/parent/coach workflow API-k és a SSO későbbi fázisban maradnak, MVP módban fail-closed állapotúak. A kód és MVP környezeti változók elkészültek a `codex/habi-ground-up` branchen; Production csak a gauntlet és Preview végponti ellenőrzés után vált.
+A jelenlegi MVP a korábbi Habi kliensfelületet és browser-owner adatmodellt szolgálja ki a Next.js alkalmazásból: [https://habi.doneisbetter.com](https://habi.doneisbetter.com). A meglévő `habi_states` rekordok ugyanazzal a HttpOnly cookie-hash tulajdonoskulccsal olvashatók és írhatók; migráció nem történik, a hiányzó napokra szintetikus mintatörténet nem készül. A Production adatcél a `habi` adatbázis; a Preview külön `habi_preview` adatbázist használ. Az új player/parent/coach workflow API-k és a SSO későbbi fázisban maradnak, MVP módban fail-closed állapotúak. A 2026-10-26-i Production deployment a `bd63bec` commitról készült. Lásd [ellenőrzési napló](docs/verification.md) és [telepítési állapot](docs/deployment.md).
 
 - a játékos napi állapotjelzése, a válaszok mentése, az idempotens újrapróbálás és a változatlan lezárt visszajelzés;
 - a szülői és edzői megfigyelések külön rögzítővel és forrásmegjelöléssel;
