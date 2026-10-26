@@ -30,6 +30,7 @@ async function jsonResponse<T>(response: Response): Promise<T> {
 
 export default function AdminConsole() {
   const [state, setState] = useState<State>("loading");
+  const [signInFailure, setSignInFailure] = useState<string | null>(null);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [tenantId, setTenantId] = useState("");
   const [players, setPlayers] = useState<Player[]>([]);
@@ -49,7 +50,13 @@ export default function AdminConsole() {
       signal: controller.signal,
     })
       .then(async (response) => {
-        if (response.status === 401) return setState("signed-out");
+        if (response.status === 401) {
+          const params = new URLSearchParams(window.location.search);
+          setSignInFailure(
+            params.get("signin") === "failed" ? params.get("reason") : null,
+          );
+          return setState("signed-out");
+        }
         if (response.status === 403) return setState("denied");
         if (!response.ok) return setState("error");
         const body = await response.json().catch(() => null);
@@ -282,14 +289,33 @@ export default function AdminConsole() {
           )}
           {state === "signed-out" && (
             <>
-              <p>
-                A felület használatához jelentkezz be a DoneIsBetter-fiókoddal.
-              </p>
+              {signInFailure === "APP_PERMISSION_DENIED" ? (
+                <p role="alert">
+                  A DoneIsBetter-belépés megtörtént, de ehhez a fiókhoz még
+                  nincs engedélyezve a Habi alkalmazás. A folytatás előtt a
+                  DoneIsBetter adminisztrátorának Habi-hozzáférést és admin
+                  jogosultságot kell adnia. Ezután jelentkezz be újra.
+                </p>
+              ) : signInFailure ? (
+                <p role="alert">
+                  A bejelentkezés nem fejeződött be. Próbáld újra; ha a hiba
+                  ismétlődik, jelezd a Habi rendszergazdájának.
+                </p>
+              ) : (
+                <p>
+                  A felület használatához jelentkezz be a
+                  DoneIsBetter-fiókoddal.
+                </p>
+              )}
               <a
                 className={styles.primary}
-                href="/auth/login?returnTo=%2Fadmin"
+                href={
+                  signInFailure
+                    ? "/auth/login?returnTo=%2Fadmin&prompt=login"
+                    : "/auth/login?returnTo=%2Fadmin"
+                }
               >
-                Bejelentkezés
+                {signInFailure ? "Újrapróbálkozás" : "Bejelentkezés"}
               </a>
             </>
           )}

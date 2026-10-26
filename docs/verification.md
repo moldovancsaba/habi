@@ -564,3 +564,17 @@ The callback now runs the two ordered, versioned session prerequisites after OID
 | Live authenticated SSO callback | Not yet re-verified | Requires the owner to complete DoneIsBetter sign-in after Production deployment |
 
 Rollback is an application deployment rollback only. Keep applied additive migration records and collections; do not delete migration ledger entries or old diary data.
+
+## T-HG-139 · Repeated SSO callback denial · 2026-10-26
+
+After the owner reported a sign-in loop, Production logs showed repeated `/api/oauth/callback` responses with `APP_PERMISSION_DENIED` (including request IDs `72qkx-1793027975355-e3c1b2446055`, `26st9-1793027967982-72a70b52cf72`, and `fcmrk-1793027953590-5c308d3d1262`). These callbacks returned 303 without creating an owner session. Subsequent `/api/admin/me` and `/api/v1/me` requests correctly returned 401. The callback is rejecting the identity because the DoneIsBetter permission check does not report an approved Habi app permission; this is not a Mongo migration error.
+
+The callback now returns to the original safe same-origin page with a fixed failure code. An `/admin` sign-in attempt returns to `/admin`, where the UI explains that DoneIsBetter must grant this account Habi access and the `admin` permission before retrying. Authorization remains fail-closed; no email allowlist or fallback role was added. This UI fix cannot grant the external SSO permission.
+
+| Check | Result | Environment |
+| --- | --- | --- |
+| `npm run lint` | PASS, exit 0; 172 files | Local |
+| `HABI_TEST_MONGODB_URI='mongodb://127.0.0.1:27099/?replicaSet=habiTestRs' npm test` | PASS, 121 tests, 0 failures | Disposable local Mongo replica set |
+| `npm run typecheck` | PASS, exit 0 | Local |
+| `npm run build` | PASS, exit 0 | Local production build |
+| DoneIsBetter app permission for the owner | BLOCKED; provider returned denial | Must be granted in DoneIsBetter before another login attempt |

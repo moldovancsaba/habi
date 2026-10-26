@@ -9,6 +9,7 @@ import {
 import {
   AUTH_TRANSACTION_COOKIE,
   consumeLoginTransaction,
+  safeReturnTo,
 } from "./login-transaction.mjs";
 import {
   exchangeAuthorizationCode,
@@ -27,12 +28,15 @@ function expiredCookie(name) {
   return `${name}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
 }
 
-function failRedirect(request, reasonCode, onFailure) {
+function failRedirect(request, reasonCode, onFailure, returnTo = "/") {
   onFailure?.(reasonCode);
+  const target = new URL(returnTo, request.url);
+  target.searchParams.set("signin", "failed");
+  target.searchParams.set("reason", reasonCode);
   const response = new Response(null, {
     status: 303,
     headers: {
-      Location: new URL("/?signin=failed", request.url).toString(),
+      Location: target.toString(),
       "Cache-Control": "no-store",
       "Referrer-Policy": "no-referrer",
     },
@@ -71,7 +75,12 @@ export function createSsoBrowserCallbackHandler({
     if (!transaction)
       return failRedirect(request, "LOGIN_TRANSACTION_INVALID", onFailure);
     if (url.searchParams.has("error") || !url.searchParams.get("code")) {
-      return failRedirect(request, "PROVIDER_DENIED", onFailure);
+      return failRedirect(
+        request,
+        "PROVIDER_DENIED",
+        onFailure,
+        safeReturnTo(transaction.returnTo),
+      );
     }
 
     let claims;
@@ -110,10 +119,21 @@ export function createSsoBrowserCallbackHandler({
         discovery,
         fetchImpl,
       );
-      if (!claims) return failRedirect(request, "ID_TOKEN_INVALID", onFailure);
+      if (!claims)
+        return failRedirect(
+          request,
+          "ID_TOKEN_INVALID",
+          onFailure,
+          safeReturnTo(transaction.returnTo),
+        );
       userinfo = await readUserinfo(discovery, tokens.accessToken, fetchImpl);
       if (userinfo.subject !== claims.subject)
-        return failRedirect(request, "USERINFO_SUBJECT_MISMATCH", onFailure);
+        return failRedirect(
+          request,
+          "USERINFO_SUBJECT_MISMATCH",
+          onFailure,
+          safeReturnTo(transaction.returnTo),
+        );
       permission = await readPermission(
         discovery,
         {
@@ -130,7 +150,12 @@ export function createSsoBrowserCallbackHandler({
           : error?.message === "SSO_DEPENDENCY_UNAVAILABLE"
             ? "SSO_DEPENDENCY_UNAVAILABLE"
             : "OIDC_VALIDATION_FAILED";
-      return failRedirect(request, reasonCode, onFailure);
+      return failRedirect(
+        request,
+        reasonCode,
+        onFailure,
+        safeReturnTo(transaction.returnTo),
+      );
     }
 
     await prepareSession();
@@ -143,7 +168,12 @@ export function createSsoBrowserCallbackHandler({
         now: now(),
       });
     } catch {
-      return failRedirect(request, "OWNER_IDENTITY_CONFLICT", onFailure);
+      return failRedirect(
+        request,
+        "OWNER_IDENTITY_CONFLICT",
+        onFailure,
+        safeReturnTo(transaction.returnTo),
+      );
     }
 
     const issued = await createSsoOwnerSession(

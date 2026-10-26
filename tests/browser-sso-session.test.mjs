@@ -206,7 +206,11 @@ test("SSO callback creates a clean identity owner without importing browser-owne
   const db = memoryDb();
   const now = new Date("2026-10-26T10:00:00.000Z");
   const binding = "b".repeat(43);
-  const transaction = createLoginTransaction({ returnTo: "/", binding, now });
+  const transaction = createLoginTransaction({
+    returnTo: "/",
+    binding,
+    now,
+  });
   db.collection("auth_transactions").docs.push(
     structuredClone(transaction.document),
   );
@@ -270,7 +274,11 @@ test("failed SSO callback does not clear an existing owner session or link data"
   const db = memoryDb();
   const now = new Date("2026-10-26T10:00:00.000Z");
   const binding = "b".repeat(43);
-  const transaction = createLoginTransaction({ returnTo: "/", binding, now });
+  const transaction = createLoginTransaction({
+    returnTo: "/admin",
+    binding,
+    now,
+  });
   db.collection("auth_transactions").docs.push(
     structuredClone(transaction.document),
   );
@@ -311,9 +319,14 @@ test("failed SSO callback does not clear an existing owner session or link data"
   );
   const response = await handler(request);
   assert.equal(response.status, 303);
+  assert.equal(new URL(response.headers.get("location")).pathname, "/admin");
   assert.equal(
-    new URL(response.headers.get("location")).search,
-    "?signin=failed",
+    new URL(response.headers.get("location")).searchParams.get("signin"),
+    "failed",
+  );
+  assert.equal(
+    new URL(response.headers.get("location")).searchParams.get("reason"),
+    "APP_PERMISSION_DENIED",
   );
   assert.match(response.headers.get("set-cookie"), /__Host-hg_auth_txn=;/);
   assert.doesNotMatch(response.headers.get("set-cookie"), /__Host-habi_sso=/);
