@@ -705,3 +705,9 @@ The signed-in administrator landing page now displays the active player, parent,
 | `GET /`, `/api/health`, `/api/ready` | PASS, HTTP 200 | `https://habigoal.com`; health and Atlas readiness confirmed. |
 | Production error log scan, previous hour | 7 errors, all `POST /api/v1/me/scope` returned 500; no question-flow verification evidence | Vercel project `narimato/habi`, Production. Role-scope errors are outside this UI change and remain an open investigation. |
 | Authenticated parent question → local worker → coach review → visible answer | Pending | Requires an active parent session, an available daily check-in, a running worker, and authorized coach review. |
+
+## Admin action button alignment · 2026-10-26
+
+- Wrapped the admin landing page’s “open admin” and “request role” actions in a shared flex row with a consistent 12 px gap. At mobile widths, the actions stack with full-width buttons. This removes the touching/overlapping appearance in the owner’s screenshot.
+- Local checks: `npm run lint`, `npm run typecheck`, `npm run build`, and `git diff --check` passed.
+- Production: commit `fdaa7ea` is Ready as deployment `dpl_8uezJLafqcpUVzkhGQp3h6DydWpK`, aliased to `habigoal.com`; live `/` and `/api/health` returned HTTP 200.
