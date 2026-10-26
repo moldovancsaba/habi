@@ -651,4 +651,7 @@ The signed-in administrator landing page now displays the active player, parent,
 | `npm run typecheck` | PASS, exit 0 | Local |
 | `npm run build` | PASS, exit 0; `/api/admin/me` remains request-time | Local production build |
 | `git diff --check` | PASS, exit 0 | Local |
+| Production deployment `dpl_8uQJGbesdyT16hXgAEDvAKMiGHk2` | READY; aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`; commit `4973a35` | Vercel project `narimato/habi`, Production |
+| `GET /`, `/admin`, `/api/health`, `/api/ready` | PASS, HTTP 200 | `https://habigoal.com` |
+| Anonymous `GET /api/admin/me` | PASS, HTTP 401 | Expected authentication boundary |
 | Logged-in account role display and invitation claim | Not yet verified | Requires the owner's authenticated admin session |
