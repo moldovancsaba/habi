@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./workspace.module.css";
 import MetroTimeline, { ActorBadge, type TimelinePage } from "./metro-timeline";
+import CoachReportWorkspace from "./coach-report-workspace";
 
 type Role = "player" | "parent" | "coach";
 type OwnRole = {
@@ -479,11 +480,18 @@ export default function HabiWorkspace() {
     setBusy(true);
     setNotice("");
     try {
-      const response = await fetch("/api/identity/activate-role", {
+      const response = await fetch("/api/v1/me/scope", {
         method: "POST",
         credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ membershipId: membership.id }),
+        headers: {
+          "Content-Type": "application/json",
+          "x-habi-csrf": active.csrfToken,
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+        body: JSON.stringify({
+          membershipId: membership.id,
+          playerId: membership.playerId,
+        }),
       });
       const result = await response.json().catch(() => null);
       if (!response.ok) throw new Error(result?.code ?? "ROLE_SWITCH_FAILED");
@@ -1010,6 +1018,9 @@ export default function HabiWorkspace() {
               >
                 Előzmények
               </button>
+              <a className={styles.navLink} href="/legacy">
+                Feladatok és visszajelzések
+              </a>
             </nav>
             <section className={styles.heroCompact}>
               <div className={styles.roleHeading}>
@@ -1216,6 +1227,15 @@ export default function HabiWorkspace() {
                 active.activeRole === "coach") &&
               selectedPlayer && (
                 <>
+                  {active.activeRole === "coach" && (
+                    <CoachReportWorkspace
+                      playerId={selectedPlayer.id}
+                      playerName={
+                        selectedPlayer.displayName ?? "A kiválasztott játékos"
+                      }
+                      csrfToken={active.csrfToken}
+                    />
+                  )}
                   <section className={styles.panel}>
                     <p className={styles.eyebrow}>MEGFIGYELÉS</p>
                     <h2>Rögzíts egy észrevételt</h2>

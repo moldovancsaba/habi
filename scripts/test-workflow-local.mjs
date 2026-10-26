@@ -381,6 +381,111 @@ const coachResults = await jsonRequest(
 );
 assert.equal(coachResults.response.status, 200);
 assert.equal(coachResults.payload.items[0].answerCodes[0].code, 2);
+const coachUpload = await jsonRequest(
+  `/api/v1/players/${playerId}/uploads`,
+  {
+    method: "POST",
+    cookie: coach.cookie,
+    csrf: coach.csrf,
+    key: `${idempotencyPrefix}-coach-report-upload`,
+    body: { size: pdf.length, mime: "application/pdf", sha256: pdfHash },
+  },
+);
+assert.equal(coachUpload.response.status, 201);
+const coachChunk = await binaryRequest(
+  `/api/v1/uploads/${coachUpload.payload.id}/chunks/0`,
+  {
+    cookie: coach.cookie,
+    csrf: coach.csrf,
+    bytes: pdf,
+    digest: chunkHash,
+    key: `${idempotencyPrefix}-coach-report-chunk`,
+  },
+);
+assert.equal(coachChunk.response.status, 200);
+const coachReport = await jsonRequest(
+  `/api/v1/uploads/${coachUpload.payload.id}/finalize`,
+  {
+    method: "POST",
+    cookie: coach.cookie,
+    csrf: coach.csrf,
+    key: `${idempotencyPrefix}-coach-report-finalize`,
+    body: { id: coachUpload.payload.id },
+  },
+);
+assert.equal(coachReport.response.status, 201);
+let coachScan;
+const coachScanDeadline = Date.now() + 60_000;
+do {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  coachScan = await jsonRequest(`/api/v1/uploads/${coachUpload.payload.id}`, {
+    cookie: coach.cookie,
+  });
+  assert.equal(coachScan.response.status, 200);
+} while (
+  coachScan.payload.scanStatus === "pending" &&
+  Date.now() < coachScanDeadline
+);
+assert.equal(coachScan.payload.scanStatus, "passed");
+const coachReports = await jsonRequest(
+  `/api/v1/players/${playerId}/reports`,
+  { cookie: coach.cookie },
+);
+assert.equal(coachReports.response.status, 200);
+const coachReadyReport = coachReports.payload.items.find(
+  (item) => item.id === coachReport.payload.id,
+);
+assert.equal(coachReadyReport.status, "ready");
+const coachUploadedExtraction = await jsonRequest(
+  `/api/v1/reports/${coachReadyReport.id}/extractions`,
+  {
+    method: "POST",
+    cookie: coach.cookie,
+    csrf: coach.csrf,
+    key: `${idempotencyPrefix}-coach-extraction`,
+    body: {
+      reportRef: { id: coachReadyReport.id, revision: coachReadyReport.revision },
+      fields: [
+        {
+          field: "Szintetikus kérdőívmező",
+          page: 1,
+          unit: null,
+          rawValue: "ellenőrzendő érték",
+          interpretationDirection: null,
+          normSource: null,
+          review: {
+            status: "pending",
+            actorId: null,
+            rationale: "Kézi rögzítés; edzői ellenőrzésre vár.",
+            at: null,
+          },
+        },
+      ],
+    },
+  },
+);
+assert.equal(coachUploadedExtraction.response.status, 201);
+assert.equal(coachUploadedExtraction.payload.status, "awaiting_review");
+const reviewedExtraction = await jsonRequest(
+  `/api/v1/extractions/${coachUploadedExtraction.payload.id}/review`,
+  {
+    method: "POST",
+    cookie: coach.cookie,
+    csrf: coach.csrf,
+    key: `${idempotencyPrefix}-coach-extraction-review`,
+    body: {
+      expectedRevision: coachUploadedExtraction.payload.revision,
+      fields: coachUploadedExtraction.payload.fields.map((field) => ({
+        field: field.field,
+        page: field.page,
+        decision: "approve",
+        rationale: "Szintetikus helyi elfogadási ellenőrzés.",
+      })),
+    },
+  },
+);
+assert.equal(reviewedExtraction.response.status, 200);
+assert.equal(reviewedExtraction.payload.status, "verified");
 const coachObservation = await jsonRequest(
   `/api/v1/players/${playerId}/records`,
   {

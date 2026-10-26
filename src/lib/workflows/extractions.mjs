@@ -74,8 +74,10 @@ export async function createExtraction({
       const report = await tx.collection("reports").findOne(
         {
           tenantId: principal.tenantId,
-          playerId: principal.playerId,
           id: reportId,
+          ...(principal.role === "coach"
+            ? {}
+            : { playerId: principal.playerId }),
         },
         { session },
       );

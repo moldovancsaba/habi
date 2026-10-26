@@ -251,7 +251,10 @@
   gap: 20px;
   border-bottom: 1px solid #d6e0ef;
 }
-.nav button {
+.nav button,
+.navLink {
+  display: inline-flex;
+  align-items: center;
   border: 0;
   background: none;
   color: #60728d;
@@ -260,6 +263,7 @@
   font-weight: 700;
   cursor: pointer;
   border-bottom: 3px solid transparent;
+  text-decoration: none;
 }
 .nav .navActive {
   color: #3266df;
@@ -414,7 +418,8 @@
 .choices input:focus-visible + span,
 .primary:focus-visible,
 .secondary:focus-visible,
-.nav button:focus-visible {
+.nav button:focus-visible,
+.navLink:focus-visible {
   outline: 3px solid #87a8f5;
   outline-offset: 3px;
 }

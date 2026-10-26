@@ -26,6 +26,14 @@ Adminisztrátorként a **Szerepkör kérése a saját fiókomhoz** gombbal indí
 4. A játékos egy indítóképernyőről egyesével halad végig az elfogadott öt állapotjelző kérdésen; bármelyiket átugorhatja, visszaléphet, majd az érvényes válaszok mentődnek. Szülőnél megfigyelés, előzmények és forrásolt helyi AI-kérdés jelenik meg. Kérdéshez előbb elérhető napi állapotjelzés kell; enélkül a küldés kikapcsolt, és a magyarázat közvetlenül az űrlapnál látható. Küldés után ugyanott követhető a várakozás, feldolgozás és edzői ellenőrzés, majd a jóváhagyott válasz is. Edzőnél megfigyelés és játékosadat-hozzáférés jelenik meg.
 5. A szerepkör visszavonható az admin felületen; a visszavonás megszünteti a hozzáférést.
 
+## Feladatok, visszajelzések és kérdőíveredmények
+
+- A napi feladatok és a korábbi Habi-visszajelzések a [Feladatok és visszajelzések](/legacy) oldalon érhetők el. A Habi kezdőlap felső nézetsorában válaszd ezt a hivatkozást. A `/legacy` cím közvetlenül is megnyitható.
+- Edzőként az **Áttekintés** oldalon válaszd ki a játékost. A **Kérdőívek és eredmények** résznél PDF-kérdőívet tölthetsz fel (legfeljebb 10 MB). A fájl a helyi worker ClamAV-vizsgálatáig karanténban marad.
+- Sikeres vizsgálat után válaszd az **Új mező** gombot, és minden adatnál add meg a mező nevét, eredeti oldalszámát, az eredeti értéket és – ha szerepel – a mértékegységet. A Habi nem talál ki hiányzó értéket, és nem értelmezi át a kérdőív számait.
+- Az **Adatbevitel mentése** után a rögzített adatokat ellenőrizheted. A **Mezők ellenőrzése és jóváhagyása** gomb az összes megjelenített mezőt ellenőrzöttként rögzíti. Ezt csak az eredeti PDF-fel összevetve használd.
+- A jelenlegi `/legacy` funkciók új munkamenetben indulnak; korábbi böngészőadat importja nincs bekapcsolva. A régi adatok átvitele nem szükséges a funkciók használatához.
+
 ## Szerepkörök és játékosazonosítás
 
 Az admin új játékosmeghívó létrehozásakor megadja a játékos nevét. Amikor egy játékos saját, ellenőrzött DoneIsBetter SSO-fiókkal jelentkezik be, a Habi a szolgáltatótól kapott nevet használja a saját játékosprofil kitöltésére, ha a profil neve még üres. Ez nem írja át a szülőhöz kapcsolt gyermek profilját. Már bejelentkezett munkamenetben a név frissítéséhez jelentkezz ki, majd lépj be újra. A munkaterület szerepválasztója és profilkártyája olvasható nevet vagy szerepcímkét mutat; belső Habi-azonosító nem jelenik meg.

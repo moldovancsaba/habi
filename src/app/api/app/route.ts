@@ -34,7 +34,7 @@ async function ownerContext(
   request: Request,
   db: Awaited<ReturnType<typeof getDatabase>>,
 ) {
-  if (process.env.HG_MVP_MODE === "sso-browser") {
+  if (process.env.HG_MVP_MODE !== "legacy-browser") {
     const session = await authenticateSsoOwnerRequest(db, request, {
       hmacKey: process.env.HG_SESSION_HMAC_KEY ?? "",
     });

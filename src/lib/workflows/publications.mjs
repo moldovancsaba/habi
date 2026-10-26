@@ -52,7 +52,6 @@ export async function publishCoachResource({
         const record = await transactionDb.collection("records").findOne(
           {
             tenantId: principal.tenantId,
-            playerId: principal.playerId,
             id: input.resourceRef.id,
           },
           { session },
@@ -70,8 +69,18 @@ export async function publishCoachResource({
           (record?.sharingClass !== "coach" && resource.status !== "draft")
         )
           throw new HabiApiError("NOT_FOUND");
-        if (resource.playerId !== principal.playerId)
-          throw new HabiApiError("NOT_FOUND");
+        // Coaches have a tenant-level membership, so principal.playerId is
+        // intentionally null. The resource's player must still belong to the
+        // same tenant before publication is allowed.
+        const player = resource?.playerId
+          ? await transactionDb
+              .collection("players")
+              .findOne(
+                { tenantId: principal.tenantId, id: resource.playerId },
+                { session },
+              )
+          : null;
+        if (!player) throw new HabiApiError("NOT_FOUND");
         if (resource.revision !== input.resourceRef.revision)
           throw new HabiApiError("REVISION_CONFLICT");
         const existing = await transactionDb.collection("publications").findOne(

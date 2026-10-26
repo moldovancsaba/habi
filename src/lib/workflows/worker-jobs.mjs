@@ -68,7 +68,10 @@ async function requesterScope(db, job, session = undefined) {
     {
       tenantId: job.tenantId,
       actorId: job.requesterActorId,
-      playerId: job.playerId,
+      // Coach memberships are tenant-wide. The job still names the player
+      // whose report or source is being processed, so validate that target
+      // separately below instead of requiring a player-scoped membership.
+      playerId: role === "coach" ? null : job.playerId,
       role,
       status: "active",
     },

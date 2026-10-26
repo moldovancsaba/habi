@@ -69,6 +69,14 @@ function access(principal, playerId) {
     throw new HabiApiError("ACCESS_DENIED");
 }
 
+function canAccessUpload(principal, upload) {
+  return Boolean(
+    upload &&
+      upload.tenantId === principal.tenantId &&
+      (principal.role === "coach" || upload.playerId === principal.playerId),
+  );
+}
+
 function requireKey(request) {
   const key = request.headers.get("idempotency-key");
   if (!key || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(key))
@@ -177,8 +185,7 @@ export async function putUploadChunk({
         .collection("uploads")
         .findOne({ tenantId: principal.tenantId, id }, { session });
       if (
-        !upload ||
-        upload.playerId !== principal.playerId ||
+        !canAccessUpload(principal, upload) ||
         upload.status !== "staged" ||
         Date.parse(upload.expiresAt) <= now.getTime()
       )
@@ -251,8 +258,7 @@ export async function finalizeUpload({
   const upload = await db
     .collection("uploads")
     .findOne({ tenantId: principal.tenantId, id });
-  if (!upload || upload.playerId !== principal.playerId)
-    throw new HabiApiError("NOT_FOUND");
+  if (!canAccessUpload(principal, upload)) throw new HabiApiError("NOT_FOUND");
   if (upload.status === "quarantined" && upload.gridFsFileId) {
     const report = await db
       .collection("reports")
@@ -469,11 +475,7 @@ export async function abortUpload({
       const item = await tx
         .collection("uploads")
         .findOne({ tenantId: principal.tenantId, id }, { session });
-      if (
-        !item ||
-        item.playerId !== principal.playerId ||
-        item.status !== "staged"
-      )
+      if (!canAccessUpload(principal, item) || item.status !== "staged")
         throw new HabiApiError("NOT_FOUND");
       await tx.collection("uploads").updateOne(
         { tenantId: principal.tenantId, id, revision: item.revision },

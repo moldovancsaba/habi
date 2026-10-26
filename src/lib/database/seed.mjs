@@ -103,13 +103,13 @@ export const SYNTHETIC_TEST_IDENTITIES = Object.freeze([
   Object.freeze({
     id: "seed-a-coach-one",
     role: "coach",
-    playerId: "seed-player-001",
+    playerId: null,
     tenantId: "seed-tenant-a",
   }),
   Object.freeze({
     id: "seed-a-coach-two",
     role: "coach",
-    playerId: "seed-player-001",
+    playerId: null,
     tenantId: "seed-tenant-a",
   }),
 ]);

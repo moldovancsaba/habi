@@ -711,3 +711,17 @@ The signed-in administrator landing page now displays the active player, parent,
 - Wrapped the admin landing page’s “open admin” and “request role” actions in a shared flex row with a consistent 12 px gap. At mobile widths, the actions stack with full-width buttons. This removes the touching/overlapping appearance in the owner’s screenshot.
 - Local checks: `npm run lint`, `npm run typecheck`, `npm run build`, and `git diff --check` passed.
 - Production: commit `fdaa7ea` is Ready as deployment `dpl_8uezJLafqcpUVzkhGQp3h6DydWpK`, aliased to `habigoal.com`; live `/` and `/api/health` returned HTTP 200.
+
+## Restore legacy tasks and coach survey entry · 2026-10-26
+
+- The signed-in workspace now links **Feladatok és visszajelzések** to `/legacy`; a Next rewrite serves the existing legacy app at that exact URL. The `/api/app` read/write route uses the verified SSO owner while the hosted runtime is in `role-workflow` mode. No historical browser data is imported.
+- The coach overview for the selected player includes **Kérdőívek és eredmények**: upload PDF up to 10 MB, wait for the local ClamAV result, enter field name/page/original value/unit, then review and approve the entered values. Tenant-level coach scope is now honored by upload access, report scan context, extraction creation, and publication checks; student and parent scope checks remain tenant/player-bound.
+- `npm run test:workflow:local` | PASS, exit 0 | Isolated localhost Mongo replica set, synthetic actors only; covered a coach-originated upload, clean scan, manual extraction and approval, plus the complete role workflow.
+- `npm test` | PASS, exit 0; 115 passed, 1 skipped | Local unit/domain/contract suite; the skipped case requires the optional Atlas test URI.
+- `npm run lint` | PASS, exit 0 | Biome, 182 files.
+- `npm run typecheck` | PASS, exit 0 | TypeScript.
+- `npm run build` | PASS, exit 0 | Next.js 16.4.3 production build.
+- `cd worker && uv run --frozen python -m unittest discover -s tests -v` | PASS, exit 0; 18 tests | Worker config, local Ollama contract and service runtime tests.
+- `GET http://127.0.0.1:3000/legacy` | PASS, HTTP 200 | Local test app; exact user-facing path.
+- `git diff --check` | PASS, exit 0 | Local Habi checkout.
+- This records local verification only. Production release and live signed-in verification must be recorded after the change is pushed and Vercel reports the matching Production commit as Ready.
