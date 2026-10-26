@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import instrument from "../../contracts/instrument.json" with { type: "json" };
 
 export type HabiRole = "player" | "parent" | "coach";
 export type TimelineNode = {
@@ -224,7 +225,7 @@ function makeBranches(page: TimelinePage, events: TimelineNode[]) {
   return { branches, byEvent };
 }
 
-function ActorBadge({ role }: { role: HabiRole }) {
+export function ActorBadge({ role }: { role: HabiRole }) {
   return (
     <span className={`role-badge actor-${role}`}>
       <span className="ui-icon" aria-hidden="true">
@@ -235,6 +236,17 @@ function ActorBadge({ role }: { role: HabiRole }) {
       <span>{roleLabels[role]}</span>
     </span>
   );
+}
+
+const checkinMetrics = new Map(instrument.items.map((item) => [item.id, item]));
+
+function checkinAnswerLabel(metric: string, code: number) {
+  const item = checkinMetrics.get(metric);
+  const choice = item?.choices.find((candidate) => candidate.code === code);
+  return {
+    question: item?.text ?? "Állapotjelzés",
+    answer: choice?.label ?? "Válasz rögzítve",
+  };
 }
 
 export default function MetroTimeline({
@@ -512,9 +524,7 @@ export default function MetroTimeline({
           const title = labels[record?.kind ?? event.kind] ?? "Naplóesemény";
           const summary =
             record?.text?.trim() ||
-            (record?.answerCodes?.length
-              ? "A napi válaszaid rögzítve."
-              : title);
+            (record?.answerCodes?.length ? "A napi válaszaid rögzítve." : "");
           const isOpen = openIds.has(event.id);
           return (
             <li
@@ -555,11 +565,22 @@ export default function MetroTimeline({
                     </summary>
                     <div className="event-details">
                       {record?.text ? <p>{record.text}</p> : null}
-                      {record?.answerCodes?.map((answer) => (
-                        <p key={answer.metric}>
-                          {answer.metric}: {answer.code}
-                        </p>
-                      ))}
+                      {record?.answerCodes?.length ? (
+                        <dl className="event-checkin-answers">
+                          {record.answerCodes.map((answer) => {
+                            const display = checkinAnswerLabel(
+                              answer.metric,
+                              answer.code,
+                            );
+                            return (
+                              <div key={answer.metric}>
+                                <dt>{display.question}</dt>
+                                <dd>{display.answer}</dd>
+                              </div>
+                            );
+                          })}
+                        </dl>
+                      ) : null}
                       <p className="event-meta">
                         Rögzítette: {roleLabels[event.actorRole]} · {date}
                       </p>

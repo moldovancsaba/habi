@@ -256,11 +256,6 @@ export function createSsoBrowserCallbackHandler({
       },
     );
     const target = new URL(transaction.returnTo, url.origin);
-    if (permission?.role === "admin" && target.pathname === "/") {
-      target.pathname = "/admin";
-      target.search = "";
-      target.hash = "";
-    }
     const response = new Response(null, {
       status: 303,
       headers: {

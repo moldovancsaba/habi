@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./workspace.module.css";
-import MetroTimeline, { type TimelinePage } from "./metro-timeline";
+import MetroTimeline, { ActorBadge, type TimelinePage } from "./metro-timeline";
 
 type Role = "player" | "parent" | "coach";
 type OwnRole = {
@@ -91,6 +91,26 @@ const metrics = [
     ["Nem edzettem", "Keveset", "Közepesen", "Sokat"],
   ],
 ] as const;
+
+const metricGlyphs: Record<string, string> = {
+  energy:
+    "M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4m0-12.8L17 7M7 17l-1.4 1.4M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z",
+  sleep: "M19 15.5A8 8 0 0 1 8.5 5 8 8 0 1 0 19 15.5Z",
+  focus:
+    "M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Zm9.5-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z",
+  mood: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM8.5 14s1.2 2 3.5 2 3.5-2 3.5-2M9 9h.01M15 9h.01",
+  load: "M3 12h3l2-6 4 12 2-6h7",
+};
+
+function MetricIcon({ metric }: { metric: string }) {
+  return (
+    <span className={`metric-icon metric-${metric}`} aria-hidden="true">
+      <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+        <path d={metricGlyphs[metric] ?? metricGlyphs.focus} />
+      </svg>
+    </span>
+  );
+}
 
 function roleLabel(role: Role) {
   return role === "player" ? "Játékos" : role === "parent" ? "Szülő" : "Edző";
@@ -459,37 +479,15 @@ export default function HabiWorkspace() {
     setBusy(true);
     setNotice("");
     try {
-      const response = await fetch("/api/v1/me/scope", {
+      const response = await fetch("/api/identity/activate-role", {
         method: "POST",
         credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-          "x-habi-csrf": active.csrfToken,
-          "Idempotency-Key": crypto.randomUUID(),
-        },
-        body: JSON.stringify({
-          membershipId: membership.id,
-          playerId: membership.playerId,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ membershipId: membership.id }),
       });
       const result = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(result?.code ?? "SCOPE_SWITCH_FAILED");
-      setData([]);
-      setTimeline(null);
-      setPlayers([]);
-      setSelectedPlayerId("");
-      setCheckinIndex(null);
-      setAnswers({});
-      setObservation("");
-      setQuestion("");
-      setObservationFeedback(null);
-      setQuestionFeedback(null);
-      setQuestionJob(null);
-      setQuestionAnswer(null);
-      setQuestionStatusUnavailable(false);
-      setTab("today");
-      setNotice("Szerepkör módosítva.");
-      await load();
+      if (!response.ok) throw new Error(result?.code ?? "ROLE_SWITCH_FAILED");
+      window.location.replace("/");
     } catch (error) {
       setNotice(messageFor(error));
     } finally {
@@ -781,6 +779,11 @@ export default function HabiWorkspace() {
               </select>
             </label>
           )}
+          {notice && (
+            <p className={styles.signInAlert} role="alert">
+              {notice}
+            </p>
+          )}
           {active || app.state === "admin" || app.state === "no-role" ? (
             <button
               type="button"
@@ -1020,9 +1023,7 @@ export default function HabiWorkspace() {
                     <circle cx="40" cy="40" />
                   </svg>
                 </span>
-                <span className={`role-badge actor-${active.activeRole}`}>
-                  {roleLabel(active.activeRole)}
-                </span>
+                <ActorBadge role={active.activeRole} />
               </div>
               <p className={styles.eyebrow}>
                 {roleLabel(active.activeRole).toLocaleUpperCase("hu-HU")}{" "}
@@ -1147,9 +1148,14 @@ export default function HabiWorkspace() {
                       value={checkinIndex + 1}
                       aria-label="Állapotjelzés előrehaladása"
                     />
-                    <h2 className={styles.currentQuestion}>
-                      {metrics[checkinIndex]?.[1]}
-                    </h2>
+                    <div className={styles.currentQuestionRow}>
+                      <MetricIcon
+                        metric={metrics[checkinIndex]?.[0] ?? "focus"}
+                      />
+                      <h2 className={styles.currentQuestion}>
+                        {metrics[checkinIndex]?.[1]}
+                      </h2>
+                    </div>
                     <fieldset className={styles.questionChoices}>
                       <legend className={styles.srOnly}>
                         Válaszlehetőségek

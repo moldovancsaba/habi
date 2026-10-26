@@ -137,6 +137,59 @@
 .roleHeading :global(.role-badge) {
   margin: 0;
 }
+:global(.event-meta) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+:global(.event-preview) {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  line-height: 1.4;
+}
+:global(.event-preview > span) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-weight: 450;
+}
+:global(.event-details) {
+  display: grid;
+  gap: 12px;
+  padding-top: 18px;
+}
+:global(.event-details > p) {
+  margin: 0;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+:global(.event-checkin-answers) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 10px;
+  margin: 0;
+}
+:global(.event-checkin-answers > div) {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 12px 14px;
+  background: var(--paper);
+}
+:global(.event-checkin-answers dt) {
+  font-size: var(--font-small);
+  color: var(--muted);
+  line-height: 1.4;
+}
+:global(.event-checkin-answers dd) {
+  margin: 5px 0 0;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
 .roleCards {
   width: 100%;
   display: grid;
@@ -235,6 +288,17 @@
   line-height: 1.15;
   letter-spacing: -0.035em;
   overflow-wrap: anywhere;
+}
+.currentQuestionRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.currentQuestionRow :global(.metric-icon) {
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
 }
 .questionChoices {
   display: grid;

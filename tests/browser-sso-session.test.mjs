@@ -258,7 +258,7 @@ test("SSO callback creates a clean identity owner without importing browser-owne
   );
   const response = await handler(request);
   assert.equal(response.status, 303);
-  assert.equal(new URL(response.headers.get("location")).pathname, "/admin");
+  assert.equal(new URL(response.headers.get("location")).pathname, "/");
   assert.equal(
     new URL(response.headers.get("location")).searchParams.get("linked"),
     null,

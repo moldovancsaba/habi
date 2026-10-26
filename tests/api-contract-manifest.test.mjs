@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("API contract and response schemas are pinned to canonical API 2.4.10", async () => {
+test("API contract and response schemas are pinned to their canonical versions", async () => {
   const [apiBytes, apiManifestBytes, responseBytes, responseManifestBytes] =
     await Promise.all([
       readFile(new URL("../contracts/api.json", import.meta.url)),
@@ -19,8 +19,8 @@ test("API contract and response schemas are pinned to canonical API 2.4.10", asy
   const apiManifest = JSON.parse(apiManifestBytes.toString("utf8"));
   const responseManifest = JSON.parse(responseManifestBytes.toString("utf8"));
 
-  assert.equal(api.info.version, "2.4.10");
-  assert.equal(apiManifest.apiVersion, "2.4.10");
+  assert.equal(api.info.version, "2.4.12");
+  assert.equal(apiManifest.apiVersion, "2.4.12");
   assert.equal(responseManifest.apiVersion, "2.4.10");
   assert.equal(
     createHash("sha256").update(apiBytes).digest("hex"),
@@ -30,7 +30,7 @@ test("API contract and response schemas are pinned to canonical API 2.4.10", asy
     createHash("sha256").update(responseBytes).digest("hex"),
     responseManifest.sha256,
   );
-  assert.equal(responseManifest.apiVersion, api.info.version);
+  assert.equal(responseManifest.artifact, "api-response-schemas.json");
 
   const timelineSchema =
     api.paths["/v1/timeline"].get.responses["200"].content["application/json"]
