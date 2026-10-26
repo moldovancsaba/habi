@@ -1,5 +1,12 @@
 # Habi — ellenőrzési napló
 
+## Canonical host and signed-in workspace · 2026-10-26
+
+- Root cause: Habi session cookies use the secure `__Host-` prefix and are scoped to the host that issued them. Opening the app on a Vercel deployment URL or a legacy alias therefore showed the workspace shell while API requests such as `/api/v1/me` had no Habi session and returned `401 AUTHENTICATION_REQUIRED`.
+- Fix: Next.js Proxy redirects all non-local, noncanonical hosts to `https://habigoal.com`, preserving the requested path and query. The redirect destination is fixed in code; incoming host values are never used to construct it. Localhost remains usable for development.
+- Verification: covered canonical/local host pass-through, alias and Vercel hostname redirects, OAuth callback query preservation, malformed paths, and untrusted host input in `tests/canonical-host.test.mjs`. Full verification results and live deployment identity are recorded below after release.
+- Recovery: open or refresh `https://habigoal.com`. If the browser only has a session cookie on a different host, sign in once on the canonical domain; the browser cannot send another host’s host-only cookie.
+
 ## Check-in wizard restoration and production save bug · 2026-10-26
 
 - Production check-in UI had drifted from the approved interaction: the role workspace rendered all seven legacy questions in a two-column grid. Restored the start card and one-question-at-a-time progress/skip/back flow, using only the five canonical metrics in `contracts/instrument.json`.

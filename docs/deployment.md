@@ -2,6 +2,8 @@
 
 ## Production status · 2026-10-26
 
+- Canonical-host handling: all browser and API requests on aliases and Vercel deployment URLs are redirected to `https://habigoal.com` before routing, with path and query preserved. Only `habigoal.com` is the production application origin; localhost remains available for development. This is required because the `__Host-` session cookies are intentionally host-only. A user signed in on the apex appeared signed out when opening an alias or deployment URL, because those requests did not include the apex cookies.
+
 - SSO callback: after validating the OIDC identity, Habi provisions the standard approved DoneIsBetter app permission `user` for a first-time identity using the Habi OAuth client's `manage_permissions` client-credentials scope. Existing approved `user` and `admin` grants are preserved; revoked grants are never restored. This app-level permission enables Habi sign-in only. Player/parent/coach membership remains controlled by a separately issued and claimed Habi invitation. The callback applies prerequisites `010-sso-browser-owner-sessions` and `011-role-invitations` before writing the session.
 
 - Product host: `https://habigoal.com`; `www.habigoal.com` redirects to the apex with HTTP 308 so the SSO callback and its host-only transaction cookie share one origin.
