@@ -16,6 +16,14 @@ A környezetkulcsok kanonikus nevei: `development/environment.example`. A konfig
 - A 2026-10-25-i ellenőrzés szerint a Habi Preview env-listában csak a régi titkos `habi_mongodb_uri` szerepel (Development, Preview, Production). Új `HG_*` konfiguráció nincs; a preview ezért nem futtathatja biztonságosan az új perzisztens Habi rendszert.
 - A friss branch Preview-t ellenőriztük: `/` 200 (kikapcsolt belépőoldal), `/api/health` 200, `/api/ready` 503, `/api/v1/me` 503 `DEPENDENCY_UNAVAILABLE` kóddal. Ez diagnosztikai preview-állapot, nem használható role-workflow tesztkörnyezet. A Production továbbra is induláskor visszautasítja a hiányos konfigurációt.
 
+## MongoDB-kapcsolat · 2026-10-26
+
+- A tulajdonos megerősítette, hogy a Vercel `habi_mongodb_uri` az Habi által használható MongoDB-kapcsolat. A Vercel Development környezetből biztonságosan, ideiglenes, `0600` jogosultságú fájlba került; URI-érték nem került logba vagy dokumentumba.
+- A kapcsolattal sikeres MongoDB `ping` és adatbázis-listázási próba futott. Az új alkalmazásnak elkülönített `habi_preview` és `habi_production` adatbázisnevet választottunk; mindkettő üres volt az ellenőrzéskor. Nem futott migráció vagy seed, és legacy collection nem módosult.
+- A Vercel `narimato/habi` projekthez `HG_ATLAS_URI` és `HG_ATLAS_DATABASE` került hozzáadva: Preview célra kizárólag a `codex/habi-ground-up` branch kapta a `habi_preview` adatbázist; Production célra a `habi_production` adatbázis van beállítva. A meglévő `habi_mongodb_uri` változó érintetlen maradt.
+- Ezek az env-változók új deploymentekben érvényesülnek. A mostani Preview deployment `/api/ready` végpontja továbbra is 503, mert a Habi szerverfuttatáshoz szükséges többi konfiguráció (különösen `HG_ENVIRONMENT` és a DoneIsBetter SSO kliens) nincs beállítva. Az új alkalmazás még nem olvasott/írt Atlas-adatot Vercelről.
+- A `habi.doneisbetter.com` változatlanul a korábbi Production alkalmazást szolgálja ki. Production cutover előtt az SSO-integráció, teljes env-konfiguráció, biztonságos migráció/seed és hosted workflow-verifikáció szükséges.
+
 ## Kiadási előfeltételek
 
 1. A Habi projekthez dedikált, új sémájú Atlas adatbázist és DoneIsBetter kliens-konfigurációt kell biztosítani; a régi `habi_mongodb_uri` nem helyettesíti ezeket.
