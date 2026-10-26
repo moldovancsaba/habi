@@ -37,6 +37,21 @@
   color: var(--muted);
   font-size: var(--font-small);
 }
+.logoutButton {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+}
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
 .nav {
   display: flex;
   gap: 8px;

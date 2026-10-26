@@ -50,6 +50,89 @@ const authTransactionSchema = {
   },
 };
 
+const ssoOwnerLinkSchema = {
+  bsonType: "object",
+  required: ["_id", "ownerHash", "linkMethod", "linkedAt"],
+  additionalProperties: false,
+  properties: {
+    _id: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
+    ownerHash: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
+    linkMethod: { enum: ["verified_legacy_cookie", "sso_identity"] },
+    linkedAt: {
+      bsonType: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    },
+  },
+};
+
+const ssoOwnerSessionSchema = {
+  bsonType: "object",
+  required: [
+    "_id",
+    "tokenHash",
+    "identityHash",
+    "ownerHash",
+    "createdAt",
+    "lastSeenAt",
+    "expiresAt",
+    "revokedAt",
+  ],
+  additionalProperties: false,
+  properties: {
+    _id: { bsonType: "string", pattern: "^[a-f0-9]{48}$" },
+    tokenHash: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
+    identityHash: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
+    ownerHash: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
+    createdAt: {
+      bsonType: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    },
+    lastSeenAt: {
+      bsonType: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    },
+    expiresAt: { bsonType: "date" },
+    revokedAt: {
+      bsonType: ["string", "null"],
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    },
+  },
+};
+
+const ssoOwnerHandoffSchema = {
+  bsonType: "object",
+  required: [
+    "_id",
+    "tokenHash",
+    "ownerHash",
+    "bindingHash",
+    "createdAt",
+    "boundAt",
+    "expiresAt",
+    "consumedAt",
+  ],
+  additionalProperties: false,
+  properties: {
+    _id: { bsonType: "string", pattern: "^[a-f0-9]{48}$" },
+    tokenHash: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
+    ownerHash: { bsonType: "string", pattern: "^[a-f0-9]{64}$" },
+    bindingHash: { bsonType: ["string", "null"], pattern: "^[a-f0-9]{64}$" },
+    createdAt: {
+      bsonType: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    },
+    boundAt: {
+      bsonType: ["string", "null"],
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    },
+    expiresAt: { bsonType: "date" },
+    consumedAt: {
+      bsonType: ["string", "null"],
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    },
+  },
+};
+
 function normalizeStoredDates(value) {
   if (value instanceof Date) return value.toISOString();
   if (Array.isArray(value)) return value.map(normalizeStoredDates);
@@ -64,6 +147,21 @@ function normalizeStoredDates(value) {
 }
 
 export function validateContractDocument(collection, document) {
+  if (collection === "habi_sso_owner_links") {
+    if (!validateSsoOwnerLink(document))
+      throw new Error("DOCUMENT_CONTRACT_INVALID:sso_owner_link");
+    return true;
+  }
+  if (collection === "habi_sso_owner_sessions") {
+    if (!validateSsoOwnerSession(document))
+      throw new Error("DOCUMENT_CONTRACT_INVALID:sso_owner_session");
+    return true;
+  }
+  if (collection === "habi_sso_owner_handoffs") {
+    if (!validateSsoOwnerHandoff(document))
+      throw new Error("DOCUMENT_CONTRACT_INVALID:sso_owner_handoff");
+    return true;
+  }
   if (collection === "session_sso_credentials") {
     if (!validateSessionSsoCredential(document)) {
       throw new Error("DOCUMENT_CONTRACT_INVALID:session_sso_credential");
@@ -94,11 +192,99 @@ export function validateContractDocument(collection, document) {
   return true;
 }
 
+function isIsoTimestamp(value) {
+  return (
+    typeof value === "string" &&
+    Number.isFinite(Date.parse(value)) &&
+    new Date(value).toISOString() === value
+  );
+}
+
+function validateSsoOwnerLink(document) {
+  return (
+    document &&
+    typeof document === "object" &&
+    !Array.isArray(document) &&
+    Object.keys(document).every((key) =>
+      ["_id", "ownerHash", "linkMethod", "linkedAt"].includes(key),
+    ) &&
+    /^[a-f0-9]{64}$/.test(document._id) &&
+    /^[a-f0-9]{64}$/.test(document.ownerHash) &&
+    ["verified_legacy_cookie", "sso_identity"].includes(document.linkMethod) &&
+    isIsoTimestamp(document.linkedAt)
+  );
+}
+
+function validateSsoOwnerSession(document) {
+  const required = [
+    "_id",
+    "tokenHash",
+    "identityHash",
+    "ownerHash",
+    "createdAt",
+    "lastSeenAt",
+    "expiresAt",
+    "revokedAt",
+  ];
+  return (
+    document &&
+    typeof document === "object" &&
+    !Array.isArray(document) &&
+    required.every((key) => Object.hasOwn(document, key)) &&
+    Object.keys(document).every((key) => required.includes(key)) &&
+    /^[a-f0-9]{48}$/.test(document._id) &&
+    /^[a-f0-9]{64}$/.test(document.tokenHash) &&
+    /^[a-f0-9]{64}$/.test(document.identityHash) &&
+    /^[a-f0-9]{64}$/.test(document.ownerHash) &&
+    isIsoTimestamp(document.createdAt) &&
+    isIsoTimestamp(document.lastSeenAt) &&
+    document.expiresAt instanceof Date &&
+    Number.isFinite(document.expiresAt.getTime()) &&
+    (document.revokedAt === null || isIsoTimestamp(document.revokedAt))
+  );
+}
+
+function validateSsoOwnerHandoff(document) {
+  const required = [
+    "_id",
+    "tokenHash",
+    "ownerHash",
+    "bindingHash",
+    "createdAt",
+    "boundAt",
+    "expiresAt",
+    "consumedAt",
+  ];
+  return Boolean(
+    document &&
+      typeof document === "object" &&
+      !Array.isArray(document) &&
+      required.every((key) => Object.hasOwn(document, key)) &&
+      Object.keys(document).every((key) => required.includes(key)) &&
+      /^[a-f0-9]{48}$/.test(document._id) &&
+      /^[a-f0-9]{64}$/.test(document.tokenHash) &&
+      /^[a-f0-9]{64}$/.test(document.ownerHash) &&
+      (document.bindingHash === null ||
+        /^[a-f0-9]{64}$/.test(document.bindingHash)) &&
+      isIsoTimestamp(document.createdAt) &&
+      (document.boundAt === null || isIsoTimestamp(document.boundAt)) &&
+      document.expiresAt instanceof Date &&
+      Number.isFinite(document.expiresAt.getTime()) &&
+      (document.consumedAt === null || isIsoTimestamp(document.consumedAt)),
+  );
+}
+
 export function mongoValidatorForCollection(collection) {
   if (collection === "session_sso_credentials")
     return { $jsonSchema: sessionSsoCredentialMongoSchema };
   if (collection === "auth_transactions")
     return { $jsonSchema: authTransactionSchema };
+  if (collection === "habi_sso_owner_links")
+    return { $jsonSchema: ssoOwnerLinkSchema };
+  if (collection === "habi_sso_owner_sessions")
+    return { $jsonSchema: ssoOwnerSessionSchema };
+  if (collection === "habi_sso_owner_handoffs")
+    return { $jsonSchema: ssoOwnerHandoffSchema };
   const definition = COLLECTION_SCHEMA[collection];
   if (!definition) throw new Error("COLLECTION_SCHEMA_UNKNOWN");
   return {

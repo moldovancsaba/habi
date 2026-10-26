@@ -1,6 +1,7 @@
 # Tervezett konfigurációs szerződés. Ez a fájl nem igazolja a szolgáltatások beállítását.
 # Cloud API. Production/test requires all cloud secrets to be supplied out of band.
 HG_APP_ORIGIN=
+HG_LEGACY_APP_ORIGIN=
 HG_ENVIRONMENT=
 # Hosted one-browser MVP, intentionally separate from the later SSO role workflow.
 HG_MVP_MODE=

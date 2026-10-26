@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://habi.invalid/contracts/api-response-schemas-v2.4.8.json",
-  "title": "Habi API 2.4.8 allow-listed response DTOs",
+  "$id": "https://habi.invalid/contracts/api-response-schemas-v2.4.10.json",
+  "title": "Habi API 2.4.10 allow-listed response DTOs",
   "$defs": {
     "AttributionView": {
       "type": "object",

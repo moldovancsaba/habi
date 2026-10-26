@@ -43,6 +43,9 @@ export const INTERNAL_COLLECTIONS = Object.freeze(["auth_transactions"]);
 export const INTERNAL_RUNTIME_COLLECTIONS = Object.freeze([
   ...INTERNAL_COLLECTIONS,
   "session_sso_credentials",
+  "habi_sso_owner_links",
+  "habi_sso_owner_sessions",
+  "habi_sso_owner_handoffs",
 ]);
 
 export const COLLECTION_SCHEMA = Object.freeze({
@@ -51,6 +54,9 @@ export const COLLECTION_SCHEMA = Object.freeze({
   identities: "Identity",
   auth_transactions: null,
   session_sso_credentials: null,
+  habi_sso_owner_links: null,
+  habi_sso_owner_sessions: null,
+  habi_sso_owner_handoffs: null,
   sessions: "Session",
   memberships: "Membership",
   players: "Player",
@@ -123,6 +129,43 @@ export const INDEXES = Object.freeze({
     {
       key: { expiresAt: 1 },
       name: "session_expiry_ttl",
+      expireAfterSeconds: 0,
+    },
+  ],
+  habi_sso_owner_links: [
+    {
+      key: { ownerHash: 1 },
+      name: "habi_sso_owner_link_owner_unique",
+      unique: true,
+    },
+  ],
+  habi_sso_owner_sessions: [
+    {
+      key: { tokenHash: 1 },
+      name: "habi_sso_owner_session_token_unique",
+      unique: true,
+    },
+    {
+      key: { expiresAt: 1 },
+      name: "habi_sso_owner_session_expiry_ttl",
+      expireAfterSeconds: 0,
+    },
+  ],
+  habi_sso_owner_handoffs: [
+    {
+      key: { tokenHash: 1 },
+      name: "habi_sso_owner_handoff_token_unique",
+      unique: true,
+    },
+    {
+      key: { bindingHash: 1 },
+      name: "habi_sso_owner_handoff_binding_unique",
+      unique: true,
+      partialFilterExpression: { bindingHash: { $type: "string" } },
+    },
+    {
+      key: { expiresAt: 1 },
+      name: "habi_sso_owner_handoff_expiry_ttl",
       expireAfterSeconds: 0,
     },
   ],

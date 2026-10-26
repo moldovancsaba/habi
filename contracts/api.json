@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.4.8",
+    "version": "2.4.10",
     "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
@@ -11,10 +11,10 @@
     }
   ],
   "paths": {
-    "/auth/callback": {
+    "/api/oauth/callback": {
       "get": {
         "operationId": "get_auth_callback",
-        "description": "Egyszer használatos authorization code + state callback. A state-et a szerveroldali tranzakcióval és a __Host-hg_auth_txn böngésző-kötő cookie-val ellenőrzi, majd a tranzakciós cookie-t törli. PKCE verifier, nonce, issuer, audience, aláírás, exp/iat és allowlistelt redirect ellenőrzése; hiba esetén nincs session cookie.",
+        "description": "DoneIsBetter OIDC callback. Egyszer használatos authorization code + state; a szerver ellenőrzi a böngészőhöz kötött tranzakciót, PKCE verifier, nonce, issuer, audience, RS256 aláírás, exp/iat, userinfo subject és jóváhagyott Habi app permission értékét. Hiba esetén signin=failed oldalra irányít, és nem ad új sessiont.",
         "security": [],
         "x-domain-action": "authenticate",
         "parameters": [
@@ -40,39 +40,19 @@
           }
         ],
         "responses": {
-          "302": {
-            "description": "Siker esetén allowlistelt alkalmazásoldali redirect és rotált HttpOnly session cookie",
+          "303": {
+            "description": "Siker esetén same-origin visszatérés és HttpOnly SSO owner session cookie; hiba esetén generic signin=failed visszatérés, session nélkül",
             "headers": {
               "Set-Cookie": {
                 "schema": {
                   "type": "string"
                 },
-                "description": "__Host-hg_session; Secure; HttpOnly; SameSite=Lax; Path=/; no Domain; opaque token"
-              }
-            }
-          },
-          "400": {
-            "description": "Hiányzó, lejárt vagy már felhasznált callback state/code/browser-binding cookie",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./schemas.json#/$defs/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "SSO token vagy app permission elutasítva",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./schemas.json#/$defs/Error"
-                }
+                "description": "__Host-habi_sso; Secure; HttpOnly; SameSite=Lax; Path=/; no Domain; opaque token. A verified legacy-owner handoff is consumed only after successful OIDC and Habi permission validation."
               }
             }
           },
           "503": {
-            "description": "SSO/dependency unavailable; session nem készül",
+            "description": "SSO callback dependency unavailable; no new owner session is issued",
             "content": {
               "application/json": {
                 "schema": {
@@ -140,12 +120,8 @@
     "/auth/logout": {
       "post": {
         "operationId": "post_auth_logout",
-        "description": "Idempotens szerveroldali session-revoke. Kötelező ugyan-origin Origin és CSRF token. Cookie törlése önmagában nem állítja a revoke sikerét. A token a GET /v1/me válaszban érkezik.",
-        "security": [
-          {
-            "sessionCookie": []
-          }
-        ],
+        "description": "Same-origin logout. In HG_MVP_MODE=sso-browser it revokes the SSO owner session if present and clears the SSO/legacy/login cookies. In the role runtime it requires the active role-session cookie and x-habi-csrf, then revokes the SSO credential and role session. Cross-origin requests are denied.",
+        "security": [],
         "x-domain-action": "logout",
         "parameters": [
           {
@@ -159,50 +135,32 @@
             }
           },
           {
-            "name": "X-CSRF-Token",
+            "name": "x-habi-csrf",
             "in": "header",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string",
               "minLength": 32,
               "maxLength": 256
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
-            }
+            },
+            "description": "Required only when revoking a role-workflow session; omitted by the SSO browser MVP."
           }
         ],
         "responses": {
           "204": {
-            "description": "Session revoke tartósan rögzítve és cookie lejáratva",
+            "description": "SSO session visszavonva, illetve a Habi auth cookie-k lejáratva",
             "headers": {
               "Set-Cookie": {
                 "schema": {
                   "type": "string"
                 },
-                "description": "__Host-hg_session Max-Age=0, Secure, HttpOnly, SameSite=Lax, Path=/"
+                "description": "The active runtime's session cookie is revoked and expired; the login transaction cookie is expired. SSO browser MVP also expires the legacy browser cookie."
               }
             },
             "content": {}
           },
-          "400": {
-            "description": "CSRF/Origin ellenőrzés hibás",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./schemas.json#/$defs/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Session hiányzik vagy lejárt",
+          "403": {
+            "description": "Origin nem egyezik a Habi alkalmazás eredetével",
             "content": {
               "application/json": {
                 "schema": {
@@ -10372,6 +10330,59 @@
           }
         }
       }
+    },
+    "/api/auth/legacy-handoff": {
+      "get": {
+        "operationId": "get_auth_legacy_handoff",
+        "description": "Starts a short-lived transfer only from the configured legacy Habi host when its existing browser-owned cookie is valid. Redirects to the canonical Habi origin with an opaque token in the URL fragment; no owner data is returned.",
+        "security": [],
+        "responses": {
+          "303": {
+            "description": "Redirect to canonical Habi with one-time handoff token in fragment"
+          },
+          "401": {
+            "description": "No valid legacy browser session"
+          }
+        }
+      }
+    },
+    "/api/auth/legacy-handoff/accept": {
+      "post": {
+        "operationId": "post_auth_legacy_handoff_accept",
+        "description": "Binds a valid one-time legacy owner transfer token to the current canonical browser and sets a short-lived HttpOnly cookie. SSO callback consumes it only after OIDC identity and Habi permission validation.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{43}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Handoff bound to this browser"
+          },
+          "403": {
+            "description": "Origin rejected"
+          },
+          "410": {
+            "description": "Handoff invalid, expired or already used"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10380,6 +10391,11 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "__Host-hg_session"
+      },
+      "ssoOwnerSessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-habi_sso"
       },
       "workerBearer": {
         "type": "http",

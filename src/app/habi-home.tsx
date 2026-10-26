@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import practices from "../lib/content/practices-v1.json";
 import styles from "./habi-home.module.css";
 
@@ -31,9 +31,10 @@ type ApiResponse = {
   catalog?: Catalog;
   payload?: Payload | null;
   revision: number;
+  ownerKey?: string;
 };
 type Screen = "today" | "history" | "support";
-type ViewState = "loading" | "ready" | "error";
+type ViewState = "loading" | "ready" | "error" | "unauthenticated";
 
 const fallbackQuestions: Question[] = [
   [
@@ -78,13 +79,28 @@ function todayKey() {
   return new Date().toLocaleDateString("hu-HU");
 }
 
-function readDevicePayload(): Payload | null {
+function ownerStorageKey(ownerKey: string, suffix: string) {
+  return `habi-sso:${ownerKey}:${suffix}`;
+}
+
+function readDevicePayload(
+  ownerKey: string,
+  allowLegacyImport = false,
+): Payload | null {
   try {
     const app = JSON.parse(
-      window.localStorage.getItem("habi-app-v1") ?? "null",
+      window.localStorage.getItem(ownerStorageKey(ownerKey, "app")) ??
+        (allowLegacyImport
+          ? window.localStorage.getItem("habi-app-v1")
+          : null) ??
+        "null",
     ) as AppState | null;
     const chat = JSON.parse(
-      window.localStorage.getItem("habi-chat-v1") ?? "null",
+      window.localStorage.getItem(ownerStorageKey(ownerKey, "chat")) ??
+        (allowLegacyImport
+          ? window.localStorage.getItem("habi-chat-v1")
+          : null) ??
+        "null",
     ) as unknown;
     return app && typeof app === "object" ? { app, chat } : null;
   } catch {
@@ -152,6 +168,9 @@ function formatDate(value: string) {
 export default function HabiHome() {
   const [screen, setScreen] = useState<Screen>("today");
   const [viewState, setViewState] = useState<ViewState>("loading");
+  const [ownerKey, setOwnerKey] = useState("");
+  const ownerKeyRef = useRef("");
+  const authenticatedInThisPage = useRef(false);
   const [app, setApp] = useState<AppState>({
     checkins: [],
     tasks: [],
@@ -171,6 +190,7 @@ export default function HabiHome() {
     Record<string, number | null>
   >({});
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [signInFailed, setSignInFailed] = useState(false);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setViewState("loading");
@@ -181,14 +201,44 @@ export default function HabiHome() {
         credentials: "same-origin",
         signal,
       });
+      if (response.status === 401) {
+        authenticatedInThisPage.current = false;
+        setSignInFailed(
+          new URLSearchParams(window.location.search).get("signin") ===
+            "failed",
+        );
+        setSaveError(null);
+        setSaveState("A napló megnyitásához jelentkezz be.");
+        setViewState("unauthenticated");
+        return;
+      }
       if (!response.ok) throw new Error("A napló most nem érhető el.");
       const result = (await response.json()) as ApiResponse;
-      const device = readDevicePayload();
-      const dirty = window.localStorage.getItem("habi-cloud-dirty") === "1";
-      const nextPayload = !result.payload
-        ? device
-        : dirty && device
-          ? { ...device, app: mergeApp(result.payload.app, device.app) }
+      if (
+        typeof result.ownerKey !== "string" ||
+        !/^[a-f0-9]{64}$/.test(result.ownerKey)
+      ) {
+        throw new Error("A bejelentkezett napló azonosítója érvénytelen.");
+      }
+      authenticatedInThisPage.current = true;
+      setSignInFailed(false);
+      ownerKeyRef.current = result.ownerKey;
+      setOwnerKey(result.ownerKey);
+      const linkedLegacyCookie =
+        new URLSearchParams(window.location.search).get("linked") === "1";
+      const device = readDevicePayload(result.ownerKey, linkedLegacyCookie);
+      const dirty =
+        window.localStorage.getItem(
+          ownerStorageKey(result.ownerKey, "dirty"),
+        ) === "1" ||
+        (linkedLegacyCookie &&
+          window.localStorage.getItem("habi-cloud-dirty") === "1");
+      const nextPayload =
+        dirty && device
+          ? {
+              app: mergeApp(result.payload?.app ?? {}, device.app),
+              chat: device.chat ?? result.payload?.chat ?? null,
+            }
           : result.payload;
       setApp(normalizeApp(nextPayload?.app ?? {}));
       setChat(nextPayload?.chat ?? null);
@@ -198,12 +248,67 @@ export default function HabiHome() {
         setCatalogQuestions(questions);
       if (result.catalog?.data?.c2113ae1c4c25fce6)
         setPainGuidance(result.catalog.data.c2113ae1c4c25fce6);
-      setSaveState("Az adataid betöltődtek.");
+      setSaveState(
+        dirty && device
+          ? "A helyi, korábban mentetlen változásaid szinkronizálása folyamatban van."
+          : "Az adataid betöltődtek.",
+      );
       setViewState("ready");
+      if (dirty && device && nextPayload) {
+        const sync = await fetch("/api/app", {
+          method: "PUT",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            revision: result.revision,
+            payload: nextPayload,
+          }),
+        });
+        if (sync.ok) {
+          const saved = (await sync.json()) as { revision: number };
+          setRevision(saved.revision);
+          window.localStorage.setItem(
+            ownerStorageKey(result.ownerKey, "app"),
+            JSON.stringify(nextPayload.app),
+          );
+          window.localStorage.setItem(
+            ownerStorageKey(result.ownerKey, "chat"),
+            JSON.stringify(nextPayload.chat ?? null),
+          );
+          window.localStorage.setItem(
+            ownerStorageKey(result.ownerKey, "dirty"),
+            "0",
+          );
+          if (linkedLegacyCookie) {
+            window.localStorage.removeItem("habi-app-v1");
+            window.localStorage.removeItem("habi-chat-v1");
+            window.localStorage.removeItem("habi-cloud-dirty");
+            window.history.replaceState(null, "", window.location.pathname);
+          }
+          setSaveState("Az adataid betöltődtek és szinkronizálódtak.");
+        } else {
+          window.localStorage.setItem(
+            ownerStorageKey(result.ownerKey, "app"),
+            JSON.stringify(nextPayload.app),
+          );
+          window.localStorage.setItem(
+            ownerStorageKey(result.ownerKey, "chat"),
+            JSON.stringify(nextPayload.chat ?? null),
+          );
+          window.localStorage.setItem(
+            ownerStorageKey(result.ownerKey, "dirty"),
+            "1",
+          );
+          setSaveError("A helyi változások szinkronizálása még függőben van.");
+        }
+      } else if (linkedLegacyCookie) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      const device = readDevicePayload();
-      if (device) {
+      const activeOwnerKey = ownerKeyRef.current;
+      const device = activeOwnerKey ? readDevicePayload(activeOwnerKey) : null;
+      if (authenticatedInThisPage.current && activeOwnerKey && device) {
         setApp(normalizeApp(device.app));
         setChat(device.chat ?? null);
         setSaveState(
@@ -221,7 +326,37 @@ export default function HabiHome() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const handoffToken = fragment.get("legacyHandoff");
+    if (handoffToken) {
+      window.history.replaceState(null, "", window.location.pathname);
+      void fetch("/api/auth/legacy-handoff/accept", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: handoffToken }),
+        signal: controller.signal,
+      })
+        .then((response) => {
+          if (!response.ok)
+            throw new Error(
+              "A korábbi napló átvitele lejárt. Indítsd újra a régi Habi oldalon.",
+            );
+          window.location.assign("/auth/login?returnTo=%2F");
+        })
+        .catch((error) => {
+          if (error instanceof DOMException && error.name === "AbortError")
+            return;
+          setSaveError(
+            error instanceof Error
+              ? error.message
+              : "Az adatátvitel nem sikerült.",
+          );
+          setViewState("error");
+        });
+    } else {
+      void load(controller.signal);
+    }
     return () => controller.abort();
   }, [load]);
 
@@ -237,6 +372,7 @@ export default function HabiHome() {
     async (nextApp: AppState) => {
       const normalized = normalizeApp(nextApp);
       setApp(normalized);
+      if (!ownerKey) return false;
       try {
         const response = await fetch("/api/app", {
           method: "PUT",
@@ -257,14 +393,28 @@ export default function HabiHome() {
         if (!response.ok) throw new Error("A mentés nem sikerült.");
         const result = (await response.json()) as { revision: number };
         setRevision(result.revision);
-        window.localStorage.setItem("habi-app-v1", JSON.stringify(normalized));
-        window.localStorage.setItem("habi-cloud-dirty", "0");
+        window.localStorage.setItem(
+          ownerStorageKey(ownerKey, "app"),
+          JSON.stringify(normalized),
+        );
+        window.localStorage.setItem(
+          ownerStorageKey(ownerKey, "chat"),
+          JSON.stringify(chat ?? null),
+        );
+        window.localStorage.setItem(ownerStorageKey(ownerKey, "dirty"), "0");
         setSaveState("Elmentve a Habi-naplódba.");
         setSaveError(null);
         return true;
       } catch (error) {
-        window.localStorage.setItem("habi-app-v1", JSON.stringify(normalized));
-        window.localStorage.setItem("habi-cloud-dirty", "1");
+        window.localStorage.setItem(
+          ownerStorageKey(ownerKey, "app"),
+          JSON.stringify(normalized),
+        );
+        window.localStorage.setItem(
+          ownerStorageKey(ownerKey, "chat"),
+          JSON.stringify(chat ?? null),
+        );
+        window.localStorage.setItem(ownerStorageKey(ownerKey, "dirty"), "1");
         setSaveState(
           "A böngészőben elmentve; a szerverrel való szinkron még várakozik.",
         );
@@ -276,8 +426,24 @@ export default function HabiHome() {
         return false;
       }
     },
-    [chat, revision],
+    [chat, ownerKey, revision],
   );
+
+  async function logout() {
+    try {
+      const response = await fetch("/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      if (!response.ok) throw new Error("A kijelentkezés nem sikerült.");
+      authenticatedInThisPage.current = false;
+      ownerKeyRef.current = "";
+      setOwnerKey("");
+      window.location.assign("/");
+    } catch {
+      setSaveError("Nem sikerült biztonságosan kijelentkezni. Próbáld újra.");
+    }
+  }
 
   function startCheckin() {
     setDraftAnswers({});
@@ -346,6 +512,15 @@ export default function HabiHome() {
             <span>Habi</span>
           </a>
           <span className={styles.headerLabel}>A sportolói naplód</span>
+          {viewState === "ready" && (
+            <button
+              className={styles.logoutButton}
+              type="button"
+              onClick={() => void logout()}
+            >
+              Kilépés
+            </button>
+          )}
         </header>
 
         <nav className={styles.nav} aria-label="Főmenü">
@@ -399,6 +574,31 @@ export default function HabiHome() {
             >
               Újrapróbálom
             </button>
+          </section>
+        )}
+
+        {viewState === "unauthenticated" && (
+          <section className={styles.error} aria-labelledby="signin-title">
+            <h1 id="signin-title">Jelentkezz be a naplód megnyitásához</h1>
+            <p>
+              A Habi a DoneIsBetter-fiókoddal védi a személyes bejegyzéseidet.
+            </p>
+            {signInFailed && (
+              <p role="alert">
+                A bejelentkezés nem sikerült. Próbáld újra, vagy ellenőrizd,
+                hogy a Habi hozzáférése engedélyezve van-e a fiókodban.
+              </p>
+            )}
+            <a className={styles.primaryButton} href="/auth/login?returnTo=%2F">
+              Bejelentkezés
+            </a>
+            <p>
+              Ha korábban a Habi régi címén mentettél adatokat, előbb igazold a
+              régi munkameneted, majd kapcsold össze a naplódat.
+            </p>
+            <a href="https://habi.doneisbetter.com/api/auth/legacy-handoff">
+              Korábbi Habi-napló átvitele
+            </a>
           </section>
         )}
 

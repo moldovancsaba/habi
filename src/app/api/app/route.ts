@@ -7,6 +7,8 @@ import {
   writeLegacyState,
 } from "@/lib/legacy-mvp/store.mjs";
 import { getDatabase } from "@/lib/database/mongo";
+import { HabiApiError } from "@/lib/api/error-response.mjs";
+import { authenticateSsoOwnerRequest } from "@/lib/auth/browser-sso-session.mjs";
 
 const MAX_BODY_BYTES = 2_000_000;
 
@@ -28,16 +30,43 @@ function attachCookie(response: Response, cookie: string | null) {
   return response;
 }
 
+async function ownerContext(
+  request: Request,
+  db: Awaited<ReturnType<typeof getDatabase>>,
+) {
+  if (process.env.HG_MVP_MODE === "sso-browser") {
+    const session = await authenticateSsoOwnerRequest(db, request, {
+      hmacKey: process.env.HG_SESSION_HMAC_KEY ?? "",
+    });
+    if (!session) throw new HabiApiError("AUTHENTICATION_REQUIRED");
+    return {
+      owner: session.ownerHash,
+      ownerKey: session.identityHash,
+      cookie: null,
+      existing: true,
+    };
+  }
+  const owner = legacyOwnerSession(request.headers.get("cookie") ?? "");
+  return { ...owner, ownerKey: null };
+}
+
 export async function GET(request: Request) {
   return runApiRoute(request, "api.legacy.storage", async () => {
-    const owner = legacyOwnerSession(request.headers.get("cookie") ?? "");
     const db = await getDatabase();
+    const owner = await ownerContext(request, db);
     const [catalog, state] = await Promise.all([
       readLegacyCatalog(db),
       readLegacyState(db.collection("habi_states"), owner.owner),
     ]);
     return attachCookie(
-      Response.json({ catalog, ...state }, { headers: privateHeaders() }),
+      Response.json(
+        {
+          catalog,
+          ...state,
+          ...(owner.ownerKey ? { ownerKey: owner.ownerKey } : {}),
+        },
+        { headers: privateHeaders() },
+      ),
       owner.cookie,
     );
   });
@@ -45,7 +74,8 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   return runApiRoute(request, "api.legacy.storage", async () => {
-    const owner = legacyOwnerSession(request.headers.get("cookie") ?? "");
+    const db = await getDatabase();
+    const owner = await ownerContext(request, db);
     const origin = request.headers.get("origin");
     const host = request.headers.get("host");
     const expectedOrigin = process.env.HG_APP_ORIGIN;
@@ -58,7 +88,9 @@ export async function PUT(request: Request) {
 
     if (
       request.headers.get("sec-fetch-site") === "cross-site" ||
-      !owner.existing ||
+      (!owner.cookie &&
+        process.env.HG_MVP_MODE !== "sso-browser" &&
+        !owner.existing) ||
       !origin ||
       !host ||
       origin !== expectedOrigin ||
@@ -100,7 +132,7 @@ export async function PUT(request: Request) {
     }
 
     const result = await writeLegacyState(
-      (await getDatabase()).collection("habi_states"),
+      db.collection("habi_states"),
       owner.owner,
       (body as { revision: number }).revision,
       (body as { payload: Record<string, unknown> }).payload,

@@ -9,6 +9,7 @@ import { migration as coachMaterials } from "./006-coach-materials.mjs";
 import { migration as publicationUniqueness } from "./007-publication-uniqueness.mjs";
 import { migration as uploadChunks } from "./008-upload-chunks.mjs";
 import { migration as workerClaimIdempotency } from "./009-worker-claim-idempotency.mjs";
+import { migration as ssoBrowserOwnerSessions } from "./010-sso-browser-owner-sessions.mjs";
 
 const MIGRATIONS = [
   initialSchema,
@@ -20,6 +21,7 @@ const MIGRATIONS = [
   publicationUniqueness,
   uploadChunks,
   workerClaimIdempotency,
+  ssoBrowserOwnerSessions,
 ];
 
 export async function runMigrations(db, now = new Date()) {

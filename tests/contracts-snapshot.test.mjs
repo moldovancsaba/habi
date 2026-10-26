@@ -47,3 +47,44 @@ test("runtime validation rejects a document outside the accepted contract", () =
     /DOCUMENT_CONTRACT_INVALID/,
   );
 });
+
+test("SSO owner collection contracts validate hashes and timestamps strictly", () => {
+  const link = {
+    _id: "a".repeat(64),
+    ownerHash: "b".repeat(64),
+    linkMethod: "verified_legacy_cookie",
+    linkedAt: "2026-10-26T10:00:00.000Z",
+  };
+  assert.equal(validateContractDocument("habi_sso_owner_links", link), true);
+  assert.throws(
+    () =>
+      validateContractDocument("habi_sso_owner_links", {
+        ...link,
+        rawSubject: "private-id",
+      }),
+    /DOCUMENT_CONTRACT_INVALID/,
+  );
+
+  const session = {
+    _id: "c".repeat(48),
+    tokenHash: "d".repeat(64),
+    identityHash: "a".repeat(64),
+    ownerHash: "b".repeat(64),
+    createdAt: "2026-10-26T10:00:00.000Z",
+    lastSeenAt: "2026-10-26T10:00:00.000Z",
+    expiresAt: new Date("2026-10-26T18:00:00.000Z"),
+    revokedAt: null,
+  };
+  assert.equal(
+    validateContractDocument("habi_sso_owner_sessions", session),
+    true,
+  );
+  assert.throws(
+    () =>
+      validateContractDocument("habi_sso_owner_sessions", {
+        ...session,
+        lastSeenAt: "yesterday",
+      }),
+    /DOCUMENT_CONTRACT_INVALID/,
+  );
+});

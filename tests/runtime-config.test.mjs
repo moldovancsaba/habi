@@ -62,7 +62,7 @@ test("an unconfigured Vercel Preview can render the disabled landing page", () =
   );
 });
 
-test("allows the isolated legacy-browser MVP only against its fixed hosted database", () => {
+test("allows the isolated legacy-browser MVP only in Preview", () => {
   const preview = {
     VERCEL_ENV: "preview",
     HG_MVP_MODE: "legacy-browser",
@@ -72,39 +72,71 @@ test("allows the isolated legacy-browser MVP only against its fixed hosted datab
     HG_EXTERNAL_ENABLED: "false",
     HG_SYNTHETIC_DATA_ONLY: "false",
   };
-  const production = {
-    ...preview,
-    VERCEL_ENV: "production",
-    HG_APP_ORIGIN: "https://habi.doneisbetter.com",
-    HG_ATLAS_DATABASE: "habi",
-  };
-
   assert.doesNotThrow(() => validateRuntimeStartup(preview));
-  assert.doesNotThrow(() => validateRuntimeStartup(production));
   assert.throws(
     () =>
       validateRuntimeStartup({
-        ...production,
-        HG_ATLAS_DATABASE: "habi_preview",
+        ...preview,
+        HG_ATLAS_DATABASE: "habi",
       }),
     /configuration is invalid/,
   );
   assert.throws(
-    () =>
-      validateRuntimeStartup({ ...production, HG_EXTERNAL_ENABLED: "true" }),
+    () => validateRuntimeStartup({ ...preview, HG_EXTERNAL_ENABLED: "true" }),
     /configuration is invalid/,
   );
   assert.throws(
     () =>
       validateRuntimeStartup({
-        ...production,
+        ...preview,
         HG_APP_ORIGIN: "http://habi.doneisbetter.com",
       }),
     /configuration is invalid/,
   );
   assert.throws(
-    () => validateRuntimeStartup({ ...production, VERCEL_ENV: "development" }),
+    () => validateRuntimeStartup({ ...preview, VERCEL_ENV: "development" }),
     /hosted-only/,
+  );
+  assert.throws(
+    () => validateRuntimeStartup({ ...preview, VERCEL_ENV: "production" }),
+    /disabled in Production/,
+  );
+});
+
+test("SSO browser MVP accepts only the production Habi origin and callback", () => {
+  const production = {
+    VERCEL_ENV: "production",
+    HG_ENVIRONMENT: "production",
+    HG_MVP_MODE: "sso-browser",
+    HG_APP_ORIGIN: "https://www.habigoal.com",
+    HG_LEGACY_APP_ORIGIN: "https://habi.doneisbetter.com",
+    HG_ATLAS_URI: "mongodb+srv://example.invalid/db",
+    HG_ATLAS_DATABASE: "habi",
+    HG_SSO_ISSUER: "https://sso.doneisbetter.com",
+    HG_SSO_CLIENT_ID: "habi-client",
+    HG_SSO_CLIENT_SECRET: "test-only-client-secret",
+    HG_SSO_REDIRECT_URI: "https://habigoal.com/api/oauth/callback",
+    HG_SESSION_HMAC_KEY: "s".repeat(48),
+    HG_EXTERNAL_ENABLED: "false",
+    HG_SYNTHETIC_DATA_ONLY: "false",
+  };
+  assert.doesNotThrow(() => validateRuntimeStartup(production));
+  for (const invalid of [
+    { HG_ATLAS_DATABASE: "habi_preview" },
+    { HG_APP_ORIGIN: "https://habi.doneisbetter.com" },
+    { HG_LEGACY_APP_ORIGIN: "https://old.example.com" },
+    { HG_SSO_REDIRECT_URI: "https://www.habigoal.com/api/oauth/callback" },
+    { HG_SESSION_HMAC_KEY: "too-short" },
+    { HG_EXTERNAL_ENABLED: "true" },
+  ]) {
+    assert.throws(
+      () => validateRuntimeStartup({ ...production, ...invalid }),
+      /configuration is invalid/,
+    );
+  }
+  assert.throws(
+    () => validateRuntimeStartup({ ...production, VERCEL_ENV: "preview" }),
+    /enabled only in Production/,
   );
 });
 

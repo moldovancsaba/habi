@@ -73,6 +73,39 @@ test("legacy-browser MVP permits only health, readiness, and legacy storage", as
   assert.equal(previewStorage.status, 200);
 });
 
+test("SSO-browser MVP permits SSO and owner storage routes only", async () => {
+  const env = { VERCEL_ENV: "production", HG_MVP_MODE: "sso-browser" };
+  for (const operation of ["api.players.list", "api.v1.me", "api.auth.login"]) {
+    const blocked = await runApiRoute(
+      new Request("https://www.habigoal.com/api/blocked"),
+      operation,
+      async () => assert.fail("out-of-scope role APIs remain closed"),
+      () => {},
+      env,
+    );
+    assert.equal(blocked.status, 503);
+  }
+  for (const operation of [
+    "api.health",
+    "api.ready",
+    "api.legacy.storage",
+    "auth.login",
+    "auth.callback",
+    "auth.logout",
+    "auth.legacy-handoff",
+    "auth.legacy-handoff.accept",
+  ]) {
+    const allowed = await runApiRoute(
+      new Request("https://www.habigoal.com/api/allowed"),
+      operation,
+      async () => Response.json({ ok: true }),
+      () => assert.fail("SSO MVP route should not log on success"),
+      env,
+    );
+    assert.equal(allowed.status, 200);
+  }
+});
+
 test("maps known errors and emits content-free structured diagnostics", async () => {
   const lines = [];
   const response = await runApiRoute(

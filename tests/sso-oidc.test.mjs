@@ -142,6 +142,30 @@ test("authorization URL uses S256 and code exchange uses JSON client_secret_post
   assert.equal(tokens.expiresIn, 3600);
 });
 
+test("browser MVP code exchange does not require a refresh token it never stores", async () => {
+  const result = await exchangeAuthorizationCode(
+    {
+      issuer,
+      token_endpoint: `${issuer}/api/oauth/token`,
+    },
+    {
+      clientId: "habi-client",
+      clientSecret: "server-secret",
+      redirectUri: "https://habigoal.com/api/oauth/callback",
+    },
+    { code: "one-time-code", verifier: "v".repeat(43) },
+    async () =>
+      response({
+        id_token: "signed-id-token",
+        access_token: "user-access-token",
+        expires_in: 300,
+      }),
+    { requireRefreshToken: false },
+  );
+  assert.equal(result.accessToken, "user-access-token");
+  assert.equal(result.refreshToken, null);
+});
+
 test("SSO access-token refresh rotates refresh tokens and is bounded", async () => {
   const discovered = {
     issuer,

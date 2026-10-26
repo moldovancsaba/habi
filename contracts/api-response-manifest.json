@@ -2,8 +2,8 @@
   "artifact": "api-response-schemas.json",
   "sourceRepository": "https://github.com/moldovancsaba/habi",
   "sourcePath": "contracts/api-response-schemas.json",
-  "apiVersion": "2.4.8",
-  "sha256": "627b12174bd09bb8fa2d0b0758ef4a443c9e5610b8f66c12030fb53f20826e0e",
+  "apiVersion": "2.4.10",
+  "sha256": "755f80bda12428c8b4762312203ab3364be0b2ba07adfa174351a78d8515d2dd",
   "definitions": [
     "AttributionView",
     "Continuation",

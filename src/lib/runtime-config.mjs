@@ -207,7 +207,16 @@ export function validateRuntimeConfig(env) {
 
 export function validateRuntimeStartup(env) {
   if (env.NEXT_PHASE === "phase-production-build") return;
+  if (env.HG_MVP_MODE === "sso-browser") {
+    validateSsoBrowserMvpConfig(env);
+    return;
+  }
   if (env.HG_MVP_MODE === "legacy-browser") {
+    if (env.VERCEL_ENV === "production") {
+      throw new Error(
+        "Browser-cookie authentication is disabled in Production",
+      );
+    }
     validateLegacyBrowserMvpConfig(env);
     return;
   }
@@ -238,5 +247,41 @@ function validateLegacyBrowserMvpConfig(env) {
     env.HG_SYNTHETIC_DATA_ONLY !== "false"
   ) {
     throw new Error("Legacy browser MVP configuration is invalid");
+  }
+}
+
+function validateSsoBrowserMvpConfig(env) {
+  if (env.VERCEL_ENV !== "production") {
+    throw new Error("SSO browser MVP is enabled only in Production");
+  }
+  const appOrigin = parseUrl(env.HG_APP_ORIGIN ?? "", "HG_APP_ORIGIN");
+  const issuer = parseUrl(env.HG_SSO_ISSUER ?? "", "HG_SSO_ISSUER");
+  const callback = parseUrl(
+    env.HG_SSO_REDIRECT_URI ?? "",
+    "HG_SSO_REDIRECT_URI",
+  );
+  const appHost = appOrigin.hostname.replace(/^www\./, "");
+  const callbackHost = callback.hostname.replace(/^www\./, "");
+  if (
+    env.HG_ENVIRONMENT !== "production" ||
+    env.HG_APP_ORIGIN !== "https://www.habigoal.com" ||
+    env.HG_LEGACY_APP_ORIGIN !== "https://habi.doneisbetter.com" ||
+    appOrigin.protocol !== "https:" ||
+    env.HG_ATLAS_DATABASE !== "habi" ||
+    !env.HG_ATLAS_URI?.trim() ||
+    issuer.protocol !== "https:" ||
+    !env.HG_SSO_CLIENT_ID?.trim() ||
+    !env.HG_SSO_CLIENT_SECRET?.trim() ||
+    callback.protocol !== "https:" ||
+    callback.hostname !== "habigoal.com" ||
+    callback.pathname !== "/api/oauth/callback" ||
+    callback.search ||
+    callback.hash ||
+    appHost !== callbackHost ||
+    env.HG_SYNTHETIC_DATA_ONLY !== "false" ||
+    env.HG_EXTERNAL_ENABLED !== "false" ||
+    Buffer.byteLength(env.HG_SESSION_HMAC_KEY ?? "", "utf8") < 32
+  ) {
+    throw new Error("SSO browser MVP configuration is invalid");
   }
 }

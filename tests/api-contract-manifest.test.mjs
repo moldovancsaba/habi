@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("API contract and response schemas are pinned to canonical API 2.4.8", async () => {
+test("API contract and response schemas are pinned to canonical API 2.4.10", async () => {
   const [apiBytes, apiManifestBytes, responseBytes, responseManifestBytes] =
     await Promise.all([
       readFile(new URL("../contracts/api.json", import.meta.url)),
@@ -19,9 +19,9 @@ test("API contract and response schemas are pinned to canonical API 2.4.8", asyn
   const apiManifest = JSON.parse(apiManifestBytes.toString("utf8"));
   const responseManifest = JSON.parse(responseManifestBytes.toString("utf8"));
 
-  assert.equal(api.info.version, "2.4.8");
-  assert.equal(apiManifest.apiVersion, "2.4.8");
-  assert.equal(responseManifest.apiVersion, "2.4.8");
+  assert.equal(api.info.version, "2.4.10");
+  assert.equal(apiManifest.apiVersion, "2.4.10");
+  assert.equal(responseManifest.apiVersion, "2.4.10");
   assert.equal(
     createHash("sha256").update(apiBytes).digest("hex"),
     apiManifest.sha256,
@@ -42,4 +42,19 @@ test("API contract and response schemas are pinned to canonical API 2.4.8", asyn
   assert.equal(recordSchema, "./schemas.json#/$defs/RecordReadDTO");
   assert.deepEqual(recordOperation.security, [{ sessionCookie: [] }]);
   assert.ok(api.paths["/v1/checkin-sessions/{id}/answers"].post);
+  assert.ok(api.paths["/api/oauth/callback"].get);
+  assert.ok(api.paths["/api/auth/legacy-handoff"].get);
+  assert.ok(api.paths["/api/auth/legacy-handoff/accept"].post);
+  assert.deepEqual(
+    api.paths["/api/oauth/callback"].get.responses["303"].headers["Set-Cookie"]
+      .schema,
+    { type: "string" },
+  );
+  assert.deepEqual(api.paths["/auth/logout"].post.security, []);
+  assert.ok(
+    api.paths["/auth/logout"].post.parameters.some(
+      ({ name }) => name === "Origin",
+    ),
+  );
+  assert.ok(api.components.securitySchemes.ssoOwnerSessionCookie);
 });

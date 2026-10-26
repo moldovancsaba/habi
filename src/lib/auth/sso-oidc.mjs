@@ -93,6 +93,7 @@ export async function exchangeAuthorizationCode(
   config,
   { code, verifier },
   fetchImpl = fetch,
+  { requireRefreshToken = true } = {},
 ) {
   const response = await fetchImpl(discovery.token_endpoint, {
     method: "POST",
@@ -113,8 +114,8 @@ export async function exchangeAuthorizationCode(
   if (
     typeof tokens?.id_token !== "string" ||
     typeof tokens?.access_token !== "string" ||
-    typeof tokens?.refresh_token !== "string" ||
-    !tokens.refresh_token ||
+    (requireRefreshToken &&
+      (typeof tokens?.refresh_token !== "string" || !tokens.refresh_token)) ||
     !Number.isSafeInteger(tokens?.expires_in) ||
     tokens.expires_in <= 0
   ) {
@@ -123,7 +124,7 @@ export async function exchangeAuthorizationCode(
   return Object.freeze({
     idToken: tokens.id_token,
     accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token,
+    refreshToken: tokens.refresh_token ?? null,
     expiresIn: tokens.expires_in,
   });
 }

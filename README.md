@@ -4,7 +4,11 @@ A Habi fiatal sportolók, jogosult szülők és edzők közös támogatási term
 
 ## Állapot
 
-A Habi browser-owned MVP Productionben érhető el: [https://habi.doneisbetter.com](https://habi.doneisbetter.com). A kezdőképernyőn napi állapotjelzés indítható és menthető, a korábbi válaszok a Naplóban visszanézhetők, a Gyakorlatok oldalon pedig a jóváhagyott rövid tartalmak olvashatók. A rendszer a meglévő `habi_states` rekordokat ugyanazzal a HttpOnly cookie-hash tulajdonoskulccsal, migráció nélkül használja; a helyi módosításokat hiba esetén a böngészőben tartja meg, és jelzi a szinkron állapotát. Másik böngésző/eszköz hozzáférése és a player/parent/coach szerepkörös workflow még nincs bekapcsolva. A Production adatcél `habi`, a Preview külön `habi_preview` adatbázist használ. Lásd [felhasználói útmutató](docs/user-guide.md), [ellenőrzési napló](docs/verification.md) és [telepítési állapot](docs/deployment.md).
+A Habi fiatal sportolók, jogosult szülők és edzők közös támogatási terméke. **Habigoal** a kliensbemutató prototípus és a specifikáció neve; a leszállítandó termék neve **Habi**. Ez a repository a Habi alkalmazás forrása.
+
+## Állapot
+
+A kiválasztott termékcím [www.habigoal.com](https://www.habigoal.com); az apex cím erre irányít át. Az SSO-only browser MVP és az ellenőrzött korábbi adatkapcsolás kódja elkészült; a Production SSO-konfiguráció és a csak hozzáadást végző 010-es migráció is be van állítva. A Vercel projekt `narimato/habi`; az adatcél a meglévő `habi` Atlas adatbázis. Az új alkalmazásbuild még nincs Productionbe telepítve, és a valós SSO belépés nincs igazolva. A régi `habi.doneisbetter.com` cím marad a korábbi browser-cookie munkamenet igazolására szolgáló átmeneti origin. Lásd [felhasználói útmutató](docs/user-guide.md), [ellenőrzési napló](docs/verification.md) és [telepítési állapot](docs/deployment.md).
 
 - a játékos napi állapotjelzése, a válaszok mentése, az idempotens újrapróbálás és a változatlan lezárt visszajelzés;
 - a szülői és edzői megfigyelések külön rögzítővel és forrásmegjelöléssel;
@@ -17,7 +21,7 @@ A Habi browser-owned MVP Productionben érhető el: [https://habi.doneisbetter.c
 - PDF chunk-feltöltés GridFS karanténba, ClamAV-vizsgálat, kézi extraction és mezőnkénti coach-review.
 - Verziózott játékosi gyakorlatkönyvtár; a játékos visszajelzése újratölthető, saját diary rekordként mentődik.
 
-> **MVP határa:** ez az egyéni, böngészőhöz kötött Habi-napló első Production felülete. Nem tartalmaz SSO-t, családi/edzői megosztást, Mac AI-workert, trenddiagramokat, havi visszatekintést vagy teljes régi funkciókészletet. A szerepkörös backend csak localhoston és szintetikus adatokkal ellenőrzött; Production API-k fail-closed állapotban maradnak. A többi funkció migrációs állapotát a [legacy funkció-mátrix](docs/legacy-feature-migration.md) rögzíti.
+> **Jelenlegi Production határ:** az éles deployment még browser-cookie MVP; az SSO-only változás helyi kód és nem élő funkció. A teljes family/player/parent/coach workflow és Mac AI-worker nem aktív. A szerepkörös API-k fail-closed állapotban maradnak. A további funkciók állapotát a [legacy funkció-mátrix](docs/legacy-feature-migration.md) rögzíti.
 
 ## Szükséges eszközök
 
@@ -53,7 +57,7 @@ A `habi` repository gyökeréből:
 ## Főbb könyvtárak
 
 - `src/app` — Next.js felület és azonos eredetű API-route-ok.
-- `src/lib/auth` — SSO/session segédek; a DoneIsBetter callback még nincs bekötve.
+- `src/lib/auth` — OIDC callback, owner/session segédek és a későbbi role-workflow session kód.
 - `src/lib/workflows` — üzleti folyamatok.
 - `src/lib/database/migrations` — csak előrefelé futó adatbázis-migrációk.
 - `contracts` — API-, adat-, jogosultsági és modellműködési szerződések.

@@ -66,15 +66,16 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           "007-publication-uniqueness",
           "008-upload-chunks",
           "009-worker-claim-idempotency",
+          "010-sso-browser-owner-sessions",
         ],
-        current: "009-worker-claim-idempotency",
+        current: "010-sso-browser-owner-sessions",
       },
     );
     assert.deepEqual(
       await runMigrations(db, new Date("2026-10-25T00:00:01.000Z")),
       {
         applied: [],
-        current: "009-worker-claim-idempotency",
+        current: "010-sso-browser-owner-sessions",
       },
     );
     const migrationRecord = await db
@@ -107,6 +108,80 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
     assert.ok(authIndexes.includes("auth_transaction_state_unique"));
     assert.ok(authIndexes.includes("auth_transaction_browser_active_unique"));
     assert.ok(authIndexes.includes("auth_transaction_expiry_ttl"));
+    const ownerLinkIndexes = (
+      await db.collection("habi_sso_owner_links").indexes()
+    ).map(({ name }) => name);
+    assert.ok(ownerLinkIndexes.includes("habi_sso_owner_link_owner_unique"));
+    const ownerSessionIndexes = (
+      await db.collection("habi_sso_owner_sessions").indexes()
+    ).map(({ name }) => name);
+    assert.ok(
+      ownerSessionIndexes.includes("habi_sso_owner_session_token_unique"),
+    );
+    assert.ok(
+      ownerSessionIndexes.includes("habi_sso_owner_session_expiry_ttl"),
+    );
+    const ownerHandoffIndexes = (
+      await db.collection("habi_sso_owner_handoffs").indexes()
+    ).map(({ name }) => name);
+    assert.ok(
+      ownerHandoffIndexes.includes("habi_sso_owner_handoff_token_unique"),
+    );
+    assert.ok(
+      ownerHandoffIndexes.includes("habi_sso_owner_handoff_binding_unique"),
+    );
+    assert.ok(
+      ownerHandoffIndexes.includes("habi_sso_owner_handoff_expiry_ttl"),
+    );
+    await db.collection("habi_sso_owner_links").insertOne({
+      _id: "a".repeat(64),
+      ownerHash: "b".repeat(64),
+      linkMethod: "verified_legacy_cookie",
+      linkedAt: "2026-10-26T10:00:00.000Z",
+    });
+    await assert.rejects(
+      db.collection("habi_sso_owner_links").insertOne({
+        _id: "c".repeat(64),
+        ownerHash: "b".repeat(64),
+        linkMethod: "verified_legacy_cookie",
+        linkedAt: "2026-10-26T10:00:00.000Z",
+      }),
+      (error) => error.code === 11000,
+    );
+    await db.collection("habi_sso_owner_sessions").insertOne({
+      _id: "d".repeat(48),
+      tokenHash: "e".repeat(64),
+      identityHash: "a".repeat(64),
+      ownerHash: "b".repeat(64),
+      createdAt: "2026-10-26T10:00:00.000Z",
+      lastSeenAt: "2026-10-26T10:00:00.000Z",
+      expiresAt: new Date("2026-10-26T18:00:00.000Z"),
+      revokedAt: null,
+    });
+    await assert.rejects(
+      db.collection("habi_sso_owner_sessions").insertOne({
+        _id: "f".repeat(48),
+        tokenHash: "g".repeat(64),
+      }),
+      (error) => error.code === 121,
+    );
+    await db.collection("habi_sso_owner_handoffs").insertOne({
+      _id: "a".repeat(48),
+      tokenHash: "b".repeat(64),
+      ownerHash: "c".repeat(64),
+      bindingHash: null,
+      createdAt: "2026-10-26T10:00:00.000Z",
+      boundAt: null,
+      expiresAt: new Date("2026-10-26T10:30:00.000Z"),
+      consumedAt: null,
+    });
+    await assert.rejects(
+      db.collection("habi_sso_owner_handoffs").insertOne({
+        _id: "d".repeat(48),
+        tokenHash: "e".repeat(64),
+      }),
+      (error) => error.code === 121,
+    );
     await assert.rejects(
       db.collection("auth_transactions").insertOne({ id: "invalid-auth-txn" }),
       (error) => error.code === 121,

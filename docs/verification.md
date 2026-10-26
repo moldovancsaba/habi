@@ -1,5 +1,14 @@
 # Habi — ellenőrzési napló
 
+## SSO-only browser MVP and verified legacy transfer · 2026-10-26
+
+- Implemented in the Habi worktree: `/auth/login`, `/api/oauth/callback`, owner session/logout, SSO-only `/api/app`, and one-use legacy handoff. Existing records link only when the legacy browser cookie is verified on `habi.doneisbetter.com`, the handoff is bound on canonical Habi, and DoneIsBetter verifies identity plus Habi permission. No email matching is used.
+- Local verification: `npm run lint` — exit 0; `npm run typecheck` — exit 0; `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` — exit 0, 112/112 pass, 0 skipped; `npm run build` — exit 0 with routes `/api/auth/legacy-handoff`, `/api/auth/legacy-handoff/accept`, and `/api/oauth/callback`; `git diff --check` — exit 0. Environment: local Habi worktree, isolated MongoDB replica set.
+- Vercel Production settings verified by key without printing values: SSO browser mode, production environment, `https://www.habigoal.com` app origin, `https://habi.doneisbetter.com` transfer origin, database `habi`, disabled external AI, synthetic-only false, and the exact registered callback. SSO client secret and session HMAC are stored as sensitive Vercel variables. Existing `HG_ATLAS_URI` was preserved.
+- Migration 010 applied to the existing Production `habi` database and recorded in `_habi_migrations`. The four auth/owner-control collections and required indexes are present. `habi_states` stayed at 37 documents and `habi_content` at 1 before and after. No user record contents were read or changed.
+- Verified Vercel domain metadata: `habigoal.com` (308 to `www.habigoal.com`) and `www.habigoal.com` are assigned to `narimato/habi`; `habi.doneisbetter.com` remains on the same project for legacy-cookie handoff.
+- Still unverified: the new Production deployment, HTTP callback relay through the apex redirect, a real browser SSO login, `/api/app` save/reload/logout under that SSO session, and transfer by a real legacy cookie. The code is not delivered as a live SSO experience until those are proven.
+
 ## Interaktív browser-owned MVP felület · 2026-10-26
 
 - A gyökérútvonal új Habi felületet szolgál ki: napi állapotjelzés, korábbi állapotjelzések és öt verziózott gyakorlat. A napi jelzés a meglévő `/api/app` route-on keresztül, revision-ellenőrzéssel menti az adatot a jelenlegi böngésző-tulajdonoshoz.
