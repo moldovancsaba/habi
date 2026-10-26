@@ -192,6 +192,15 @@ function roleLabel(role: Role) {
   return role === "player" ? "Játékos" : role === "parent" ? "Szülő" : "Edző";
 }
 
+function localDayKey(value: string | number) {
+  const date = new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function validClock(value: string) {
+  return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
 function messageFor(error: unknown) {
   const code = error instanceof Error ? error.message : "";
   if (code === "AUTHENTICATION_REQUIRED")
@@ -293,6 +302,11 @@ export default function HabiWorkspace() {
   });
   const [trendPeriod, setTrendPeriod] = useState<14 | 28 | 42>(14);
   const [clientNow, setClientNow] = useState<number | null>(null);
+  const [reminderPrefs, setReminderPrefs] = useState({
+    enabled: false,
+    morning: "08:00",
+    evening: "20:00",
+  });
   const [guidedSituationId, setGuidedSituationId] = useState("");
   const [guidedAnswers, setGuidedAnswers] = useState<number[]>([]);
   const [painStep, setPainStep] = useState<number | null>(null);
@@ -310,7 +324,10 @@ export default function HabiWorkspace() {
   const [roleRequestBusy, setRoleRequestBusy] = useState(false);
 
   useEffect(() => {
-    setClientNow(Date.now());
+    const updateClock = () => setClientNow(Date.now());
+    updateClock();
+    const interval = window.setInterval(updateClock, 60_000);
+    return () => window.clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -700,6 +717,72 @@ export default function HabiWorkspace() {
   const ownPlayerData = selectedPlayer
     ? data.find((person) => person.id === selectedPlayer.id)
     : null;
+  useEffect(() => {
+    if (!ownPlayerData) return;
+    const settings = ownPlayerData.records.find((record) =>
+      record.text?.startsWith("Habi emlékeztető-beállítások · "),
+    );
+    if (!settings?.text) {
+      setReminderPrefs({ enabled: false, morning: "08:00", evening: "20:00" });
+      return;
+    }
+    try {
+      const saved = JSON.parse(
+        settings.text.slice("Habi emlékeztető-beállítások · ".length),
+      );
+      if (
+        typeof saved.enabled === "boolean" &&
+        typeof saved.morning === "string" &&
+        validClock(saved.morning) &&
+        typeof saved.evening === "string" &&
+        validClock(saved.evening)
+      )
+        setReminderPrefs(saved);
+    } catch {
+      setNotice("Az emlékeztető-beállításokat nem sikerült beolvasni.");
+    }
+  }, [ownPlayerData, setNotice]);
+  const localToday = clientNow ? localDayKey(clientNow) : "";
+  const reminderType = (() => {
+    if (
+      !reminderPrefs.enabled ||
+      !validClock(reminderPrefs.morning) ||
+      !validClock(reminderPrefs.evening) ||
+      !clientNow ||
+      !ownPlayerData
+    )
+      return null;
+    const localTime = new Date(clientNow).toTimeString().slice(0, 5);
+    const checkedInToday = ownPlayerData.checkins.some(
+      (item) =>
+        item.completedAt && localDayKey(item.completedAt) === localToday,
+    );
+    const reflectedToday = ownPlayerData.records.some(
+      (item) =>
+        item.text?.startsWith("Napi visszatekintés ·") &&
+        item.occurredAt &&
+        localDayKey(item.occurredAt) === localToday,
+    );
+    const dismissedToday = (type: "morning" | "evening") =>
+      ownPlayerData.records.some(
+        (item) =>
+          item.text === `Emlékeztető elhalasztva · ${localToday} · ${type}`,
+      );
+    if (
+      !checkedInToday &&
+      localTime >= reminderPrefs.morning &&
+      localTime < reminderPrefs.evening &&
+      !dismissedToday("morning")
+    )
+      return "morning" as const;
+    if (
+      !reflectedToday &&
+      localTime >= reminderPrefs.evening &&
+      !dismissedToday("evening")
+    )
+      return "evening" as const;
+    return null;
+  })();
   const trendCutoff =
     clientNow === null
       ? Number.POSITIVE_INFINITY
@@ -1230,6 +1313,23 @@ export default function HabiWorkspace() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function saveReminderSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (
+      !validClock(reminderPrefs.morning) ||
+      !validClock(reminderPrefs.evening)
+    )
+      return;
+    await savePlayerDiary(
+      `Habi emlékeztető-beállítások · ${JSON.stringify(reminderPrefs)}`,
+    );
+  }
+
+  async function dismissReminder(type: "morning" | "evening") {
+    if (!localToday) return;
+    await savePlayerDiary(`Emlékeztető elhalasztva · ${localToday} · ${type}`);
   }
 
   async function chooseDailyPlayerTask(checkinId: string, action: string) {
@@ -2353,6 +2453,97 @@ export default function HabiWorkspace() {
                 >
                   Megnyitom az idővonalat
                 </button>
+                {reminderType && (
+                  <aside className={styles.notice} role="status">
+                    <p>
+                      {reminderType === "morning"
+                        ? "A napi állapotjelzésed még vár rád."
+                        : "Ha szeretnéd, most visszatekinthetsz a napodra."}
+                    </p>
+                    <div className={styles.actions}>
+                      <button
+                        className={styles.primary}
+                        type="button"
+                        onClick={() =>
+                          setTab(
+                            reminderType === "morning"
+                              ? "checkin"
+                              : "player-tools",
+                          )
+                        }
+                      >
+                        {reminderType === "morning"
+                          ? "Állapotjelzés indítása"
+                          : "Visszatekintés megnyitása"}
+                      </button>
+                      <button
+                        className={styles.secondary}
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void dismissReminder(reminderType)}
+                      >
+                        Ma inkább kihagyom
+                      </button>
+                    </div>
+                  </aside>
+                )}
+                <details className={styles.formGroup}>
+                  <summary>Emlékeztetők beállítása</summary>
+                  <form onSubmit={saveReminderSettings}>
+                    <p className={styles.muted}>
+                      A Habi csak az alkalmazás megnyitásakor mutat
+                      emlékeztetőt. Nem küld értesítést az eszközödre.
+                    </p>
+                    <label className={styles.label}>
+                      <input
+                        type="checkbox"
+                        checked={reminderPrefs.enabled}
+                        onChange={(event) =>
+                          setReminderPrefs((current) => ({
+                            ...current,
+                            enabled: event.target.checked,
+                          }))
+                        }
+                      />{" "}
+                      Kérek emlékeztetőt
+                    </label>
+                    <label className={styles.label} htmlFor="reminder-morning">
+                      Napi állapotjelzés ideje
+                    </label>
+                    <input
+                      id="reminder-morning"
+                      type="time"
+                      value={reminderPrefs.morning}
+                      onChange={(event) =>
+                        setReminderPrefs((current) => ({
+                          ...current,
+                          morning: event.target.value,
+                        }))
+                      }
+                    />
+                    <label className={styles.label} htmlFor="reminder-evening">
+                      Napi visszatekintés ideje
+                    </label>
+                    <input
+                      id="reminder-evening"
+                      type="time"
+                      value={reminderPrefs.evening}
+                      onChange={(event) =>
+                        setReminderPrefs((current) => ({
+                          ...current,
+                          evening: event.target.value,
+                        }))
+                      }
+                    />
+                    <button
+                      className={styles.primary}
+                      type="submit"
+                      disabled={busy}
+                    >
+                      Emlékeztetők mentése
+                    </button>
+                  </form>
+                </details>
               </section>
             )}
             {tab === "overview" && active.activeRole !== "player" && (

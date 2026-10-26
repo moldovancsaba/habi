@@ -823,3 +823,9 @@ This is a functional migration slice, not complete legacy parity. Durable record
 - Content is pinned in `src/lib/content/monthly-reflection-v1.json`; the record title includes its content version. Drafts do not yet resume after a full page reload.
 - Verification on the local Habi checkout: `npm run typecheck` PASS; `npm run lint` PASS (188 files); `npm test` PASS (117 passed, 0 failed, 1 Atlas-only integration test skipped); `npm run build` PASS; `git diff --check` PASS.
 - Production deployment and authenticated browser interaction are pending this change's release.
+
+## Player reminder preferences · 2026-10-27
+
+- The player can opt into a morning check-in reminder and an evening reflection reminder, set both times, and save those preferences to the authenticated player diary. The reminder is shown only while the app is open; it does not issue device, email, or WhatsApp notifications. A same-day dismissal is stored so the prompt does not keep returning after the page reloads. There is no timezone setting in the UI.
+- Verification on the local Habi checkout: `npm run typecheck` PASS; `npm run lint` PASS (188 files); `npm test` PASS (117 passed, 0 failed, 1 Atlas-only integration test skipped); `npm run build` PASS; `git diff --check` PASS.
+- Limitation: this first version uses the diary record store for preferences and only reads the initial records page on load; a dedicated settings endpoint is still needed to make preference lookup independent from diary pagination. Authenticated production interaction is pending this release.
