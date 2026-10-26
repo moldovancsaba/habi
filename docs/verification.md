@@ -1,5 +1,14 @@
 # Habi — ellenőrzési napló
 
+## Szerepköri munkaterület és edzői felmérés éles kiadása · 2026-10-26
+
+- Commit: `c7c706a` (`Implement Habi role workspace and coach report flow`), `main`; a GitHubra sikeresen feltolva.
+- Vercel: a `narimato/habi` projekt Production deploymentje `dpl_AwA6kVqxx1BHs3vSUVPrCBZNBfd1`, állapota `READY`, a commit SHA `c7c706a8e6451b328c8404cd3dadf1d55b1b7f7a`.
+- A projekt igazolt éles domainjei: `https://habigoal.com`, `https://www.habigoal.com`, `https://habi.doneisbetter.com`. A `habigoal.com` `/`, `/legacy` és `/admin` útvonalai HTTP 200-at adtak. A `/api/health` és `/api/ready` HTTP 200; névtelen `/api/v1/me` HTTP 401 `AUTHENTICATION_REQUIRED` választ adott, ami a védett API elvárt viselkedése.
+- Az éles hostot a `/admin` HTML `data-dpl-id` értéke is az új deploymenthez (`dpl_AwA6kVqxx1BHs3vSUVPrCBZNBfd1`) kötötte. Ez azonosítja a kiszolgált buildet; nem helyettesíti a bejelentkezett böngészős vizuális átvételt.
+- A lokális szintetikus HTTP → Atlas-test replica → helyi worker elfogadási folyamat lefedte az edzői PDF feltöltést, ClamAV vizsgálatot, kézzel rögzített mezők jóváhagyását, majd az ellenőrzött extractionre hivatkozó helyi AI-értelmezést. A teljes parancs eredménye PASS; további lint, typecheck, unit suite és production build eredményét fent rögzítettük.
+- Ismert korlát: éles SSO-val bejelentkezett böngészőben nem végeztünk műveletet, és nem töltöttünk fel valódi sportolói felmérést. A személyes SSO/UI és valódi adatokkal végzett folyamat éles tesztje ezért nincs igazolva. Visszaállítás az előző, READY Habi production deploymentre történő Vercel rollbackkel lehetséges; adatbázis-sémát ez a kiadás nem módosított.
+
 ## Habigoal munkaterületek és edzői felmérés → helyi AI · 2026-10-26
 
 - A `/` munkaterület most az elfogadott wireframe szerkezetének szerepköri nézeteit szolgálja ki: Áttekintés, Napló, Állapotjelzés, Beszélgetések, Idővonal, Riportok és tervek, Felmérések és Tudástár. A képernyők a Habi jogosultság-ellenőrzött API-jait és a kiválasztott játékos valós adatait használják; a prototípus fiktív Dani adatai nem kerülnek át.
