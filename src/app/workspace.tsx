@@ -204,7 +204,17 @@ export default function HabiWorkspace() {
   const observationFeedbackRef = useRef<HTMLParagraphElement>(null);
   const questionFeedbackRef = useRef<HTMLParagraphElement>(null);
   const questionResultRef = useRef<HTMLElement>(null);
-  const [notice, setNotice] = useState("");
+  const [notice, setNoticeText] = useState("");
+  const [noticeKind, setNoticeKind] = useState<"info" | "success" | "error">(
+    "info",
+  );
+  const setNotice = useCallback(
+    (message: string, kind: "info" | "success" | "error" = "error") => {
+      setNoticeText(message);
+      if (message) setNoticeKind(kind);
+    },
+    [],
+  );
   const [busy, setBusy] = useState(false);
   const [enteringRoleId, setEnteringRoleId] = useState<string | null>(null);
   const [roleEntryError, setRoleEntryError] = useState("");
@@ -279,7 +289,7 @@ export default function HabiWorkspace() {
       }
     }
     return () => controller.abort();
-  }, [app, selectedPlayerId, tab]);
+  }, [app, selectedPlayerId, setNotice, tab]);
 
   useEffect(() => {
     if (tab !== "conversations" || !selectedThreadId) {
@@ -307,7 +317,7 @@ export default function HabiWorkspace() {
           setNotice(messageFor(error));
       });
     return () => controller.abort();
-  }, [selectedThreadId, tab]);
+  }, [selectedThreadId, setNotice, tab]);
 
   async function logOutFromHabi() {
     await fetch("/auth/logout", {
@@ -390,7 +400,7 @@ export default function HabiWorkspace() {
       setNotice(messageFor(error));
       setApp({ state: "signed-out" });
     }
-  }, []);
+  }, [setNotice]);
 
   useEffect(() => {
     if (app.state !== "ready" || !selectedPlayerId) {
@@ -453,7 +463,7 @@ export default function HabiWorkspace() {
         setTimeline(null);
       });
     return () => controller.abort();
-  }, [app, players, selectedPlayerId]);
+  }, [app, players, selectedPlayerId, setNotice]);
 
   useEffect(() => {
     void load();
@@ -781,7 +791,7 @@ export default function HabiWorkspace() {
       if (!complete.ok) throw new Error(result.code ?? "SAVE_FAILED");
       setAnswers({});
       setCheckinIndex(null);
-      setNotice("A mai állapotjelzésed elmentve.");
+      setNotice("A mai állapotjelzésed elmentve.", "success");
       await load();
     } catch (error) {
       setNotice(messageFor(error));
@@ -889,7 +899,7 @@ export default function HabiWorkspace() {
       setThreadMessages(
         Array.isArray(body.items) ? [...body.items].reverse() : [],
       );
-      setNotice("Az üzenet bekerült a beszélgetésbe.");
+      setNotice("Az üzenet bekerült a beszélgetésbe.", "success");
     } catch (error) {
       setNotice(messageFor(error));
     } finally {
@@ -948,6 +958,7 @@ export default function HabiWorkspace() {
       setPlanDraft("");
       setNotice(
         "A közös terv mentve. A játékos és a kapcsolt szülő a jóváhagyás után látja.",
+        "success",
       );
     } catch (error) {
       setNotice(messageFor(error));
@@ -998,6 +1009,7 @@ export default function HabiWorkspace() {
       setMaterialText("");
       setNotice(
         "Az edzői anyag piszkozatként mentve. Megosztás előtt ellenőrizd a szöveget és a forrást.",
+        "success",
       );
     } catch (error) {
       setNotice(messageFor(error));
@@ -1032,6 +1044,7 @@ export default function HabiWorkspace() {
       );
       setNotice(
         "Az edzői anyag megosztva a kapcsolt játékosokkal és szülőkkel.",
+        "success",
       );
     } catch (error) {
       setNotice(messageFor(error));
@@ -1068,6 +1081,7 @@ export default function HabiWorkspace() {
         decision === "accept"
           ? "Elfogadtad a közös tervet."
           : "A tervet elutasítottad.",
+        "success",
       );
     } catch (error) {
       setNotice(messageFor(error));
@@ -1117,7 +1131,7 @@ export default function HabiWorkspace() {
       const body = await response.json().catch(() => null);
       if (!response.ok) throw new Error(body?.code ?? "FOLLOWUP_FAILED");
       setFollowupText("");
-      setNotice("Az utánkövetés rögzítve, a tervhez kapcsolva.");
+      setNotice("Az utánkövetés rögzítve, a tervhez kapcsolva.", "success");
     } catch (error) {
       setNotice(messageFor(error));
     } finally {
@@ -1231,11 +1245,6 @@ export default function HabiWorkspace() {
                 })}
               </select>
             </label>
-          )}
-          {notice && (
-            <p className={styles.signInAlert} role="alert">
-              {notice}
-            </p>
           )}
           {active || app.state === "admin" || app.state === "no-role" ? (
             <button
@@ -1564,7 +1573,16 @@ export default function HabiWorkspace() {
                 </p>
               )}
             {notice && (
-              <p className={styles.notice} role="status">
+              <p
+                className={`${styles.notice} ${
+                  noticeKind === "success"
+                    ? styles.noticeSuccess
+                    : noticeKind === "error"
+                      ? styles.noticeError
+                      : ""
+                }`}
+                role={noticeKind === "error" ? "alert" : "status"}
+              >
                 {notice}
               </p>
             )}

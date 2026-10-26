@@ -1,5 +1,12 @@
 # Habi — ellenőrzési napló
 
+## Mobil munkaterület-fejléc és műveleti visszajelzés · 2026-10-26
+
+- A fejléctördelés keskeny nézetben most külön sorba rendezi a szerepkör-váltót; szélesebb nézetben a cím, a szerepkör és a kilépés gomb külön rácsoszlopot kap. Így a fejléc elemei nem fedik egymást.
+- A sikeres műveleti üzenet korábban egyszerre jelent meg a fejléc piros hibaállapotában és az oldal kék állapotjelzésében. A fejlécből eltávolítottuk a másolatot; az oldal egyszer, szemantikai állapotával egyező színben jeleníti meg a sikert vagy hibát.
+- `npm run lint` — PASS, exit 0; `npm run typecheck` — PASS, exit 0; `npm test` — PASS, 115 pass / 0 fail / 1 skip (Atlas replica-set próba kihagyva, mert nem volt izolált URI); `npm run build` — PASS, exit 0; `git diff --check` — PASS, exit 0.
+- Production böngészős ellenőrzés a kiadás után még hátravan; éles SSO-sessiont ebben a munkamenetben nem használunk. Visszaállítás az előző Production deploymentre rollbackkel lehetséges; adatbázist ez a felületjavítás nem módosít.
+
 ## Szerepköri munkaterület és edzői felmérés éles kiadása · 2026-10-26
 
 - Commit: `c7c706a` (`Implement Habi role workspace and coach report flow`), `main`; a GitHubra sikeresen feltolva.
