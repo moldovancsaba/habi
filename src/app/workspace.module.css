@@ -619,6 +619,26 @@
   color: #60728d;
   line-height: 1.5;
 }
+.trendChart {
+  display: block;
+  width: 100%;
+  min-height: 72px;
+  overflow: visible;
+}
+.trendChart line {
+  stroke: #cbd7e8;
+  stroke-width: 2;
+}
+.trendChart .trendLine {
+  stroke: #3266df;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.trendChart circle {
+  fill: #3266df;
+  stroke: #fff;
+  stroke-width: 2;
+}
 .formGroup {
   padding: 18px;
   margin: 20px 0;

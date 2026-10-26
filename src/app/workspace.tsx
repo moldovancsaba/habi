@@ -11,6 +11,7 @@ import styles from "./workspace.module.css";
 import MetroTimeline, { ActorBadge, type TimelinePage } from "./metro-timeline";
 import CoachReportWorkspace from "./coach-report-workspace";
 import practices from "../lib/content/practices-v1.json";
+import journeyContent from "../lib/content/journeys-v1.json";
 
 type Role = "player" | "parent" | "coach";
 type OwnRole = {
@@ -61,6 +62,7 @@ type WorkspaceView =
   | "timeline"
   | "reports"
   | "tasks-feedback"
+  | "player-tools"
   | "assessments"
   | "knowledge";
 type ThreadSummary = {
@@ -263,6 +265,23 @@ export default function HabiWorkspace() {
     "helped" | "not_helped" | "unknown" | "adjust"
   >("unknown");
   const [practiceSearch, setPracticeSearch] = useState("");
+  const [playerGoalDraft, setPlayerGoalDraft] = useState("");
+  const [routineDraft, setRoutineDraft] = useState("");
+  const [practiceFeedback, setPracticeFeedback] = useState("");
+  const [monthlyReflection, setMonthlyReflection] = useState({
+    proud: "",
+    hard: "",
+    next: "",
+  });
+  const [trendPeriod, setTrendPeriod] = useState<14 | 28 | 42>(14);
+  const [clientNow, setClientNow] = useState<number | null>(null);
+  const [guidedSituationId, setGuidedSituationId] = useState("");
+  const [guidedAnswers, setGuidedAnswers] = useState<number[]>([]);
+  const [trustedAdultPrep, setTrustedAdultPrep] = useState({
+    person: "",
+    topic: "",
+    ask: "",
+  });
   const [requestedRole, setRequestedRole] = useState<Role>("player");
   const [requesterName, setRequesterName] = useState("");
   const [roleRequest, setRoleRequest] = useState<RoleRequest | null>(null);
@@ -270,14 +289,20 @@ export default function HabiWorkspace() {
   const [roleRequestBusy, setRoleRequestBusy] = useState(false);
 
   useEffect(() => {
+    setClientNow(Date.now());
+  }, []);
+
+  useEffect(() => {
     if (app.state !== "ready") return;
-    if (
-      new URLSearchParams(window.location.search).get("view") ===
-      "tasks-feedback"
-    ) {
-      setTab("tasks-feedback");
-    }
-  }, [app.state]);
+    const requestedView = new URLSearchParams(window.location.search).get(
+      "view",
+    );
+    if (requestedView === "tasks-feedback") setTab("tasks-feedback");
+    if (requestedView === "legacy")
+      setTab(
+        app.me.activeRole === "player" ? "player-tools" : "tasks-feedback",
+      );
+  }, [app]);
 
   useEffect(() => {
     if (app.state !== "no-role") return;
@@ -605,6 +630,20 @@ export default function HabiWorkspace() {
   const playerId = selectedPlayerId;
   const selectedPlayer =
     players.find((player) => player.id === playerId) ?? null;
+  const ownPlayerData = selectedPlayer
+    ? data.find((person) => person.id === selectedPlayer.id)
+    : null;
+  const trendCutoff =
+    clientNow === null
+      ? Number.POSITIVE_INFINITY
+      : clientNow - trendPeriod * 24 * 60 * 60 * 1000;
+  const trendCheckins = (ownPlayerData?.checkins ?? [])
+    .filter(
+      (item) => item.completedAt && Date.parse(item.completedAt) >= trendCutoff,
+    )
+    .sort((a, b) =>
+      String(a.completedAt ?? "").localeCompare(String(b.completedAt ?? "")),
+    );
   const questionSource = data[0]?.checkins[0] ?? null;
   const historyItems: HistoryItem[] = data
     .flatMap((person) => [
@@ -631,6 +670,7 @@ export default function HabiWorkspace() {
           { id: "checkin", label: "Állapotjelzés" },
           { id: "timeline", label: "Idővonal" },
           { id: "tasks-feedback", label: "Feladatok és visszajelzések" },
+          { id: "player-tools", label: "Gyakorlatok és saját célok" },
         ]
       : active?.activeRole === "parent"
         ? [
@@ -1026,6 +1066,156 @@ export default function HabiWorkspace() {
       setObservationFeedback({ kind: "error", message: messageFor(error) });
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function savePlayerDiary(text: string) {
+    if (active?.activeRole !== "player" || !playerId || busy) return;
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch(
+        `/api/v1/players/${encodeURIComponent(playerId)}/records`,
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "x-habi-csrf": active.csrfToken,
+            "Idempotency-Key": crypto.randomUUID(),
+          },
+          body: JSON.stringify({
+            kind: "diary",
+            text,
+            occurredAt: new Date().toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            sourceKind: "self",
+            sessionId: null,
+            metric: null,
+            answerCode: null,
+            context: {
+              setting: "training",
+              activity: null,
+              durationMinutes: null,
+            },
+          }),
+        },
+      );
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.code ?? "SAVE_FAILED");
+      await load();
+      return true;
+    } catch (error) {
+      setNotice(messageFor(error));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveOwnGoal(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const goal = playerGoalDraft.trim();
+    if (!goal || goal.length > 500) return;
+    if (await savePlayerDiary(`Saját cél: ${goal}`)) setPlayerGoalDraft("");
+  }
+
+  async function closeOwnGoal(goal: string) {
+    await savePlayerDiary(`Cél lezárva: ${goal}`);
+  }
+
+  async function saveRoutine(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const routine = routineDraft.trim();
+    if (!routine || routine.length > 300) return;
+    if (await savePlayerDiary(`Saját rutin: ${routine}`)) setRoutineDraft("");
+  }
+
+  async function logRoutine(routine: string) {
+    const today = new Date().toLocaleDateString("hu-HU");
+    const alreadyLogged = ownPlayerData?.records.some(
+      (record) =>
+        record.text === `Rutin elvégezve: ${routine}` &&
+        record.occurredAt &&
+        new Date(record.occurredAt).toLocaleDateString("hu-HU") === today,
+    );
+    if (!alreadyLogged) await savePlayerDiary(`Rutin elvégezve: ${routine}`);
+  }
+
+  async function savePracticeFeedback(
+    practice: { id: string; title: string },
+    rating: string,
+  ) {
+    const feedback = practiceFeedback.trim();
+    const text = `Gyakorlat: ${practice.title}\nVisszajelzés: ${rating}${feedback ? `\nSaját megjegyzés: ${feedback}` : ""}`;
+    if (await savePlayerDiary(text)) setPracticeFeedback("");
+  }
+
+  async function saveMonthlyReflection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const { proud, hard, next } = monthlyReflection;
+    if (![proud, hard, next].some((value) => value.trim())) return;
+    const month = new Date().toLocaleDateString("hu-HU", {
+      year: "numeric",
+      month: "long",
+    });
+    const text = `Havi visszatekintés · ${month}\nAmire büszke vagyok: ${proud.trim() || "Kihagyva"}\nAmi nehéz volt: ${hard.trim() || "Kihagyva"}\nAmire legközelebb figyelek: ${next.trim() || "Kihagyva"}`;
+    if (await savePlayerDiary(text))
+      setMonthlyReflection({ proud: "", hard: "", next: "" });
+  }
+
+  async function saveTrustedAdultPrep(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const { person, topic, ask } = trustedAdultPrep;
+    if (![person, topic, ask].some((value) => value.trim())) return;
+    const text = [
+      "Beszélgetésre készülök egy megbízható felnőttel",
+      person.trim() ? `Kivel: ${person.trim()}` : "Kivel: Kihagyva",
+      topic.trim()
+        ? `Miről szeretnék beszélni: ${topic.trim()}`
+        : "Miről szeretnék beszélni: Kihagyva",
+      ask.trim()
+        ? `Milyen segítséget kérnék: ${ask.trim()}`
+        : "Milyen segítséget kérnék: Kihagyva",
+    ].join("\n");
+    if (await savePlayerDiary(text))
+      setTrustedAdultPrep({ person: "", topic: "", ask: "" });
+  }
+
+  function startGuidedSituation(id: string) {
+    setGuidedSituationId(id);
+    setGuidedAnswers([]);
+  }
+
+  function answerGuidedSituation(answer: number) {
+    if (!Number.isInteger(answer) || guidedAnswers.length >= 3) return;
+    setGuidedAnswers((current) => [...current, answer]);
+  }
+
+  async function saveGuidedConversation() {
+    const situation = journeyContent.situations.find(
+      (item) => item.id === guidedSituationId,
+    );
+    if (!situation || guidedAnswers.length !== 3) return;
+    const finalChoices = [
+      situation.action,
+      journeyContent.chat.askChoice,
+      journeyContent.chat.reflectChoice,
+    ];
+    const dialogue = [
+      `Helyzet: ${situation.opening}`,
+      `${situation.question}\n${situation.options[guidedAnswers[0] ?? 0]}`,
+      `${journeyContent.chat.question}\n${journeyContent.chat.options[guidedAnswers[1] ?? 0]}`,
+      `${journeyContent.chat.lastQuestion}\n${finalChoices[guidedAnswers[2] ?? 0]}`,
+      `Habi válasza: ${guidedAnswers[2] === 0 ? situation.action : guidedAnswers[2] === 1 ? journeyContent.chat.goalAsk : journeyContent.labels.endReflect}`,
+    ].join("\n\n");
+    if (
+      await savePlayerDiary(
+        `Vezetett beszélgetés · ${situation.opening}\n${dialogue}`,
+      )
+    ) {
+      setGuidedSituationId("");
+      setGuidedAnswers([]);
     }
   }
 
@@ -2713,6 +2903,579 @@ export default function HabiWorkspace() {
                 />
               </section>
             )}
+            {tab === "player-tools" &&
+              active.activeRole === "player" &&
+              selectedPlayer && (
+                <section className={styles.panel}>
+                  <p className={styles.eyebrow}>SAJÁT SPORTOLÓI MUNKA</p>
+                  <h2>Gyakorlatok és saját célok</h2>
+                  <p className={styles.muted}>
+                    Válassz egy rövid, nem klinikai gyakorlatot, rögzítsd a
+                    tapasztalatodat, vagy tűzz ki egy saját célt. Minden mentés
+                    a naplódhoz kapcsolódik.
+                  </p>
+                  <div className={styles.formGroup}>
+                    <h3>Állapotjelzéseid alakulása</h3>
+                    <p className={styles.muted}>
+                      Csak a ténylegesen rögzített válaszokat mutatjuk. A
+                      grafikon nem tölt ki hiányzó napokat, és nem értékel
+                      téged.
+                    </p>
+                    <label className={styles.label} htmlFor="trend-period">
+                      Időszak
+                    </label>
+                    <select
+                      id="trend-period"
+                      value={trendPeriod}
+                      onChange={(event) =>
+                        setTrendPeriod(
+                          Number(event.target.value) as 14 | 28 | 42,
+                        )
+                      }
+                    >
+                      <option value={14}>14 nap</option>
+                      <option value={28}>28 nap</option>
+                      <option value={42}>42 nap</option>
+                    </select>
+                    {trendCheckins.length === 0 ? (
+                      <p className={styles.emptyState}>
+                        Ebben az időszakban még nincs megjeleníthető
+                        állapotjelzés.
+                      </p>
+                    ) : (
+                      <div className={styles.knowledgeList}>
+                        {metrics.map(([metric, label, options]) => {
+                          const points = trendCheckins
+                            .map((checkin, index) => ({
+                              date: checkin.completedAt ?? "",
+                              value: checkin.answerCodes?.find(
+                                (answer) => answer.metric === metric,
+                              )?.code,
+                              index,
+                            }))
+                            .filter(
+                              (point) =>
+                                Number.isInteger(point.value) &&
+                                point.value !== undefined,
+                            );
+                          return (
+                            <article className={styles.dataCard} key={metric}>
+                              <h4>{label}</h4>
+                              {points.length ? (
+                                <>
+                                  <svg
+                                    role="img"
+                                    aria-label={`${label}: ${points.length} rögzített válasz az elmúlt ${trendPeriod} napban`}
+                                    viewBox="0 0 700 86"
+                                    className={styles.trendChart}
+                                  >
+                                    <line x1="0" y1="72" x2="700" y2="72" />
+                                    {points.map((point, index) => {
+                                      const x =
+                                        points.length === 1
+                                          ? 350
+                                          : (index / (points.length - 1)) *
+                                              660 +
+                                            20;
+                                      const y = 12 + (point.value ?? 0) * 18;
+                                      return (
+                                        <g key={`${metric}-${point.date}`}>
+                                          {index > 0 && (
+                                            <line
+                                              className={styles.trendLine}
+                                              x1={
+                                                ((index - 1) /
+                                                  (points.length - 1)) *
+                                                  660 +
+                                                20
+                                              }
+                                              y1={
+                                                12 +
+                                                (points[index - 1]?.value ??
+                                                  0) *
+                                                  18
+                                              }
+                                              x2={x}
+                                              y2={y}
+                                            />
+                                          )}
+                                          <circle cx={x} cy={y} r="6" />
+                                        </g>
+                                      );
+                                    })}
+                                  </svg>
+                                  <p className={styles.muted}>
+                                    {points
+                                      .map((point) => {
+                                        const answer =
+                                          options[point.value ?? 0];
+                                        return `${new Date(point.date).toLocaleDateString("hu-HU", { month: "short", day: "numeric" })}: ${answer}`;
+                                      })
+                                      .join(" · ")}
+                                  </p>
+                                </>
+                              ) : (
+                                <p className={styles.muted}>
+                                  Ehhez a kérdéshez nincs rögzített válasz ebben
+                                  az időszakban.
+                                </p>
+                              )}
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.formGroup}>
+                    <h3>Beszéljünk egy konkrét helyzetről</h3>
+                    <p className={styles.muted}>
+                      A Habi vezeti ezt a rövid beszélgetést. A válaszaidból nem
+                      készít diagnózist; a beszélgetés végén te döntöd el, mit
+                      próbálsz ki.
+                    </p>
+                    {!guidedSituationId ? (
+                      <div className={styles.knowledgeList}>
+                        {journeyContent.situations.map((situation) => (
+                          <button
+                            className={styles.secondary}
+                            key={situation.id}
+                            type="button"
+                            onClick={() => startGuidedSituation(situation.id)}
+                          >
+                            {situation.opening}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      (() => {
+                        const situation = journeyContent.situations.find(
+                          (item) => item.id === guidedSituationId,
+                        );
+                        if (!situation) return null;
+                        const step = guidedAnswers.length;
+                        const choices = [
+                          situation.options,
+                          journeyContent.chat.options,
+                          [
+                            situation.action,
+                            journeyContent.chat.askChoice,
+                            journeyContent.chat.reflectChoice,
+                          ],
+                        ][step];
+                        const prompt = [
+                          situation.question,
+                          journeyContent.chat.question,
+                          journeyContent.chat.lastQuestion,
+                        ][step];
+                        return (
+                          <article className={styles.dataCard}>
+                            <h4>{situation.opening}</h4>
+                            {guidedAnswers.map((answer, index) => {
+                              const priorChoices = [
+                                situation.options,
+                                journeyContent.chat.options,
+                                [
+                                  situation.action,
+                                  journeyContent.chat.askChoice,
+                                  journeyContent.chat.reflectChoice,
+                                ],
+                              ][index];
+                              const priorPrompt = [
+                                situation.question,
+                                journeyContent.chat.question,
+                                journeyContent.chat.lastQuestion,
+                              ][index];
+                              return (
+                                <p key={priorPrompt}>
+                                  <strong>{priorPrompt}</strong>{" "}
+                                  {priorChoices[answer]}
+                                </p>
+                              );
+                            })}
+                            {choices && prompt ? (
+                              <>
+                                <h4>{prompt}</h4>
+                                <div className={styles.knowledgeList}>
+                                  {choices.map((choice, index) => (
+                                    <button
+                                      className={styles.secondary}
+                                      key={choice}
+                                      type="button"
+                                      onClick={() =>
+                                        answerGuidedSituation(index)
+                                      }
+                                    >
+                                      {choice}
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <h4>Habi válasza</h4>
+                                <p>
+                                  {guidedAnswers[2] === 0
+                                    ? situation.action
+                                    : guidedAnswers[2] === 1
+                                      ? journeyContent.chat.goalAsk
+                                      : journeyContent.labels.endReflect}
+                                </p>
+                                <div className={styles.actions}>
+                                  <button
+                                    className={styles.primary}
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      void saveGuidedConversation()
+                                    }
+                                  >
+                                    Beszélgetés mentése a naplóba
+                                  </button>
+                                  <button
+                                    className={styles.secondary}
+                                    type="button"
+                                    onClick={() => startGuidedSituation("")}
+                                  >
+                                    Beszélgetés elvetése
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </article>
+                        );
+                      })()
+                    )}
+                  </div>
+                  <form
+                    className={styles.formGroup}
+                    onSubmit={saveTrustedAdultPrep}
+                  >
+                    <h3>Beszélgetés előkészítése</h3>
+                    <p className={styles.muted}>
+                      Itt leírhatod, mit szeretnél elmondani egy általad
+                      választott, megbízható felnőttnek. Ez a jegyzet csak a
+                      naplódba kerül; Habi nem küldi el senkinek.
+                    </p>
+                    {(
+                      [
+                        ["person", "Kivel szeretnél beszélni?"],
+                        ["topic", "Mit szeretnél elmondani?"],
+                        ["ask", "Milyen segítség esne jól?"],
+                      ] as const
+                    ).map(([key, label]) => (
+                      <div key={key}>
+                        <label
+                          className={styles.label}
+                          htmlFor={`trusted-adult-${key}`}
+                        >
+                          {label}
+                        </label>
+                        <textarea
+                          id={`trusted-adult-${key}`}
+                          rows={2}
+                          maxLength={1000}
+                          value={trustedAdultPrep[key]}
+                          onChange={(event) =>
+                            setTrustedAdultPrep((current) => ({
+                              ...current,
+                              [key]: event.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    ))}
+                    <button
+                      className={styles.primary}
+                      type="submit"
+                      disabled={
+                        busy ||
+                        !Object.values(trustedAdultPrep).some((value) =>
+                          value.trim(),
+                        )
+                      }
+                    >
+                      Jegyzet mentése a naplóba
+                    </button>
+                  </form>
+                  <form className={styles.formGroup} onSubmit={saveOwnGoal}>
+                    <label className={styles.label} htmlFor="own-goal">
+                      Saját cél
+                    </label>
+                    <textarea
+                      id="own-goal"
+                      rows={2}
+                      maxLength={500}
+                      value={playerGoalDraft}
+                      onChange={(event) =>
+                        setPlayerGoalDraft(event.target.value)
+                      }
+                      placeholder="Például: edzés előtt elvégzem a bemelegítést."
+                    />
+                    <button
+                      className={styles.primary}
+                      type="submit"
+                      disabled={busy || !playerGoalDraft.trim()}
+                    >
+                      Cél mentése
+                    </button>
+                  </form>
+                  <div className={styles.taskList}>
+                    {ownPlayerData?.records
+                      .filter(
+                        (record) =>
+                          record.kind === "diary" &&
+                          record.text?.startsWith("Saját cél:"),
+                      )
+                      .map((record) => {
+                        const goal =
+                          record.text?.slice("Saját cél:".length).trim() ?? "";
+                        const closed = ownPlayerData.records.some(
+                          (item) => item.text === `Cél lezárva: ${goal}`,
+                        );
+                        return (
+                          <article className={styles.taskCard} key={record.id}>
+                            <p className={styles.eyebrow}>
+                              {closed ? "LEZÁRT SAJÁT CÉL" : "AKTÍV SAJÁT CÉL"}
+                            </p>
+                            <h3>{goal}</h3>
+                            <time dateTime={record.occurredAt}>
+                              Rögzítve:{" "}
+                              {record.occurredAt
+                                ? new Date(record.occurredAt).toLocaleString(
+                                    "hu-HU",
+                                    { dateStyle: "medium", timeStyle: "short" },
+                                  )
+                                : "—"}
+                            </time>
+                            {!closed && (
+                              <button
+                                className={styles.secondary}
+                                type="button"
+                                disabled={busy}
+                                onClick={() => void closeOwnGoal(goal)}
+                              >
+                                Ezt a célt lezárom
+                              </button>
+                            )}
+                          </article>
+                        );
+                      })}
+                  </div>
+                  <form className={styles.formGroup} onSubmit={saveRoutine}>
+                    <h3>Saját rutin</h3>
+                    <p className={styles.muted}>
+                      Rögzíthetsz egy egyszerű, általad választott rutint, és
+                      naponta feljegyezheted, ha kipróbáltad.
+                    </p>
+                    <label className={styles.label} htmlFor="own-routine">
+                      Mit szeretnél rendszeresen kipróbálni?
+                    </label>
+                    <input
+                      id="own-routine"
+                      maxLength={300}
+                      value={routineDraft}
+                      onChange={(event) => setRoutineDraft(event.target.value)}
+                    />
+                    <button
+                      className={styles.primary}
+                      type="submit"
+                      disabled={busy || !routineDraft.trim()}
+                    >
+                      Rutin mentése
+                    </button>
+                    <div className={styles.knowledgeList}>
+                      {ownPlayerData?.records
+                        .filter((record) =>
+                          record.text?.startsWith("Saját rutin:"),
+                        )
+                        .map((record) => {
+                          const routine =
+                            record.text?.slice("Saját rutin:".length).trim() ??
+                            "";
+                          const today = new Date().toLocaleDateString("hu-HU");
+                          const doneToday = ownPlayerData.records.some(
+                            (item) =>
+                              item.text === `Rutin elvégezve: ${routine}` &&
+                              item.occurredAt &&
+                              new Date(item.occurredAt).toLocaleDateString(
+                                "hu-HU",
+                              ) === today,
+                          );
+                          return (
+                            <article
+                              className={styles.dataCard}
+                              key={record.id}
+                            >
+                              <h4>{routine}</h4>
+                              <button
+                                className={styles.secondary}
+                                type="button"
+                                disabled={busy || doneToday}
+                                onClick={() => void logRoutine(routine)}
+                              >
+                                {doneToday
+                                  ? "Ma már feljegyezted"
+                                  : "Ma kipróbáltam"}
+                              </button>
+                            </article>
+                          );
+                        })}
+                    </div>
+                  </form>
+                  <form
+                    className={styles.formGroup}
+                    onSubmit={saveMonthlyReflection}
+                  >
+                    <h3>Havi visszatekintés</h3>
+                    <p className={styles.muted}>
+                      Gondold végig a hónapot. Bármelyik kérdést kihagyhatod; a
+                      válaszaid a naplódban maradnak.
+                    </p>
+                    {(
+                      [
+                        ["proud", "Mire vagy büszke ebben a hónapban?"],
+                        ["hard", "Mi volt nehéz?"],
+                        ["next", "Mire figyelnél a következő hónapban?"],
+                      ] as const
+                    ).map(([key, label]) => (
+                      <div key={key}>
+                        <label
+                          className={styles.label}
+                          htmlFor={`reflection-${key}`}
+                        >
+                          {label}
+                        </label>
+                        <textarea
+                          id={`reflection-${key}`}
+                          rows={2}
+                          maxLength={1000}
+                          value={monthlyReflection[key]}
+                          onChange={(event) =>
+                            setMonthlyReflection((current) => ({
+                              ...current,
+                              [key]: event.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    ))}
+                    <button
+                      className={styles.primary}
+                      type="submit"
+                      disabled={
+                        busy ||
+                        !Object.values(monthlyReflection).some((value) =>
+                          value.trim(),
+                        )
+                      }
+                    >
+                      Visszatekintés mentése
+                    </button>
+                  </form>
+                  <div className={styles.formGroup}>
+                    <h3>Korábbi visszatekintések</h3>
+                    {ownPlayerData?.records
+                      .filter((record) =>
+                        record.text?.startsWith("Havi visszatekintés ·"),
+                      )
+                      .map((record) => (
+                        <article className={styles.dataCard} key={record.id}>
+                          <p>{record.text}</p>
+                          <time dateTime={record.occurredAt}>
+                            {record.occurredAt
+                              ? new Date(record.occurredAt).toLocaleString(
+                                  "hu-HU",
+                                  { dateStyle: "medium", timeStyle: "short" },
+                                )
+                              : ""}
+                          </time>
+                        </article>
+                      ))}
+                  </div>
+                  <div className={styles.formGroup}>
+                    <h3>Rövid gyakorlatok</h3>
+                    <p className={styles.muted}>
+                      Ezek általános ötletek; bármelyiket kihagyhatod, és
+                      bármikor kérhetsz segítséget egy megbízható felnőttől.
+                    </p>
+                    <label className={styles.label} htmlFor="practice-feedback">
+                      Saját megjegyzés a gyakorlathoz (nem kötelező)
+                    </label>
+                    <textarea
+                      id="practice-feedback"
+                      rows={2}
+                      maxLength={1000}
+                      value={practiceFeedback}
+                      onChange={(event) =>
+                        setPracticeFeedback(event.target.value)
+                      }
+                    />
+                    <div className={styles.knowledgeList}>
+                      {(
+                        practices.items as Array<{
+                          id: string;
+                          title: string;
+                          what: string;
+                          how: string;
+                        }>
+                      ).map((practice) => (
+                        <details className={styles.dataCard} key={practice.id}>
+                          <summary>
+                            <strong>{practice.title}</strong>
+                            <span className={styles.practiceDescription}>
+                              {practice.what}
+                            </span>
+                          </summary>
+                          <p>{practice.how}</p>
+                          <div className={styles.actions}>
+                            {(
+                              [
+                                "Segített",
+                                "Részben segített",
+                                "Nem segített",
+                              ] as const
+                            ).map((rating) => (
+                              <button
+                                className={styles.secondary}
+                                type="button"
+                                key={rating}
+                                disabled={busy}
+                                onClick={() =>
+                                  void savePracticeFeedback(practice, rating)
+                                }
+                              >
+                                {rating}
+                              </button>
+                            ))}
+                          </div>
+                        </details>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={styles.formGroup}>
+                    <h3>Korábbi gyakorlataid</h3>
+                    {ownPlayerData?.records
+                      .filter(
+                        (record) =>
+                          record.kind === "diary" &&
+                          record.text?.startsWith("Gyakorlat:"),
+                      )
+                      .map((record) => (
+                        <article className={styles.dataCard} key={record.id}>
+                          <p>{record.text}</p>
+                          <time dateTime={record.occurredAt}>
+                            {record.occurredAt
+                              ? new Date(record.occurredAt).toLocaleString(
+                                  "hu-HU",
+                                  { dateStyle: "medium", timeStyle: "short" },
+                                )
+                              : ""}
+                          </time>
+                        </article>
+                      ))}
+                  </div>
+                </section>
+              )}
             {tab === "tasks-feedback" && selectedPlayer && (
               <section className={styles.panel}>
                 <p className={styles.eyebrow}>KÖZÖS MUNKA</p>

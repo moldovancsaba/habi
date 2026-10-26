@@ -780,3 +780,19 @@ The signed-in administrator landing page now displays the active player, parent,
 - Az új `013-role-requests` migráció az admin „Adatbázis frissítése” műveletén keresztül hozza létre a kérelmi kollekciót/sémát/indexet és bővíti a meghívó validátorát. Ezt a production DB-migrációt még nem futtattuk.
 - Helyi ellenőrzés, Habi repository, 2026-10-26: `npm run lint` — PASS, exit 0; `npm test` — PASS, 117 passed / 0 failed / 1 skipped (izolált Atlas replica-set URI nélkül); `npm run typecheck` — PASS, exit 0; `npm run build` — PASS, exit 0. `npm run test:workflow:local` — BLOCKED, exit 1, mert a környezet `LOCAL_TEST_MIGRATION_ONLY` értékkel tiltja a workflow-szkriptet; adatbázis-reset nem történt. Hosted SSO, production DB-migráció és böngészős vizuális próba nincs igazolva.
 - Visszaállítás: a kód visszaállítható és a Vercel korábbi deploymentje aktiválható. A 013-as migráció előrefelé kompatibilis; alkalmazás rollback esetén az új kollekció és index érintetlenül marad, kézi adat-visszaírás nem szükséges.
+
+## Native player legacy workflows · 2026-10-26
+
+The signed-in player workspace now exposes the five versioned legacy practices, durable practice feedback, player-owned goals with closure, simple routines with once-per-local-day completion, the three-prompt monthly reflection, four deterministic authored situation conversations, a private trusted-adult preparation note, and a 14/28/42-day view of actual completed check-in answers. The legacy redirect now selects these native features for a player; parent/coach roles land in native task feedback. The player entries use the existing SSO-authorized diary record endpoint and appear in the same player history. No old browser-owned data is imported.
+
+This is a functional migration slice, not complete legacy parity. Durable records are diary entries rather than independent practice/goal/reflection domain entities. Goal editing/pause/review history, continued drafts, old day-by-day archive, old text trend narrative, reminders/settings, HABI2, full daily-context guided support, and the pain/safety journey remain unimplemented. Do not describe those as delivered.
+
+| Check | Result | Environment |
+| --- | --- | --- |
+| `npm run typecheck` | PASS, exit 0 | Local Habi checkout |
+| `npm run lint` | PASS, exit 0 | Local Habi checkout; Biome, 187 files |
+| `npm test` | PASS, 117 passed, 0 failed, 1 Atlas-only integration test skipped | Local Habi checkout; no isolated replica-set URI |
+| `npm run build` | PASS, exit 0 | Local Habi checkout; Next.js production build |
+| `git diff --check` | Pending release gate | Local Habi checkout |
+| Authenticated browser interaction on production | Not yet verified | Requires the owner's active SSO session |
+| Production deployment | Not performed for this slice | Keep current production until release gate completes |

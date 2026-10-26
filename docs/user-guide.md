@@ -42,7 +42,7 @@ Az edző a **Felmérések** résznél PDF-et tölthet fel, vagy az eredeti dokum
 
 ## Korábbi Habi-funkciók migrációja
 
-A `/legacy` átmeneti útvonal a natív **Feladatok és visszajelzések** nézetre irányít át; nem nyitja meg a régi demófelületet. A natív funkció Habi-szerepköröket és tartós API-kat használ. A célok, havi visszatekintés, trendek, fennmaradó gyakorlatok, emlékeztetők és a nyilvántartásban még hiányzó tételek továbbra is nyitott migrációs munka. Az igazolt állapotot a [funkciómigrációs nyilvántartás](legacy-feature-migration.md) rögzíti.
+A `/legacy` átmeneti útvonal a bejelentkezett szerepköröd natív Habi-funkciójához irányít: játékosként a saját gyakorlatokhoz, célokhoz, rutinokhoz, havi visszatekintéshez, trendekhez és vezetett beszélgetésekhez; más szerepkörben a közös feladatokhoz és visszajelzésekhez. Nem nyit meg demóoldalt, és a régi böngészőadatokat nem importálja. A régi cél-felülvizsgálati ciklus, fájdalomhoz kapcsolódó biztonsági út, napi kontextus és folytatható piszkozatok, beállítások/emlékeztetők, HABI2 és a napokra bontott teljes archívum még migrálandó. Az igazolt állapotot a [funkciómigrációs nyilvántartás](legacy-feature-migration.md) rögzíti.
 
 ## Feladatok, visszajelzések és kérdőíveredmények
 

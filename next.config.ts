@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/legacy",
-        destination: "/?view=tasks-feedback",
+        destination: "/?view=legacy",
         permanent: false,
       },
     ];
