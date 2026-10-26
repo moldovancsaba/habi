@@ -615,3 +615,11 @@ The player name is optional, additive data. Migration 012 updates the strict pla
 | Authenticated player save / browser visual review at mobile and desktop widths | Not verified in this change | Requires an authenticated Habi account and browser review |
 
 The build emitted two `player.list` `INTERNAL_ERROR` log entries while statically generating pages, although it completed successfully and included `/api/v1/players` as a dynamic route. This is not evidence of a successful live roster request and needs runtime verification after deployment.
+
+| Production check | Result | Environment |
+| --- | --- | --- |
+| Deployment `dpl_142xeVFejXbDh1wms96D7F8vvTjT` | READY; aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com` | Vercel project `narimato/habi`, Production |
+| `GET /`, `/admin`, `/invite/claim`, `/api/health`, `/api/ready` | PASS, HTTP 200 | `https://habigoal.com` |
+| Anonymous `GET /api/v1/players` | PASS, HTTP 401 | Expected authentication boundary |
+| Production signed-out home and admin gate | Rendered in browser; both show the updated Habi presentation and sign-in path | Desktop browser, unauthenticated |
+| Authenticated roster, event graph and save flow | Not verified | Requires an authorized Habi role session; anonymous checks cannot establish it |
