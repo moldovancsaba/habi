@@ -636,4 +636,7 @@ The player-list `GET` route now explicitly uses request-time headers. Before thi
 | `npm run typecheck` | PASS, exit 0 | Local |
 | `npm run build` | PASS, exit 0; includes `/api/v1/me/scope`; no `player.list` error logs | Local production build |
 | `git diff --check` | PASS, exit 0 | Local |
+| Production deployment `dpl_21BGsq415UboqUcdmnqiCGDnAZ2L` | READY; aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`; commit `dc52ef0` | Vercel project `narimato/habi`, Production |
+| `GET /`, `/admin`, `/api/health`, `/api/ready` | PASS, HTTP 200 | `https://habigoal.com` |
+| Anonymous `GET /api/v1/me/scope` | PASS, HTTP 405; route is POST-only | `https://habigoal.com` |
 | Authenticated switch among multiple memberships | Not yet verified | Requires an identity with at least two active memberships |
