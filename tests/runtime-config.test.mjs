@@ -62,6 +62,52 @@ test("an unconfigured Vercel Preview can render the disabled landing page", () =
   );
 });
 
+test("allows the isolated legacy-browser MVP only against its fixed hosted database", () => {
+  const preview = {
+    VERCEL_ENV: "preview",
+    HG_MVP_MODE: "legacy-browser",
+    HG_APP_ORIGIN: "https://habi-git-codex-habi-ground-up-narimato.vercel.app",
+    HG_ATLAS_URI: "mongodb+srv://example.invalid/db",
+    HG_ATLAS_DATABASE: "habi_preview",
+    HG_EXTERNAL_ENABLED: "false",
+    HG_SYNTHETIC_DATA_ONLY: "false",
+  };
+  const production = {
+    ...preview,
+    VERCEL_ENV: "production",
+    HG_APP_ORIGIN: "https://habi.doneisbetter.com",
+    HG_ATLAS_DATABASE: "habi",
+  };
+
+  assert.doesNotThrow(() => validateRuntimeStartup(preview));
+  assert.doesNotThrow(() => validateRuntimeStartup(production));
+  assert.throws(
+    () =>
+      validateRuntimeStartup({
+        ...production,
+        HG_ATLAS_DATABASE: "habi_preview",
+      }),
+    /configuration is invalid/,
+  );
+  assert.throws(
+    () =>
+      validateRuntimeStartup({ ...production, HG_EXTERNAL_ENABLED: "true" }),
+    /configuration is invalid/,
+  );
+  assert.throws(
+    () =>
+      validateRuntimeStartup({
+        ...production,
+        HG_APP_ORIGIN: "http://habi.doneisbetter.com",
+      }),
+    /configuration is invalid/,
+  );
+  assert.throws(
+    () => validateRuntimeStartup({ ...production, VERCEL_ENV: "development" }),
+    /hosted-only/,
+  );
+});
+
 test("allows an explicitly gated localhost synthetic workflow test database", () => {
   const config = validateRuntimeConfig({
     ...local,

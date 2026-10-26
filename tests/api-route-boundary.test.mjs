@@ -37,6 +37,42 @@ test("unconfigured Vercel Preview blocks product APIs but keeps health probes", 
   assert.equal(health.status, 200);
 });
 
+test("legacy-browser MVP permits only health, readiness, and legacy storage", async () => {
+  const env = { VERCEL_ENV: "production", HG_MVP_MODE: "legacy-browser" };
+  for (const operation of ["api.players.list", "api.v1.me", "api.auth.login"]) {
+    const blocked = await runApiRoute(
+      new Request("https://habi.doneisbetter.com/api/blocked"),
+      operation,
+      async () =>
+        assert.fail("new multi-role APIs must remain closed in MVP mode"),
+      () => {},
+      env,
+    );
+    assert.equal(blocked.status, 503);
+    assert.equal((await blocked.json()).code, "DEPENDENCY_UNAVAILABLE");
+  }
+
+  for (const operation of ["api.health", "api.ready", "api.legacy.storage"]) {
+    const allowed = await runApiRoute(
+      new Request("https://habi.doneisbetter.com/api/allowed"),
+      operation,
+      async () => Response.json({ ok: true }),
+      () => assert.fail("allowed route should not log"),
+      env,
+    );
+    assert.equal(allowed.status, 200);
+  }
+
+  const previewStorage = await runApiRoute(
+    new Request("https://habi-preview.example/api/app"),
+    "api.legacy.storage",
+    async () => Response.json({ ok: true }),
+    () => assert.fail("configured preview legacy storage should not log"),
+    { VERCEL_ENV: "preview", HG_MVP_MODE: "legacy-browser" },
+  );
+  assert.equal(previewStorage.status, 200);
+});
+
 test("maps known errors and emits content-free structured diagnostics", async () => {
   const lines = [];
   const response = await runApiRoute(

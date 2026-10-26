@@ -42,7 +42,11 @@ export async function runApiRoute(
   if (
     env.VERCEL_ENV === "preview" &&
     !env.HG_ENVIRONMENT &&
-    !["api.health", "api.ready"].includes(safeOperation)
+    !["api.health", "api.ready"].includes(safeOperation) &&
+    !(
+      env.HG_MVP_MODE === "legacy-browser" &&
+      safeOperation === "api.legacy.storage"
+    )
   ) {
     const response = toHabiErrorResponse(
       new HabiApiError("DEPENDENCY_UNAVAILABLE"),
@@ -62,6 +66,19 @@ export async function runApiRoute(
     } catch {
       // Logging failure must not replace the fail-closed response.
     }
+    return response;
+  }
+
+  if (
+    env.HG_MVP_MODE === "legacy-browser" &&
+    !["api.health", "api.ready", "api.legacy.storage"].includes(safeOperation)
+  ) {
+    const response = toHabiErrorResponse(
+      new HabiApiError("DEPENDENCY_UNAVAILABLE"),
+      { requestId },
+    );
+    response.headers.set("X-Request-ID", requestId);
+    response.headers.set("Cache-Control", "no-store");
     return response;
   }
 

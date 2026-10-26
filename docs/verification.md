@@ -32,9 +32,27 @@ A T-HG-130 és T-HG-131 alatti további régi bejegyzések az akkori állapot t�
 
 ### MVP-adatkompatibilitás és élő állapot · 2026-10-26
 
-- A termelési MongoDB-cél átállítása csak Vercel környezeti változó módosítása volt; a jelenlegi élő alkalmazás nem változott. `https://habi.doneisbetter.com` továbbra is a régi Habi alkalmazást szolgálja ki.
-- Az új alkalmazás `habi` adatbázisra mutat, de a legacy `habi_states` böngésző-tulajdonú payloadjának és a `habi_content` katalógusnak nincs még adaptere az új tenant/actor/workflow sémához.
-- Production indítás fail-closed, amíg a hosted hitelesítés és kötelező környezeti konfiguráció nincs beállítva. A Production domainre ezért az új alkalmazás nem lett telepítve.
+- A termelési MongoDB-cél `habi`; az új MVP browser-owner compatibility route kódja be van állítva, de a legutóbbi main/production release váltás még nem történt meg. `https://habi.doneisbetter.com` a branch Preview ellenőrzéséig továbbra is a régi Production deploymentet szolgálja ki.
+- A compatibility route az eredeti `habi_states` és `habi_content` adatokat használja; nincs tenant/actor import vagy Production migration.
+- A production SSO nélküli MVP indulását a validált `HG_MVP_MODE=legacy-browser` konfiguráció engedélyezi. Az új több-szereplős API-k továbbra is fail-closed; csak a régi browser-owned adatút és readiness engedélyezett.
+
+## Browser-owner MVP integráció · 2026-10-26
+
+**Felhasználói folyamat:** a `habi.doneisbetter.com/` belépő az eredeti Habi kliensre vezet → a kliens `GET /api/app` hívással betölti a katalógust és az adott HttpOnly browser-cookie hash-éhez tartozó állapotot → ugyanazon az API-n, revision-feltétellel ment → újratöltéskor ugyanaz a cookie ugyanazt az állapotot olvassa vissza.
+
+| Próba | Eredmény | Környezet |
+| --- | --- | --- |
+| `npm test` | PASS, 90/91; 1 meglévő Atlas-integrációs próba kihagyva | Unit, domain, API boundary, browser-owner state, config és legacy static asset checks. Nincs hosted user data. |
+| `npm run lint` | PASS, 146 fájl, hiba nélkül | Habi repo |
+| `npm run typecheck` | PASS, exit 0 | Habi repo |
+| `npm run build` | PASS, Next.js 16.4.3 | Local production build |
+| Browser → API → Mongo round-trip | PASS: root 307 `/legacy/index.html`-re; static UI 200; GET katalógust és session cookie-t adott; PUT után GET ugyanazt a revision-1 payloadot olvasta vissza | Helyi `habi_legacy_mvp_test` DB a localhost Mongo replica seten; csak szintetikus tesztpayload |
+| Stale revision write | PASS, HTTP 409 | Ugyanaz a lokális tesztadatbázis |
+| Cross-origin write | PASS, HTTP 403 | `Origin: https://attacker.example`, az állapotot nem írta át |
+| Multi-role API | PASS, localhost válasz 401; hosted MVP boundary teszt 503-at igazol | Teszt identity nincs; Production/Preview role-végpontok tiltva maradnak |
+| Mintatörténet-generálás | PASS, eltávolítva az automatikus `seedSampleHistory()` hívás és függvény | MVP nem gyárt hiányzó napi rekordot |
+
+Az új Habi Production környezeti változói (`HG_MVP_MODE=legacy-browser`, origin, külső AI tiltás, synthetic=false, Atlas database=`habi`) és a Preview megfelelője (`habi_preview`) be vannak állítva, de az aktuális deployment még nem tartalmazza az MVP-integrációs commitot. A `habi.doneisbetter.com` jelenleg továbbra is az előző production release-t szolgálja ki. A cutover előtt az új Preview deploymenten újra végig kell futtatni a hosted read/write/reload és cross-origin denied próbát; utána mehet a felhasználó által kért `main`/Production release.
 
 ## T-HG-131 · Nem-SSO szerepköri munkafolyamat · történeti induló állapot · 2026-10-25
 

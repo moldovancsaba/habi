@@ -2,6 +2,8 @@
 # Cloud API. Production/test requires all cloud secrets to be supplied out of band.
 HG_APP_ORIGIN=
 HG_ENVIRONMENT=
+# Hosted one-browser MVP, intentionally separate from the later SSO role workflow.
+HG_MVP_MODE=
 HG_ATLAS_URI=
 HG_ATLAS_DATABASE=
 HG_SSO_ISSUER=
