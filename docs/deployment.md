@@ -2,7 +2,7 @@
 
 ## Aktuális Production állapot · 2026-10-26
 
-Production MVP: `https://habi.doneisbetter.com`. A fő útvonal új, interaktív Habi-felületet szolgál ki: napi állapotjelzés, mentett napló és öt verziózott gyakorlat. A felület a `/api/app` browser-owner API-t használja; a meglévő `habi_states` adatok, cookie-hash tulajdonos és revision alapú írás változatlan, migráció nem történt. A szerepkörös API-k továbbra is fail-closed állapotúak, SSO és másik eszközök közötti hozzáférés nincs bekapcsolva. A konkrét release/ellenőrzési bizonyítékot a [verification napló](verification.md) tartalmazza.
+Production MVP: `https://habi.doneisbetter.com`, Vercel deployment `dpl_2MSrz9Vt9pdx1VaTHeJqrWeuHGG8` (`READY`, forrás `b5cf47d`). A fő útvonal új, interaktív Habi-felületet szolgál ki: napi állapotjelzés, mentett napló és öt verziózott gyakorlat. A felület a `/api/app` browser-owner API-t használja; a meglévő `habi_states` adatok, cookie-hash tulajdonos és revision alapú írás változatlan, migráció nem történt. A szerepkörös API-k továbbra is fail-closed állapotúak, SSO és másik eszközök közötti hozzáférés nincs bekapcsolva. A konkrét release/ellenőrzési bizonyítékot a [verification napló](verification.md) tartalmazza.
 
 ## Vercel
 

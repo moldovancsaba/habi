@@ -6,7 +6,10 @@
 - Helyi szintetikus végponttól végpontig próba: Chrome-ban a hét kérdés megválaszolása után `GET /api/app` → `PUT /api/app` mentés sikeres; a Napló mutatta mind a hét rögzített választ; frissítés után az aznapi bejegyzés újra betöltődött. A próba a már futó, izolált localhost `habiTestRs` teszt replica setben mentett; Production adatot nem írt.
 - `npm test`: PASS, 90/91; 1 meglévő Atlas-integrációs próba kihagyva, `0` fail. `npm run lint`: PASS, Biome 148 fájl. `npm run typecheck`: PASS. `npm run build`: PASS, Next.js 16.4.3. `git diff --check`: PASS.
 - Korlátok: másik eszköz/böngésző nem kap hozzáférést SSO nélkül; player/parent/coach workflow, Mac AI-worker, teljes régi HABI funkciókészlet és személyes pilot nincs ebben az MVP-ben. A kliens megmutatja és megőrzi a böngészői dirty állapotot; szinkronütközésnél frissítést kér, nem próbálja automatikusan felülírni a szerver rekordját.
-- Production kiadás/élő böngészőellenőrzés: **folyamatban**. A `main` push és Vercel deployment után az alábbi élő bizonyítékot kell frissíteni.
+- Production: `dpl_2MSrz9Vt9pdx1VaTHeJqrWeuHGG8` (`READY`, `https://habi-7ykv8yrad-narimato.vercel.app`) és a Git-integrációs build `dpl_FViqWRELAafghhU2PamK7kSmncL3` (`READY`), mindkettő a `b5cf47d` forrásból; a `habi.doneisbetter.com` alias aktív.
+- Élő ellenőrzés: `GET /` → 200, UTF-8 HTML; `GET /api/health` → 200. A Chrome-ban hidratálás után az új „Ma / Napló / Gyakorlatok” felület jelent meg; `/api/app` betöltése sikeres, a teszt Chrome-profilban 0 korábbi bejegyzés látszik. Ez a profil nem tartalmazta a tulajdonos korábbi böngésző-cookie-ját, ezért a másik eszköz/böngésző adatai nem kerültek elő. Production rekordot nem írtunk.
+- Vercel build: Next.js 16.4.3 sikeresen fordította a kliensfelületet és az API route-okat; `npm run lint`, `npm run typecheck`, `npm run build`, `npm test` és `git diff --check` mind PASS. A teszt-suite 90/91 pass, 0 fail; az egy kihagyás a meglévő Atlas-integrációs próba izolált Mongo URI nélkül.
+- Visszaállítás: a Vercel korábbi Production deploymentjének visszaállítása. A browser-owner adatmodell nem változott, migráció nem futott.
 
 ## Élő MVP ellenőrzés · 2026-10-26
 
