@@ -28,7 +28,7 @@ Adminisztrátorként a **Szerepkör kérése a saját fiókomhoz** gombbal indí
 
 ## Szerepkörök és játékosazonosítás
 
-Az admin új játékosmeghívó létrehozásakor megadja a játékos nevét. A szülői meghívó egy névvel és teljes azonosítóval megjelenített játékoshoz kapcsolódik. Az edzői munkaterületen a kiválasztott játékos neve és teljes Habi-azonosítója mindig látható; a játékos saját munkaterülete is megmutatja a hozzá rendelt nevet és azonosítót. A korábban név nélkül létrejött játékosok azonosítója megmarad, a rendszer nem következtet nevet az SSO e-mail-címéből.
+Az admin új játékosmeghívó létrehozásakor megadja a játékos nevét. Amikor egy játékos saját, ellenőrzött DoneIsBetter SSO-fiókkal jelentkezik be, a Habi a szolgáltatótól kapott nevet használja a saját játékosprofil kitöltésére, ha a profil neve még üres. Ez nem írja át a szülőhöz kapcsolt gyermek profilját. Már bejelentkezett munkamenetben a név frissítéséhez jelentkezz ki, majd lépj be újra. A munkaterület szerepválasztója és profilkártyája olvasható nevet vagy szerepcímkét mutat; belső Habi-azonosító nem jelenik meg.
 
 ## Előzmények és metróvonal
 

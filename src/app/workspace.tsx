@@ -579,9 +579,7 @@ export default function HabiWorkspace() {
                 {active.memberships.map((membership) => {
                   const playerLabel = membership.playerDisplayName
                     ? ` · ${membership.playerDisplayName}`
-                    : membership.playerId
-                      ? ` · ${membership.playerId}`
-                      : "";
+                    : "";
                   return (
                     <option key={membership.id} value={membership.id}>
                       {roleLabel(membership.role)}
@@ -817,33 +815,22 @@ export default function HabiWorkspace() {
                 Előzmények
               </button>
             </nav>
-            <section className={`${styles.heroCompact} information-block`}>
-              <span className="route-motif" aria-hidden="true">
-                <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
-                  <path d="M8 8v32h32" />
-                  <circle cx="8" cy="8" />
-                  <circle cx="8" cy="24" />
-                  <circle cx="8" cy="40" />
-                  <circle cx="24" cy="40" />
-                  <circle cx="40" cy="40" />
-                </svg>
-              </span>
-              <span className={`role-badge actor-${active.activeRole}`}>
-                <span className="ui-icon" aria-hidden="true">
-                  <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24">
-                    <path
-                      d={
-                        active.activeRole === "player"
-                          ? "M12 12a4 4 0 1 0 0-8a4 4 0 1 0 0 8M5 21v-3a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v3"
-                          : active.activeRole === "parent"
-                            ? "M21 11a9 8 0 0 1-13 7l-5 3 1-6A8 8 0 1 1 21 11"
-                            : "M8 5H5v16h14V5h-3M9 3h6v5H9ZM8 12h8M8 16h5"
-                      }
-                    />
+            <section className={styles.heroCompact}>
+              <div className={styles.roleHeading}>
+                <span className="route-motif" aria-hidden="true">
+                  <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
+                    <path d="M8 8v32h32" />
+                    <circle cx="8" cy="8" />
+                    <circle cx="8" cy="24" />
+                    <circle cx="8" cy="40" />
+                    <circle cx="24" cy="40" />
+                    <circle cx="40" cy="40" />
                   </svg>
                 </span>
-                {roleLabel(active.activeRole)}
-              </span>
+                <span className={`role-badge actor-${active.activeRole}`}>
+                  {roleLabel(active.activeRole)}
+                </span>
+              </div>
               <p className={styles.eyebrow}>
                 {roleLabel(active.activeRole).toLocaleUpperCase("hu-HU")}{" "}
                 MUNKATERÜLET
@@ -863,19 +850,27 @@ export default function HabiWorkspace() {
             </section>
             {selectedPlayer && (
               <section
-                className={`${styles.playerContext} information-block`}
+                className={styles.playerContext}
                 aria-label="Kiválasztott játékos"
               >
-                <span className="route-motif" aria-hidden="true">
-                  <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
-                    <path d="M8 8v32h32" />
-                    <circle cx="8" cy="8" />
-                    <circle cx="8" cy="40" />
-                    <circle cx="24" cy="40" />
-                    <circle cx="40" cy="40" />
-                  </svg>
-                </span>
-                <span className="role-badge actor-player">Játékos profil</span>
+                <div className={styles.playerContextHeading}>
+                  <span className="route-motif" aria-hidden="true">
+                    <svg
+                      aria-hidden="true"
+                      focusable="false"
+                      viewBox="0 0 48 48"
+                    >
+                      <path d="M8 8v32h32" />
+                      <circle cx="8" cy="8" />
+                      <circle cx="8" cy="40" />
+                      <circle cx="24" cy="40" />
+                      <circle cx="40" cy="40" />
+                    </svg>
+                  </span>
+                  <span className="role-badge actor-player">
+                    Játékos profil
+                  </span>
+                </div>
                 {active.activeRole !== "player" && players.length > 1 && (
                   <>
                     <label htmlFor="active-player">Játékos</label>
@@ -891,19 +886,18 @@ export default function HabiWorkspace() {
                     >
                       {players.map((player) => (
                         <option key={player.id} value={player.id}>
-                          {player.displayName ?? "Név nincs megadva"} ·{" "}
-                          {player.id.slice(0, 8)}
+                          {player.displayName ?? "Kapcsolt játékos"}
                         </option>
                       ))}
                     </select>
                   </>
                 )}
                 <strong>
-                  {selectedPlayer.displayName ?? "Név nincs megadva"}
+                  {selectedPlayer.displayName ??
+                    (active.activeRole === "player"
+                      ? "Saját sportolói napló"
+                      : "Kapcsolt játékos")}
                 </strong>
-                <span className={styles.playerId}>
-                  Játékosazonosító: {selectedPlayer.id}
-                </span>
               </section>
             )}
             {!selectedPlayer &&
@@ -1085,7 +1079,10 @@ export default function HabiWorkspace() {
                   page={timeline}
                   records={historyItems}
                   playerName={
-                    selectedPlayer?.displayName ?? "Név nincs megadva"
+                    selectedPlayer?.displayName ??
+                    (active.activeRole === "player"
+                      ? "Saját sportolói napló"
+                      : "Kapcsolt játékos")
                   }
                   playerId={playerId}
                   onLoadMore={() => void loadOlderTimeline()}

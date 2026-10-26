@@ -657,6 +657,19 @@ The production admin landing showed the user's memberships as labels, without an
 | Anonymous valid-shaped `POST /api/identity/activate-role` | PASS, HTTP 401 | Expected SSO authentication boundary |
 | Authenticated role activation and workspace entry | Not yet verified | Requires the owner's authenticated DoneIsBetter session |
 
+## T-HG-145 · Use verified SSO name and keep role/profile UI readable · 2026-10-26
+
+The OIDC callback previously verified the SSO `userinfo.sub` but discarded the verified `name`; the player workspace consequently rendered “Név nincs megadva” and exposed internal player IDs in the selector and profile. The callback now prefers the verified userinfo name, falls back to the verified ID-token `name` claim, and fills only a blank player profile owned by that same Habi actor. It does not rename a parent-linked child and it does not overwrite an existing player display name. A subsequent SSO login is required to populate an already-existing blank profile. The UI shows readable role/player labels without database IDs. The metro route marker is now laid out inline with its role label instead of absolutely overlapping compact panels.
+
+| Check | Result | Environment |
+| --- | --- | --- |
+| `node --test tests/browser-sso-session.test.mjs` | PASS, 6 tests; includes verified-name sync and revision increment | Local |
+| `npm run lint` | PASS, 180 files | Local |
+| `npm run typecheck` | PASS | Local |
+| `npm run build` | PASS; Next.js production build | Local |
+| `git diff --check` | PASS | Local |
+| Production role/profile browser check | Pending | Requires the owner's authenticated browser session and a fresh SSO login |
+
 ## T-HG-143 · Show own roles and request a self-invitation · 2026-10-26
 
 The signed-in administrator landing page now displays the active player, parent, and coach memberships attached to the verified SSO identity. The admin page also shows those roles and offers a self-invitation form for a missing role. It uses the existing admin-only invitation route; the new membership is not active until the administrator opens and accepts the single-use invite while signed in with the same verified identity. Parent invitations require selecting an existing player. Player invitations create a player profile using the name entered. An already-active identical role/scope is disabled.

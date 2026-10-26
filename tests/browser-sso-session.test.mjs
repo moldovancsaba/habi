@@ -25,6 +25,9 @@ function memoryCollection() {
     Object.entries(filter).every(([k, v]) => {
       if (v && typeof v === "object" && "$gt" in v) return doc[k] > v.$gt;
       if (v && typeof v === "object" && "$ne" in v) return doc[k] !== v.$ne;
+      if (v && typeof v === "object" && "$type" in v)
+        return typeof doc[k] === v.$type;
+      if (v === null) return doc[k] == null;
       return doc[k] === v;
     });
   return {
@@ -52,6 +55,9 @@ function memoryCollection() {
       const found = docs.find((doc) => matches(doc, filter));
       if (!found) return { matchedCount: 0, modifiedCount: 0 };
       Object.assign(found, update.$set);
+      for (const [key, amount] of Object.entries(update.$inc ?? {})) {
+        found[key] = (found[key] ?? 0) + amount;
+      }
       return { matchedCount: 1, modifiedCount: 1 };
     },
     async findOneAndUpdate(filter, update) {
@@ -268,6 +274,71 @@ test("SSO callback creates a clean identity owner without importing browser-owne
     "refreshToken" in db.collection("habi_sso_owner_sessions").docs[0],
     false,
   );
+});
+
+test("SSO callback fills a blank self-player name from verified userinfo", async () => {
+  const db = memoryDb();
+  const now = new Date("2026-10-26T10:00:00.000Z");
+  const binding = "b".repeat(43);
+  const transaction = createLoginTransaction({ returnTo: "/", binding, now });
+  db.collection("auth_transactions").docs.push(
+    structuredClone(transaction.document),
+  );
+  db.collection("identities").docs.push({
+    issuer: "https://sso.example",
+    subject: "owner-subject",
+    actorId: "owner-actor",
+  });
+  db.collection("memberships").docs.push({
+    actorId: "owner-actor",
+    tenantId: "habi",
+    playerId: "owner-player",
+    role: "player",
+    status: "active",
+  });
+  db.collection("players").docs.push({
+    id: "owner-player",
+    tenantId: "habi",
+    actorId: "owner-actor",
+    revision: 2,
+  });
+  const handler = createSsoBrowserCallbackHandler({
+    db,
+    config: {
+      issuer: "https://sso.example",
+      clientId: "habi-client",
+      clientSecret: "secret-for-test-only",
+      redirectUri: "https://habigoal.com/api/oauth/callback",
+    },
+    hmacKey: key,
+    now: () => now,
+    oidc: {
+      loadOidcDiscovery: async () => ({ issuer: "https://sso.example" }),
+      exchangeAuthorizationCode: async () => ({
+        idToken: "opaque-test-token",
+        accessToken: "access-test-token",
+      }),
+      fetchSigningKeys: async () => [],
+      verifyIdTokenWithKeyRefresh: async () => ({
+        issuer: "https://sso.example",
+        subject: "owner-subject",
+      }),
+      fetchSsoUserinfo: async () => ({
+        subject: "owner-subject",
+        name: "  Moldován   Csaba  ",
+      }),
+      fetchAppPermission: async () => ({ status: "approved", role: "admin" }),
+    },
+  });
+  const response = await handler(
+    new Request(
+      `https://habigoal.com/api/oauth/callback?code=auth-code&state=${transaction.state}`,
+      { headers: { Cookie: `__Host-hg_auth_txn=${binding}` } },
+    ),
+  );
+  assert.equal(response.status, 303);
+  assert.equal(db.collection("players").docs[0].displayName, "Moldován Csaba");
+  assert.equal(db.collection("players").docs[0].revision, 3);
 });
 
 test("failed SSO callback does not clear an existing owner session or link data", async () => {

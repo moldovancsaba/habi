@@ -28,6 +28,54 @@ function expiredCookie(name) {
   return `${name}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
 }
 
+function verifiedDisplayName(userinfo, claims) {
+  const value = userinfo?.name ?? claims?.name;
+  if (typeof value !== "string") return null;
+  const name = value.trim().replace(/\s+/gu, " ").slice(0, 100);
+  return name.length > 0 ? name : null;
+}
+
+async function fillOwnPlayerDisplayName(
+  db,
+  { issuer, subject, displayName, now },
+) {
+  if (!displayName) return;
+  const identity = await db
+    .collection("identities")
+    .findOne({ issuer, subject }, { projection: { actorId: 1 } });
+  if (!identity?.actorId) return;
+  const membership = await db.collection("memberships").findOne({
+    actorId: identity.actorId,
+    role: "player",
+    status: "active",
+    playerId: { $type: "string" },
+  });
+  if (!membership?.playerId || !membership.tenantId) return;
+  const player = await db.collection("players").findOne({
+    id: membership.playerId,
+    tenantId: membership.tenantId,
+    actorId: identity.actorId,
+  });
+  if (
+    !player ||
+    (typeof player.displayName === "string" && player.displayName.trim())
+  )
+    return;
+  await db.collection("players").updateOne(
+    {
+      id: player.id,
+      tenantId: player.tenantId,
+      actorId: identity.actorId,
+      revision: player.revision,
+      displayName: player.displayName ?? null,
+    },
+    {
+      $set: { displayName, updatedAt: now.toISOString() },
+      $inc: { revision: 1 },
+    },
+  );
+}
+
 function failRedirect(request, reasonCode, onFailure, returnTo = "/") {
   onFailure?.(reasonCode);
   const target = new URL(returnTo, request.url);
@@ -162,6 +210,7 @@ export function createSsoBrowserCallbackHandler({
     }
 
     await prepareSession();
+    const displayName = verifiedDisplayName(userinfo, claims);
     let link;
     try {
       link = await resolveSsoOwnerLink(db.collection("habi_sso_owner_links"), {
@@ -176,6 +225,21 @@ export function createSsoBrowserCallbackHandler({
         "OWNER_IDENTITY_CONFLICT",
         onFailure,
         safeReturnTo(transaction.returnTo),
+      );
+    }
+
+    // The verified SSO name is used only to fill this identity's own player
+    // profile when it is blank; a parent or coach never renames a linked child.
+    try {
+      await fillOwnPlayerDisplayName(db, {
+        issuer: claims.issuer,
+        subject: claims.subject,
+        displayName,
+        now: now(),
+      });
+    } catch {
+      console.warn(
+        JSON.stringify({ event: "habi.sso.player_name_sync_failed" }),
       );
     }
 
