@@ -1,13 +1,12 @@
 # Habi — ellenőrzési napló
 
-## Apex SSO callback és napi kérdés-layout javítás · 2026-10-26 · még nem telepítve
+## Check-in wizard restoration and production save bug · 2026-10-26
 
-- A Vercel domain lekérdezése szerint a `habigoal.com` és `www.habigoal.com` is a `narimato/habi` projekthez tartozik. Az élő HTTP-próba: apex `/` → 200; `www` `/` → 308 a `https://habigoal.com/` címre; a callback útvonal próbakérése érvényes login-tranzakció nélkül `303 /?signin=failed` választ ad.
-- A kódban a canonical app origin és az SSO callback ugyanarra az apex originre van kötve. A callback host-only böngésző-cookie-t kap, és a feldolgozási hibákhoz rögzített, személyes adatot nem tartalmazó okkódot ír a Vercel runtime logba.
-- A hétkérdéses képernyő kártyája oszlopos elrendezést kapott, a kérdés és a válaszok tördelhetők, a fókuszjelölés látható. A régi adatátviteli üzenet és hivatkozás kikerült a kijelentkezett felületről.
-- Ellenőrzés a helyi Habi checkoutban: `npm run lint` exit 0; `npm run typecheck` exit 0; `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` exit 0 (112/112, 0 skip); `npm run build` exit 0; `git diff --check` exit 0. Nincs Production adatírás.
-- Korlát: jelenleg nem lett commitolva vagy telepítve. Az apex HTTP-próba az előző Production buildet vizsgálta; valós SSO callback/session, role UI, admin role/invitation workflow és mobil böngészős layout még nincs igazolva. A Production gyökér továbbra is a régi napi napló UI.
-- Visszaállítás telepítés után: a megelőző Vercel Production deployment visszaállítása. E változtatások nem módosítanak adatbázist vagy rekordot.
+- Production check-in UI had drifted from the approved interaction: the role workspace rendered all seven legacy questions in a two-column grid. Restored the start card and one-question-at-a-time progress/skip/back flow, using only the five canonical metrics in `contracts/instrument.json`.
+- Production runtime logs showed `checkin.answer.create` returning `409 REVISION_CONFLICT` on later answers. The UI incorrectly copied the answer record's revision into `expectedRevision`; the API's session revision advances separately. The client now increments its expected session revision after every successful answer and displays a clear conflict message if a stale write still occurs.
+- Code-fix Production deployment: `dpl_8QkZPBUhbmK7CcugLSuofXQEgVty`, commit `8363e7f`, READY, aliased to `habigoal.com`. `/` returned HTTP 200 after deployment. No database migration or administrative data write was made.
+- Local validation: `npm run lint`, `npm run typecheck`, `npm test` (110 passed, 1 skipped), `npm run build`, and `git diff --check` all passed. The workflow logic tests cover accepted answer revisions and stale revision rejection; the previous production runtime logs supplied the failing sequence.
+- Remaining live check: sign in and complete a partial or full check-in in the browser, then confirm it appears in the journal. Rollback is the preceding Vercel Production deployment; no schema or persisted record rollback is needed.
 
 ## SSO browser MVP production release and runtime logging · 2026-10-26
 
