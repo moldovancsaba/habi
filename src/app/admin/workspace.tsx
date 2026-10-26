@@ -297,7 +297,13 @@ export default function AdminConsole() {
           )}
           {state === "signed-out" && (
             <>
-              {signInFailure === "APP_PERMISSION_DENIED" ? (
+              {signInFailure === "APP_PERMISSION_SETUP_REQUIRED" ? (
+                <p role="alert" className={styles.alert}>
+                  A Habi automatikus SSO-felhasználói hozzáféréséhez egyszeri
+                  beállítás szükséges a DoneIsBetter SSO-ban. Ellenőrizd a Habi
+                  OAuth-kliens hozzáférés-kezelési jogosultságát.
+                </p>
+              ) : signInFailure === "APP_PERMISSION_DENIED" ? (
                 <p role="alert" className={styles.alert}>
                   A DoneIsBetter-belépés megtörtént, de ehhez a fiókhoz még
                   nincs engedélyezve a Habi alkalmazás. A folytatás előtt a

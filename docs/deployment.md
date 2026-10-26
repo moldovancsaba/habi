@@ -2,15 +2,15 @@
 
 ## Production status · 2026-10-26
 
-- SSO callback recovery: after validating the OIDC identity and Habi permission, the callback applies only the versioned prerequisites `010-sso-browser-owner-sessions` and `011-role-invitations` before writing the session. This breaks the first-login dependency cycle; it does not bootstrap the tenant or create user roles. See T-HG-138 in [verification](verification.md).
+- SSO callback: after validating the OIDC identity, Habi provisions the standard approved DoneIsBetter app permission `user` for a first-time identity using the Habi OAuth client's `manage_permissions` client-credentials scope. Existing approved `user` and `admin` grants are preserved; revoked grants are never restored. This app-level permission enables Habi sign-in only. Player/parent/coach membership remains controlled by a separately issued and claimed Habi invitation. The callback applies prerequisites `010-sso-browser-owner-sessions` and `011-role-invitations` before writing the session.
 
 - Product host: `https://habigoal.com`; `www.habigoal.com` redirects to the apex with HTTP 308 so the SSO callback and its host-only transaction cookie share one origin.
 - Vercel project: `narimato/habi`. The legacy host `habi.doneisbetter.com` remains on that same project for existing browser-session proof.
 - Production data target: the existing MongoDB Atlas database `habi`. Its `HG_ATLAS_URI` setting was preserved; the legacy `habi_mongodb_uri` variable was not changed.
-- Production SSO configuration is present in the Vercel secret store: canonical and legacy origins, DoneIsBetter OIDC settings, and session HMAC key. The release changes `HG_MVP_MODE` to `role-workflow` and adds refresh-encryption, cursor-signing and local-worker verification keys. Secret values are not stored in this repository.
+- Production SSO configuration is present in the Vercel secret store: canonical and legacy origins, DoneIsBetter OIDC settings, and session HMAC key. The Habi OAuth client must be allowed to request `manage_permissions` for the client-credentials grant. Secret values are not stored in this repository.
 - Production has the non-secret `HG_TENANT_ID=habi` setting; the deployed role workflow validates and pins admin actions to this tenant ID.
 - Additive migration `010-sso-browser-owner-sessions` has been applied to Production. It created/updated only `auth_transactions`, `habi_sso_owner_links`, `habi_sso_owner_sessions`, and `habi_sso_owner_handoffs`. The existing `habi_states` count remained 37 and `habi_content` remained 1 before and after; no user documents were rewritten.
-- Production serves the new role workspace at `/` and the SSO-admin console at `/admin`. The latest SSO callback recovery is commit `0c58afd`, deployment `dpl_5CAdY57PGmJEYVucP8UwXfeuiRQo` (READY).
+- Production serves the role workspace at `/` and the SSO-admin console at `/admin`. Record the first-login app-permission provisioning release and deployment after production verification.
 - Production exposes the `/admin` invitation and role-revocation UI, the player/parent/coach workspace, session-bound admin grant, role-invitation/claim routes, migration 011 and an admin-only idempotent bootstrap for tenant `habi`. The bootstrap uses the MVP draft policy references in `docs/policies/` and will not overwrite a tenant with different references. The tenant bootstrap remains pending an authenticated Habi admin action.
 - The first deployment surfaced an invalid worker verifier value because the newline from its protected hash file was retained. The Production verifier was replaced with a newline-free SHA-256 value and the subsequent deployment passed `/api/health` and `/api/ready` with HTTP 200.
 - The local Mac worker LaunchAgent `com.doneisbetter.habi-worker` is installed and running. It uses `qwen2.5:7b` locally and successfully polls `https://habigoal.com/api/v1/worker/jobs/claim` with HTTP 204 responses, meaning authentication works and no eligible jobs are queued. Its launch script sets Homebrew PATH explicitly for `launchd`.
@@ -23,7 +23,7 @@
 3. Preserve `HG_ATLAS_URI`; confirm `HG_ATLAS_DATABASE=habi`. The browser MVP uses the current Habi document shape and does not migrate or rewrite user records.
 4. After verified SSO admin login, use `/admin` to run the idempotent schema bootstrap and create the `habi` tenant. Migration checksums are recorded in `_habi_migrations`; existing records are not bulk-deleted or imported into role identities.
 5. Push the reviewed commit to `main`. Vercel Git integration creates the Production deployment with the configured Production variables.
-6. Verify deployment state, `/`, `/admin`, `/api/health`, `/api/ready`, and SSO login/callback. The pages and health checks are verified; a real admin must still complete sign-in at `/admin`, select **Habi előkészítése az MVP-hez**, then invite and claim a test role.
+6. Verify deployment state, `/`, `/admin`, `/api/health`, `/api/ready`, and SSO login/callback. A successful first login should create only the SSO `user` app permission. A Habi product role still requires an administrator-issued invitation and verified claim.
 7. The `hosted` worker is installed as the `com.doneisbetter.habi-worker` LaunchAgent on the Mac. It connects outward to Habi over HTTPS and reaches Ollama only on loopback; Tailscale Funnel is not part of this flow.
 
 ## Canonical SSO origin and retired data-transfer path

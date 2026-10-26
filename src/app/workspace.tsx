@@ -352,8 +352,32 @@ export default function HabiWorkspace() {
         )}
         {app.state === "signed-out" && (
           <section className={styles.hero}>
-            <p className={styles.eyebrow}>HABI · MVP</p>
-            {signInFailure === "APP_PERMISSION_DENIED" ? (
+            <p className={styles.eyebrow}>Sportolói támogatás</p>
+            {signInFailure === "APP_PERMISSION_SETUP_REQUIRED" ? (
+              <>
+                <h1>A Habi SSO-beállítása még nem kész.</h1>
+                <p role="alert" className={styles.signInAlert}>
+                  Az automatikus felhasználói hozzáférés egy egyszeri SSO
+                  adminisztrátori beállítást igényel. Próbáld újra, miután a
+                  Habi alkalmazás hozzáférés-kezelése engedélyezve lett.
+                </p>
+                <div className={styles.actions}>
+                  <a
+                    className={styles.primary}
+                    href="/auth/login?returnTo=%2F&prompt=login"
+                  >
+                    Újrapróbálkozás
+                  </a>
+                  <button
+                    className={styles.secondary}
+                    type="button"
+                    onClick={() => void logOutFromHabi()}
+                  >
+                    Kilépés a Habiból
+                  </button>
+                </div>
+              </>
+            ) : signInFailure === "APP_PERMISSION_DENIED" ? (
               <>
                 <h1>A fiók még nem fér hozzá a Habihoz.</h1>
                 <p role="alert" className={styles.signInAlert}>

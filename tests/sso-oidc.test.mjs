@@ -323,6 +323,7 @@ test("ID token verification refreshes JWKS once for an unknown signing key", asy
 test("JWKS, userinfo and app permission calls are bounded, no-store and fail closed", async () => {
   const discovered = {
     issuer,
+    token_endpoint: `${issuer}/api/oauth/token`,
     jwks_uri: `${issuer}/.well-known/jwks.json`,
     userinfo_endpoint: `${issuer}/api/oauth/userinfo`,
   };
@@ -374,7 +375,7 @@ test("JWKS, userinfo and app permission calls are bounded, no-store and fail clo
         clientId: "habi-client",
         accessToken: "access-token",
       },
-      async () => response({ status: "pending", role: "user" }),
+      async () => response({ status: "revoked", role: "none" }),
     ),
     { message: "SSO_PERMISSION_DENIED" },
   );
@@ -392,4 +393,72 @@ test("JWKS, userinfo and app permission calls are bounded, no-store and fail clo
     ),
     { message: "SSO_DEPENDENCY_UNAVAILABLE" },
   );
+});
+
+test("first verified login provisions only the standard approved SSO user role", async () => {
+  const discovered = {
+    issuer,
+    token_endpoint: `${issuer}/api/oauth/token`,
+  };
+  const calls = [];
+  const permission = await fetchAppPermission(
+    discovered,
+    {
+      subject: "new-sso-subject",
+      clientId: "habi-first-login-client",
+      clientSecret: "client-secret-test",
+      accessToken: "user-access-token",
+    },
+    async (url, init = {}) => {
+      const requestUrl = new URL(url);
+      calls.push({ requestUrl, init });
+      if (requestUrl.pathname === "/api/oauth/token") {
+        assert.equal(init.method, "POST");
+        assert.equal(init.cache, "no-store");
+        assert.deepEqual(JSON.parse(init.body), {
+          grant_type: "client_credentials",
+          client_id: "habi-first-login-client",
+          client_secret: "client-secret-test",
+          scope: "manage_permissions",
+        });
+        return response({ access_token: "machine-token", expires_in: 3600 });
+      }
+      if (init.method === "PUT") {
+        assert.equal(init.headers.Authorization, "Bearer machine-token");
+        assert.deepEqual(JSON.parse(init.body), {
+          role: "user",
+          status: "approved",
+        });
+        return response({ role: "user", status: "approved" });
+      }
+      assert.equal(
+        requestUrl.pathname,
+        "/api/users/new-sso-subject/apps/habi-first-login-client/permissions",
+      );
+      if (init.headers.Authorization === "Bearer user-access-token") {
+        return response({ error: "not_found" }, 404);
+      }
+      assert.equal(init.headers.Authorization, "Bearer machine-token");
+      return response({ error: "not_found" }, 404);
+    },
+  );
+  assert.deepEqual(permission, { status: "approved", role: "user" });
+  assert.equal(calls.filter(({ init }) => init.method === "PUT").length, 1);
+});
+
+test("first login keeps a pre-existing approved SSO admin permission", async () => {
+  const permission = await fetchAppPermission(
+    { issuer },
+    {
+      subject: "existing-admin-subject",
+      clientId: "habi-existing-admin-client",
+      clientSecret: "client-secret-test",
+      accessToken: "user-access-token",
+    },
+    async (_url, init) => {
+      assert.equal(init.headers.Authorization, "Bearer user-access-token");
+      return response({ role: "admin", status: "approved" });
+    },
+  );
+  assert.deepEqual(permission, { status: "approved", role: "admin" });
 });

@@ -7,6 +7,9 @@ import {
 
 const REQUEST_TIMEOUT_MS = 5_000;
 const SKEW_SECONDS = 60;
+const APP_PERMISSION_SCOPE = "manage_permissions";
+const APP_PERMISSION_TOKEN_REFRESH_MARGIN_MS = 60_000;
+const appPermissionTokens = new Map();
 
 function timeoutSignal() {
   return AbortSignal.timeout(REQUEST_TIMEOUT_MS);
@@ -333,7 +336,7 @@ export async function fetchSsoUserinfo(
 
 export async function fetchAppPermission(
   discovery,
-  { subject, clientId, accessToken },
+  { subject, clientId, clientSecret, accessToken },
   fetchImpl = fetch,
 ) {
   const endpoint = new URL(
@@ -360,20 +363,190 @@ export async function fetchAppPermission(
     }
     throw error;
   }
-  if (!response.ok)
+  if (response.ok) {
+    const permission = await response.json();
+    if (
+      permission?.status === "approved" &&
+      ["user", "admin"].includes(permission?.role)
+    ) {
+      return Object.freeze({
+        status: permission.status,
+        role: permission.role,
+      });
+    }
+    if (permission?.status === "revoked")
+      throw new Error("SSO_PERMISSION_DENIED");
+    if (!["pending", "none"].includes(permission?.status ?? "none"))
+      throw new Error("SSO_PERMISSION_DENIED");
+  } else if (response.status >= 500) {
+    throw new Error("SSO_DEPENDENCY_UNAVAILABLE");
+  } else if (![401, 403, 404].includes(response.status)) {
+    throw new Error("SSO_PERMISSION_DENIED");
+  }
+
+  return provisionSsoAppUserPermission(
+    discovery,
+    { subject, clientId, clientSecret },
+    fetchImpl,
+  );
+}
+
+async function readMachineToken(
+  discovery,
+  { clientId, clientSecret },
+  fetchImpl,
+) {
+  const cacheKey = `${discovery.issuer}:${clientId}`;
+  const cached = appPermissionTokens.get(cacheKey);
+  const now = Date.now();
+  if (
+    cached &&
+    cached.expiresAt - APP_PERMISSION_TOKEN_REFRESH_MARGIN_MS > now
+  ) {
+    return cached.token;
+  }
+  if (typeof clientSecret !== "string" || !clientSecret)
+    throw new Error("SSO_APP_PERMISSION_SETUP_REQUIRED");
+
+  let response;
+  try {
+    response = await fetchImpl(discovery.token_endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        grant_type: "client_credentials",
+        client_id: clientId,
+        client_secret: clientSecret,
+        scope: APP_PERMISSION_SCOPE,
+      }),
+      cache: "no-store",
+      signal: timeoutSignal(),
+    });
+  } catch (error) {
+    if (
+      error instanceof TypeError ||
+      error?.name === "AbortError" ||
+      error?.name === "TimeoutError"
+    ) {
+      throw new Error("SSO_DEPENDENCY_UNAVAILABLE");
+    }
+    throw error;
+  }
+  const body = await response.json().catch(() => null);
+  if (!response.ok || typeof body?.access_token !== "string") {
     throw new Error(
       response.status >= 500
         ? "SSO_DEPENDENCY_UNAVAILABLE"
-        : "SSO_PERMISSION_DENIED",
+        : "SSO_APP_PERMISSION_SETUP_REQUIRED",
     );
-  const permission = await response.json();
-  if (
-    permission?.status !== "approved" ||
-    !["user", "admin"].includes(permission?.role)
-  ) {
-    throw new Error("SSO_PERMISSION_DENIED");
   }
-  return Object.freeze({ status: permission.status, role: permission.role });
+  const expiresIn =
+    Number.isSafeInteger(body.expires_in) && body.expires_in > 0
+      ? body.expires_in
+      : 300;
+  appPermissionTokens.set(cacheKey, {
+    token: body.access_token,
+    expiresAt: now + expiresIn * 1000,
+  });
+  return body.access_token;
+}
+
+async function provisionSsoAppUserPermission(
+  discovery,
+  { subject, clientId, clientSecret },
+  fetchImpl,
+) {
+  const machineToken = await readMachineToken(
+    discovery,
+    { clientId, clientSecret },
+    fetchImpl,
+  );
+  const endpoint = new URL(
+    `/api/users/${encodeURIComponent(subject)}/apps/${encodeURIComponent(clientId)}/permissions`,
+    discovery.issuer,
+  );
+
+  let currentResponse;
+  try {
+    currentResponse = await fetchImpl(endpoint, {
+      headers: {
+        Authorization: `Bearer ${machineToken}`,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+      signal: timeoutSignal(),
+    });
+  } catch (error) {
+    if (
+      error instanceof TypeError ||
+      error?.name === "AbortError" ||
+      error?.name === "TimeoutError"
+    ) {
+      throw new Error("SSO_DEPENDENCY_UNAVAILABLE");
+    }
+    throw error;
+  }
+
+  if (currentResponse.ok) {
+    const current = await currentResponse.json();
+    if (current?.status === "revoked") throw new Error("SSO_PERMISSION_DENIED");
+    if (
+      current?.status === "approved" &&
+      ["user", "admin"].includes(current?.role)
+    ) {
+      return Object.freeze({ status: current.status, role: current.role });
+    }
+    if (!["pending", "none"].includes(current?.status ?? "none"))
+      throw new Error("SSO_PERMISSION_DENIED");
+  } else if (currentResponse.status !== 404) {
+    throw new Error(
+      currentResponse.status >= 500
+        ? "SSO_DEPENDENCY_UNAVAILABLE"
+        : "SSO_APP_PERMISSION_SETUP_REQUIRED",
+    );
+  }
+
+  let updateResponse;
+  try {
+    updateResponse = await fetchImpl(endpoint, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${machineToken}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ role: "user", status: "approved" }),
+      cache: "no-store",
+      signal: timeoutSignal(),
+    });
+  } catch (error) {
+    if (
+      error instanceof TypeError ||
+      error?.name === "AbortError" ||
+      error?.name === "TimeoutError"
+    ) {
+      throw new Error("SSO_DEPENDENCY_UNAVAILABLE");
+    }
+    throw error;
+  }
+  const updated = await updateResponse.json().catch(() => null);
+  if (!updateResponse.ok) {
+    throw new Error(
+      updateResponse.status >= 500
+        ? "SSO_DEPENDENCY_UNAVAILABLE"
+        : "SSO_APP_PERMISSION_SETUP_REQUIRED",
+    );
+  }
+  if (
+    updated?.status !== "approved" ||
+    !["user", "admin"].includes(updated?.role)
+  ) {
+    throw new Error("SSO_APP_PERMISSION_SETUP_REQUIRED");
+  }
+  return Object.freeze({ status: updated.status, role: updated.role });
 }
 
 export function createOpaqueSecret() {

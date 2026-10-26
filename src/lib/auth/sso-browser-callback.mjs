@@ -139,6 +139,7 @@ export function createSsoBrowserCallbackHandler({
         {
           subject: claims.subject,
           clientId: config.clientId,
+          clientSecret: config.clientSecret,
           accessToken: tokens.accessToken,
         },
         fetchImpl,
@@ -149,7 +150,9 @@ export function createSsoBrowserCallbackHandler({
           ? "APP_PERMISSION_DENIED"
           : error?.message === "SSO_DEPENDENCY_UNAVAILABLE"
             ? "SSO_DEPENDENCY_UNAVAILABLE"
-            : "OIDC_VALIDATION_FAILED";
+            : error?.message === "SSO_APP_PERMISSION_SETUP_REQUIRED"
+              ? "APP_PERMISSION_SETUP_REQUIRED"
+              : "OIDC_VALIDATION_FAILED";
       return failRedirect(
         request,
         reasonCode,
