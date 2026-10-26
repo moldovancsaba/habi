@@ -26,9 +26,15 @@ A T-HG-130 és T-HG-131 alatti további régi bejegyzések az akkori állapot t�
 ## MongoDB-kapcsolat konfigurálása · 2026-10-26
 
 - A Vercel `habi_mongodb_uri` Development értékét nem írtuk ki; ideiglenes, `0600` fájlból olvastuk be és töröljük a próba végén.
-- A Habi-fiók kapcsolata MongoDB-hez sikeres volt (`ping`). A `habi_preview` és `habi_production` adatbázisnév olvasható és üres volt; nem történt írás, migráció vagy seed.
-- A `narimato/habi` Preview, `codex/habi-ground-up` branch: `HG_ATLAS_URI` titkos env és `HG_ATLAS_DATABASE=habi_preview`. A Production env: `HG_ATLAS_URI` titkos env és `HG_ATLAS_DATABASE=habi_production`. Régi `habi_mongodb_uri` változó és a jelenlegi Production deployment nem módosult.
+- A Habi-fiók kapcsolata MongoDB-hez sikeres volt (`ping`). A korábbi, csak olvasási felderítés szerint a `habi_preview` üres; a jelenlegi Production adatbázis `habi`, 37 `habi_states` és egy `habi_content` dokumentummal. Csak gyűjteményneveket, hozzávetőleges dokumentumszámot és mezőtípusokat olvastunk; adatot nem írtunk, migrációt vagy seedet nem futtattunk.
+- A `narimato/habi` Preview, `codex/habi-ground-up` branch: `HG_ATLAS_URI` titkos env és `HG_ATLAS_DATABASE=habi_preview`. A Production env: `HG_ATLAS_URI` titkos env és `HG_ATLAS_DATABASE=habi` (2026-10-26 frissítve a tulajdonos MVP-adatcélja szerint). A régi `habi_mongodb_uri` változó változatlan.
 - A `707cbca` commit új Preview deploymentje felvette az env-változókat; `/api/ready` 200 igazolja a hosted Atlas pinget. A `/api/v1/me` 503 azért marad, mert a teljes runtime konfigurációból hiányzik a `HG_ENVIRONMENT` és a DoneIsBetter SSO-konfiguráció; production vágás nem történt.
+
+### MVP-adatkompatibilitás és élő állapot · 2026-10-26
+
+- A termelési MongoDB-cél átállítása csak Vercel környezeti változó módosítása volt; a jelenlegi élő alkalmazás nem változott. `https://habi.doneisbetter.com` továbbra is a régi Habi alkalmazást szolgálja ki.
+- Az új alkalmazás `habi` adatbázisra mutat, de a legacy `habi_states` böngésző-tulajdonú payloadjának és a `habi_content` katalógusnak nincs még adaptere az új tenant/actor/workflow sémához.
+- Production indítás fail-closed, amíg a hosted hitelesítés és kötelező környezeti konfiguráció nincs beállítva. A Production domainre ezért az új alkalmazás nem lett telepítve.
 
 ## T-HG-131 · Nem-SSO szerepköri munkafolyamat · történeti induló állapot · 2026-10-25
 

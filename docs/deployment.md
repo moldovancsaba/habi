@@ -20,14 +20,21 @@ A környezetkulcsok kanonikus nevei: `development/environment.example`. A konfig
 
 - A tulajdonos megerősítette, hogy a Vercel `habi_mongodb_uri` az Habi által használható MongoDB-kapcsolat. A Vercel Development környezetből biztonságosan, ideiglenes, `0600` jogosultságú fájlba került; URI-érték nem került logba vagy dokumentumba.
 - A kapcsolattal sikeres MongoDB `ping` és adatbázis-listázási próba futott. Az új alkalmazásnak elkülönített `habi_preview` és `habi_production` adatbázisnevet választottunk; mindkettő üres volt az ellenőrzéskor. Nem futott migráció vagy seed, és legacy collection nem módosult.
-- A Vercel `narimato/habi` projekthez `HG_ATLAS_URI` és `HG_ATLAS_DATABASE` került hozzáadva: Preview célra kizárólag a `codex/habi-ground-up` branch kapta a `habi_preview` adatbázist; Production célra a `habi_production` adatbázis van beállítva. A meglévő `habi_mongodb_uri` változó érintetlen maradt.
+- A Vercel `narimato/habi` projekthez `HG_ATLAS_URI` és `HG_ATLAS_DATABASE` került hozzáadva: Preview célra kizárólag a `codex/habi-ground-up` branch kapta a `habi_preview` adatbázist; Production célra a meglévő, élő Habi-adatokat tartalmazó `habi` adatbázis van beállítva. A meglévő `habi_mongodb_uri` változó érintetlen maradt.
 - A `707cbca` commit Preview deploymentje Ready állapotú a `https://habi-git-codex-habi-ground-up-narimato.vercel.app` címen. A Habi alkalmazás `/api/ready` végpontja 200 választ adott; ez igazolja a Vercel runtime → MongoDB `habi_preview` kapcsolatot. Nem futott migráció vagy seed, és alkalmazásadatot nem írtunk.
 - A termék API-k továbbra is fail-closed állapotban vannak, mert `HG_ENVIRONMENT` és a DoneIsBetter SSO kliens-konfiguráció hiányzik; `/api/v1/me` 503 `DEPENDENCY_UNAVAILABLE`. A Production env-var készlet új deploymentre vár; az aktuális Production még a régi alkalmazás.
-- A `habi.doneisbetter.com` változatlanul a korábbi Production alkalmazást szolgálja ki. Production cutover előtt az SSO-integráció, teljes env-konfiguráció, biztonságos migráció/seed és hosted workflow-verifikáció szükséges.
+- A `habi.doneisbetter.com` változatlanul a korábbi Production alkalmazást szolgálja ki. A Production Atlas-cél most a meglévő `habi` adatbázis; a korábbi böngészőállapot (`habi_states`) és tartalomkatalógus (`habi_content`) változatlan maradt. Az új alkalmazás nem olvassa és nem migrálja még ezeket a régi dokumentumokat. A jelenlegi migrációk külön nevű gyűjteményeket adnak hozzá, de még nem futottak Productionön. A Production cutover előtt az új UI/adatadapter, az engedélyezett hitelesítési folyamat és a hosted workflow igazolása szükséges.
+
+### MVP adatcél · 2026-10-26
+
+- Az új Habi MVP Production konfigurációja a tulajdonos kérésére a jelenlegi Habi által is használt `habi` Atlas adatbázisra mutat. A Preview marad a külön `habi_preview` célon.
+- Read-only Atlas-felderítés: `habi.habi_states` 37 dokumentumot, `habi.habi_content` 1 dokumentumot tartalmazott; csak gyűjteménynevet, darabszámot, mezőneveket és adattípusokat ellenőriztünk. A mezőértékeket nem olvastuk ki és semmit nem módosítottunk.
+- A `habi` adatbázis kijelölése nem jelent automatikus kompatibilitást: az új tenant/actor alapú sémák nem adapterezik a régi, böngésző-tulajdonú `habi_states` payloadot. Az adatmegőrző migráció vagy adapter megvalósítása és ellenőrzése a Production váltás előfeltétele.
+- A Habi SSO-regisztráció és Production runtime konfiguráció továbbra sincs kész; az új rendszer Production telepítése a hiányzó hitelesítés miatt jelenleg fail-closed. A régi Production app nem változott.
 
 ## Kiadási előfeltételek
 
-1. A `habi_preview` és `habi_production` adatbázisnév már külön van konfigurálva, de jelenleg ugyanazt a MongoDB felhasználót/URI-t használják. Production előtt külön least-privilege Atlas usereket kell adni Preview és Production számára, adatbázisonkénti jogosultsággal; a jelenlegi credential role-scope-ja nincs igazolva.
+1. Preview a `habi_preview` adatbázist használja; az MVP Production célja a meglévő `habi` adatbázis, ugyanazzal a tulajdonos által megadott Atlas URI-val. Külön adatbázis-felhasználók és least-privilege jogosultságok későbbi biztonsági keményítési tételként maradnak; az MVP-kapcsolat már be van állítva.
 2. A DoneIsBetter SSO kliens-konfigurációt biztosítani kell, majd az env-kulcsok teljességét név szerint, értékek nélkül ellenőrizni.
 3. Futtatni kell az idempotens migrációt, indexellenőrzést és determinisztikus, csak szintetikus seedet.
 4. Igazolni kell a böngésző → Vercel API → Atlas → Mac worker → válasz → újratöltés útvonalat, pozitív és jogosulatlan tesztesetekkel.
