@@ -373,6 +373,44 @@
   padding: 14px 18px;
   line-height: 1.5;
 }
+.actionFeedback,
+.actionInfo {
+  margin: 14px 0 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  line-height: 1.5;
+  scroll-margin-block: 20px;
+}
+.actionFeedback[data-state="success"] {
+  background: #edf7f2;
+  color: #176347;
+}
+.actionFeedback[data-state="error"] {
+  background: #fff2f0;
+  color: #852f2a;
+}
+.actionInfo {
+  background: #edf4ff;
+  color: #234f9e;
+}
+.questionResult {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #d8e4f5;
+  border-radius: 16px;
+  background: #f7f9fd;
+  line-height: 1.55;
+}
+.questionResult h3 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+.questionResult p:last-child {
+  margin-bottom: 0;
+}
+.questionResult li + li {
+  margin-top: 8px;
+}
 .playerContext {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(180px, 1fr);

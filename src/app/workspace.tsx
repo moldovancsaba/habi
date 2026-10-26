@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./workspace.module.css";
 import MetroTimeline, { type TimelinePage } from "./metro-timeline";
 
@@ -46,6 +46,21 @@ type PlayerData = PlayerProfile & {
 };
 type HistoryItem = RecordItem & { label: string; sourceRole: Role };
 type TimelineResponse = TimelinePage & { snapshotAt?: string };
+type QuestionJob = {
+  jobId: string;
+  status: "queued" | "processing" | "review" | "ready" | "failed" | "cancelled";
+  reasonCode: string | null;
+  resultRef: { id: string; revision: number } | null;
+};
+type InterpretationView = {
+  answerState: string;
+  reviewState: string;
+  answer: {
+    status: string;
+    unknowns: string[];
+    claims: Array<{ id: string; text: string }>;
+  } | null;
+};
 type AppState =
   | { state: "loading" }
   | { state: "signed-out" }
@@ -106,6 +121,22 @@ export default function HabiWorkspace() {
   const [checkinIndex, setCheckinIndex] = useState<number | null>(null);
   const [observation, setObservation] = useState("");
   const [question, setQuestion] = useState("");
+  const [observationFeedback, setObservationFeedback] = useState<{
+    kind: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [questionFeedback, setQuestionFeedback] = useState<{
+    kind: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [questionJob, setQuestionJob] = useState<QuestionJob | null>(null);
+  const [questionAnswer, setQuestionAnswer] =
+    useState<InterpretationView | null>(null);
+  const [questionStatusUnavailable, setQuestionStatusUnavailable] =
+    useState(false);
+  const observationFeedbackRef = useRef<HTMLParagraphElement>(null);
+  const questionFeedbackRef = useRef<HTMLParagraphElement>(null);
+  const questionResultRef = useRef<HTMLElement>(null);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [enteringRoleId, setEnteringRoleId] = useState<string | null>(null);
@@ -267,6 +298,7 @@ export default function HabiWorkspace() {
   const playerId = selectedPlayerId;
   const selectedPlayer =
     players.find((player) => player.id === playerId) ?? null;
+  const questionSource = data[0]?.checkins[0] ?? null;
   const historyItems: HistoryItem[] = data
     .flatMap((person) => [
       ...person.checkins.map((item) => ({
@@ -284,6 +316,139 @@ export default function HabiWorkspace() {
     .sort((a, b) =>
       String(b.occurredAt ?? "").localeCompare(String(a.occurredAt ?? "")),
     );
+
+  useEffect(() => {
+    if (observationFeedback) {
+      observationFeedbackRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [observationFeedback]);
+
+  useEffect(() => {
+    if (questionFeedback) {
+      questionFeedbackRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [questionFeedback]);
+
+  useEffect(() => {
+    if (questionJob?.jobId) {
+      questionResultRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [questionJob]);
+
+  useEffect(() => {
+    if (
+      !questionJob?.jobId ||
+      !["queued", "processing", "review"].includes(questionJob.status)
+    )
+      return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const refresh = async () => {
+      try {
+        const response = await fetch(
+          `/api/v1/jobs/${encodeURIComponent(questionJob.jobId)}`,
+          { cache: "no-store", credentials: "same-origin" },
+        );
+        const body = await response.json().catch(() => null);
+        if (!response.ok) {
+          if ([401, 403, 404].includes(response.status)) {
+            if (cancelled) return;
+            const code = body?.code ?? "STATUS_UNAVAILABLE";
+            setQuestionStatusUnavailable(false);
+            setQuestionJob((current) =>
+              current?.jobId === questionJob.jobId
+                ? { ...current, status: "failed", reasonCode: code }
+                : current,
+            );
+            setQuestionFeedback({
+              kind: "error",
+              message:
+                response.status === 401
+                  ? "Lejárt a bejelentkezésed. Jelentkezz be újra a kérés állapotának megtekintéséhez."
+                  : "Ehhez a kéréshez már nincs hozzáférésed. Frissítsd az oldalt, vagy kérj segítséget az edzőtől.",
+            });
+            return;
+          }
+          throw new Error(body?.code ?? "STATUS_UNAVAILABLE");
+        }
+        if (cancelled) return;
+        let next = body as QuestionJob;
+        if (
+          !next ||
+          typeof next.status !== "string" ||
+          ![
+            "queued",
+            "processing",
+            "review",
+            "ready",
+            "failed",
+            "cancelled",
+          ].includes(next.status)
+        ) {
+          throw new Error("STATUS_UNAVAILABLE");
+        }
+        if (next.status === "ready" && next.resultRef?.id) {
+          const answerResponse = await fetch(
+            `/api/v1/interpretations/${encodeURIComponent(next.resultRef.id)}`,
+            { cache: "no-store", credentials: "same-origin" },
+          );
+          const answer = await answerResponse.json().catch(() => null);
+          if (
+            !answerResponse.ok &&
+            [401, 403, 404].includes(answerResponse.status)
+          ) {
+            if (cancelled) return;
+            const code = answer?.code ?? "ANSWER_UNAVAILABLE";
+            setQuestionStatusUnavailable(false);
+            setQuestionJob((current) =>
+              current?.jobId === next.jobId
+                ? { ...current, status: "failed", reasonCode: code }
+                : current,
+            );
+            setQuestionFeedback({
+              kind: "error",
+              message:
+                answerResponse.status === 401
+                  ? "Lejárt a bejelentkezésed. Jelentkezz be újra a válasz megtekintéséhez."
+                  : "A válasz most már nem érhető el ezzel a hozzáféréssel. Kérj segítséget az edzőtől.",
+            });
+            return;
+          }
+          if (!answerResponse.ok)
+            throw new Error(answer?.code ?? "ANSWER_UNAVAILABLE");
+          if (cancelled) return;
+          const view = answer as InterpretationView;
+          setQuestionAnswer(view);
+          if (view.answerState === "awaiting_review") {
+            next = { ...next, status: "review" };
+          }
+        }
+        setQuestionStatusUnavailable(false);
+        setQuestionJob(next);
+        if (["queued", "processing", "review"].includes(next.status)) {
+          timer = setTimeout(() => void refresh(), 5000);
+        }
+      } catch {
+        if (cancelled) return;
+        setQuestionStatusUnavailable(true);
+        timer = setTimeout(() => void refresh(), 8000);
+      }
+    };
+    timer = setTimeout(() => void refresh(), 1800);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [questionJob?.jobId, questionJob?.status]);
 
   async function switchMembership(membershipId: string) {
     if (!active || membershipId === active.activeMembershipId || busy) return;
@@ -317,6 +482,11 @@ export default function HabiWorkspace() {
       setAnswers({});
       setObservation("");
       setQuestion("");
+      setObservationFeedback(null);
+      setQuestionFeedback(null);
+      setQuestionJob(null);
+      setQuestionAnswer(null);
+      setQuestionStatusUnavailable(false);
       setTab("today");
       setNotice("Szerepkör módosítva.");
       await load();
@@ -464,6 +634,7 @@ export default function HabiWorkspace() {
     if (!active || !playerId || !observation.trim()) return;
     setBusy(true);
     setNotice("");
+    setObservationFeedback(null);
     try {
       const response = await fetch(
         `/api/v1/players/${encodeURIComponent(playerId)}/records`,
@@ -496,10 +667,13 @@ export default function HabiWorkspace() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.code ?? "SAVE_FAILED");
       setObservation("");
-      setNotice("A megfigyelés elmentve.");
+      setObservationFeedback({
+        kind: "success",
+        message: "A megfigyelés elmentve.",
+      });
       await load();
     } catch (error) {
-      setNotice(messageFor(error));
+      setObservationFeedback({ kind: "error", message: messageFor(error) });
     } finally {
       setBusy(false);
     }
@@ -508,13 +682,18 @@ export default function HabiWorkspace() {
   async function askQuestion() {
     if (active?.activeRole !== "parent" || !playerId || !question.trim())
       return;
-    const source = data[0]?.checkins[0];
+    setNotice("");
+    const source = questionSource;
     if (!source) {
-      setNotice("Előbb szükség van egy elérhető napi állapotjelzésre.");
+      setQuestionFeedback({
+        kind: "error",
+        message:
+          "A kérdés elküldéséhez előbb a játékos napi állapotjelzése szükséges.",
+      });
       return;
     }
     setBusy(true);
-    setNotice("");
+    setQuestionFeedback(null);
     try {
       const response = await fetch(
         `/api/v1/players/${encodeURIComponent(playerId)}/interpretations`,
@@ -539,12 +718,24 @@ export default function HabiWorkspace() {
       );
       const result = await response.json();
       if (!response.ok) throw new Error(result.code ?? "QUESTION_FAILED");
+      if (typeof result.jobId !== "string" || !result.jobId) {
+        throw new Error("QUESTION_FAILED");
+      }
+      setQuestionJob({
+        jobId: result.jobId,
+        status: "queued",
+        reasonCode: null,
+        resultRef: null,
+      });
+      setQuestionAnswer(null);
+      setQuestionStatusUnavailable(false);
       setQuestion("");
-      setNotice(
-        "A kérdés bekerült a helyi AI feldolgozási sorába. A válasz ellenőrzés után jelenik meg.",
-      );
+      setQuestionFeedback({
+        kind: "success",
+        message: "A kérdés elküldve. A feldolgozás állapotát itt követheted.",
+      });
     } catch (error) {
-      setNotice(messageFor(error));
+      setQuestionFeedback({ kind: "error", message: messageFor(error) });
     } finally {
       setBusy(false);
     }
@@ -882,6 +1073,10 @@ export default function HabiWorkspace() {
                         setData([]);
                         setTimeline(null);
                         setNotice("");
+                        setQuestionFeedback(null);
+                        setQuestionJob(null);
+                        setQuestionAnswer(null);
+                        setQuestionStatusUnavailable(false);
                       }}
                     >
                       {players.map((player) => (
@@ -1022,7 +1217,10 @@ export default function HabiWorkspace() {
                     <textarea
                       id="observation"
                       value={observation}
-                      onChange={(event) => setObservation(event.target.value)}
+                      onChange={(event) => {
+                        setObservation(event.target.value);
+                        setObservationFeedback(null);
+                      }}
                       rows={4}
                       maxLength={2000}
                     />
@@ -1034,6 +1232,20 @@ export default function HabiWorkspace() {
                     >
                       Megfigyelés mentése
                     </button>
+                    {observationFeedback && (
+                      <p
+                        ref={observationFeedbackRef}
+                        className={styles.actionFeedback}
+                        data-state={observationFeedback.kind}
+                        role={
+                          observationFeedback.kind === "error"
+                            ? "alert"
+                            : "status"
+                        }
+                      >
+                        {observationFeedback.message}
+                      </p>
+                    )}
                   </section>
                   {active.activeRole === "parent" && (
                     <section className={styles.panel}>
@@ -1045,20 +1257,118 @@ export default function HabiWorkspace() {
                       <textarea
                         id="question"
                         value={question}
-                        onChange={(event) => setQuestion(event.target.value)}
+                        onChange={(event) => {
+                          setQuestion(event.target.value);
+                          setQuestionFeedback(null);
+                        }}
                         rows={3}
                         maxLength={1000}
                       />
                       <button
                         type="button"
                         className={styles.secondary}
-                        disabled={busy || !question.trim()}
+                        disabled={busy || !question.trim() || !questionSource}
                         onClick={() => void askQuestion()}
                       >
                         Kérdés elküldése a helyi AI-nak
                       </button>
+                      {!questionSource && (
+                        <p className={styles.actionInfo} role="note">
+                          A kérdés elküldéséhez előbb a játékosnak ki kell
+                          töltenie egy napi állapotjelzést. Utána a választ a
+                          Habi ezen a helyen mutatja meg, az edzői ellenőrzés
+                          után.
+                        </p>
+                      )}
+                      {questionFeedback && (
+                        <p
+                          ref={questionFeedbackRef}
+                          className={styles.actionFeedback}
+                          data-state={questionFeedback.kind}
+                          role={
+                            questionFeedback.kind === "error"
+                              ? "alert"
+                              : "status"
+                          }
+                        >
+                          {questionFeedback.message}
+                        </p>
+                      )}
+                      {questionJob && (
+                        <section
+                          ref={questionResultRef}
+                          className={styles.questionResult}
+                          aria-label="A kérés eredménye"
+                        >
+                          <h3>
+                            {questionJob.status === "queued"
+                              ? "A kérdés várakozik"
+                              : questionJob.status === "processing"
+                                ? "A Habi feldolgozza a kérdést"
+                                : questionJob.status === "review"
+                                  ? "Edzői ellenőrzésre vár"
+                                  : questionJob.status === "ready"
+                                    ? "Elkészült a válasz"
+                                    : questionJob.status === "cancelled"
+                                      ? "A kérés megszakadt"
+                                      : "A kérés feldolgozása megállt"}
+                          </h3>
+                          {questionStatusUnavailable ? (
+                            <p role="status">
+                              Most nem érjük el az állapotot. A kérésed
+                              megmaradt, és újra próbáljuk ellenőrizni.
+                            </p>
+                          ) : questionJob.status === "queued" ? (
+                            <p role="status">
+                              A helyi feldolgozó elindulására vár. Ez még nem
+                              hiba.
+                            </p>
+                          ) : questionJob.status === "processing" ? (
+                            <p role="status">A helyi feldolgozó dolgozik.</p>
+                          ) : questionJob.status === "review" ? (
+                            <p role="status">
+                              A válasz elkészült. Az edző ellenőrzi a
+                              forrásokat; jóváhagyás után itt jelenik meg.
+                            </p>
+                          ) : questionJob.status === "ready" &&
+                            questionAnswer?.answerState === "no_evidence" ? (
+                            <p role="status">
+                              A Habi nem talált ellenőrizhető, forrásolt
+                              választ. Nem vont le következtetést.
+                            </p>
+                          ) : questionJob.status === "ready" &&
+                            questionAnswer?.answer ? (
+                            <div aria-live="polite">
+                              {questionAnswer.answer.unknowns.length > 0 && (
+                                <p>
+                                  {questionAnswer.answer.unknowns.join(" ")}
+                                </p>
+                              )}
+                              <ul>
+                                {questionAnswer.answer.claims.map((claim) => (
+                                  <li key={claim.id}>{claim.text}</li>
+                                ))}
+                              </ul>
+                              <p className={styles.muted}>
+                                Forrásolt, edző által ellenőrzött válasz.
+                              </p>
+                            </div>
+                          ) : questionJob.status === "ready" ? (
+                            <p role="status">
+                              A választ nem tettük közzé. Kérd meg az edzőt,
+                              hogy ellenőrizze a forrásokat.
+                            </p>
+                          ) : (
+                            <p role="alert">
+                              A feladat nem készült el. Próbáld újra később,
+                              vagy kérj segítséget az edzőtől.
+                            </p>
+                          )}
+                        </section>
+                      )}
                       <p className={styles.muted}>
-                        A válasz forrásolt lesz, és edzői ellenőrzést kérhet.
+                        A személyes válasz forrásolt, és edzői jóváhagyás után
+                        jelenik meg.
                       </p>
                     </section>
                   )}

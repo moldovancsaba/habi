@@ -23,7 +23,7 @@ Adminisztrátorként a **Szerepkör kérése a saját fiókomhoz** gombbal indí
 1. A Habi admin a `/admin` oldalon megnyitja a tenant előkészítését.
 2. Az admin létrehoz egy játékos-, szülő- vagy edzőmeghívót.
 3. A meghívott megnyitja az egyszer használatos linket, saját DoneIsBetter-fiókjával belép, majd elfogadja a hozzáférést.
-4. A játékos egy indítóképernyőről egyesével halad végig az elfogadott öt állapotjelző kérdésen; bármelyiket átugorhatja, visszaléphet, majd az érvényes válaszok mentődnek. Szülőnél megfigyelés, előzmények és forrásolt helyi AI-kérdés; edzőnél megfigyelés és játékosadat-hozzáférés jelenik meg.
+4. A játékos egy indítóképernyőről egyesével halad végig az elfogadott öt állapotjelző kérdésen; bármelyiket átugorhatja, visszaléphet, majd az érvényes válaszok mentődnek. Szülőnél megfigyelés, előzmények és forrásolt helyi AI-kérdés jelenik meg. Kérdéshez előbb elérhető napi állapotjelzés kell; enélkül a küldés kikapcsolt, és a magyarázat közvetlenül az űrlapnál látható. Küldés után ugyanott követhető a várakozás, feldolgozás és edzői ellenőrzés, majd a jóváhagyott válasz is. Edzőnél megfigyelés és játékosadat-hozzáférés jelenik meg.
 5. A szerepkör visszavonható az admin felületen; a visszavonás megszünteti a hozzáférést.
 
 ## Szerepkörök és játékosazonosítás

@@ -687,3 +687,18 @@ The signed-in administrator landing page now displays the active player, parent,
 | `GET /`, `/admin`, `/api/health`, `/api/ready` | PASS, HTTP 200 | `https://habigoal.com` |
 | Anonymous `GET /api/admin/me` | PASS, HTTP 401 | Expected authentication boundary |
 | Logged-in account role display and invitation claim | Not yet verified | Requires the owner's authenticated admin session |
+
+# Parent question feedback and result visibility · 2026-10-26
+
+- The production parent workspace previously placed the missing-check-in message in a page-level notice and discarded the `jobId` returned after question submission. The prerequisite is now explained beside the question field, and the send button stays disabled until the player has a visible daily check-in.
+- After a question is accepted, success and error feedback remains beside the form. The result card is scrolled into view after submit and again when the job changes state or the answer becomes available.
+- The workspace polls the existing authorized job-status endpoint, retries temporary network and server errors without marking the request failed, then fetches the interpretation. It shows queued, processing, coach-review, approved-answer, no-evidence, and terminal-error states in the same card. Authentication or access failures stop polling and explain the recovery action.
+- Observation save feedback is also displayed beside its form. No API or data contract changed.
+
+| Check | Result | Environment |
+| --- | --- | --- |
+| `npm run lint` | PASS, exit 0 | Local Habi checkout; Biome, 180 files. |
+| `npm run typecheck` | PASS, exit 0 | Local Habi checkout; TypeScript. |
+| `npm run build` | PASS, exit 0 | Local Habi checkout; Next.js 16.4.3 production build. |
+| `git diff --check` | PASS, exit 0 | Local Habi checkout. |
+| Authenticated parent question → local worker → coach review → visible answer | Pending | Requires an active parent session, an available daily check-in, a running worker, and authorized coach review. |
