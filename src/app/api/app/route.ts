@@ -13,6 +13,7 @@ const MAX_BODY_BYTES = 2_000_000;
 function privateHeaders() {
   return {
     "Cache-Control": "private, no-store",
+    "Content-Type": "application/json; charset=utf-8",
     Vary: "Cookie",
     "X-Content-Type-Options": "nosniff",
   };

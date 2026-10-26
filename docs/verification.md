@@ -17,6 +17,12 @@
 - Ha a távoli API nem érhető el, vagy a korábbi kliens `habi-cloud-dirty=1` jelzővel nem szinkronizált helyi változást jelez, a felület a `habi-app-v1` böngészőbeli állapotot használja; ezt az állapotot külön jelöli. A kezdőlap nem ír adatot.
 - Éles böngésző ellenőrzés: a Habi címen a gyökérképernyő magyar címsorral és napló összesítővel jelenik meg; `/api/app` 200. A Habi szerepkörös végpontjai továbbra is fail-closed állapotban vannak, a teljes új player/parent/coach munkafolyamat UI-ja nincs ebben az MVP-ben.
 
+## API UTF-8 javítás · 2026-10-26
+
+- A `/api/app` korábban `application/json` Content-Type-ot küldött charset paraméter nélkül; egyes közvetlen mobilböngészős megjelenítések UTF-8 helyett egybájtos kódolással dekódolták az ékezeteket.
+- A katalógus forrása UTF-8, az API válasza UTF-8-ként dekódolva helyes magyar karaktereket tartalmazott. A javítás explicit `Content-Type: application/json; charset=utf-8` fejlécet ad a sikeres és alkalmazásszintű hibaválaszhoz.
+- Ellenőrzés: a telepített `/api/app` válasz fejlécének `application/json; charset=utf-8`-at kell mutatnia; a `Válassz` karakterláncnak UTF-8 dekódolással helyesnek kell maradnia.
+
 ## Aktuális ágállapot · 2026-10-25
 
 A jelenlegi, módosított API-kontraktus verziója 2.4.8. A T-HG-130 alatti végrehajtás a korábbi 2.4.1 verzióra vonatkozott.
