@@ -2,6 +2,13 @@
 
 ## Production status · 2026-10-26
 
+## Reflection-draft release · 2026-10-27
+
+- Release commit: pending. This change adds player-owned, resumable daily, weekly, and monthly reflection drafts. It does not import or modify existing legacy diary records.
+- Additive migration `014-experience-drafts` creates and validates `habi_experience_drafts` with unique draft identity and tenant/player/actor/key indexes. It is part of the authenticated `/admin` **Adatbázis frissítése** bootstrap (`POST /api/admin/bootstrap`), which runs all registered migrations idempotently before verifying tenant `habi`.
+- Production persistence is not active until a verified DoneIsBetter Habi admin signs in and runs the database update/bootstrap. Do not claim resumable Production drafts before the response confirms migration `014-experience-drafts` was applied. The user must not send credentials or database URIs in chat.
+- Local verification on an isolated localhost MongoDB replica set (`habiTestRs`): migration replay and draft create/update/revision-conflict/role-denial/delete all passed. Full suite: 138 passed, 0 failed, 0 skipped; lint, typecheck, production build, and `git diff --check` results are recorded in `docs/verification.md` after release.
+
 - Canonical-host handling: all browser and API requests on aliases and Vercel deployment URLs are redirected to `https://habigoal.com` before routing, with path and query preserved. Only `habigoal.com` is the production application origin; localhost remains available for development. This is required because the `__Host-` session cookies are intentionally host-only. A user signed in on the apex appeared signed out when opening an alias or deployment URL, because those requests did not include the apex cookies.
 
 - SSO callback: after validating the OIDC identity, Habi provisions the standard approved DoneIsBetter app permission `user` for a first-time identity using the Habi OAuth client's `manage_permissions` client-credentials scope. Existing approved `user` and `admin` grants are preserved; revoked grants are never restored. This app-level permission enables Habi sign-in only. Player/parent/coach membership remains controlled by a separately issued and claimed Habi invitation. The callback applies prerequisites `010-sso-browser-owner-sessions` and `011-role-invitations` before writing the session.
@@ -23,7 +30,7 @@
 1. Run `npm run lint`, `npm run typecheck`, `npm test` with the isolated local Mongo replica set, `npm run build`, worker unit tests, local synthetic workflow acceptance, and `git diff --check`.
 2. Confirm the Habi project and Production scope before changing Vercel settings. Keep Production-only secrets in Vercel; do not pull them into `.env.local` or commit them.
 3. Preserve `HG_ATLAS_URI`; confirm `HG_ATLAS_DATABASE=habi`. The browser MVP uses the current Habi document shape and does not migrate or rewrite user records.
-4. After verified SSO admin login, use `/admin` to run the idempotent schema bootstrap and create the `habi` tenant. Migration checksums are recorded in `_habi_migrations`; existing records are not bulk-deleted or imported into role identities.
+4. After verified SSO admin login, use `/admin` to run the idempotent schema bootstrap and create/verify the `habi` tenant. Migration checksums are recorded in `_habi_migrations`; existing records are not bulk-deleted or imported into role identities. Confirm all currently registered migrations, including `014-experience-drafts`, are listed as applied before relying on resumable reflections.
 5. Push the reviewed commit to `main`. Vercel Git integration creates the Production deployment with the configured Production variables.
 6. Verify deployment state, `/`, `/admin`, `/api/health`, `/api/ready`, and SSO login/callback. A successful first login should create only the SSO `user` app permission. A Habi product role still requires an administrator-issued invitation and verified claim.
 7. The `hosted` worker is installed as the `com.doneisbetter.habi-worker` LaunchAgent on the Mac. It connects outward to Habi over HTTPS and reaches Ollama only on loopback; Tailscale Funnel is not part of this flow.
@@ -44,7 +51,7 @@ No record transfer or email-based identity matching is part of the new product.
 
 - Application rollback: restore the preceding Vercel Production deployment. Keep the additive SSO collections; do not drop them during rollback. The old browser app continues to own records by the same `habi_states` key.
 - If SSO login fails, do not reset identity links or infer ownership by email. Capture the request ID, deployment ID, and sanitized status; preserve the existing SSO session and retry after correcting the configuration.
-- If migration 010 fails, stop before deployment. It is idempotent and additive; correct the validator/index issue and rerun. Do not remove the migration ledger entry or drop collections as an automatic recovery.
+- If any migration fails, stop before claiming that feature is ready in Production. Migrations 010 and 014 are additive; correct the validator/index issue and rerun the authenticated bootstrap. Do not remove a migration ledger entry or drop collections as an automatic recovery.
 - If an owner-link conflict occurs, leave both records and identities unchanged and investigate using authenticated identity and verified legacy-cookie evidence.
 
 ## Local test boundaries

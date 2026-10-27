@@ -9,6 +9,11 @@ import {
 import { runIdempotentCommand } from "../src/lib/database/idempotent-command.mjs";
 import { runMigrations } from "../src/lib/database/migrations/runner.mjs";
 import { applySyntheticSeed } from "../src/lib/database/seed.mjs";
+import {
+  deleteExperienceDraft,
+  readExperienceDraft,
+  saveExperienceDraft,
+} from "../src/lib/workflows/experience-drafts.mjs";
 import { validateContractDocument } from "../src/lib/database/contract-validation.mjs";
 import {
   consumeLoginTransaction,
@@ -68,17 +73,25 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           "009-worker-claim-idempotency",
           "010-sso-browser-owner-sessions",
           "011-role-invitations",
+          "012-player-display-names",
+          "013-role-requests",
+          "014-experience-drafts",
         ],
-        current: "011-role-invitations",
+        current: "014-experience-drafts",
       },
     );
     assert.deepEqual(
       await runMigrations(db, new Date("2026-10-25T00:00:01.000Z")),
       {
         applied: [],
-        current: "011-role-invitations",
+        current: "014-experience-drafts",
       },
     );
+    const draftIndexes = (
+      await db.collection("habi_experience_drafts").indexes()
+    ).map(({ name }) => name);
+    assert.ok(draftIndexes.includes("habi_experience_draft_id_unique"));
+    assert.ok(draftIndexes.includes("habi_experience_draft_owner_key_unique"));
     const migrationRecord = await db
       .collection("_habi_migrations")
       .findOne({ _id: "001-initial-schema" });
@@ -277,6 +290,103 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
     assert.equal(await db.collection("actors").countDocuments(), 6);
     assert.equal(await db.collection("memberships").countDocuments(), 6);
   });
+
+  await t.test(
+    "reflection drafts persist, revision-fence, isolate roles, and clear",
+    async () => {
+      const principal = {
+        actorId: "seed-a-player-actor",
+        tenantId: "seed-tenant-a",
+        role: "player",
+        playerId: "seed-player-001",
+        retentionPolicyId: "synthetic-retention-v1",
+      };
+      const path =
+        "https://habi.example.test/api/v1/players/seed-player-001/drafts/daily-reflection";
+      const saveRequest = (key, expectedRevision, payload) =>
+        new Request(path, {
+          method: "PUT",
+          headers: { "Idempotency-Key": key },
+          body: JSON.stringify({
+            expectedRevision,
+            contentVersion: "daily-reflection-v1",
+            payload,
+          }),
+        });
+      const first = await saveExperienceDraft({
+        request: saveRequest("draft-save-1", 0, {
+          moment: "A saját csapatom.",
+          helped: "A bemelegítés.",
+        }),
+        client,
+        db,
+        principal,
+        playerId: principal.playerId,
+        draftKey: "daily-reflection",
+      });
+      assert.equal(first.status, 201);
+      assert.equal(first.body.draft.revision, 1);
+      const updated = await saveExperienceDraft({
+        request: saveRequest("draft-save-2", 1, {
+          moment: "A saját csapatom.",
+          helped: "A rövid pihenő.",
+        }),
+        client,
+        db,
+        principal,
+        playerId: principal.playerId,
+        draftKey: "daily-reflection",
+      });
+      assert.equal(updated.status, 200);
+      assert.equal(updated.body.draft.revision, 2);
+      assert.equal(updated.body.draft.payload.helped, "A rövid pihenő.");
+      await assert.rejects(
+        saveExperienceDraft({
+          request: saveRequest("draft-stale-write", 1, {
+            moment: "Régi változat",
+            helped: "Régi változat",
+          }),
+          client,
+          db,
+          principal,
+          playerId: principal.playerId,
+          draftKey: "daily-reflection",
+        }),
+        { code: "REVISION_CONFLICT" },
+      );
+      await assert.rejects(
+        readExperienceDraft({
+          db,
+          principal: { ...principal, role: "parent" },
+          playerId: principal.playerId,
+          draftKey: "daily-reflection",
+        }),
+        { code: "ACCESS_DENIED" },
+      );
+      const cleared = await deleteExperienceDraft({
+        request: new Request(path, {
+          method: "DELETE",
+          headers: { "Idempotency-Key": "draft-delete-1" },
+          body: JSON.stringify({ expectedRevision: 2 }),
+        }),
+        client,
+        db,
+        principal,
+        playerId: principal.playerId,
+        draftKey: "daily-reflection",
+      });
+      assert.equal(cleared.body.cleared, true);
+      assert.deepEqual(
+        await readExperienceDraft({
+          db,
+          principal,
+          playerId: principal.playerId,
+          draftKey: "daily-reflection",
+        }),
+        { draft: null },
+      );
+    },
+  );
 
   await t.test(
     "auth transaction is persisted and consumed once by its browser",

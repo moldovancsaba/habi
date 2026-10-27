@@ -37,6 +37,7 @@ export const COLLECTIONS = Object.freeze([
   "external_requests",
   "knowledge_versions",
   "knowledge_sources",
+  "habi_experience_drafts",
 ]);
 
 export const INTERNAL_COLLECTIONS = Object.freeze(["auth_transactions"]);
@@ -61,6 +62,7 @@ export const COLLECTION_SCHEMA = Object.freeze({
   habi_sso_owner_handoffs: null,
   habi_role_invitations: null,
   habi_role_requests: null,
+  habi_experience_drafts: "ExperienceDraft",
   sessions: "Session",
   memberships: "Membership",
   players: "Player",

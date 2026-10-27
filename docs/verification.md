@@ -838,3 +838,17 @@ This is a functional migration slice, not complete legacy parity. Durable record
 - The player can opt into a morning check-in reminder and an evening reflection reminder, set both times, and save those preferences to the authenticated player diary. The reminder is shown only while the app is open; it does not issue device, email, or WhatsApp notifications. A same-day dismissal is stored so the prompt does not keep returning after the page reloads. There is no timezone setting in the UI.
 - Verification on the local Habi checkout: `npm run typecheck` PASS; `npm run lint` PASS (188 files); `npm test` PASS (117 passed, 0 failed, 1 Atlas-only integration test skipped); `npm run build` PASS; `git diff --check` PASS.
 - Limitation: this first version uses the diary record store for preferences and only reads the initial records page on load; a dedicated settings endpoint is still needed to make preference lookup independent from diary pagination. Authenticated production interaction is pending this release.
+
+## Resumable reflection drafts · 2026-10-27
+
+- Added the player-only `GET`, `PUT`, and `DELETE /api/v1/players/{playerId}/drafts/{draftKey}` API for daily, weekly, and monthly reflection drafts. Writes use an idempotency key and `expectedRevision`; draft reads and writes require the exact active player identity and membership. Parent and coach roles cannot read or edit these private drafts.
+- Added the `habi_experience_drafts` persistence contract and migration `014-experience-drafts`, including a unique draft key per tenant/player/actor and strict content-version-specific payload validation. Daily and weekly drafts save on request; each monthly answer autosaves its answer and next step. Finished reflections remove their corresponding draft.
+- UI communicates draft loading/saving state and restores saved answers after reload. Older or unknown content versions are not silently applied.
+- `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs node --test tests/database-persistence.test.mjs` — PASS, exit 0; 15 tests, including the real local replica-set migration and draft persistence/revision/role-isolation checks.
+- `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` — PASS, exit 0; 138 passed, 0 failed, 0 skipped.
+- `npm run lint` — PASS, exit 0; Biome checked 192 files.
+- `npm run typecheck` — PASS, exit 0.
+- `npm run build` — PASS, exit 0; Next.js 16.4.3 build includes `/api/v1/players/[playerId]/drafts/[draftKey]`.
+- `git diff --check` — PASS, exit 0.
+- Environment: local Habi checkout, disposable localhost MongoDB replica set `habiTestRs`, synthetic accounts and payloads only. No Production records or user sessions were used.
+- Production deployment and authenticated interaction are pending this release. After deployment, a verified Habi admin must run `/admin` → **Adatbázis frissítése** and confirm migration `014-experience-drafts`; without that, Production draft storage is not ready. PDF malware-scan acceptance still requires an available ClamAV worker and is outside this draft test.

@@ -143,6 +143,14 @@ type RoleRequest = {
   status: "pending" | "invitation-issued" | "declined" | "active";
   createdAt: string;
 };
+type ExperienceDraftKey =
+  | "daily-reflection"
+  | "weekly-reflection"
+  | "monthly-reflection";
+type ExperienceDraftPayload = Record<
+  string,
+  string | number | null | Array<string | number | null>
+>;
 
 const metrics = [
   [
@@ -308,6 +316,16 @@ export default function HabiWorkspace() {
   const [monthlyReflectionStep, setMonthlyReflectionStep] = useState(0);
   const [monthlyNextStep, setMonthlyNextStep] = useState("");
   const [monthlyNote, setMonthlyNote] = useState("");
+  const [draftsLoadedFor, setDraftsLoadedFor] = useState("");
+  const [draftNotice, setDraftNotice] = useState("");
+  const draftRevisions = useRef<Record<ExperienceDraftKey, number>>({
+    "daily-reflection": 0,
+    "weekly-reflection": 0,
+    "monthly-reflection": 0,
+  });
+  const draftWriteQueues = useRef<
+    Partial<Record<ExperienceDraftKey, Promise<boolean>>>
+  >({});
   const [reflectionType, setReflectionType] = useState<"daily" | "weekly">(
     "daily",
   );
@@ -340,6 +358,108 @@ export default function HabiWorkspace() {
   const [roleRequest, setRoleRequest] = useState<RoleRequest | null>(null);
   const [roleRequestMessage, setRoleRequestMessage] = useState("");
   const [roleRequestBusy, setRoleRequestBusy] = useState(false);
+
+  useEffect(() => {
+    if (
+      app.state !== "ready" ||
+      app.me.activeRole !== "player" ||
+      !selectedPlayerId
+    ) {
+      setDraftsLoadedFor("");
+      return;
+    }
+    const owner = `${app.me.actorId}:${selectedPlayerId}`;
+    const controller = new AbortController();
+    setDraftsLoadedFor("");
+    draftRevisions.current = {
+      "daily-reflection": 0,
+      "weekly-reflection": 0,
+      "monthly-reflection": 0,
+    };
+    void Promise.all(
+      (
+        ["daily-reflection", "weekly-reflection", "monthly-reflection"] as const
+      ).map(async (draftKey) => {
+        const response = await fetch(
+          `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/drafts/${draftKey}`,
+          {
+            cache: "no-store",
+            credentials: "same-origin",
+            signal: controller.signal,
+          },
+        );
+        const body = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(body?.code ?? "LOAD_FAILED");
+        return { draftKey, draft: body?.draft ?? null };
+      }),
+    )
+      .then((results) => {
+        if (controller.signal.aborted) return;
+        for (const { draftKey, draft } of results) {
+          if (!draft) continue;
+          draftRevisions.current[draftKey] = draft.revision;
+          if (
+            draftKey === "daily-reflection" &&
+            draft.contentVersion === "daily-reflection-v1"
+          ) {
+            setReflectionAnswers((current) => ({
+              ...current,
+              daily: {
+                moment: draft.payload.moment ?? "",
+                helped: draft.payload.helped ?? "",
+              },
+            }));
+          }
+          if (
+            draftKey === "weekly-reflection" &&
+            draft.contentVersion === "weekly-reflection-v1"
+          ) {
+            setReflectionAnswers((current) => ({
+              ...current,
+              weekly: {
+                helped: draft.payload.helped ?? "",
+                hard: draft.payload.hard ?? "",
+                next: draft.payload.next ?? "",
+              },
+            }));
+          }
+          if (
+            draftKey === "monthly-reflection" &&
+            draft.contentVersion ===
+              `monthly-reflection-v${monthlyReflectionContent.version}` &&
+            Array.isArray(draft.payload.answers) &&
+            draft.payload.answers.length ===
+              monthlyReflectionContent.questions.length
+          ) {
+            setMonthlyAnswers(draft.payload.answers);
+            setMonthlyReflectionStep(draft.payload.step);
+            setMonthlyNextStep(draft.payload.nextFocus ?? "");
+            setMonthlyNote(draft.payload.note ?? "");
+          }
+        }
+        const incompatibleDraft = results.some(
+          ({ draftKey, draft }) =>
+            draft &&
+            draft.contentVersion !==
+              (draftKey === "monthly-reflection"
+                ? `monthly-reflection-v${monthlyReflectionContent.version}`
+                : `${draftKey}-v1`),
+        );
+        setDraftNotice(
+          incompatibleDraft
+            ? "Egy korábbi kérdéssor piszkozatát nem lehet automatikusan megnyitni. Az új válaszaid mentése lecseréli."
+            : results.some(({ draft }) => draft)
+              ? "A korábbi piszkozatod folytatható."
+              : "",
+        );
+        setDraftsLoadedFor(owner);
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setDraftNotice(messageFor(error));
+      });
+    return () => controller.abort();
+  }, [app, selectedPlayerId]);
 
   useEffect(() => {
     const updateClock = () => setClientNow(Date.now());
@@ -743,6 +863,10 @@ export default function HabiWorkspace() {
   const playerId = selectedPlayerId;
   const selectedPlayer =
     players.find((player) => player.id === playerId) ?? null;
+  const experienceDraftsReady = Boolean(
+    active?.activeRole === "player" &&
+      draftsLoadedFor === `${active.actorId}:${selectedPlayerId}`,
+  );
   const ownPlayerData = selectedPlayer
     ? data.find((person) => person.id === selectedPlayer.id)
     : null;
@@ -1447,6 +1571,91 @@ export default function HabiWorkspace() {
     if (await savePlayerDiary(text)) setPracticeFeedback("");
   }
 
+  function saveExperienceDraft(
+    draftKey: ExperienceDraftKey,
+    payload: ExperienceDraftPayload,
+  ) {
+    const previous =
+      draftWriteQueues.current[draftKey] ?? Promise.resolve(true);
+    const operation = previous
+      .catch(() => false)
+      .then(async () => {
+        if (
+          app.state !== "ready" ||
+          app.me.activeRole !== "player" ||
+          !selectedPlayerId ||
+          draftsLoadedFor !== `${app.me.actorId}:${selectedPlayerId}`
+        ) {
+          setDraftNotice("A piszkozat még töltődik. Próbáld újra.");
+          return false;
+        }
+        try {
+          const contentVersion =
+            draftKey === "monthly-reflection"
+              ? `monthly-reflection-v${monthlyReflectionContent.version}`
+              : `${draftKey}-v1`;
+          const response = await fetch(
+            `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/drafts/${draftKey}`,
+            {
+              method: "PUT",
+              credentials: "same-origin",
+              headers: {
+                "Content-Type": "application/json",
+                "Idempotency-Key": crypto.randomUUID(),
+              },
+              body: JSON.stringify({
+                expectedRevision: draftRevisions.current[draftKey],
+                contentVersion,
+                payload,
+              }),
+            },
+          );
+          const body = await response.json().catch(() => null);
+          if (!response.ok) throw new Error(body?.code ?? "SAVE_FAILED");
+          draftRevisions.current[draftKey] = body.draft.revision;
+          setDraftNotice("A piszkozat elmentve.");
+          return true;
+        } catch (error) {
+          setDraftNotice(messageFor(error));
+          return false;
+        }
+      });
+    draftWriteQueues.current[draftKey] = operation;
+    void operation.then(() => {
+      if (draftWriteQueues.current[draftKey] === operation)
+        delete draftWriteQueues.current[draftKey];
+    });
+    return operation;
+  }
+
+  async function clearExperienceDraft(draftKey: ExperienceDraftKey) {
+    if (app.state !== "ready" || !selectedPlayerId) return false;
+    await draftWriteQueues.current[draftKey];
+    try {
+      const response = await fetch(
+        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/drafts/${draftKey}`,
+        {
+          method: "DELETE",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": crypto.randomUUID(),
+          },
+          body: JSON.stringify({
+            expectedRevision: draftRevisions.current[draftKey],
+          }),
+        },
+      );
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.code ?? "DELETE_FAILED");
+      draftRevisions.current[draftKey] = 0;
+      return true;
+    } catch (error) {
+      setDraftNotice(messageFor(error));
+      return false;
+    }
+  }
+
   async function saveMonthlyReflection(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (monthlyReflectionStep !== monthlyReflectionContent.questions.length)
@@ -1474,6 +1683,7 @@ export default function HabiWorkspace() {
       `Saját megjegyzés: ${monthlyNote.trim() || "Nem adtam hozzá."}`,
     ].join("\n");
     if (await savePlayerDiary(text)) {
+      await clearExperienceDraft("monthly-reflection");
       setMonthlyAnswers(
         Array(monthlyReflectionContent.questions.length).fill(null),
       );
@@ -1486,12 +1696,17 @@ export default function HabiWorkspace() {
   function answerMonthlyReflection(value: number | "skip" | "not-applicable") {
     const index = monthlyReflectionStep;
     if (index < 0 || index >= monthlyReflectionContent.questions.length) return;
-    setMonthlyAnswers((current) => {
-      const next = [...current];
-      next[index] = value;
-      return next;
+    const next = [...monthlyAnswers];
+    next[index] = value;
+    const nextStep = index + 1;
+    setMonthlyAnswers(next);
+    setMonthlyReflectionStep(nextStep);
+    void saveExperienceDraft("monthly-reflection", {
+      step: nextStep,
+      answers: next,
+      nextFocus: monthlyNextStep,
+      note: monthlyNote,
     });
-    setMonthlyReflectionStep(index + 1);
   }
 
   async function saveReflection(event: FormEvent<HTMLFormElement>) {
@@ -1516,6 +1731,9 @@ export default function HabiWorkspace() {
           ];
     const text = `${reflectionType === "daily" ? "Napi visszatekintés" : "Heti visszatekintés"} · ${date}\n${questions.map(([questionText, answer]) => `${questionText} ${answer.trim() || "Kihagyva"}`).join("\n")}`;
     if (await savePlayerDiary(text)) {
+      await clearExperienceDraft(
+        reflectionType === "daily" ? "daily-reflection" : "weekly-reflection",
+      );
       setReflectionAnswers((current) => ({
         ...current,
         [reflectionType]:
@@ -4165,12 +4383,22 @@ export default function HabiWorkspace() {
                       hetedből. Bármelyik kérdést kihagyhatod; a kész
                       visszatekintés a naplódban jelenik meg.
                     </p>
+                    {draftNotice ? (
+                      <p
+                        role="status"
+                        aria-live="polite"
+                        className={styles.muted}
+                      >
+                        {draftNotice}
+                      </p>
+                    ) : null}
                     <label className={styles.label} htmlFor="reflection-type">
                       Melyikre tekintenél vissza?
                     </label>
                     <select
                       id="reflection-type"
                       value={reflectionType}
+                      disabled={!experienceDraftsReady}
                       onChange={(event) =>
                         setReflectionType(
                           event.target.value as "daily" | "weekly",
@@ -4202,6 +4430,7 @@ export default function HabiWorkspace() {
                           id={`reflection-${reflectionType}-${key}`}
                           rows={2}
                           maxLength={1000}
+                          disabled={!experienceDraftsReady}
                           value={reflectionAnswers[reflectionType][key]}
                           onChange={(event) =>
                             setReflectionAnswers((current) => ({
@@ -4215,18 +4444,38 @@ export default function HabiWorkspace() {
                         />
                       </div>
                     ))}
-                    <button
-                      className={styles.primary}
-                      type="submit"
-                      disabled={
-                        busy ||
-                        !Object.values(reflectionAnswers[reflectionType]).some(
-                          (value) => value.trim(),
-                        )
-                      }
-                    >
-                      Visszatekintés mentése a naplóba
-                    </button>
+                    <div className={styles.actions}>
+                      <button
+                        className={styles.secondary}
+                        type="button"
+                        disabled={!experienceDraftsReady}
+                        onClick={() =>
+                          void saveExperienceDraft(
+                            reflectionType === "daily"
+                              ? "daily-reflection"
+                              : "weekly-reflection",
+                            reflectionType === "daily"
+                              ? reflectionAnswers.daily
+                              : reflectionAnswers.weekly,
+                          )
+                        }
+                      >
+                        Piszkozat mentése
+                      </button>
+                      <button
+                        className={styles.primary}
+                        type="submit"
+                        disabled={
+                          busy ||
+                          !experienceDraftsReady ||
+                          !Object.values(
+                            reflectionAnswers[reflectionType],
+                          ).some((value) => value.trim())
+                        }
+                      >
+                        Visszatekintés mentése a naplóba
+                      </button>
+                    </div>
                   </form>
                   <section
                     className={styles.formGroup}
@@ -4312,6 +4561,7 @@ export default function HabiWorkspace() {
                                 className={styles.secondary}
                                 type="button"
                                 key={choice}
+                                disabled={!experienceDraftsReady}
                                 onClick={() =>
                                   answerMonthlyReflection(index + 1)
                                 }
@@ -4323,6 +4573,7 @@ export default function HabiWorkspace() {
                           <button
                             className={styles.secondary}
                             type="button"
+                            disabled={!experienceDraftsReady}
                             onClick={() =>
                               answerMonthlyReflection("not-applicable")
                             }
@@ -4332,6 +4583,7 @@ export default function HabiWorkspace() {
                           <button
                             className={styles.secondary}
                             type="button"
+                            disabled={!experienceDraftsReady}
                             onClick={() => answerMonthlyReflection("skip")}
                           >
                             {monthlyReflectionContent.skipped}
@@ -4341,6 +4593,7 @@ export default function HabiWorkspace() {
                           <button
                             className={styles.secondary}
                             type="button"
+                            disabled={!experienceDraftsReady}
                             onClick={() =>
                               setMonthlyReflectionStep((step) => step - 1)
                             }
@@ -4385,6 +4638,7 @@ export default function HabiWorkspace() {
                           id="monthly-next-step"
                           rows={2}
                           maxLength={500}
+                          disabled={!experienceDraftsReady}
                           value={monthlyNextStep}
                           onChange={(event) =>
                             setMonthlyNextStep(event.target.value)
@@ -4397,6 +4651,7 @@ export default function HabiWorkspace() {
                           id="monthly-note"
                           rows={2}
                           maxLength={1000}
+                          disabled={!experienceDraftsReady}
                           value={monthlyNote}
                           onChange={(event) =>
                             setMonthlyNote(event.target.value)
@@ -4406,6 +4661,7 @@ export default function HabiWorkspace() {
                           <button
                             className={styles.secondary}
                             type="button"
+                            disabled={!experienceDraftsReady}
                             onClick={() =>
                               setMonthlyReflectionStep(
                                 monthlyReflectionContent.questions.length - 1,
@@ -4413,6 +4669,21 @@ export default function HabiWorkspace() {
                             }
                           >
                             Vissza az utolsó kérdéshez
+                          </button>
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            disabled={!experienceDraftsReady}
+                            onClick={() =>
+                              void saveExperienceDraft("monthly-reflection", {
+                                step: monthlyReflectionStep,
+                                answers: monthlyAnswers,
+                                nextFocus: monthlyNextStep,
+                                note: monthlyNote,
+                              })
+                            }
+                          >
+                            Piszkozat mentése
                           </button>
                           <button
                             className={styles.primary}

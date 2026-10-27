@@ -13,6 +13,7 @@ import { migration as ssoBrowserOwnerSessions } from "./010-sso-browser-owner-se
 import { migration as roleInvitations } from "./011-role-invitations.mjs";
 import { migration as playerDisplayNames } from "./012-player-display-names.mjs";
 import { migration as roleRequests } from "./013-role-requests.mjs";
+import { migration as experienceDrafts } from "./014-experience-drafts.mjs";
 
 const MIGRATIONS = [
   initialSchema,
@@ -28,6 +29,7 @@ const MIGRATIONS = [
   roleInvitations,
   playerDisplayNames,
   roleRequests,
+  experienceDrafts,
 ];
 
 /** @param {string[] | null} migrationIds */

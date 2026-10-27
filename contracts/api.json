@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.4.15",
+    "version": "2.4.16",
     "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
@@ -10676,6 +10676,364 @@
           },
           "409": {
             "description": "Request changed while invitation was issued"
+          }
+        }
+      }
+    },
+    "/v1/players/{playerId}/drafts/{draftKey}": {
+      "get": {
+        "operationId": "get_v1_players_playerId_drafts_draftKey",
+        "description": "Read the signed-in player’s own resumable reflection draft. Player-role only; no-store.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "x-domain-action": "read",
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          {
+            "name": "draftKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "daily-reflection",
+                "weekly-reflection",
+                "monthly-reflection"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Draft or null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/ExperienceDraftReadResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Player role and exact ownership required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player or draft key not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "put_v1_players_playerId_drafts_draftKey",
+        "description": "Create or revision-checked update of the signed-in player’s own reflection draft. Idempotent and player-role only.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "x-domain-action": "write",
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          {
+            "name": "draftKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "daily-reflection",
+                "weekly-reflection",
+                "monthly-reflection"
+              ]
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./schemas.json#/$defs/ExperienceDraftWriteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/ExperienceDraftWriteResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/ExperienceDraftWriteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Player role and exact ownership required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player or draft key not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision or idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_v1_players_playerId_drafts_draftKey",
+        "description": "Clear the signed-in player’s own draft at the expected revision. Idempotent and player-role only.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "x-domain-action": "write",
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          {
+            "name": "draftKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "daily-reflection",
+                "weekly-reflection",
+                "monthly-reflection"
+              ]
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "expectedRevision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Draft cleared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/ExperienceDraftDeleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Player role and exact ownership required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision or idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
           }
         }
       }
