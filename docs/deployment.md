@@ -74,6 +74,10 @@ Commit `c79dac4eb77c211474017db14829c146dfe33c26` is live as deployment `dpl_7tW
 
 Commit `629a124fbaceec8db488ba0ba0ce922383c257aa` is live as deployment `dpl_85ECdPEWweoL42vvGr6QJYHLvucH` (READY), with aliases including `habigoal.com`. The HABI2 flow accepts an opening message, ranks topics with preserved local keyword matching, keeps that message in the resumable conversation and saved transcript, and sends recognized safety phrases to the authored support branch. It reads v2 drafts and writes v3. The full local suite (151 passed), lint, typecheck, production build, and diff check passed; live route checks are in [verification](verification.md). No new API endpoint or database migration was required. The authenticated conversation itself has not been exercised in Production.
 
+## Structured monthly reflection persistence · Production deployment 2026-10-27
+
+Commit `3ec2b613e069e192255e8eed75a202e609426f84` is live in the `narimato/habi` Production target as deployment `habi-f0iq49ded-narimato.vercel.app` (READY). The monthly-reflection route is live and requires authentication. Migration `015-monthly-reflections` is additive and remains pending the authenticated `/admin` database update; do not treat monthly reflection finalization as Production-ready until that update succeeds and a real authenticated save/reload is verified. Local database acceptance passed against the disposable replica set. See [verification](verification.md).
+
 ## Start a guided conversation from a saved check-in · Production release 2026-10-27
 
 Commit `5aba1b388cc4660d7de8f2f1f4124223d07bf38f` is live as deployment `dpl_8WMELks4cJaRoJ7Ak2m1Vk4Q3ChT` (READY). The player overview exposes a direct action to open a guided conversation with the latest recognized check-in questions and answers as an editable opening. No sentiment is inferred and nothing is submitted until the player continues. No API endpoint, stored contract, or migration changed. Local verification and live route checks are in [verification](verification.md); an authenticated browser interaction remains unverified.

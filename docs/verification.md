@@ -871,6 +871,7 @@ This is a functional migration slice, not complete legacy parity. Durable record
 - `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` — PASS, exit 0; 162 passed, 0 failed, 0 skipped.
 - `npm run lint` — PASS, exit 0; Biome checked 211 files. `npm run typecheck` — PASS, exit 0. `npm run build` — PASS, exit 0; includes `/api/v1/players/[playerId]/monthly-reflections`. `git diff --check` — PASS, exit 0.
 - Environment: local Habi checkout, disposable localhost MongoDB replica set `habiTestRs`, synthetic identities and responses only. No Production records or user sessions were used. Migration `015-monthly-reflections` must be applied through the authenticated `/admin` database update before relying on this workflow in Production. No authenticated Production write has been verified.
+- The source commit `3ec2b613e069e192255e8eed75a202e609426f84` reached the `narimato/habi` Production target as deployment `habi-f0iq49ded-narimato.vercel.app` (READY). `https://habigoal.com/` returned HTTP 200; the new unauthenticated monthly-reflection API returned HTTP 401 `AUTHENTICATION_REQUIRED`, confirming the route is live and protected. This is not proof of an authenticated write or applied database migration.
 - Rollback: redeploy the preceding application version. The migration is additive; retain the collection, indexes, and migration ledger entry. Existing records are not rewritten or deleted.
 
 ## Resumable reflection drafts · 2026-10-27
