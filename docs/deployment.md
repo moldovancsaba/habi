@@ -6,7 +6,8 @@
 
 - A játékos 7/14/28 napos vagy kikapcsolt újranézést állíthat be cél létrehozásakor, illetve minden visszatekintés után. Esedékességkor jelzés jelenik meg az alkalmazás áttekintésén. A beállítás célazonosítóhoz kötött naplóeseményként mentődik; nincs időzóna-beállítás, push vagy külső értesítés.
 - Helyi teljes suite 143 passed / 0 failed / 1 Atlas-only skip; lint, typecheck, production build és diff check pass. Részletek: [verification](verification.md#saját-célok-újranézési-ciklusa--2026-10-27).
-- Ez a változás még nincs kiadva. Authenticated Production write és UI ellenőrzés még nincs igazolva; nem állítjuk, hogy már élesben használható.
+- Production commit `33c6a12` is READY as Vercel deployment `dpl_8nXvqb8Zm6d764MPytYes5Sx6G7W` in `narimato/habi`, aliased to `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`. Live checks: `/` 200, `/legacy` 307 to `/?view=legacy`, `/api/health` 200, and `/api/ready` 200.
+- The authenticated diary write and overdue reminder display have not been exercised in a Production browser session, so those steps remain unverified despite the READY deployment.
 
 ## HABI2 topic conversation release · 2026-10-27
 
