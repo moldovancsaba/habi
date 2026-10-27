@@ -1,0 +1,119 @@
+.trends {
+  margin-block: 24px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  min-width: 0;
+}
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.heading h3 {
+  margin: 0;
+}
+.periodControl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+}
+.heading select {
+  width: auto;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+.note {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.metrics {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-block: 20px;
+}
+.metrics button {
+  width: auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 130px;
+  padding: 12px;
+  min-height: 64px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.metrics button[aria-pressed="true"] {
+  border-color: var(--metric);
+  box-shadow: inset 0 0 0 1px var(--metric);
+  background: var(--mint);
+  font-weight: 700;
+}
+.viewport {
+  overflow-x: auto;
+  max-width: 100%;
+  padding-block: 8px;
+}
+.viewport svg {
+  display: block;
+  max-width: none;
+}
+.grid {
+  stroke: var(--line);
+  stroke-dasharray: 2 6;
+}
+.axis {
+  fill: var(--muted);
+  font-size: 13px;
+}
+.route {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--metro-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.station {
+  fill: var(--surface);
+  stroke: currentColor;
+  stroke-width: var(--metro-station-stroke);
+}
+.details {
+  color: var(--muted);
+  line-height: 1.8;
+}
+.details summary {
+  cursor: pointer;
+}
+.metrics button:focus-visible,
+.viewport:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .trends {
+    padding: 16px;
+  }
+  .metrics button {
+    flex-basis: 100px;
+  }
+}

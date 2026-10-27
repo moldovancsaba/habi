@@ -10,6 +10,7 @@ import {
 import styles from "./workspace.module.css";
 import MetroTimeline, { ActorBadge, type TimelinePage } from "./metro-timeline";
 import CoachReportWorkspace from "./coach-report-workspace";
+import CheckinTrends, { MetricGraphic } from "./checkin-graphics";
 import practices from "../lib/content/practices-v1.json";
 import journeyContent from "../lib/content/journeys-v1.json";
 import monthlyReflectionContent from "../lib/content/monthly-reflection-v1.json";
@@ -22,10 +23,7 @@ import {
   resolveGuidedConversation,
   startGuidedConversation,
 } from "../lib/workflows/guided-conversations.mjs";
-import {
-  createGoalExport,
-  summarizeRecordedAnswers,
-} from "../lib/workflows/goal-export.mjs";
+import { createGoalExport } from "../lib/workflows/goal-export.mjs";
 import {
   isGoalReviewDue,
   latestGoalReviewDate,
@@ -399,7 +397,6 @@ export default function HabiWorkspace() {
     daily: { moment: "", helped: "" },
     weekly: { helped: "", hard: "", next: "" },
   });
-  const [trendPeriod, setTrendPeriod] = useState<14 | 28 | 42>(14);
   const [clientNow, setClientNow] = useState<number | null>(null);
   const [reminderPrefs, setReminderPrefs] = useState({
     enabled: false,
@@ -1074,17 +1071,6 @@ export default function HabiWorkspace() {
       return "evening" as const;
     return null;
   })();
-  const trendCutoff =
-    clientNow === null
-      ? Number.POSITIVE_INFINITY
-      : clientNow - trendPeriod * 24 * 60 * 60 * 1000;
-  const trendCheckins = (ownPlayerData?.checkins ?? [])
-    .filter(
-      (item) => item.completedAt && Date.parse(item.completedAt) >= trendCutoff,
-    )
-    .sort((a, b) =>
-      String(a.completedAt ?? "").localeCompare(String(b.completedAt ?? "")),
-    );
   const latestPlayerCheckin = (ownPlayerData?.checkins ?? [])
     .filter((item) => item.completedAt)
     .slice()
@@ -3199,7 +3185,12 @@ export default function HabiWorkspace() {
                           );
                           return definition ? (
                             <div key={metric}>
-                              <dt>{definition[1]}</dt>
+                              <dt>
+                                <MetricGraphic metric={metric} code={code} />
+                                <span className={styles.metricQuestion}>
+                                  {definition[1]}
+                                </span>
+                              </dt>
                               <dd>{definition[2][code] ?? "Nincs válasz"}</dd>
                             </div>
                           ) : null;
@@ -3370,7 +3361,12 @@ export default function HabiWorkspace() {
                           );
                           return definition ? (
                             <div key={metric}>
-                              <dt>{definition[1]}</dt>
+                              <dt>
+                                <MetricGraphic metric={metric} code={code} />
+                                <span className={styles.metricQuestion}>
+                                  {definition[1]}
+                                </span>
+                              </dt>
                               <dd>{definition[2][code] ?? "Nincs válasz"}</dd>
                             </div>
                           ) : null;
@@ -3539,14 +3535,13 @@ export default function HabiWorkspace() {
                     A válaszok a játékos tapasztalatai. Ne kezeld őket külső
                     értékelésként.
                   </p>
+                  <CheckinTrends checkins={data[0]?.checkins ?? []} />
                   {data[0]?.checkins.length ? (
                     data[0].checkins.map((item) => (
                       <article className={styles.dataCard} key={item.id}>
                         <h3>
                           {item.completedAt
-                            ? new Date(item.completedAt).toLocaleDateString(
-                                "hu-HU",
-                              )
+                            ? new Date(item.completedAt).toLocaleString("hu-HU")
                             : "Dátum nélkül"}
                         </h3>
                         <dl className={styles.summaryMetrics}>
@@ -3556,7 +3551,12 @@ export default function HabiWorkspace() {
                             );
                             return definition ? (
                               <div key={metric}>
-                                <dt>{definition[1]}</dt>
+                                <dt>
+                                  <MetricGraphic metric={metric} code={code} />
+                                  <span className={styles.metricQuestion}>
+                                    {definition[1]}
+                                  </span>
+                                </dt>
                                 <dd>{definition[2][code] ?? "Nincs válasz"}</dd>
                               </div>
                             ) : null;
@@ -4209,7 +4209,15 @@ export default function HabiWorkspace() {
                               );
                               return definition ? (
                                 <div key={metric}>
-                                  <dt>{definition[1]}</dt>
+                                  <dt>
+                                    <MetricGraphic
+                                      metric={metric}
+                                      code={code}
+                                    />
+                                    <span className={styles.metricQuestion}>
+                                      {definition[1]}
+                                    </span>
+                                  </dt>
                                   <dd>
                                     {definition[2][code] ?? "Nincs válasz"}
                                   </dd>
@@ -4506,127 +4514,7 @@ export default function HabiWorkspace() {
                       </p>
                     )}
                   </div>
-                  <div className={styles.formGroup}>
-                    <h3>Állapotjelzéseid alakulása</h3>
-                    <p className={styles.muted}>
-                      Csak a ténylegesen rögzített válaszokat mutatjuk. A
-                      grafikon nem tölt ki hiányzó napokat, és nem értékel
-                      téged.
-                    </p>
-                    <label className={styles.label} htmlFor="trend-period">
-                      Időszak
-                    </label>
-                    <select
-                      id="trend-period"
-                      value={trendPeriod}
-                      onChange={(event) =>
-                        setTrendPeriod(
-                          Number(event.target.value) as 14 | 28 | 42,
-                        )
-                      }
-                    >
-                      <option value={14}>14 nap</option>
-                      <option value={28}>28 nap</option>
-                      <option value={42}>42 nap</option>
-                    </select>
-                    {trendCheckins.length === 0 ? (
-                      <p className={styles.emptyState}>
-                        Ebben az időszakban még nincs megjeleníthető
-                        állapotjelzés.
-                      </p>
-                    ) : (
-                      <div className={styles.knowledgeList}>
-                        {metrics.map(([metric, label, options]) => {
-                          const points = trendCheckins
-                            .map((checkin, index) => ({
-                              id: checkin.id,
-                              date: checkin.completedAt ?? "",
-                              value: checkin.answerCodes?.find(
-                                (answer) => answer.metric === metric,
-                              )?.code,
-                              index,
-                            }))
-                            .filter(
-                              (point) =>
-                                Number.isInteger(point.value) &&
-                                point.value !== undefined,
-                            );
-                          const recordedSummary = summarizeRecordedAnswers(
-                            points,
-                            options,
-                          );
-                          return (
-                            <article className={styles.dataCard} key={metric}>
-                              <h4>{label}</h4>
-                              {points.length ? (
-                                <>
-                                  <section
-                                    className={styles.trendRouteViewport}
-                                    aria-label={`${label}: ${points.length} rögzített válasz az elmúlt ${trendPeriod} napban`}
-                                  >
-                                    <ol
-                                      className={styles.trendRoute}
-                                      style={{ color: `var(--${metric})` }}
-                                    >
-                                      {points.map((point) => {
-                                        const timestamp = new Date(point.date);
-                                        const answer =
-                                          options[point.value ?? 0];
-                                        return (
-                                          <li
-                                            className={styles.trendStation}
-                                            key={`${metric}-${point.id}`}
-                                          >
-                                            <span
-                                              className={
-                                                styles.trendStationMark
-                                              }
-                                              aria-hidden="true"
-                                            />
-                                            <time
-                                              dateTime={point.date}
-                                              className={
-                                                styles.trendStationTime
-                                              }
-                                            >
-                                              {timestamp.toLocaleString(
-                                                "hu-HU",
-                                                {
-                                                  month: "short",
-                                                  day: "numeric",
-                                                  hour: "2-digit",
-                                                  minute: "2-digit",
-                                                },
-                                              )}
-                                            </time>
-                                            <span
-                                              className={
-                                                styles.trendStationAnswer
-                                              }
-                                            >
-                                              {answer}
-                                            </span>
-                                          </li>
-                                        );
-                                      })}
-                                    </ol>
-                                  </section>
-                                  <p className={styles.muted}>
-                                    {recordedSummary}
-                                  </p>
-                                </>
-                              ) : (
-                                <p className={styles.muted}>
-                                  Ehhez a kérdéshez nincs rögzített válasz ebben
-                                  az időszakban.
-                                </p>
-                              )}
-                            </article>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  <CheckinTrends checkins={ownPlayerData?.checkins ?? []} />
                   <div className={styles.formGroup}>
                     <h3>Fájdalmat érzel?</h3>
                     <p className={styles.muted}>
