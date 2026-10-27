@@ -897,5 +897,13 @@ This is a functional migration slice, not complete legacy parity. Durable record
 - `npm run lint` — PASS, exit 0; Biome checked 197 files. `npm run typecheck` — PASS, exit 0. `npm run build` — PASS, exit 0. `git diff --check` — PASS, exit 0.
 - Environment: local Habi checkout and isolated localhost MongoDB replica set; synthetic identities and authored fixture answers only. No Production records or user SSO sessions were used.
 - The broader synthetic HTTP/worker acceptance remains blocked at the PDF ClamAV step because the running LaunchAgent is configured for Production, not the localhost test service; it was left untouched. This conversation export does not use that worker.
-- No API or persistence schema change and no Production data migration are introduced by this export. Production deployment is pending this change.
-- Commit/owner: not yet committed or pushed as of this verification record. Production release is pending.
+- No API or persistence schema change and no Production data migration are introduced by this export. Commit `59ce12eae72b8d431fe4ceb4bdf471b6ed2cf8f8` is deployed as Production deployment `dpl_HQdC3FwYciiimS2nmxGTqMzsv9Vo` (READY); aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`.
+- Live unauthenticated checks after deployment: `/` HTTP 200, `/legacy` HTTP 307 to `/?view=legacy`, `/api/health` HTTP 200, and `/api/ready` HTTP 200. No authenticated Production interaction was performed.
+
+## Re-export a saved guided conversation from its timeline entry · 2026-10-27
+
+- The player can now download the exact saved diary text from an expanded timeline card when the record is a guided conversation. This works for the topic flow and existing authored situation flow; the exporter does not reconstruct or rewrite the historical transcript.
+- Only records already returned by the authorized timeline and linked-record APIs are eligible. Other diary or observation records do not show this download action.
+- `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` — PASS, exit 0; 149 passed, 0 failed, 0 skipped. `node --test tests/guided-conversations.test.mjs` — PASS, 5 tests, 0 skipped. `npm run lint` — PASS with no warnings/errors; `npm run typecheck` — PASS; `npm run build` — PASS; `git diff --check` — PASS.
+- Environment: local checkout and disposable localhost replica set with synthetic identities only. No Production records were changed or authenticated Production flows exercised.
+- The timeline re-export change is not yet committed or deployed. No API, persistence schema, or migration change is introduced.

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import instrument from "../../contracts/instrument.json" with { type: "json" };
+import { createSavedConversationExport } from "../lib/workflows/guided-conversations.mjs";
 
 export type HabiRole = "player" | "parent" | "coach";
 export type TimelineNode = {
@@ -250,6 +251,17 @@ function checkinAnswerLabel(metric: string, code: number) {
     question: item?.text ?? "Állapotjelzés",
     answer: choice?.label ?? "Válasz rögzítve",
   };
+}
+
+function downloadTextFile(text: string, filename: string) {
+  const url = URL.createObjectURL(
+    new Blob([text], { type: "text/plain;charset=utf-8" }),
+  );
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
 }
 
 export default function MetroTimeline({
@@ -572,6 +584,20 @@ export default function MetroTimeline({
                     <div className="event-details">
                       {event.summary ? <p>{event.summary}</p> : null}
                       {record?.text ? <p>{record.text}</p> : null}
+                      {record && createSavedConversationExport(record) ? (
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() =>
+                            downloadTextFile(
+                              createSavedConversationExport(record) ?? "",
+                              "Habi-vezetett-beszelgetes.txt",
+                            )
+                          }
+                        >
+                          Beszélgetés letöltése
+                        </button>
+                      ) : null}
                       {record?.answerCodes?.length ? (
                         <dl className="event-checkin-answers">
                           {record.answerCodes.map((answer) => {

@@ -88,3 +88,14 @@ export function createGuidedConversationSummary(payload) {
     state.outcome.text,
   ].join("\n");
 }
+
+export function createSavedConversationExport(record) {
+  if (
+    record?.kind !== "diary" ||
+    typeof record.text !== "string" ||
+    !record.text.startsWith("Vezetett beszélgetés ·")
+  ) {
+    return null;
+  }
+  return record.text;
+}

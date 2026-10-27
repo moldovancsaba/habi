@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   advanceGuidedConversation,
+  createSavedConversationExport,
   createGuidedConversationSummary,
   isValidGuidedConversationDraft,
   resolveGuidedConversation,
@@ -26,6 +27,19 @@ test("authored topic paths advance through real options and end at a fixed outco
   assert.equal(resolveGuidedConversation(draft)?.outcome?.id, "small-step");
   assert.equal(resolveGuidedConversation(draft)?.currentNode, null);
   assert.equal(isValidGuidedConversationDraft(draft), true);
+});
+
+test("saved guided conversations can be exported from their journal record", () => {
+  const text = "Vezetett beszélgetés · A jövőm\nKöszönöm.\nKérdés\nVálasz";
+  assert.equal(createSavedConversationExport({ kind: "diary", text }), text);
+  assert.equal(
+    createSavedConversationExport({ kind: "observation", text }),
+    null,
+  );
+  assert.equal(
+    createSavedConversationExport({ kind: "diary", text: "Másik bejegyzés" }),
+    null,
+  );
 });
 
 test("topic draft rejects invalid categories, branches, and turns after an outcome", () => {

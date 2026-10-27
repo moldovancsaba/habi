@@ -48,9 +48,13 @@
 
 The canonical origin and registered callback are `https://habigoal.com` and `https://habigoal.com/api/oauth/callback`. `www.habigoal.com` redirects to the apex. This keeps the login transaction cookie on the callback host. Real browser callback verification remains required.
 
-## Pending release: HABI2 conversation summary/export · 2026-10-27
+## HABI2 conversation summary/export · Production release 2026-10-27
 
-The local implementation renders a Hungarian transcript summary for a completed authored topic conversation, downloads it as UTF-8 text, and stores the same authored turns in the player journal when saved. Local lint, typecheck, the isolated-MongoDB test suite (148 passed), production build, and diff check pass; see [verification](verification.md). This slice is not yet committed, pushed, or deployed. It introduces no API contract, persistence schema, or migration change. Do not describe the download as available on the live site until its Production deployment is verified.
+Commit `59ce12eae72b8d431fe4ceb4bdf471b6ed2cf8f8` is live as deployment `dpl_HQdC3FwYciiimS2nmxGTqMzsv9Vo` (READY), with aliases `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`. The feature renders a Hungarian transcript summary for a completed authored topic conversation, downloads it as UTF-8 text, and stores the same authored turns in the player journal when saved. Live unauthenticated checks for `/`, `/api/health`, and `/api/ready` returned HTTP 200; `/legacy` returned HTTP 307 to `/?view=legacy`. Local verification is in [verification](verification.md). No API contract, persistence schema, or migration change was introduced.
+
+## Pending release: timeline re-export of a saved guided conversation · 2026-10-27
+
+The local timeline now offers a download action for an already-saved guided conversation diary record, preserving the stored transcript verbatim. This change has passed the full local test suite (149 passed), lint, typecheck, production build, and diff check; see [verification](verification.md). It is not yet committed, pushed, or deployed. It introduces no API, persistence-schema, or migration change.
 
 ## Runtime log levels
 
