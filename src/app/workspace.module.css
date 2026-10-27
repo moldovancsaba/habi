@@ -929,3 +929,10 @@
     grid-row: 1;
   }
 }
+.preformatted {
+  margin: 16px 0;
+  color: var(--habi-ink, #1d2f4f);
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

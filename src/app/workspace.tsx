@@ -27,6 +27,7 @@ import {
   summarizeRecordedAnswers,
 } from "../lib/workflows/goal-export.mjs";
 import { createCheckinConversationOpening } from "../lib/workflows/checkin-conversation-opening.mjs";
+import { createTrustedAdultMessage } from "../lib/workflows/trusted-adult-message.mjs";
 
 type Role = "player" | "parent" | "coach";
 type OwnRole = {
@@ -388,6 +389,7 @@ export default function HabiWorkspace() {
     topic: "",
     ask: "",
   });
+  const [trustedAdultPreview, setTrustedAdultPreview] = useState(false);
   const [requestedRole, setRequestedRole] = useState<Role>("player");
   const [requesterName, setRequesterName] = useState("");
   const [roleRequest, setRoleRequest] = useState<RoleRequest | null>(null);
@@ -1861,20 +1863,29 @@ export default function HabiWorkspace() {
 
   async function saveTrustedAdultPrep(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const { person, topic, ask } = trustedAdultPrep;
-    if (![person, topic, ask].some((value) => value.trim())) return;
-    const text = [
-      "Beszélgetésre készülök egy megbízható felnőttel",
-      person.trim() ? `Kivel: ${person.trim()}` : "Kivel: Kihagyva",
-      topic.trim()
-        ? `Miről szeretnék beszélni: ${topic.trim()}`
-        : "Miről szeretnék beszélni: Kihagyva",
-      ask.trim()
-        ? `Milyen segítséget kérnék: ${ask.trim()}`
-        : "Milyen segítséget kérnék: Kihagyva",
-    ].join("\n");
-    if (await savePlayerDiary(text))
+    if (createTrustedAdultMessage(trustedAdultPrep))
+      setTrustedAdultPreview(true);
+  }
+
+  async function saveTrustedAdultPrepToDiary() {
+    const text = createTrustedAdultMessage(trustedAdultPrep);
+    if (text && (await savePlayerDiary(text))) {
       setTrustedAdultPrep({ person: "", topic: "", ask: "" });
+      setTrustedAdultPreview(false);
+    }
+  }
+
+  function downloadTrustedAdultPrep() {
+    const text = createTrustedAdultMessage(trustedAdultPrep);
+    if (!text) return;
+    const url = URL.createObjectURL(
+      new Blob([text], { type: "text/plain;charset=utf-8" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "Habi-beszelgetes-elokeszito.txt";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   function startPainSupport() {
@@ -4661,49 +4672,92 @@ export default function HabiWorkspace() {
                     <h3>Beszélgetés előkészítése</h3>
                     <p className={styles.muted}>
                       Itt leírhatod, mit szeretnél elmondani egy általad
-                      választott, megbízható felnőttnek. Ez a jegyzet csak a
-                      naplódba kerül; Habi nem küldi el senkinek.
+                      választott, megbízható felnőttnek. Előbb átnézheted és
+                      javíthatod. Habi nem küldi el senkinek.
                     </p>
-                    {(
-                      [
-                        ["person", "Kivel szeretnél beszélni?"],
-                        ["topic", "Mit szeretnél elmondani?"],
-                        ["ask", "Milyen segítség esne jól?"],
-                      ] as const
-                    ).map(([key, label]) => (
-                      <div key={key}>
-                        <label
-                          className={styles.label}
-                          htmlFor={`trusted-adult-${key}`}
-                        >
-                          {label}
-                        </label>
-                        <textarea
-                          id={`trusted-adult-${key}`}
-                          rows={2}
-                          maxLength={1000}
-                          value={trustedAdultPrep[key]}
-                          onChange={(event) =>
-                            setTrustedAdultPrep((current) => ({
-                              ...current,
-                              [key]: event.target.value,
-                            }))
+                    {!trustedAdultPreview ? (
+                      <>
+                        {(
+                          [
+                            ["person", "Kivel szeretnél beszélni?"],
+                            ["topic", "Mit szeretnél elmondani?"],
+                            ["ask", "Milyen segítség esne jól?"],
+                          ] as const
+                        ).map(([key, label]) => (
+                          <div key={key}>
+                            <label
+                              className={styles.label}
+                              htmlFor={`trusted-adult-${key}`}
+                            >
+                              {label}
+                            </label>
+                            <textarea
+                              id={`trusted-adult-${key}`}
+                              rows={2}
+                              maxLength={1000}
+                              value={trustedAdultPrep[key]}
+                              onChange={(event) =>
+                                setTrustedAdultPrep((current) => ({
+                                  ...current,
+                                  [key]: event.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                        ))}
+                        <button
+                          className={styles.primary}
+                          type="submit"
+                          disabled={
+                            busy ||
+                            !Object.values(trustedAdultPrep).some((value) =>
+                              value.trim(),
+                            )
                           }
-                        />
-                      </div>
-                    ))}
-                    <button
-                      className={styles.primary}
-                      type="submit"
-                      disabled={
-                        busy ||
-                        !Object.values(trustedAdultPrep).some((value) =>
-                          value.trim(),
-                        )
-                      }
-                    >
-                      Jegyzet mentése a naplóba
-                    </button>
+                        >
+                          Előnézet és átnézés
+                        </button>
+                      </>
+                    ) : (
+                      <section
+                        className={styles.dataCard}
+                        aria-live="polite"
+                        aria-label="Üzenet előnézete"
+                      >
+                        <h4>Így készítetted elő</h4>
+                        <pre className={styles.preformatted}>
+                          {createTrustedAdultMessage(trustedAdultPrep)}
+                        </pre>
+                        <p className={styles.muted}>
+                          Ez csak előnézet. A Habi nem küldi el. Letöltheted,
+                          vagy elmentheted a saját naplódba.
+                        </p>
+                        <div className={styles.actions}>
+                          <button
+                            className={styles.primary}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void saveTrustedAdultPrepToDiary()}
+                          >
+                            Mentés a saját naplómba
+                          </button>
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            onClick={downloadTrustedAdultPrep}
+                          >
+                            Letöltöm a szöveget
+                          </button>
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            onClick={() => setTrustedAdultPreview(false)}
+                          >
+                            Vissza a szerkesztéshez
+                          </button>
+                        </div>
+                      </section>
+                    )}
                   </form>
                   <form className={styles.formGroup} onSubmit={saveOwnGoal}>
                     <label className={styles.label} htmlFor="own-goal">
