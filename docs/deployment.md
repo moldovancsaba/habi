@@ -6,7 +6,9 @@
 
 - The current release adds seven topic choices backed by three versioned authored conversation trees. Each answer is saved as a player-owned revision-fenced draft; a completed transcript is written to the diary. The trees are deterministic, and no personal conversation content is sent to an AI service.
 - Local verification: 147 tests passed, 0 failed, 0 skipped with the isolated localhost replica set; lint, typecheck, build, and `git diff --check` passed. See [verification](verification.md#habi2-authored-topic-conversations--2026-10-27).
-- Production release is pending this commit. It uses the existing `014-experience-drafts` migration and adds no schema migration. Before Production drafts can persist, the verified Habi admin must confirm that migration `014-experience-drafts` has been applied in `/admin` → **Adatbázis frissítése**. This release does not import or change old diary records.
+- Production commit `6693cdfa3378ab9efb58768b6d9be4cf64f42336` is READY as `dpl_5F7hsaczwaNNMXvUi42audNCrj4T`, aliased to `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`. Live unauthenticated routes `/`, `/admin`, `/legacy`, `/api/health`, and `/api/ready` return HTTP 200; the player draft API correctly returns 401 without a session.
+- It uses the existing `014-experience-drafts` migration and adds no schema migration. Production application of migration `014-experience-drafts` remains unconfirmed: `/admin` currently requires an authenticated DoneIsBetter admin, so persistent Production drafts must not be claimed until the admin update screen confirms it. This release does not import or change old diary records.
+- Local synthetic HTTP/worker acceptance was attempted but could not complete the PDF-scan step: the running LaunchAgent is configured for Production and cannot process localhost synthetic jobs. It was left running and untouched; details are recorded in [verification](verification.md).
 
 ## Reflection-draft release · 2026-10-27
 
