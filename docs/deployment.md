@@ -56,9 +56,9 @@ Commit `59ce12eae72b8d431fe4ceb4bdf471b6ed2cf8f8` is live as deployment `dpl_HQd
 
 Commit `c79dac4eb77c211474017db14829c146dfe33c26` is live as deployment `dpl_7tWzzKxTFMo2BeQkCnr9YewF1Ewa` (READY), with aliases `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`. The player can download the exact saved diary text from an expanded timeline card. No API, persistence-schema, or migration change was introduced. Live endpoint checks and local tests are listed in [verification](verification.md).
 
-## Pending release: free-text guided conversation start · 2026-10-27
+## Free-text guided conversation start · Production release 2026-10-27
 
-The local HABI2 flow accepts an opening message, ranks topics with preserved local keyword matching, keeps that message in the resumable conversation and saved transcript, and sends recognized safety phrases to the authored support branch. It accepts both v2 and v3 drafts and writes v3. The full local suite (151 passed), lint, typecheck, production build, and diff check pass; see [verification](verification.md). This slice is not yet committed, pushed, or deployed. No new API endpoint or database migration is required.
+Commit `629a124fbaceec8db488ba0ba0ce922383c257aa` is live as deployment `dpl_85ECdPEWweoL42vvGr6QJYHLvucH` (READY), with aliases including `habigoal.com`. The HABI2 flow accepts an opening message, ranks topics with preserved local keyword matching, keeps that message in the resumable conversation and saved transcript, and sends recognized safety phrases to the authored support branch. It reads v2 drafts and writes v3. The full local suite (151 passed), lint, typecheck, production build, and diff check passed; live route checks are in [verification](verification.md). No new API endpoint or database migration was required. The authenticated conversation itself has not been exercised in Production.
 
 ## Runtime log levels
 
