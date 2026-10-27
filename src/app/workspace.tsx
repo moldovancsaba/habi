@@ -3399,6 +3399,52 @@ export default function HabiWorkspace() {
                     </button>
                   ) : null}
                 </div>
+                {timelineDayFilter ? (
+                  <article
+                    className={styles.dataCard}
+                    aria-label="Napi összefoglaló"
+                  >
+                    <p className={styles.eyebrow}>NAPI ÖSSZEFOGLALÓ</p>
+                    <h3>
+                      {new Date(
+                        `${timelineDayFilter}T00:00:00`,
+                      ).toLocaleDateString("hu-HU", { dateStyle: "full" })}
+                    </h3>
+                    {data[0]?.checkins.length ? (
+                      data[0].checkins.map((item) => (
+                        <div key={item.id}>
+                          <p className={styles.muted}>
+                            {item.completedAt
+                              ? new Date(item.completedAt).toLocaleTimeString(
+                                  "hu-HU",
+                                  { hour: "2-digit", minute: "2-digit" },
+                                )
+                              : "Állapotjelzés"}
+                          </p>
+                          <dl className={styles.summaryMetrics}>
+                            {item.answerCodes?.map(({ metric, code }) => {
+                              const definition = metrics.find(
+                                ([key]) => key === metric,
+                              );
+                              return definition ? (
+                                <div key={metric}>
+                                  <dt>{definition[1]}</dt>
+                                  <dd>
+                                    {definition[2][code] ?? "Nincs válasz"}
+                                  </dd>
+                                </div>
+                              ) : null;
+                            })}
+                          </dl>
+                        </div>
+                      ))
+                    ) : (
+                      <p className={styles.muted}>
+                        Ezen a napon nincs rögzített állapotjelzés.
+                      </p>
+                    )}
+                  </article>
+                ) : null}
                 <div className="story-legend">
                   {(["player", "parent", "coach"] as const).map((role) => (
                     <span className={`role-badge actor-${role}`} key={role}>

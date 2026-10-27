@@ -6,7 +6,8 @@
 - A `GET /api/v1/timeline` és a játékosi check-in eredménylista opcionális `from`/`to` időhatárokat fogad. A timeline a kérést a snapshot idejénél nem engedi későbbre olvasni. A dátummező nem kér és nem tárol külön időzóna-beállítást.
 - `npm test` — PASS, 119 pass / 0 fail / 1 skipped (izolált Atlas replica-set integration URI nélkül); `npm run lint` — PASS, 188 fájl; `npm run typecheck` — PASS; `npm run build` — PASS; `git diff --check` — PASS.
 - `set -a; source .env.test.example; set +a; npm run test:workflow:local` — BLOCKED, exit 1 az edzői PDF vírusvizsgálatánál: a szintetikus feltöltés 60 másodperc után is `pending` állapotban maradt, így a ClamAV worker végponttól végpontig nem volt elérhető ebben a környezetben. A szintetikus tesztadatbázis migrációja és seedelése lefutott; Production adatot nem érintett.
-- Deployment és bejelentkezett böngészős ellenőrzés még hátravan. Nincs adatbázis-migráció; visszaállítás a kód visszavonásával vagy előző Production deploymentre rollbackkel történik. A megőrzött eseményadatokat ez a változás nem módosítja.
+- A napválasztó Production kiadása: commit `3a996de09d85d3ca159bf70c37e6b5f762bed3dc`, Vercel deployment `dpl_FrcNHxA2YvHYefX31whfjH6NuXog`, `READY`, a `narimato/habi` Production projektben. `habigoal.com/`, `/admin`, `/api/health` és `/api/ready` HTTP 200; `/legacy` HTTP 307 a `/?view=legacy` natív munkaterületre, amely HTTP 200; névtelen `/api/v1/timeline` HTTP 401-et ad, ahogy a védett API-nak kell. Bejelentkezett böngészős ellenőrzés még hátravan.
+- A napi összefoglaló kártya fejlesztése ehhez a naplóbejegyzéshez még nincs kiadva. Nincs adatbázis-migráció; visszaállítás a kód visszavonásával vagy előző Production deploymentre rollbackkel történik. A megőrzött eseményadatokat ez a változás nem módosítja.
 
 ## Mobil munkaterület-fejléc és műveleti visszajelzés · 2026-10-26
 
