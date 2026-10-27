@@ -2343,8 +2343,7 @@ export default function HabiWorkspace() {
     )
       return;
     const source = questionSource;
-    const isCoachQuestion = active.activeRole === "coach";
-    if (!isCoachQuestion && !source) {
+    if (!source) {
       setNotice(
         "Terv készítéséhez előbb válassz egy forrásolt játékos-beszámolót.",
       );
@@ -2364,10 +2363,9 @@ export default function HabiWorkspace() {
             "Idempotency-Key": crypto.randomUUID(),
           },
           body: JSON.stringify({
-            sourceRefs:
-              isCoachQuestion || !source
-                ? []
-                : [{ id: source.id, revision: source.revision, span: null }],
+            sourceRefs: [
+              { id: source.id, revision: source.revision, span: null },
+            ],
             answerRef: null,
             actions: [
               {
@@ -2576,12 +2574,14 @@ export default function HabiWorkspace() {
       !active ||
       !["parent", "coach"].includes(active.activeRole) ||
       !playerId ||
-      !question.trim()
+      !question.trim() ||
+      busy
     )
       return;
     setNotice("");
     const source = questionSource;
-    if (!source) {
+    const isCoachQuestion = active.activeRole === "coach";
+    if (!isCoachQuestion && !source) {
       setQuestionFeedback({
         kind: "error",
         message:
@@ -2607,9 +2607,10 @@ export default function HabiWorkspace() {
             parentTurnId: null,
             intent: "new_question",
             question: question.trim(),
-            sourceRefs: [
-              { id: source.id, revision: source.revision, span: null },
-            ],
+            sourceRefs:
+              isCoachQuestion || !source
+                ? []
+                : [{ id: source.id, revision: source.revision, span: null }],
           }),
         },
       );
