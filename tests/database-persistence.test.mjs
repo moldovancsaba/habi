@@ -9,6 +9,7 @@ import {
 import { runIdempotentCommand } from "../src/lib/database/idempotent-command.mjs";
 import { runMigrations } from "../src/lib/database/migrations/runner.mjs";
 import { createPlan } from "../src/lib/workflows/plans.mjs";
+import { requestInterpretation } from "../src/lib/workflows/interpretations.mjs";
 import { applySyntheticSeed } from "../src/lib/database/seed.mjs";
 import {
   deleteExperienceDraft,
@@ -402,6 +403,48 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
       assert.equal(result.status, 201);
       assert.equal(result.body.status, "proposed");
       assert.equal(result.body.actions[0].ownerActorId, "seed-a-coach-one");
+
+      const questionThreadId = "coach-player-context-thread";
+      const question = await requestInterpretation({
+        request: new Request(
+          "https://habi.example/api/v1/players/seed-player-001/interpretations",
+          {
+            method: "POST",
+            headers: { "Idempotency-Key": "coach-player-context-question-1" },
+            body: JSON.stringify({
+              threadId: questionThreadId,
+              parentTurnId: null,
+              intent: "new_question",
+              question: "Mit tudhatok meg a játékos visszajelzéseiből?",
+              sourceRefs: [],
+            }),
+          },
+        ),
+        client,
+        db,
+        principal: {
+          actorId: "seed-a-coach-one",
+          role: "coach",
+          tenantId: "seed-tenant-a",
+          retentionPolicyId: "synthetic-retention-v1",
+          playerId: null,
+          accessRevision: 1,
+        },
+        playerId: "seed-player-001",
+        now,
+      });
+      assert.equal(question.status, 202);
+      const savedTurn = await db.collection("turns").findOne({
+        tenantId: "seed-tenant-a",
+        threadId: questionThreadId,
+      });
+      const savedJob = await db.collection("jobs").findOne({
+        tenantId: "seed-tenant-a",
+        turnId: savedTurn.id,
+      });
+      assert.ok(savedTurn.sourceRefs.some((ref) => ref.id === source.id));
+      assert.ok(savedTurn.sourceRefs.some((ref) => ref.id === result.body.id));
+      assert.deepEqual(savedJob.sourceRefs, savedTurn.sourceRefs);
     },
   );
 

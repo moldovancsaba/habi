@@ -381,16 +381,13 @@ const coachResults = await jsonRequest(
 );
 assert.equal(coachResults.response.status, 200);
 assert.equal(coachResults.payload.items[0].answerCodes[0].code, 2);
-const coachUpload = await jsonRequest(
-  `/api/v1/players/${playerId}/uploads`,
-  {
-    method: "POST",
-    cookie: coach.cookie,
-    csrf: coach.csrf,
-    key: `${idempotencyPrefix}-coach-report-upload`,
-    body: { size: pdf.length, mime: "application/pdf", sha256: pdfHash },
-  },
-);
+const coachUpload = await jsonRequest(`/api/v1/players/${playerId}/uploads`, {
+  method: "POST",
+  cookie: coach.cookie,
+  csrf: coach.csrf,
+  key: `${idempotencyPrefix}-coach-report-upload`,
+  body: { size: pdf.length, mime: "application/pdf", sha256: pdfHash },
+});
 assert.equal(coachUpload.response.status, 201);
 const coachChunk = await binaryRequest(
   `/api/v1/uploads/${coachUpload.payload.id}/chunks/0`,
@@ -427,10 +424,9 @@ do {
   Date.now() < coachScanDeadline
 );
 assert.equal(coachScan.payload.scanStatus, "passed");
-const coachReports = await jsonRequest(
-  `/api/v1/players/${playerId}/reports`,
-  { cookie: coach.cookie },
-);
+const coachReports = await jsonRequest(`/api/v1/players/${playerId}/reports`, {
+  cookie: coach.cookie,
+});
 assert.equal(coachReports.response.status, 200);
 const coachReadyReport = coachReports.payload.items.find(
   (item) => item.id === coachReport.payload.id,
@@ -444,7 +440,10 @@ const coachUploadedExtraction = await jsonRequest(
     csrf: coach.csrf,
     key: `${idempotencyPrefix}-coach-extraction`,
     body: {
-      reportRef: { id: coachReadyReport.id, revision: coachReadyReport.revision },
+      reportRef: {
+        id: coachReadyReport.id,
+        revision: coachReadyReport.revision,
+      },
       fields: [
         {
           field: "Szintetikus kérdőívmező",
@@ -782,13 +781,8 @@ const reportQuestion = await jsonRequest(
       parentTurnId: null,
       intent: "new_question",
       question: "Mit lehet megállapítani az ellenőrzött felmérési mezőből?",
-      sourceRefs: [
-        {
-          id: extraction.payload.id,
-          revision: extractionReviewed.payload.revision,
-          span: null,
-        },
-      ],
+      // Empty source set exercises the coach's player-wide, server-resolved context.
+      sourceRefs: [],
     },
   },
 );
@@ -819,6 +813,12 @@ assert.ok(
   ["no_evidence", "awaiting_review", "ready"].includes(
     reportInterpretation.payload.answerState,
   ),
+);
+assert.ok(
+  reportInterpretation.payload.answer?.manifest?.sourceRefs?.some(
+    (ref) => ref.id === extraction.payload.id,
+  ),
+  "player-wide coach question did not include the verified extraction",
 );
 await signOut(extractionCoach);
 await signOut(player);

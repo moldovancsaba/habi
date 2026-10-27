@@ -27,7 +27,70 @@ function sourceVisible(principal, ref, record, publications) {
     return (
       record.answer?.status === "ready" && record.answer?.validity === "current"
     );
-  return true;
+  return ["checkin_results", "assessment_results"].includes(record.collection);
+}
+
+const COACH_CONTEXT_SOURCES = [
+  { collection: "records", kind: "record" },
+  { collection: "checkin_results", kind: "checkin_result" },
+  { collection: "assessment_results", kind: "assessment_result" },
+  { collection: "monthly_reflections", kind: "monthly_reflection" },
+  { collection: "plans", kind: "plan" },
+  { collection: "follow_ups", kind: "follow_up" },
+  { collection: "reports", kind: "report", status: "ready" },
+  { collection: "extractions", kind: "extraction", status: "verified" },
+  { collection: "interpretations", kind: "interpretation", status: "ready" },
+];
+const COACH_CONTEXT_LIMIT = 20;
+
+function sourceTime(source) {
+  const value =
+    source.submittedAt ??
+    source.completedAt ??
+    source.occurredAt ??
+    source.createdAt ??
+    source.updatedAt;
+  const time = Date.parse(value ?? "");
+  return Number.isFinite(time) ? time : 0;
+}
+
+/** Resolve a bounded, revision-pinned context set for an authenticated coach. */
+export async function collectCoachContextSourceRefs(db, principal, playerId) {
+  if (principal.role !== "coach") throw new HabiApiError("ACCESS_DENIED");
+  const candidates = [];
+  for (const source of COACH_CONTEXT_SOURCES) {
+    const query = { tenantId: principal.tenantId, playerId };
+    if (source.status === "ready" && source.collection === "interpretations") {
+      query["answer.status"] = "ready";
+      query["answer.validity"] = "current";
+    } else if (source.status) {
+      query.status = source.status;
+    }
+    const docs = await db
+      .collection(source.collection)
+      .find(query)
+      .sort({ createdAt: -1, id: -1 })
+      .limit(COACH_CONTEXT_LIMIT)
+      .toArray();
+    for (const doc of docs) {
+      if (!doc.id || !Number.isInteger(doc.revision) || doc.revision < 1)
+        continue;
+      candidates.push({
+        id: doc.id,
+        revision: doc.revision,
+        span: null,
+        collection: source.collection,
+        time: sourceTime(doc),
+      });
+    }
+  }
+  return candidates
+    .sort(
+      (left, right) =>
+        right.time - left.time || left.id.localeCompare(right.id),
+    )
+    .slice(0, COACH_CONTEXT_LIMIT)
+    .map(({ id, revision, span }) => ({ id, revision, span }));
 }
 
 export async function verifySourceSet(
@@ -50,6 +113,9 @@ export async function verifySourceSet(
       "records",
       "checkin_results",
       "assessment_results",
+      "monthly_reflections",
+      "plans",
+      "follow_ups",
       "reports",
       "extractions",
       "interpretations",
@@ -96,7 +162,11 @@ export async function requestInterpretation({
   const key = request.headers.get("idempotency-key");
   if (!key || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(key))
     throw new HabiApiError("INVALID_INPUT");
-  await verifySourceSet(db, principal, playerId, input.sourceRefs);
+  const sourceRefs =
+    principal.role === "coach" && input.sourceRefs.length === 0
+      ? await collectCoachContextSourceRefs(db, principal, playerId)
+      : input.sourceRefs;
+  await verifySourceSet(db, principal, playerId, sourceRefs);
   const turnId = randomUUID();
   const jobId = randomUUID();
   const threadId = input.threadId;
@@ -116,7 +186,7 @@ export async function requestInterpretation({
     parentTurnId: input.parentTurnId,
     intent: input.intent,
     question: input.question,
-    sourceRefs: input.sourceRefs,
+    sourceRefs,
     answerRef: null,
     status: "queued",
   };
@@ -138,7 +208,7 @@ export async function requestInterpretation({
     requesterRole: principal.role,
     turnId,
     uploadId: null,
-    sourceRefs: input.sourceRefs,
+    sourceRefs,
     status: "queued",
     reasonCode: null,
     workerClientId: null,
@@ -177,7 +247,7 @@ export async function requestInterpretation({
         transactionDb,
         principal,
         playerId,
-        input.sourceRefs,
+        sourceRefs,
         session,
       );
       let thread = await transactionDb

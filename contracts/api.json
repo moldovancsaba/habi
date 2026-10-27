@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.4.19",
+    "version": "2.4.20",
     "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
@@ -4921,7 +4921,7 @@
     "/v1/players/{playerId}/interpretations": {
       "post": {
         "operationId": "post_v1_players_playerId_interpretations",
-        "description": "Szülő vagy coach indíthat személyes értelmezési jobot. A szerver újraellenőrzi a hivatkozott források tenant/player/revision és aktuális láthatóságát, majd a thread/message/turn/job rekordokat tranzakcióban menti. A job 202 queued állapottal tér vissza; worker kiesése nem jelenti a tartalom hibáját.",
+        "description": "Szülő vagy coach indíthat személyes értelmezési jobot. A szerver újraellenőrzi a hivatkozott források tenant/player/revision és aktuális láthatóságát, majd a thread/message/turn/job rekordokat tranzakcióban menti. Coach üres sourceRefs esetén a szerver a játékos legfeljebb 20 legfrissebb, hozzáférhető forrását rögzíti; a szülő továbbra is csak explicit, számára látható forrásra kérdezhet. A job 202 queued állapottal tér vissza; worker kiesése nem jelenti a tartalom hibáját.",
         "security": [
           {
             "sessionCookie": []

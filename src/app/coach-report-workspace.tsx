@@ -122,7 +122,6 @@ export default function CoachReportWorkspace({
   const [interpretation, setInterpretation] = useState<Interpretation | null>(
     null,
   );
-  const [interpretationSource, setInterpretationSource] = useState("");
 
   const loadReports = useCallback(async () => {
     const response = await fetch(
@@ -244,13 +243,7 @@ export default function CoachReportWorkspace({
   }, [interpretationJob]);
 
   async function requestInterpretation() {
-    const source = reports
-      .map((report) => ({ report, extraction: extractions[report.id] }))
-      .find(
-        ({ extraction }) => extraction?.id === interpretationSource,
-      )?.extraction;
-    if (source?.status !== "verified" || !interpretationQuestion.trim() || busy)
-      return;
+    if (!interpretationQuestion.trim() || busy) return;
     setBusy(true);
     setMessage("Az értelmezési kérés elküldése…");
     setMessageKind("success");
@@ -271,9 +264,9 @@ export default function CoachReportWorkspace({
             parentTurnId: null,
             intent: "new_question",
             question: interpretationQuestion.trim(),
-            sourceRefs: [
-              { id: source.id, revision: source.revision, span: null },
-            ],
+            // An empty set asks the server to resolve the coach's bounded,
+            // player-wide context from currently readable records.
+            sourceRefs: [],
           }),
         },
       ).then(readResponse);
@@ -749,34 +742,17 @@ export default function CoachReportWorkspace({
         className={styles.interpretation}
         aria-labelledby="report-interpretation-heading"
       >
-        <h3 id="report-interpretation-heading">
-          Mit szeretnél megérteni a felmérésből?
-        </h3>
+        <h3 id="report-interpretation-heading">Kérdezz a játékosról</h3>
         <p className={styles.intro}>
-          Csak ellenőrzött adatmezőből kérhető forrásolt magyarázat. Az
-          AI-válasz nem diagnózis; a bizonytalanságot és az ellenőrzési
-          állapotot külön jelezzük.
+          Kérdezz a játékos Habi-ban elérhető visszajelzéseiről és
+          előzményeiről. A helyi AI a legutóbbi 20 hozzáférhető forrást veszi
+          figyelembe: napi állapotjelzéseket, játékosi, szülői és edzői
+          bejegyzéseket, havi visszatekintéseket, lezárt felméréseket, közös
+          terveket és utánkövetéseket, valamint ellenőrzött riportadatokat és
+          korábbi jóváhagyott magyarázatokat. A még nem ellenőrzött riportmezők
+          nem kerülnek a válasz alapjába. Minden állításnál láthatóak a források
+          és a bizonytalanság; a válasz nem diagnózis.
         </p>
-        <label htmlFor="interpretation-source">Ellenőrzött adatforrás</label>
-        <select
-          id="interpretation-source"
-          value={interpretationSource}
-          onChange={(event) => setInterpretationSource(event.target.value)}
-        >
-          <option value="">Válassz ellenőrzött felmérési adatot</option>
-          {reports.flatMap((report) => {
-            const extraction = extractions[report.id];
-            return report.status === "ready" &&
-              extraction?.status === "verified"
-              ? [
-                  <option key={extraction.id} value={extraction.id}>
-                    Felmérési eredmény · {extraction.fields.length} ellenőrzött
-                    mező
-                  </option>,
-                ]
-              : [];
-          })}
-        </select>
         <label htmlFor="interpretation-question">Kérdés</label>
         <textarea
           id="interpretation-question"
@@ -792,7 +768,6 @@ export default function CoachReportWorkspace({
           disabled={
             busy ||
             !interpretationQuestion.trim() ||
-            !interpretationSource ||
             Boolean(
               interpretationJob &&
                 ["queued", "processing", "waiting"].includes(
@@ -807,12 +782,6 @@ export default function CoachReportWorkspace({
             ? "Helyi feldolgozás folyamatban…"
             : "Forrásolt értelmezés kérése"}
         </button>
-        {!interpretationSource && (
-          <p className={styles.intro}>
-            Az értelmezéshez előbb tölts fel PDF-et, rögzítsd a mezőket, majd
-            ellenőrizd és hagyd jóvá azokat.
-          </p>
-        )}
         {interpretation && (
           <article className={styles.interpretationResult} aria-live="polite">
             <p className={styles.eyebrow}>
@@ -823,6 +792,10 @@ export default function CoachReportWorkspace({
             </p>
             {interpretation.answer ? (
               <>
+                <p className={styles.intro}>
+                  A válasz alapjául szolgáló rögzített források száma:{" "}
+                  {interpretation.answer.manifest.sourceRefs.length}.
+                </p>
                 {interpretation.answer.claims.length ? (
                   <ul>
                     {interpretation.answer.claims.map((claim) => (

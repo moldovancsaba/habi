@@ -2343,7 +2343,8 @@ export default function HabiWorkspace() {
     )
       return;
     const source = questionSource;
-    if (!source) {
+    const isCoachQuestion = active.activeRole === "coach";
+    if (!isCoachQuestion && !source) {
       setNotice(
         "Terv készítéséhez előbb válassz egy forrásolt játékos-beszámolót.",
       );
@@ -2363,9 +2364,10 @@ export default function HabiWorkspace() {
             "Idempotency-Key": crypto.randomUUID(),
           },
           body: JSON.stringify({
-            sourceRefs: [
-              { id: source.id, revision: source.revision, span: null },
-            ],
+            sourceRefs:
+              isCoachQuestion || !source
+                ? []
+                : [{ id: source.id, revision: source.revision, span: null }],
             answerRef: null,
             actions: [
               {
@@ -3657,19 +3659,30 @@ export default function HabiWorkspace() {
                         <button
                           type="button"
                           className={styles.secondary}
-                          disabled={busy || !question.trim() || !questionSource}
+                          disabled={
+                            busy ||
+                            !question.trim() ||
+                            (active.activeRole !== "coach" && !questionSource)
+                          }
                           onClick={() => void askQuestion()}
                         >
                           Kérdés elküldése a helyi AI-nak
                         </button>
-                        {!questionSource && (
+                        {active.activeRole === "coach" ? (
+                          <p className={styles.actionInfo} role="note">
+                            A Habi a játékos legutóbbi, számodra elérhető
+                            visszajelzéseit, bejegyzéseit és ellenőrzött
+                            felmérési adatait veszi figyelembe. A választ a
+                            forrásokkal és a bizonytalanságokkal együtt mutatja.
+                          </p>
+                        ) : !questionSource ? (
                           <p className={styles.actionInfo} role="note">
                             A kérdés elküldéséhez előbb a játékosnak ki kell
                             töltenie egy napi állapotjelzést. Utána a választ a
                             Habi ezen a helyen mutatja meg, az edzői ellenőrzés
                             után.
                           </p>
-                        )}
+                        ) : null}
                         {questionFeedback && (
                           <p
                             ref={questionFeedbackRef}
