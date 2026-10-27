@@ -851,4 +851,6 @@ This is a functional migration slice, not complete legacy parity. Durable record
 - `npm run build` — PASS, exit 0; Next.js 16.4.3 build includes `/api/v1/players/[playerId]/drafts/[draftKey]`.
 - `git diff --check` — PASS, exit 0.
 - Environment: local Habi checkout, disposable localhost MongoDB replica set `habiTestRs`, synthetic accounts and payloads only. No Production records or user sessions were used.
-- Production deployment and authenticated interaction are pending this release. After deployment, a verified Habi admin must run `/admin` → **Adatbázis frissítése** and confirm migration `014-experience-drafts`; without that, Production draft storage is not ready. PDF malware-scan acceptance still requires an available ClamAV worker and is outside this draft test.
+- Production commit `1d097167642a064114d162f1a35258740310c10d` — READY as deployment `dpl_3Cea7WCqacmV4qMYc9CVs14tZ84b` in project `narimato/habi`; aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`.
+- Live unauthenticated checks: `/`, `/admin`, `/legacy`, `/api/health`, `/api/ready` — HTTP 200; `GET /api/v1/players/test-player/drafts/daily-reflection` — HTTP 401 as required by the session boundary. An authenticated Production draft interaction was not performed.
+- A verified Habi admin must run `/admin` → **Adatbázis frissítése** and confirm migration `014-experience-drafts`; until then, Production draft persistence is not ready. PDF malware-scan acceptance still requires an available ClamAV worker and is outside this draft test.

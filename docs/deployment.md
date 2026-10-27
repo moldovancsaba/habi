@@ -1,13 +1,14 @@
 # Habi deployment and operations
 
-## Production status · 2026-10-26
+## Production status · 2026-10-27
 
 ## Reflection-draft release · 2026-10-27
 
-- Release commit: pending. This change adds player-owned, resumable daily, weekly, and monthly reflection drafts. It does not import or modify existing legacy diary records.
+- Release commit `1d097167642a064114d162f1a35258740310c10d`, Vercel deployment `dpl_3Cea7WCqacmV4qMYc9CVs14tZ84b` (READY), project `narimato/habi`, Production; aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`. This change adds player-owned, resumable daily, weekly, and monthly reflection drafts. It does not import or modify existing legacy diary records.
 - Additive migration `014-experience-drafts` creates and validates `habi_experience_drafts` with unique draft identity and tenant/player/actor/key indexes. It is part of the authenticated `/admin` **Adatbázis frissítése** bootstrap (`POST /api/admin/bootstrap`), which runs all registered migrations idempotently before verifying tenant `habi`.
 - Production persistence is not active until a verified DoneIsBetter Habi admin signs in and runs the database update/bootstrap. Do not claim resumable Production drafts before the response confirms migration `014-experience-drafts` was applied. The user must not send credentials or database URIs in chat.
-- Local verification on an isolated localhost MongoDB replica set (`habiTestRs`): migration replay and draft create/update/revision-conflict/role-denial/delete all passed. Full suite: 138 passed, 0 failed, 0 skipped; lint, typecheck, production build, and `git diff --check` results are recorded in `docs/verification.md` after release.
+- Local verification on an isolated localhost MongoDB replica set (`habiTestRs`): migration replay and draft create/update/revision-conflict/role-denial/delete all passed. Full suite: 138 passed, 0 failed, 0 skipped; lint, typecheck, production build, and `git diff --check` results are recorded in `docs/verification.md`.
+- Live unauthenticated checks on `https://habigoal.com`: `/`, `/admin`, `/legacy`, `/api/health`, and `/api/ready` returned HTTP 200; an unauthenticated draft API read returned HTTP 401 as required. Authenticated draft writes and reads are not verified because they require the owner’s SSO session. Production migration 014 remains pending the authenticated `/admin` database update action.
 
 - Canonical-host handling: all browser and API requests on aliases and Vercel deployment URLs are redirected to `https://habigoal.com` before routing, with path and query preserved. Only `habigoal.com` is the production application origin; localhost remains available for development. This is required because the `__Host-` session cookies are intentionally host-only. A user signed in on the apex appeared signed out when opening an alias or deployment URL, because those requests did not include the apex cookies.
 
