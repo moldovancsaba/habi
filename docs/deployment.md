@@ -6,6 +6,7 @@
 
 - A játékos az aktív célkártyáról lecserélheti a célt; az új verzió egyetlen idempotens naplóírásban rögzíti, melyik célt váltja le. A korábbi cél megmarad az előzményben, és egyetlen művelettel visszaállítható új verzióként.
 - Helyi ellenőrzés: 146 teszt sikeres, 0 hibás, 1 Atlas-only kihagyás; Biome lint és TypeScript ellenőrzés sikeres. A szintetikus unit tesztek nem igazolják a hitelesített Production böngészőírást.
+- Code commit `bff016b` is READY as Vercel deployment `dpl_3Seik5YN1d4m3hKoqp2EtBTcCCTD` in `narimato/habi`, Production; aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`.
 - A Production request-ID keresés nem talált logsort ehhez a felhasználói azonosítóhoz: `7fb1bd7f7bbf3642e86aba0283265021`. A nyilvános `/api/health` és `/api/ready` jelenleg 200-at ad. Az azonosító nem egyezett a Vercel request ID-ként elérhető naplóbejegyzéssel.
 
 ## Saját cél újranézési ciklusa · 2026-10-27
