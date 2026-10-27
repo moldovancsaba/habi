@@ -92,6 +92,10 @@ API boundary diagnostics contain only a fixed operation label, request ID, statu
 
 Legacy browser-owner transfer is retired and blocked by the current SSO-browser route boundary. New SSO identities receive a clean owner scope; old records are not imported or required for Habi access.
 
+## SSO owner-session validator repair · 2026-10-27
+
+Commit `0a1252b` is live in Production as deployment `dpl_GY8wVdYDQrSvKBfTTbdSCEUbsQWh` (READY), with aliases including `habigoal.com`. Production callback diagnostics identified Atlas rejecting owner-session creation because the existing validator omitted optional verified `displayName`. Migration `016-sso-owner-session-display-name` repairs that validator automatically before the callback inserts a new session. The migration is additive and leaves existing records untouched. Health/readiness and the SSO authorization redirect are live; a complete user-authenticated callback has not yet been verified. See [verification](verification.md).
+
 No record transfer or email-based identity matching is part of the new product.
 
 ## Rollback and recovery
