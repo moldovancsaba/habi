@@ -2,6 +2,10 @@
 
 ## Production status · 2026-10-27
 
+## Coach questions across player records · Production release 2026-10-27
+
+Commit `cc87390d62a99fc626b04308bf3d893158d99278` is READY in Vercel Production as deployment `dpl_dbTDwdYD75by9ByjmgSWcXMpuzn4`, with aliases `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`. The coach can ask about up to the 20 most recent eligible sources across player records and reviewed product information. `/api/health` and `/api/ready` returned HTTP 200; the deployed client bundle contains the question panel. Authenticated Production submission and Ollama answer quality remain unverified. Local test and safety boundaries are in [verification](verification.md).
+
 ## Saját cél cseréje és visszaállítása · 2026-10-27
 
 - A játékos az aktív célkártyáról lecserélheti a célt; az új verzió egyetlen idempotens naplóírásban rögzíti, melyik célt váltja le. A korábbi cél megmarad az előzményben, és egyetlen művelettel visszaállítható új verzióként.
