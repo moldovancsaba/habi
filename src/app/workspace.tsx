@@ -26,6 +26,7 @@ import {
   createGoalExport,
   summarizeRecordedAnswers,
 } from "../lib/workflows/goal-export.mjs";
+import { createCheckinConversationOpening } from "../lib/workflows/checkin-conversation-opening.mjs";
 
 type Role = "player" | "parent" | "coach";
 type OwnRole = {
@@ -1038,6 +1039,9 @@ export default function HabiWorkspace() {
     .sort((a, b) =>
       String(b.completedAt ?? "").localeCompare(String(a.completedAt ?? "")),
     )[0];
+  const latestCheckinConversationOpening = latestPlayerCheckin
+    ? createCheckinConversationOpening(latestPlayerCheckin, metrics)
+    : "";
   const latestPlayerTask = latestPlayerCheckin
     ? ownPlayerData?.records.find((record) =>
         record.text?.startsWith(
@@ -2953,6 +2957,42 @@ export default function HabiWorkspace() {
                 >
                   Megnyitom az idővonalat
                 </button>
+                {latestCheckinConversationOpening ? (
+                  <details className={styles.formGroup}>
+                    <summary>A legutóbbi válaszaim</summary>
+                    <dl className={styles.summaryMetrics}>
+                      {latestPlayerCheckin.answerCodes?.map(
+                        ({ metric, code }) => {
+                          const definition = metrics.find(
+                            ([key]) => key === metric,
+                          );
+                          return definition ? (
+                            <div key={metric}>
+                              <dt>{definition[1]}</dt>
+                              <dd>{definition[2][code] ?? "Nincs válasz"}</dd>
+                            </div>
+                          ) : null;
+                        },
+                      ) ?? null}
+                    </dl>
+                    <p className={styles.muted}>
+                      Ha szeretnéd, ezekből készíthetsz egy általad
+                      szerkeszthető beszélgetéskezdést. Habi nem értelmezi a
+                      válaszaidat.
+                    </p>
+                    <button
+                      type="button"
+                      className={styles.secondary}
+                      onClick={() => {
+                        setGuidedTopicInput(latestCheckinConversationOpening);
+                        setGuidedTopicSuggestions(null);
+                        setTab("player-tools");
+                      }}
+                    >
+                      Beszélgetek a válaszaimról
+                    </button>
+                  </details>
+                ) : null}
                 {reminderType && (
                   <aside className={styles.notice} role="status">
                     <p>

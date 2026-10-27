@@ -916,3 +916,11 @@ This is a functional migration slice, not complete legacy parity. Durable record
 - Environment: local Habi checkout, disposable localhost MongoDB replica set, synthetic player identities and fixture text. No Production data or authenticated session was used.
 - Commit `629a124fbaceec8db488ba0ba0ce922383c257aa` is live as Production deployment `dpl_85ECdPEWweoL42vvGr6QJYHLvucH` (READY), with aliases including `habigoal.com`. Live unauthenticated checks: `/` HTTP 200, `/legacy` HTTP 307 to `/?view=legacy`, `/api/health` HTTP 200, `/api/ready` HTTP 200; the signed-out guided-topic draft endpoint returns HTTP 401. No authenticated Production conversation was performed.
 - Local synthetic HTTP/worker acceptance is still blocked at ClamAV scan: the Production LaunchAgent cannot consume localhost test jobs. That worker was left untouched.
+
+## Start a guided conversation from the player's latest check-in · 2026-10-27
+
+- The player overview now shows the latest recognized check-in answers and an explicit **Beszélgetek a válaszaimról** action. It opens the authored guided conversation with those question/answer pairs in an editable opening. The text does not summarize or infer feelings; unknown answer codes are omitted. Nothing is submitted until the player chooses a topic and continues.
+- `node --test tests/checkin-conversation-opening.test.mjs tests/guided-conversations.test.mjs` — PASS, exit 0; 9 passed, 0 failed. Tests verify exact factual opening text and that missing/unrecognized answers produce no invented text.
+- `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` — PASS, exit 0; 153 passed, 0 failed, 0 skipped. `npm run lint` — PASS, exit 0; Biome checked 200 files. `npm run typecheck` — PASS, exit 0. `npm run build` — PASS, exit 0. `git diff --check` — pending before commit.
+- Environment: local Habi checkout, disposable localhost MongoDB replica set, synthetic player records only. No Production records or authenticated SSO session were used. Browser-level authenticated interaction was not performed.
+- This is an additive client-side handoff to existing guided-topic draft flow; no endpoint, persisted contract, migration, or rollback data action is added. Rollback is redeploying the prior commit.
