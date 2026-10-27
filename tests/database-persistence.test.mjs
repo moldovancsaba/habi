@@ -429,6 +429,55 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
         draftKey: "guided-conversation",
       });
       assert.deepEqual(guidedClear.body, { cleared: true });
+
+      const topicPath =
+        "https://habi.example.test/api/v1/players/seed-player-001/drafts/guided-topic-conversation";
+      const topicDraft = await saveExperienceDraft({
+        request: new Request(topicPath, {
+          method: "PUT",
+          headers: { "Idempotency-Key": "guided-topic-save-1" },
+          body: JSON.stringify({
+            expectedRevision: 0,
+            contentVersion: "guided-chat-v2",
+            payload: {
+              categoryId: "dreams",
+              turns: ["emotion:first", "frequency:sometimes"],
+            },
+          }),
+        }),
+        client,
+        db,
+        principal,
+        playerId: principal.playerId,
+        draftKey: "guided-topic-conversation",
+      });
+      assert.equal(topicDraft.status, 201);
+      assert.deepEqual(topicDraft.body.draft.payload, {
+        categoryId: "dreams",
+        turns: ["emotion:first", "frequency:sometimes"],
+      });
+      assert.deepEqual(
+        await readExperienceDraft({
+          db,
+          principal,
+          playerId: principal.playerId,
+          draftKey: "guided-topic-conversation",
+        }).then(({ draft }) => draft.payload),
+        topicDraft.body.draft.payload,
+      );
+      const topicClear = await deleteExperienceDraft({
+        request: new Request(topicPath, {
+          method: "DELETE",
+          headers: { "Idempotency-Key": "guided-topic-delete-1" },
+          body: JSON.stringify({ expectedRevision: 1 }),
+        }),
+        client,
+        db,
+        principal,
+        playerId: principal.playerId,
+        draftKey: "guided-topic-conversation",
+      });
+      assert.deepEqual(topicClear.body, { cleared: true });
     },
   );
 

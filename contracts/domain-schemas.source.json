@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://habi.invalid/contracts/domain-schemas-v2.4.4.json",
-  "title": "Habi persistence contracts v2.4.4; schemas do not assert deployment",
+  "$id": "https://habi.invalid/contracts/domain-schemas-v2.4.5.json",
+  "title": "Habi persistence contracts v2.4.5; schemas do not assert deployment",
   "$defs": {
     "Ref": {
       "type": "object",
@@ -3034,31 +3034,111 @@
     "ExperienceDraft": {
       "type": "object",
       "properties": {
-        "id": { "type": "string", "format": "uuid" },
-        "tenantId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$" },
-        "schemaVersion": { "const": 2 },
-        "revision": { "type": "integer", "minimum": 1 },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" },
-        "retentionPolicyId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$" },
-        "playerId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$" },
-        "actorId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$" },
-        "draftKey": { "type": "string", "enum": ["daily-reflection", "weekly-reflection", "monthly-reflection", "guided-conversation"] },
-        "contentVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "tenantId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "schemaVersion": {
+          "const": 2
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retentionPolicyId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "playerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "actorId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "draftKey": {
+          "type": "string",
+          "enum": [
+            "daily-reflection",
+            "weekly-reflection",
+            "monthly-reflection",
+            "guided-conversation",
+            "guided-topic-conversation"
+          ]
+        },
+        "contentVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
         "payload": {
           "type": "object",
           "maxProperties": 8,
           "additionalProperties": {
             "anyOf": [
-              { "type": "string", "maxLength": 2000 },
-              { "type": "integer", "minimum": 0, "maximum": 16 },
-              { "type": "null" },
-              { "type": "array", "maxItems": 16, "items": { "anyOf": [ { "type": "string", "maxLength": 24 }, { "type": "integer", "minimum": 0, "maximum": 16 }, { "type": "null" } ] } }
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 16
+              },
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "maxItems": 16,
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 24
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 16
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
             ]
           }
         }
       },
-      "required": ["id", "tenantId", "schemaVersion", "revision", "createdAt", "updatedAt", "retentionPolicyId", "playerId", "actorId", "draftKey", "contentVersion", "payload"],
+      "required": [
+        "id",
+        "tenantId",
+        "schemaVersion",
+        "revision",
+        "createdAt",
+        "updatedAt",
+        "retentionPolicyId",
+        "playerId",
+        "actorId",
+        "draftKey",
+        "contentVersion",
+        "payload"
+      ],
       "additionalProperties": false
     },
     "Idempotency": {
@@ -5415,8 +5495,13 @@
         },
         "activeMembershipId": {
           "anyOf": [
-            {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"},
-            {"type": "null"}
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "memberships": {
@@ -5425,22 +5510,48 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"},
-              "role": {"type": "string", "enum": ["player", "parent", "coach"]},
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "player",
+                  "parent",
+                  "coach"
+                ]
+              },
               "playerId": {
                 "anyOf": [
-                  {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"},
-                  {"type": "null"}
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+                  },
+                  {
+                    "type": "null"
+                  }
                 ]
               },
               "playerDisplayName": {
                 "anyOf": [
-                  {"type": "string", "minLength": 1, "maxLength": 100},
-                  {"type": "null"}
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
                 ]
               }
             },
-            "required": ["id", "role", "playerId", "playerDisplayName"],
+            "required": [
+              "id",
+              "role",
+              "playerId",
+              "playerDisplayName"
+            ],
             "additionalProperties": false
           }
         },

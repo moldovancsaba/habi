@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://habi.invalid/contracts/schemas-v2.4.12.json",
-  "title": "Habi API request and response schemas v2.4.12; contracts do not assert deployment",
+  "$id": "https://habi.invalid/contracts/schemas-v2.4.13.json",
+  "title": "Habi API request and response schemas v2.4.13; contracts do not assert deployment",
   "$defs": {
     "Ref": {
       "type": "object",
@@ -3060,7 +3060,8 @@
             "daily-reflection",
             "weekly-reflection",
             "monthly-reflection",
-            "guided-conversation"
+            "guided-conversation",
+            "guided-topic-conversation"
           ]
         },
         "contentVersion": {
@@ -7758,7 +7759,8 @@
             "daily-reflection",
             "weekly-reflection",
             "monthly-reflection",
-            "guided-conversation"
+            "guided-conversation",
+            "guided-topic-conversation"
           ]
         },
         "contentVersion": {

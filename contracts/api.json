@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.4.17",
+    "version": "2.4.18",
     "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
@@ -10710,7 +10710,8 @@
                 "daily-reflection",
                 "weekly-reflection",
                 "monthly-reflection",
-                "guided-conversation"
+                "guided-conversation",
+                "guided-topic-conversation"
               ]
             }
           }
@@ -10797,7 +10798,8 @@
                 "daily-reflection",
                 "weekly-reflection",
                 "monthly-reflection",
-                "guided-conversation"
+                "guided-conversation",
+                "guided-topic-conversation"
               ]
             }
           },
@@ -10933,7 +10935,8 @@
                 "daily-reflection",
                 "weekly-reflection",
                 "monthly-reflection",
-                "guided-conversation"
+                "guided-conversation",
+                "guided-topic-conversation"
               ]
             }
           },

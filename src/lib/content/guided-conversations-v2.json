@@ -1,0 +1,569 @@
+{
+  "version": 2,
+  "labels": {
+    "title": "Miről beszélgessünk?",
+    "new": "Új beszélgetés",
+    "you": "Te",
+    "robot": "HABI",
+    "summary": "Összefoglalom magamnak",
+    "download": "Letöltöm az összefoglalót",
+    "practice": "Kipróbálom a gyakorlatot",
+    "starterIntro": "Hoztam néhány témát, amiből választhatsz beszélgetésindítónak.",
+    "fallback": "Segítek megtalálni, miről lenne jó beszélgetnünk. Melyik áll hozzád a legközelebb?"
+  },
+  "categories": [
+    {
+      "id": "dreams",
+      "tree": "dreams",
+      "label": "Az álmaim és a jövőm"
+    },
+    {
+      "id": "competition",
+      "tree": "dreams",
+      "label": "A versenyzés és az elvárások"
+    },
+    {
+      "id": "sport",
+      "tree": "connection",
+      "label": "Én és a sport"
+    },
+    {
+      "id": "pressure",
+      "tree": "pressure",
+      "label": "A félelmeim és a feszültség"
+    },
+    {
+      "id": "focus",
+      "tree": "pressure",
+      "label": "Amikor nehéz figyelnem"
+    },
+    {
+      "id": "habits",
+      "tree": "pressure",
+      "label": "A szokásaim és a pihenésem"
+    },
+    {
+      "id": "support",
+      "tree": "connection",
+      "label": "A kapcsolataim és a segítségkérés"
+    }
+  ],
+  "openers": [
+    "Segítek körüljárni. Melyik irányról beszélgessünk?",
+    "Nézzük meg együtt, mi foglalkoztat. Melyik áll hozzád közel?",
+    "Több irányba is indulhatunk. Melyikről szeretnél mesélni?",
+    "Kezdhetjük azzal, ami neked most fontos. Melyiket választod?",
+    "Segítek megtalálni a beszélgetésünk irányát. Mi illik ide legjobban?",
+    "Induljunk onnan, ami most a leginkább foglalkoztat. Melyik legyen?",
+    "Beszélhetünk erről. Melyik témában lenne most jó elmélyednünk?"
+  ],
+  "trees": {
+    "dreams": {
+      "id": "dreams",
+      "title": "A jövőm és a céljaim",
+      "start": "emotion",
+      "nodes": {
+        "frequency": {
+          "response": "Köszönöm, hogy elmondtad. Nem kell rögtön megoldanod mindent.",
+          "question": "Milyen gyakran érzed ezt mostanában?",
+          "options": [
+            {
+              "id": "daily",
+              "label": "Szinte minden nap.",
+              "next": "support"
+            },
+            {
+              "id": "sometimes",
+              "label": "Néha, de nem minden nap.",
+              "next": "support"
+            },
+            {
+              "id": "new",
+              "label": "Ez most új nekem.",
+              "next": "support"
+            }
+          ]
+        },
+        "support": {
+          "response": "Nem kell egyedül kitalálnod a folytatást.",
+          "question": "Beszéltél már erről valakivel?",
+          "options": [
+            {
+              "id": "parent",
+              "label": "Az egyik szülőmmel már beszéltem.",
+              "next": "next"
+            },
+            {
+              "id": "adult",
+              "label": "Egy másik megbízható felnőttnek mondtam el.",
+              "next": "next"
+            },
+            {
+              "id": "nobody",
+              "label": "Még nem beszéltem róla.",
+              "next": "next"
+            }
+          ]
+        },
+        "next": {
+          "response": "Keressünk egy olyan folytatást, ami most belefér neked.",
+          "question": "Mi segítene most a legtöbbet?",
+          "options": [
+            {
+              "id": "today",
+              "label": "Ma beszélnék egy megbízható felnőttel.",
+              "next": "adult-today"
+            },
+            {
+              "id": "professional",
+              "label": "Pszichológus segítségét kérném.",
+              "next": "professional"
+            },
+            {
+              "id": "summary",
+              "label": "Adj egy összefoglalót, amit elmondhatok.",
+              "next": "summary"
+            },
+            {
+              "id": "small",
+              "label": "Egy apró dolgot próbálnék ki.",
+              "next": "small-step"
+            },
+            {
+              "id": "practice",
+              "label": "Egy rövid gyakorlatot szeretnék.",
+              "next": "practice"
+            },
+            {
+              "id": "later",
+              "label": "Később visszanézném, hogy érzem magam.",
+              "next": "check-in"
+            }
+          ]
+        },
+        "safety": {
+          "response": "Fontos, amit írtál. Most először a biztonságodra figyeljünk.",
+          "question": "Biztonságban vagy most?",
+          "options": [
+            {
+              "id": "unsafe",
+              "label": "Most nem érzem magam biztonságban.",
+              "next": "immediate-adult"
+            },
+            {
+              "id": "safe",
+              "label": "Biztonságban vagyok, de beszélnék róla.",
+              "next": "adult-today"
+            },
+            {
+              "id": "unsure",
+              "label": "Nem tudom biztosan.",
+              "next": "immediate-adult"
+            }
+          ]
+        },
+        "emotion": {
+          "response": "Érdekel, hogyan képzeled el a jövődet. Nem kell ma mindent eldöntened.",
+          "question": "Mit érzel, amikor a célodra vagy a jövődre gondolsz?",
+          "options": [
+            {
+              "id": "first",
+              "label": "Reménykedem, és kíváncsi vagyok.",
+              "next": "frequency"
+            },
+            {
+              "id": "second",
+              "label": "Félek, hogy nem sikerül.",
+              "next": "frequency"
+            },
+            {
+              "id": "third",
+              "label": "Elszomorít, vagy túl nagynak érzem.",
+              "next": "frequency"
+            },
+            {
+              "id": "unsafe",
+              "label": "Most nem érzem magam biztonságban.",
+              "next": "immediate-adult"
+            }
+          ]
+        }
+      },
+      "outcomes": {
+        "immediate-adult": {
+          "id": "immediate-adult",
+          "text": "Most rögtön menj egy szülődhöz vagy más megbízható felnőtthöz. Mondd: „Nem érzem magam biztonságban, kérlek, maradj velem és segíts.”",
+          "practice": null
+        },
+        "adult-today": {
+          "id": "adult-today",
+          "text": "Válassz ma egy nyugodt pillanatot egy szülőddel vagy megbízható felnőttel. Kezdd így: „Van valami, amiről szeretnék beszélni. Most meg tudsz hallgatni?”",
+          "practice": null
+        },
+        "professional": {
+          "id": "professional",
+          "text": "Kérj meg egy szülőt vagy megbízható felnőttet, hogy segítsen pszichológust találni, akivel beszélhetsz. Az összefoglalót is megmutathatod neki.",
+          "practice": null
+        },
+        "summary": {
+          "id": "summary",
+          "text": "Nyisd meg az összefoglalót, és válassz ki egy mondatot, amivel beszélgetést kezdesz egy megbízható felnőttel. Át is írhatod a saját szavaidra.",
+          "practice": null
+        },
+        "small-step": {
+          "id": "small-step",
+          "text": "Írj le egy olyan apró dolgot, amit a következő alkalommal kipróbálhatsz. A próbálkozásra figyelj, ne arra, hogy máris a legjobb legyél.",
+          "practice": null
+        },
+        "practice": {
+          "id": "practice",
+          "text": "Nyisd meg a rövid gyakorlatot, és próbáld ki a saját tempódban. A végén jelezheted, hogy segített-e; ha nem esik jól, abbahagyhatod.",
+          "practice": "selfTalk"
+        },
+        "check-in": {
+          "id": "check-in",
+          "text": "Válassz egy mai időpontot, például az estét. Akkor írj le egy mondatot arról, hogyan érzed magad; ha nehezebb lett, szólj egy megbízható felnőttnek.",
+          "practice": null
+        }
+      }
+    },
+    "pressure": {
+      "id": "pressure",
+      "title": "A nehéz érzéseim és a ritmusom",
+      "start": "emotion",
+      "nodes": {
+        "frequency": {
+          "response": "Köszönöm, hogy elmondtad. Nem kell rögtön megoldanod mindent.",
+          "question": "Milyen gyakran érzed ezt mostanában?",
+          "options": [
+            {
+              "id": "daily",
+              "label": "Szinte minden nap.",
+              "next": "support"
+            },
+            {
+              "id": "sometimes",
+              "label": "Néha, de nem minden nap.",
+              "next": "support"
+            },
+            {
+              "id": "new",
+              "label": "Ez most új nekem.",
+              "next": "support"
+            }
+          ]
+        },
+        "support": {
+          "response": "Nem kell egyedül kitalálnod a folytatást.",
+          "question": "Beszéltél már erről valakivel?",
+          "options": [
+            {
+              "id": "parent",
+              "label": "Az egyik szülőmmel már beszéltem.",
+              "next": "next"
+            },
+            {
+              "id": "adult",
+              "label": "Egy másik megbízható felnőttnek mondtam el.",
+              "next": "next"
+            },
+            {
+              "id": "nobody",
+              "label": "Még nem beszéltem róla.",
+              "next": "next"
+            }
+          ]
+        },
+        "next": {
+          "response": "Keressünk egy olyan folytatást, ami most belefér neked.",
+          "question": "Mi segítene most a legtöbbet?",
+          "options": [
+            {
+              "id": "today",
+              "label": "Ma beszélnék egy megbízható felnőttel.",
+              "next": "adult-today"
+            },
+            {
+              "id": "professional",
+              "label": "Pszichológus segítségét kérném.",
+              "next": "professional"
+            },
+            {
+              "id": "summary",
+              "label": "Adj egy összefoglalót, amit elmondhatok.",
+              "next": "summary"
+            },
+            {
+              "id": "small",
+              "label": "Egy apró dolgot próbálnék ki.",
+              "next": "small-step"
+            },
+            {
+              "id": "practice",
+              "label": "Egy rövid gyakorlatot szeretnék.",
+              "next": "practice"
+            },
+            {
+              "id": "later",
+              "label": "Később visszanézném, hogy érzem magam.",
+              "next": "check-in"
+            }
+          ]
+        },
+        "safety": {
+          "response": "Fontos, amit írtál. Most először a biztonságodra figyeljünk.",
+          "question": "Biztonságban vagy most?",
+          "options": [
+            {
+              "id": "unsafe",
+              "label": "Most nem érzem magam biztonságban.",
+              "next": "immediate-adult"
+            },
+            {
+              "id": "safe",
+              "label": "Biztonságban vagyok, de beszélnék róla.",
+              "next": "adult-today"
+            },
+            {
+              "id": "unsure",
+              "label": "Nem tudom biztosan.",
+              "next": "immediate-adult"
+            }
+          ]
+        },
+        "emotion": {
+          "response": "Ha sok minden nehezedik rád, elég egyetlen dologgal kezdenünk.",
+          "question": "Melyik írja le legjobban, amit most érzel?",
+          "options": [
+            {
+              "id": "first",
+              "label": "Feszült vagyok, nehéz megnyugodnom.",
+              "next": "frequency"
+            },
+            {
+              "id": "second",
+              "label": "Elfáradtam, és nehéz figyelnem.",
+              "next": "frequency"
+            },
+            {
+              "id": "third",
+              "label": "Félek, hogy hibázom vagy csalódást okozok.",
+              "next": "frequency"
+            },
+            {
+              "id": "unsafe",
+              "label": "Most nem érzem magam biztonságban.",
+              "next": "immediate-adult"
+            }
+          ]
+        }
+      },
+      "outcomes": {
+        "immediate-adult": {
+          "id": "immediate-adult",
+          "text": "Most rögtön menj egy szülődhöz vagy más megbízható felnőtthöz. Mondd: „Nem érzem magam biztonságban, kérlek, maradj velem és segíts.”",
+          "practice": null
+        },
+        "adult-today": {
+          "id": "adult-today",
+          "text": "Válassz ma egy nyugodt pillanatot egy szülőddel vagy megbízható felnőttel. Kezdd így: „Van valami, amiről szeretnék beszélni. Most meg tudsz hallgatni?”",
+          "practice": null
+        },
+        "professional": {
+          "id": "professional",
+          "text": "Kérj meg egy szülőt vagy megbízható felnőttet, hogy segítsen pszichológust találni, akivel beszélhetsz. Az összefoglalót is megmutathatod neki.",
+          "practice": null
+        },
+        "summary": {
+          "id": "summary",
+          "text": "Nyisd meg az összefoglalót, és válassz ki egy mondatot, amivel beszélgetést kezdesz egy megbízható felnőttel. Át is írhatod a saját szavaidra.",
+          "practice": null
+        },
+        "small-step": {
+          "id": "small-step",
+          "text": "Válassz egy rövid szünetet a következő feladat előtt. Utána nevezz meg egyetlen dolgot, amire figyelni fogsz; a többit most elengedheted.",
+          "practice": null
+        },
+        "practice": {
+          "id": "practice",
+          "text": "Nyisd meg a rövid gyakorlatot, és próbáld ki a saját tempódban. A végén jelezheted, hogy segített-e; ha nem esik jól, abbahagyhatod.",
+          "practice": "pause"
+        },
+        "check-in": {
+          "id": "check-in",
+          "text": "Válassz egy mai időpontot, például az estét. Akkor írj le egy mondatot arról, hogyan érzed magad; ha nehezebb lett, szólj egy megbízható felnőttnek.",
+          "practice": null
+        }
+      }
+    },
+    "connection": {
+      "id": "connection",
+      "title": "A kapcsolataim és a helyem",
+      "start": "emotion",
+      "nodes": {
+        "frequency": {
+          "response": "Köszönöm, hogy elmondtad. Nem kell rögtön megoldanod mindent.",
+          "question": "Milyen gyakran érzed ezt mostanában?",
+          "options": [
+            {
+              "id": "daily",
+              "label": "Szinte minden nap.",
+              "next": "support"
+            },
+            {
+              "id": "sometimes",
+              "label": "Néha, de nem minden nap.",
+              "next": "support"
+            },
+            {
+              "id": "new",
+              "label": "Ez most új nekem.",
+              "next": "support"
+            }
+          ]
+        },
+        "support": {
+          "response": "Nem kell egyedül kitalálnod a folytatást.",
+          "question": "Beszéltél már erről valakivel?",
+          "options": [
+            {
+              "id": "parent",
+              "label": "Az egyik szülőmmel már beszéltem.",
+              "next": "next"
+            },
+            {
+              "id": "adult",
+              "label": "Egy másik megbízható felnőttnek mondtam el.",
+              "next": "next"
+            },
+            {
+              "id": "nobody",
+              "label": "Még nem beszéltem róla.",
+              "next": "next"
+            }
+          ]
+        },
+        "next": {
+          "response": "Keressünk egy olyan folytatást, ami most belefér neked.",
+          "question": "Mi segítene most a legtöbbet?",
+          "options": [
+            {
+              "id": "today",
+              "label": "Ma beszélnék egy megbízható felnőttel.",
+              "next": "adult-today"
+            },
+            {
+              "id": "professional",
+              "label": "Pszichológus segítségét kérném.",
+              "next": "professional"
+            },
+            {
+              "id": "summary",
+              "label": "Adj egy összefoglalót, amit elmondhatok.",
+              "next": "summary"
+            },
+            {
+              "id": "small",
+              "label": "Egy apró dolgot próbálnék ki.",
+              "next": "small-step"
+            },
+            {
+              "id": "practice",
+              "label": "Egy rövid gyakorlatot szeretnék.",
+              "next": "practice"
+            },
+            {
+              "id": "later",
+              "label": "Később visszanézném, hogy érzem magam.",
+              "next": "check-in"
+            }
+          ]
+        },
+        "safety": {
+          "response": "Fontos, amit írtál. Most először a biztonságodra figyeljünk.",
+          "question": "Biztonságban vagy most?",
+          "options": [
+            {
+              "id": "unsafe",
+              "label": "Most nem érzem magam biztonságban.",
+              "next": "immediate-adult"
+            },
+            {
+              "id": "safe",
+              "label": "Biztonságban vagyok, de beszélnék róla.",
+              "next": "adult-today"
+            },
+            {
+              "id": "unsure",
+              "label": "Nem tudom biztosan.",
+              "next": "immediate-adult"
+            }
+          ]
+        },
+        "emotion": {
+          "response": "Fontos, hogy legyen helye annak, hogyan érzed magad mások között.",
+          "question": "Hogyan érzed most magad a többiek között?",
+          "options": [
+            {
+              "id": "first",
+              "label": "Szeretnék kapcsolódni, de nehéz elkezdenem.",
+              "next": "frequency"
+            },
+            {
+              "id": "second",
+              "label": "Egyedül érzem magam, vagy kimaradok.",
+              "next": "frequency"
+            },
+            {
+              "id": "third",
+              "label": "Valaki bántóan beszél velem vagy bánik velem.",
+              "next": "safety"
+            },
+            {
+              "id": "unsafe",
+              "label": "Most nem érzem magam biztonságban.",
+              "next": "immediate-adult"
+            }
+          ]
+        }
+      },
+      "outcomes": {
+        "immediate-adult": {
+          "id": "immediate-adult",
+          "text": "Most rögtön menj egy szülődhöz vagy más megbízható felnőtthöz. Mondd: „Nem érzem magam biztonságban, kérlek, maradj velem és segíts.”",
+          "practice": null
+        },
+        "adult-today": {
+          "id": "adult-today",
+          "text": "Válassz ma egy nyugodt pillanatot egy szülőddel vagy megbízható felnőttel. Kezdd így: „Van valami, amiről szeretnék beszélni. Most meg tudsz hallgatni?”",
+          "practice": null
+        },
+        "professional": {
+          "id": "professional",
+          "text": "Kérj meg egy szülőt vagy megbízható felnőttet, hogy segítsen pszichológust találni, akivel beszélhetsz. Az összefoglalót is megmutathatod neki.",
+          "practice": null
+        },
+        "summary": {
+          "id": "summary",
+          "text": "Nyisd meg az összefoglalót, és válassz ki egy mondatot, amivel beszélgetést kezdesz egy megbízható felnőttel. Át is írhatod a saját szavaidra.",
+          "practice": null
+        },
+        "small-step": {
+          "id": "small-step",
+          "text": "Válassz egy olyan embert, akinek a közelében jól érzed magad. Egy egyszerű kérdéssel vagy köszönéssel is kezdhetsz; bántó helyzetet nem kell egyedül megoldanod.",
+          "practice": null
+        },
+        "practice": {
+          "id": "practice",
+          "text": "Nyisd meg a rövid gyakorlatot, és próbáld ki a saját tempódban. A végén jelezheted, hogy segített-e; ha nem esik jól, abbahagyhatod.",
+          "practice": "communication"
+        },
+        "check-in": {
+          "id": "check-in",
+          "text": "Válassz egy mai időpontot, például az estét. Akkor írj le egy mondatot arról, hogyan érzed magad; ha nehezebb lett, szólj egy megbízható felnőttnek.",
+          "practice": null
+        }
+      }
+    }
+  }
+}

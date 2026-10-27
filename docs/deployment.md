@@ -2,6 +2,12 @@
 
 ## Production status · 2026-10-27
 
+## HABI2 topic conversation release · 2026-10-27
+
+- The current release adds seven topic choices backed by three versioned authored conversation trees. Each answer is saved as a player-owned revision-fenced draft; a completed transcript is written to the diary. The trees are deterministic, and no personal conversation content is sent to an AI service.
+- Local verification: 147 tests passed, 0 failed, 0 skipped with the isolated localhost replica set; lint, typecheck, build, and `git diff --check` passed. See [verification](verification.md#habi2-authored-topic-conversations--2026-10-27).
+- Production release is pending this commit. It uses the existing `014-experience-drafts` migration and adds no schema migration. Before Production drafts can persist, the verified Habi admin must confirm that migration `014-experience-drafts` has been applied in `/admin` → **Adatbázis frissítése**. This release does not import or change old diary records.
+
 ## Reflection-draft release · 2026-10-27
 
 - Release commit `1d097167642a064114d162f1a35258740310c10d`, Vercel deployment `dpl_3Cea7WCqacmV4qMYc9CVs14tZ84b` (READY), project `narimato/habi`, Production; aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`. This change adds player-owned, resumable daily, weekly, and monthly reflection drafts. It does not import or modify existing legacy diary records.

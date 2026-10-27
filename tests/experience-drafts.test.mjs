@@ -108,6 +108,45 @@ test("guided situation drafts persist only supported authored choices", () => {
   }
 });
 
+test("guided topic drafts accept only reachable choices from an authored branch", () => {
+  assert.equal(
+    isValidExperienceDraftPayload(
+      "guided-topic-conversation",
+      "guided-chat-v2",
+      {
+        categoryId: "dreams",
+        turns: ["emotion:first", "frequency:sometimes", "support:nobody"],
+      },
+    ),
+    true,
+  );
+  for (const payload of [
+    { categoryId: "unknown", turns: [] },
+    { categoryId: "dreams", turns: ["emotion:bad-choice"] },
+    { categoryId: "dreams", turns: ["frequency:sometimes"] },
+    {
+      categoryId: "dreams",
+      turns: [
+        "emotion:first",
+        "frequency:sometimes",
+        "support:nobody",
+        "next:small",
+        "emotion:first",
+      ],
+    },
+    { categoryId: "dreams", turns: ["emotion:first"], extra: "no" },
+  ]) {
+    assert.equal(
+      isValidExperienceDraftPayload(
+        "guided-topic-conversation",
+        "guided-chat-v2",
+        payload,
+      ),
+      false,
+    );
+  }
+});
+
 test("draft persistence contract rejects missing ownership or unsupported fields", () => {
   const draft = {
     id: "2da44926-27ac-4eb7-a5f8-900112d2a2b7",
@@ -124,6 +163,18 @@ test("draft persistence contract rejects missing ownership or unsupported fields
     payload: { moment: "", helped: "" },
   };
   assert.equal(validateContractDocument("habi_experience_drafts", draft), true);
+  assert.equal(
+    validateContractDocument("habi_experience_drafts", {
+      ...draft,
+      draftKey: "guided-topic-conversation",
+      contentVersion: "guided-chat-v2",
+      payload: {
+        categoryId: "dreams",
+        turns: ["emotion:first", "frequency:sometimes"],
+      },
+    }),
+    true,
+  );
   assert.throws(
     () =>
       validateContractDocument("habi_experience_drafts", {

@@ -3,12 +3,14 @@ import { HabiApiError } from "../api/error-response.mjs";
 import { isValidApiInput } from "../api/input-validation.mjs";
 import { validateContractDocument } from "../database/contract-validation.mjs";
 import { runIdempotentCommand } from "../database/idempotent-command.mjs";
+import { isValidGuidedConversationDraft } from "./guided-conversations.mjs";
 
 const DRAFT_KEYS = new Set([
   "daily-reflection",
   "weekly-reflection",
   "monthly-reflection",
   "guided-conversation",
+  "guided-topic-conversation",
 ]);
 const MAX_TEXT = 1000;
 
@@ -72,6 +74,15 @@ export function isValidExperienceDraftPayload(
       payload.answers.every(
         (answer) => Number.isInteger(answer) && answer >= 0 && answer <= 2,
       )
+    );
+  if (draftKey === "guided-topic-conversation")
+    return (
+      contentVersion === "guided-chat-v2" &&
+      Object.keys(payload).length === 2 &&
+      Object.keys(payload).every((key) =>
+        ["categoryId", "turns"].includes(key),
+      ) &&
+      isValidGuidedConversationDraft(payload)
     );
   return (
     draftKey === "monthly-reflection" &&
