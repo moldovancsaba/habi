@@ -1,5 +1,12 @@
 # Habi — ellenőrzési napló
 
+## Játékosi állapotjelzések metróvonalas trendnézete · 2026-10-27
+
+- A trendek már nem ferde vonalú általános grafikonként jelennek meg. Minden mérőszám saját, függőleges metróútvonalat kap: egyenes fővonal, a mérőszám színével jelölt 8 px-es állomások, rövid vízszintes csatlakozók, majd a tényleges rögzítési idő és válasz. A sorrend a mentett időbélyegeket követi; hiányzó napot, értéket vagy trendirányt nem talál ki.
+- A 14/28/42 napos választás, a válaszonkénti megoszlás és a legutóbbi válasz időpontja megmarad. Az útvonal minden mérőszámhoz ugyanazt a `--metro-*` geometriát használja.
+- `npm run lint` — PASS, exit 0; `npm run typecheck` — PASS, exit 0; `npm run build` — PASS, exit 0; `git diff --check` — PASS, exit 0. Környezet: helyi Habi checkout, Next.js 16.4.3. Nincs adatbázis-migráció vagy adattartalom-változás.
+- A böngészős Production megjelenést a kiadás után kell ellenőrizni. Visszaállítás az előző Production alkalmazásverzióra történik.
+
 ## Saját cél cseréje és visszaállítása · 2026-10-27
 
 - A célcsere egyetlen, az aktív játékosi SSO-munkamenetben végrehajtott, idempotens naplóírás: az új célrekord a korábbi cél azonosítójára hivatkozik. Nem történik külön „régi cél lezárása” és „új cél létrehozása” kérés, tehát ezek között nincs részleges sikerállapot.

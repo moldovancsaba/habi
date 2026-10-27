@@ -4538,6 +4538,7 @@ export default function HabiWorkspace() {
                         {metrics.map(([metric, label, options]) => {
                           const points = trendCheckins
                             .map((checkin, index) => ({
+                              id: checkin.id,
                               date: checkin.completedAt ?? "",
                               value: checkin.answerCodes?.find(
                                 (answer) => answer.metric === metric,
@@ -4558,56 +4559,57 @@ export default function HabiWorkspace() {
                               <h4>{label}</h4>
                               {points.length ? (
                                 <>
-                                  <svg
-                                    role="img"
+                                  <section
+                                    className={styles.trendRouteViewport}
                                     aria-label={`${label}: ${points.length} rögzített válasz az elmúlt ${trendPeriod} napban`}
-                                    viewBox="0 0 700 86"
-                                    className={styles.trendChart}
                                   >
-                                    <line x1="0" y1="72" x2="700" y2="72" />
-                                    {points.map((point, index) => {
-                                      const x =
-                                        points.length === 1
-                                          ? 350
-                                          : (index / (points.length - 1)) *
-                                              660 +
-                                            20;
-                                      const y = 12 + (point.value ?? 0) * 18;
-                                      return (
-                                        <g key={`${metric}-${point.date}`}>
-                                          {index > 0 && (
-                                            <line
-                                              className={styles.trendLine}
-                                              x1={
-                                                ((index - 1) /
-                                                  (points.length - 1)) *
-                                                  660 +
-                                                20
-                                              }
-                                              y1={
-                                                12 +
-                                                (points[index - 1]?.value ??
-                                                  0) *
-                                                  18
-                                              }
-                                              x2={x}
-                                              y2={y}
-                                            />
-                                          )}
-                                          <circle cx={x} cy={y} r="6" />
-                                        </g>
-                                      );
-                                    })}
-                                  </svg>
-                                  <p className={styles.muted}>
-                                    {points
-                                      .map((point) => {
+                                    <ol
+                                      className={styles.trendRoute}
+                                      style={{ color: `var(--${metric})` }}
+                                    >
+                                      {points.map((point) => {
+                                        const timestamp = new Date(point.date);
                                         const answer =
                                           options[point.value ?? 0];
-                                        return `${new Date(point.date).toLocaleDateString("hu-HU", { month: "short", day: "numeric" })}: ${answer}`;
-                                      })
-                                      .join(" · ")}
-                                  </p>
+                                        return (
+                                          <li
+                                            className={styles.trendStation}
+                                            key={`${metric}-${point.id}`}
+                                          >
+                                            <span
+                                              className={
+                                                styles.trendStationMark
+                                              }
+                                              aria-hidden="true"
+                                            />
+                                            <time
+                                              dateTime={point.date}
+                                              className={
+                                                styles.trendStationTime
+                                              }
+                                            >
+                                              {timestamp.toLocaleString(
+                                                "hu-HU",
+                                                {
+                                                  month: "short",
+                                                  day: "numeric",
+                                                  hour: "2-digit",
+                                                  minute: "2-digit",
+                                                },
+                                              )}
+                                            </time>
+                                            <span
+                                              className={
+                                                styles.trendStationAnswer
+                                              }
+                                            >
+                                              {answer}
+                                            </span>
+                                          </li>
+                                        );
+                                      })}
+                                    </ol>
+                                  </section>
                                   <p className={styles.muted}>
                                     {recordedSummary}
                                   </p>
