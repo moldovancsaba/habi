@@ -4,9 +4,9 @@ A 2026-10-27-i tulajdonosi kérés engedélyezi a játékos, szülő és edző k
 
 ## Felület és beszélgetés
 
-Minden aktív szerepköri oldalon állandó `smart_toy` alakú AI-edző gomb jelenik meg. A szakaszok, mentett bejegyzések, grafikonok, kérdések, gyakorlatok és felmérések saját belépőt kapnak. A panel az oldal állapotának elvesztése nélkül nyílik meg; a visszalépés az eredeti oldalra visz. A cím megmutatja a kijelölt tartalmat. Az első üzenet a szerver által feloldott, engedélyezett tartalmat magyarázza; ezen felül tényleges AI-magyarázat készül az aszinkron worker útvonalán.
+Minden aktív szerepköri oldalon állandó `smart_toy` alakú AI-edző gomb jelenik meg. A szakaszok, mentett bejegyzések, grafikonok, kérdések, gyakorlatok és felmérések saját belépőt kapnak. A panel az oldal állapotának elvesztése nélkül nyílik meg; a visszalépés az eredeti oldalra visz. A cím megmutatja a kijelölt tartalmat. Az első üzenet a szerver által feloldott, engedélyezett tartalmat magyarázza; a tényleges AI-válasz a felhasználó kérdésére készül az aszinkron worker útvonalán. A megnyitás önmagában nem indít háttérgenerálást.
 
-A thread tulajdonosa tenant + játékos + actor + aktív szerepkör. Szülő/edző nem olvashatja a játékos privát AI-threadjét. A családi emberi beszélgetések külön maradnak. A kérdés és munka az indítástól tartós, az ismétlés idempotens, egy thread egyszerre egy folyamatban lévő kérdést enged. A korábbi threadek és üzenetek lapozhatók. A következő kérdés a legutóbbi négy, még engedélyezett válasz kérdését és látható válaszát is megkapja; a korábbi AI-szöveg nem új bizonyíték.
+A thread tulajdonosa tenant + játékos + actor + aktív szerepkör. Szülő/edző nem olvashatja a játékos privát AI-threadjét. A családi emberi beszélgetések külön maradnak. A kérdés és munka az indítástól tartós, az ismétlés idempotens, új kérdés folyamatban lévő válasz mellett is beküldhető és tartósan sorba kerül. A korábbi automatikus bevezető helyett a felhasználó saját kérdése kap elsőbbséget; a megszakított bevezető előzménye megmarad. A korábbi threadek és üzenetek lapozhatók. A következő kérdés a legutóbbi négy, még engedélyezett válasz kérdését és látható válaszát is megkapja; a korábbi AI-szöveg nem új bizonyíték.
 
 ## Játékosmemória
 

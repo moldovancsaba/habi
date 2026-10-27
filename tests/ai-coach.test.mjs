@@ -152,11 +152,11 @@ test("contextual coach persists private dialogue, refreshes memory and validates
     );
   let first, second, claimed;
   await t.test(
-    "opening queues real AI work, retries replay and thread ownership remains private",
+    "explicit questions queue real AI work, retries replay and thread ownership remains private",
     async () => {
       const body = {
         threadId: null,
-        question: "",
+        question: "Mit mutat az állapotjelzés?",
         context,
         expectedRevision: 0,
       };
@@ -193,6 +193,92 @@ test("contextual coach persists private dialogue, refreshes memory and validates
         }),
         { message: "NOT_FOUND" },
       );
+    },
+  );
+  await t.test(
+    "opening never blocks the composer and multiple user questions persist while answers wait",
+    async () => {
+      const opened = await startCoachTurn({
+        ...args,
+        request: request("/ai-coach", {
+          threadId: null,
+          question: "",
+          context,
+          expectedRevision: 0,
+        }),
+      });
+      assert.equal(opened.jobId, null);
+      assert.equal(opened.turnId, null);
+      let detail = await readCoachThread({ ...args, id: opened.threadId });
+      assert.equal(detail.items.length, 0);
+      assert.ok(detail.thread.opening);
+      const a = await startCoachTurn({
+        ...args,
+        request: request("/ai-coach", {
+          threadId: opened.threadId,
+          question: "Első saját kérdés",
+          context,
+          expectedRevision: detail.thread.revision,
+        }),
+      });
+      detail = await readCoachThread({ ...args, id: opened.threadId });
+      const b = await startCoachTurn({
+        ...args,
+        request: request("/ai-coach", {
+          threadId: opened.threadId,
+          question: "Második saját kérdés",
+          context,
+          expectedRevision: detail.thread.revision,
+        }),
+      });
+      detail = await readCoachThread({ ...args, id: opened.threadId });
+      assert.equal(detail.items.filter((t) => t.status === "queued").length, 2);
+      // Keep the shared test worker focused on the original test thread.
+      await db
+        .collection("jobs")
+        .updateMany(
+          { id: { $in: [a.jobId, b.jobId] } },
+          { $set: { status: "cancelled" } },
+        );
+    },
+  );
+  await t.test(
+    "a question supersedes a legacy automatic opening without losing either message",
+    async () => {
+      const opening = await startCoachTurn({
+        ...args,
+        request: request("/ai-coach", {
+          threadId: null,
+          question: "Magyarázd el ezt egyszerűen: Állapotjelzések.",
+          context,
+          expectedRevision: 0,
+        }),
+      });
+      const detail = await readCoachThread({ ...args, id: opening.threadId });
+      const own = await startCoachTurn({
+        ...args,
+        request: request("/ai-coach", {
+          threadId: opening.threadId,
+          question: "Mit kell tudni Csabáról?",
+          context,
+          expectedRevision: detail.thread.revision,
+        }),
+      });
+      const job = await db.collection("jobs").findOne({ id: opening.jobId });
+      assert.equal(job.status, "cancelled");
+      assert.equal(job.reasonCode, "REPLACED_BY_QUESTION");
+      const after = await readCoachThread({ ...args, id: opening.threadId });
+      assert.equal(
+        after.items.find((t) => t.id === own.turnId).status,
+        "queued",
+      );
+      assert.equal(
+        after.items.find((t) => t.id === opening.turnId).failureReason,
+        "REPLACED_BY_QUESTION",
+      );
+      await db
+        .collection("jobs")
+        .updateOne({ id: own.jobId }, { $set: { status: "cancelled" } });
     },
   );
   const worker = { serviceId: "synthetic-coach-worker" };

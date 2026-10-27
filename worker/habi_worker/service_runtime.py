@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from habi_worker.local_runtime import WorkerDependencyError, _request_json
-from habi_worker.shared_ai import SharedAIError, generate as shared_ai_generate, validate_service as validate_shared_ai_service
+from habi_worker.shared_ai import SharedAIError, SharedAICancelled, generate as shared_ai_generate, validate_service as validate_shared_ai_service
 
 
 API_TIMEOUT_SECONDS = 8
@@ -121,7 +121,7 @@ def _scan_pdf(config, job, context, job_path):
     return verdict, scanner_version
 
 
-def _answer_for_context(config, context):
+def _answer_for_context(config, context, cancelled=None):
     refs = context["sourceManifest"]
     manifest = context["promptManifest"]
     if not refs:
@@ -158,6 +158,7 @@ def _answer_for_context(config, context):
         generated, actual_model = shared_ai_generate(
             config, system_prompt, prompt[len(system_prompt) + 2:],
             str(context.get("jobId", "")) + ":" + str(context["turnRevision"]) + ":" + _sha256_json(refs),
+            **({"should_cancel": cancelled} if cancelled else {}),
         )
         manifest = {**manifest, "modelArtifact": actual_model[:200]}
     else:
@@ -229,7 +230,7 @@ def _process_one(config, claim_key):
             verdict, scanner_version = _scan_pdf(config, job, context, job_path)
             _log("habi.worker.report_scan.completed", jobId=job["jobId"], verdict=verdict, scannerVersion=scanner_version)
         else:
-            answer = _answer_for_context(config, context)
+            answer = _answer_for_context(config, context, lambda: bool(heartbeat_error))
             if heartbeat_error:
                 _log("habi.worker.lease_lost", jobId=job["jobId"], reason=heartbeat_error[0])
                 return True, str(uuid.uuid4())
@@ -237,6 +238,9 @@ def _process_one(config, claim_key):
             payload = {"fence": job["fence"], "leaseToken": job["leaseToken"], "resultHash": _sha256_json(result), **result}
             _api_call(config, job_path + "/complete", payload, {"Idempotency-Key": str(uuid.uuid4())})
             _log("habi.worker.interpretation.completed", jobId=job["jobId"], resultStatus=answer["status"], claimCount=len(answer["claims"]))
+    except SharedAICancelled:
+        _log("habi.worker.lease_lost", jobId=job["jobId"], reason="CANCELLED_OR_SUPERSEDED")
+        return True, str(uuid.uuid4())
     except SharedAIError as error:
         reason = str(error) or "SHARED_AI_UNAVAILABLE"
         if reason in ("SHARED_AI_AUTHORIZATION_FAILED", "SHARED_AI_TEXT_CHAT_NOT_PERMITTED", "SHARED_AI_MODEL_NOT_PERMITTED"):

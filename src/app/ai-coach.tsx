@@ -45,6 +45,7 @@ type Turn = {
   reviewState: string;
   reviewRationale: string;
   sourceState: string;
+  failureReason?: string | null;
   sources: {
     id: string;
     revision: number;
@@ -242,6 +243,7 @@ function CoachPanel({
     [reviewNotes, setReviewNotes] = useState<Record<string, string>>({}),
     [feedbackNotes, setFeedbackNotes] = useState<Record<string, string>>({});
   const [openedSources, setOpenedSources] = useState<Set<string>>(new Set());
+  const requestEpoch = useRef(0);
   const pending = turns.some((t) => t.status === "queued");
   const request = useCallback(
     (
@@ -267,6 +269,7 @@ function CoachPanel({
   async function run(action: () => Promise<void>) {
     if (busy) return;
     setBusy(true);
+    requestEpoch.current++;
     setNotice("");
     try {
       await action();
@@ -352,9 +355,10 @@ function CoachPanel({
     if (!thread?.id || !pending) return;
     let current = true;
     const timer = setInterval(() => {
+      const epoch = requestEpoch.current;
       void request(`/ai-coach/${thread.id}`)
         .then((body) => {
-          if (current) {
+          if (current && epoch === requestEpoch.current) {
             setThread(body.thread);
             setTurns(body.items);
             setOlder(body.nextCursor);
@@ -583,7 +587,7 @@ function CoachPanel({
             </details>
             <button
               type="button"
-              disabled={busy || pending}
+              disabled={busy}
               onClick={() => void run(() => send("", true))}
             >
               Új beszélgetés erről a tartalomról
@@ -627,24 +631,35 @@ function CoachPanel({
                     <>
                       {turn.status === "queued" && (
                         <p role="status">
-                          Átnézem a kijelölt tartalmat és az engedélyezett
-                          előzményeket… A beszélgetés mentve van.
+                          A kérdésedet elmentettük. A válasz készül; közben
+                          újabb kérdést is küldhetsz.
                         </p>
                       )}
-                      {turn.status === "failed" && (
-                        <>
+                      {turn.status === "failed" &&
+                        turn.failureReason === "REPLACED_BY_QUESTION" && (
                           <p>
-                            A válasz most nem készült el. A kérdésed megmaradt.
+                            Az automatikus magyarázat helyett a saját kérdésedre
+                            válaszolok.
                           </p>
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => void run(() => send(turn.question))}
-                          >
-                            Újra kérdezem
-                          </button>
-                        </>
-                      )}
+                        )}
+                      {turn.status === "failed" &&
+                        turn.failureReason !== "REPLACED_BY_QUESTION" && (
+                          <>
+                            <p>
+                              A válasz most nem készült el. A kérdésed
+                              megmaradt.
+                            </p>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() =>
+                                void run(() => send(turn.question))
+                              }
+                            >
+                              Újra kérdezem
+                            </button>
+                          </>
+                        )}
                       {turn.answer?.claims.map((claim) => (
                         <div key={claim.id}>
                           <p>{claim.text}</p>
@@ -745,7 +760,7 @@ function CoachPanel({
               <button
                 className={styles.primary}
                 type="submit"
-                disabled={busy || pending || !question.trim()}
+                disabled={busy || !question.trim()}
               >
                 Kérdés elküldése
               </button>

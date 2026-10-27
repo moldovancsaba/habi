@@ -274,29 +274,55 @@ export async function startCoachTurn({
         );
         if (changed.modifiedCount !== 1)
           throw new HabiApiError("REVISION_CONFLICT");
+        // A user's question takes priority over the legacy automatic opening.
+        // Other user questions remain queued; sending never waits on generation.
         const pending = await tx
           .collection("habi_coach_turns")
-          .findOne({ ...scope, threadId, status: "queued" }, { session });
-        if (pending) {
+          .find({ ...scope, threadId, status: "queued" }, { session })
+          .toArray();
+        for (const previous of pending) {
+          const automatic =
+            previous.createdAt === existing.createdAt &&
+            previous.question.startsWith("Magyarázd el ezt egyszerűen:");
           const pendingJob = await tx
             .collection("jobs")
             .findOne(
-              { tenantId: principal.tenantId, id: pending.jobId },
+              { tenantId: principal.tenantId, id: previous.jobId },
               { session },
             );
+          if (automatic) {
+            await tx.collection("jobs").updateOne(
+              {
+                tenantId: principal.tenantId,
+                id: previous.jobId,
+                status: { $in: ["queued", "leased", "running"] },
+              },
+              {
+                $set: {
+                  status: "cancelled",
+                  reasonCode: "REPLACED_BY_QUESTION",
+                  workerClientId: null,
+                  leaseTokenHash: null,
+                  leaseUntil: null,
+                  updatedAt: now.toISOString(),
+                },
+                $inc: { revision: 1 },
+              },
+              { session },
+            );
+          }
           if (
-            !pendingJob ||
-            !["failed", "cancelled"].includes(pendingJob.status)
+            automatic ||
+            (pendingJob && ["failed", "cancelled"].includes(pendingJob.status))
           )
-            throw new HabiApiError("REVISION_CONFLICT");
-          await tx.collection("habi_coach_turns").updateOne(
-            { ...scope, id: pending.id, revision: pending.revision },
-            {
-              $set: { status: "failed", updatedAt: now.toISOString() },
-              $inc: { revision: 1 },
-            },
-            { session },
-          );
+            await tx.collection("habi_coach_turns").updateOne(
+              { ...scope, id: previous.id, revision: previous.revision },
+              {
+                $set: { status: "failed", updatedAt: now.toISOString() },
+                $inc: { revision: 1 },
+              },
+              { session },
+            );
         }
       } else {
         if (input.expectedRevision !== 0)
@@ -313,6 +339,9 @@ export async function startCoachTurn({
           .collection("habi_coach_threads")
           .insertOne(thread, { session });
       }
+      // The authored introduction is immediate. Generate only when the user asks.
+      if (!existing && !input.question.trim())
+        return { status: 201, resultRef: { id: threadId, revision: 1 } };
       const turn = {
         ...common(principal, playerId, now),
         id: turnId,
@@ -370,6 +399,8 @@ export async function startCoachTurn({
   const turn = await db
     .collection("habi_coach_turns")
     .findOne({ ...scope, id: result.resultRef.id });
+  if (!turn)
+    return { threadId: result.resultRef.id, turnId: null, jobId: null };
   return { threadId: turn.threadId, turnId: turn.id, jobId: turn.jobId };
 }
 export async function listCoachThreads({
@@ -446,12 +477,11 @@ export async function readCoachThread({
     const current = turn.sourceRefs.every((r) =>
       available.some((s) => s.id === r.id && s.revision === r.revision),
     );
-    const job =
-      turn.status === "queued"
-        ? await db
-            .collection("jobs")
-            .findOne({ tenantId: principal.tenantId, id: turn.jobId })
-        : null;
+    const job = ["queued", "failed"].includes(turn.status)
+      ? await db
+          .collection("jobs")
+          .findOne({ tenantId: principal.tenantId, id: turn.jobId })
+      : null;
     const answer =
       turn.answer && current
         ? {
@@ -472,6 +502,7 @@ export async function readCoachThread({
           ? "failed"
           : turn.status,
       sourceState: current ? "current" : "withdrawn",
+      failureReason: job?.reasonCode ?? null,
       pendingReview:
         !!turn.answer?.claims.some((c) => c.kind === "inference") &&
         !["approved", "rejected"].includes(turn.reviewState),
@@ -531,6 +562,10 @@ export async function coachWorkerContext({
       ...scope,
       threadId: turn.threadId,
       id: { $ne: turn.id },
+      $or: [
+        { createdAt: { $lt: turn.createdAt } },
+        { createdAt: turn.createdAt, id: { $lt: turn.id } },
+      ],
       status: "answered",
     })
     .sort({ createdAt: -1, id: -1 })

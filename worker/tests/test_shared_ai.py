@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from habi_worker.shared_ai import generate, validate_service
+from habi_worker.shared_ai import SharedAICancelled, generate, validate_service
 
 
 class SharedAIHandler(BaseHTTPRequestHandler):
@@ -64,6 +64,13 @@ class SharedAIClientTests(unittest.TestCase):
         self.assertEqual(validate_service(self.config), {"task": "text_chat", "model": "auto"})
         self.assertEqual([item[1] for item in SharedAIHandler.requests], ["/v1/job-types", "/v1/models"])
         self.assertTrue(all(item[2] == "Bearer " + self.config.shared_ai_key for item in SharedAIHandler.requests))
+
+    def test_superseded_job_stops_polling_and_releases_the_worker(self):
+        checks = iter([False, True])
+        with self.assertRaises(SharedAICancelled):
+            generate(self.config, "system", "question", "cancel-test", should_cancel=lambda: next(checks))
+        self.assertEqual(len([r for r in SharedAIHandler.requests if r[0] == "POST"]), 1)
+        self.assertFalse(any(r[0] == "GET" and "/jobs/" in r[1] for r in SharedAIHandler.requests))
 
     def test_async_job_uses_auto_and_stable_idempotency_then_polls(self):
         with patch("habi_worker.shared_ai.POLL_SECONDS", 0):

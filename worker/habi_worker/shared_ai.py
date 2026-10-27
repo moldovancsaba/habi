@@ -20,6 +20,10 @@ class SharedAIError(WorkerDependencyError):
     pass
 
 
+class SharedAICancelled(SharedAIError):
+    pass
+
+
 def _request(config, method, path, payload=None, idempotency_key=None, timeout=15):
     body = None if payload is None else json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     headers = {"Accept": "application/json", "Authorization": "Bearer " + config.shared_ai_key}
@@ -114,8 +118,10 @@ def _create_job(config, request_body, idempotency_key):
     raise SharedAIError("SHARED_AI_JOB_CREATE_FAILED")
 
 
-def generate(config, system_prompt, user_prompt, revision_key):
+def generate(config, system_prompt, user_prompt, revision_key, should_cancel=None):
     """Run a bounded async text job; retry creation only with a stable idempotency key."""
+    if should_cancel and should_cancel():
+        raise SharedAICancelled("SHARED_AI_CANCELLED")
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
@@ -138,6 +144,8 @@ def generate(config, system_prompt, user_prompt, revision_key):
     job_id = _create_job(config, request_body, idempotency_key)
     deadline = time.monotonic() + MAX_JOB_SECONDS
     while time.monotonic() < deadline:
+        if should_cancel and should_cancel():
+            raise SharedAICancelled("SHARED_AI_CANCELLED")
         try:
             _, response, _ = _request(config, "GET", "/jobs/" + urllib.parse.quote(job_id, safe=""), timeout=15)
         except _Retryable as error:
