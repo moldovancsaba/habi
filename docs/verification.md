@@ -5,7 +5,7 @@
 - A trendek már nem ferde vonalú általános grafikonként jelennek meg. Minden mérőszám saját, függőleges metróútvonalat kap: egyenes fővonal, a mérőszám színével jelölt 8 px-es állomások, rövid vízszintes csatlakozók, majd a tényleges rögzítési idő és válasz. A sorrend a mentett időbélyegeket követi; hiányzó napot, értéket vagy trendirányt nem talál ki.
 - A 14/28/42 napos választás, a válaszonkénti megoszlás és a legutóbbi válasz időpontja megmarad. Az útvonal minden mérőszámhoz ugyanazt a `--metro-*` geometriát használja.
 - `npm run lint` — PASS, exit 0; `npm run typecheck` — PASS, exit 0; `npm run build` — PASS, exit 0; `git diff --check` — PASS, exit 0. Környezet: helyi Habi checkout, Next.js 16.4.3. Nincs adatbázis-migráció vagy adattartalom-változás.
-- A böngészős Production megjelenést a kiadás után kell ellenőrizni. Visszaállítás az előző Production alkalmazásverzióra történik.
+- Production: commit `b486c45fda8b7058107b6e3c84579c1c8824a2c6`, Vercel deployment `dpl_7rK4pCEAG699oYHxBA28pZEJ1wCW`, `READY`; a `https://habigoal.com/` HTTP 200-zal ezt a deploymentazonosítót szolgálja ki, az `/api/health` és `/api/ready` HTTP 200. A bejelentkezett böngészős vizuális ellenőrzés nem történt meg ebben a kiadásban. Visszaállítás az előző Production alkalmazásverzióra történik.
 
 ## Saját cél cseréje és visszaállítása · 2026-10-27
 
