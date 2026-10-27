@@ -60,6 +60,10 @@ Commit `c79dac4eb77c211474017db14829c146dfe33c26` is live as deployment `dpl_7tW
 
 Commit `629a124fbaceec8db488ba0ba0ce922383c257aa` is live as deployment `dpl_85ECdPEWweoL42vvGr6QJYHLvucH` (READY), with aliases including `habigoal.com`. The HABI2 flow accepts an opening message, ranks topics with preserved local keyword matching, keeps that message in the resumable conversation and saved transcript, and sends recognized safety phrases to the authored support branch. It reads v2 drafts and writes v3. The full local suite (151 passed), lint, typecheck, production build, and diff check passed; live route checks are in [verification](verification.md). No new API endpoint or database migration was required. The authenticated conversation itself has not been exercised in Production.
 
+## Start a guided conversation from a saved check-in · Production release 2026-10-27
+
+Commit `5aba1b388cc4660d7de8f2f1f4124223d07bf38f` is live as deployment `dpl_8WMELks4cJaRoJ7Ak2m1Vk4Q3ChT` (READY). The player overview exposes a direct action to open a guided conversation with the latest recognized check-in questions and answers as an editable opening. No sentiment is inferred and nothing is submitted until the player continues. No API endpoint, stored contract, or migration changed. Local verification and live route checks are in [verification](verification.md); an authenticated browser interaction remains unverified.
+
 ## Runtime log levels
 
 API boundary diagnostics contain only a fixed operation label, request ID, status, and public error code. Expected request denials and other handled 4xx errors are logged at informational level; 5xx responses, thrown server errors, and fail-closed dependency/configuration failures are logged at error level. Do not treat a signed-out `/api/app` 401 as a service outage. Investigate error-level events using the request ID and deployment ID; never log request bodies, credentials, or exception messages.
