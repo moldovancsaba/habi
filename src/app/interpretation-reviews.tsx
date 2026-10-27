@@ -1,4 +1,5 @@
 "use client";
+import { AiCoachButton } from "./ai-coach";
 import { useCallback, useEffect, useState } from "react";
 import { productRequest, commandMessage } from "./product-request";
 import styles from "./workspace.module.css";
@@ -82,6 +83,7 @@ export default function InterpretationReviews({
   return (
     <section className={styles.panel}>
       <h2>Forrásolt válaszok edzői ellenőrzése</h2>
+      <AiCoachButton />
       <p>
         Nyisd meg a pontos forrásokat, és minden állítást külön vess össze
         velük.

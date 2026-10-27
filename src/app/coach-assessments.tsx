@@ -1,4 +1,5 @@
 "use client";
+import { AiCoachButton } from "./ai-coach";
 import { useEffect, useState } from "react";
 import content from "../lib/content/coach-assessments-v1.json";
 import { commandMessage, productRequest } from "./product-request";
@@ -130,6 +131,9 @@ export default function CoachAssessments({
     <section className={styles.panel}>
       <p className={styles.eyebrow}>EDZŐI FELMÉRÉSEK ÉS INTERJÚK</p>
       <h2>Kérdőívek, helyzetek és riportértékek</h2>
+      <AiCoachButton
+        context={{ kind: "assessment", id: topic.id, revision: 1 }}
+      />
       <p>
         A játékos saját válaszait és az edző megfigyelését külön rögzítjük. Az
         eredeti kérdések fejlesztést segítenek, nem diagnosztikus tesztek.

@@ -4,7 +4,7 @@
   "artifactDigest": "sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
   "ollamaVersion": "0.40.3",
   "promptFile": "prompt.md",
-  "promptSha256": "f330e95d9312d0ade1e19305bd75cf9c74cb5cf35916a8be94f14def285aa7d7",
+  "promptSha256": "36c0b2d792c6f8c8e865e37508643827b661931f4a1e96abcb4185b3c70d550e",
   "policyVersion": "policy-v2",
   "retrievalVersion": "retrieval-v1",
   "contextLimit": 32768,

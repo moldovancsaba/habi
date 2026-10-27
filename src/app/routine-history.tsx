@@ -1,4 +1,5 @@
 "use client";
+import { AiCoachButton } from "./ai-coach";
 import { useState } from "react";
 import styles from "./workspace.module.css";
 type Entry = { id: string; text?: string | null; occurredAt?: string };
@@ -30,6 +31,7 @@ export default function RoutineHistory({
   return (
     <section>
       <h3>Rutinok és kipróbálási előzmények</h3>
+      <AiCoachButton />
       {routines.map((routine) => {
         const events = records
           .filter((record) =>

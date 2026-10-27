@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "effective": "2026-10-25",
+  "effective": "2026-10-27",
   "decisions": [
     {
       "id": "D-HG-007",
@@ -90,6 +90,25 @@
       "rule": "Legacy browser-owned records do not block new Habi onboarding and are not transferred into new role accounts",
       "authority": "Owner approval 2026-10-26",
       "supersedes": []
+    },
+    {
+      "id": "D-HG-018",
+      "status": "accepted",
+      "rule": "Hosted Habi interpretation jobs use the shared Hetzner text_chat async API with model auto by default; only the requester-authorized, revision-pinned source bundle is sent server-to-server; Habi validates exact citations and current revisions before accepting results; local synthetic/test modes remain local",
+      "authority": "Owner approval 2026-10-27",
+      "supersedes": [
+        "D-HG-011 local model for hosted interpretation",
+        "D-HG-012 no personal hosted AI fallback"
+      ]
+    },
+    {
+      "id": "D-HG-019",
+      "status": "accepted",
+      "rule": "Contextual AI coach is available to authenticated players, parents and coaches on all workspace pages. Actor-and-role-scoped private dialogue, source-backed player memory, explicit corrections, authored practice recommendations and feedback are enabled. Only an explicitly shared turn and its sources enter human review; personal inference remains separate until reviewed. Learning updates retrieved player memory, not model weights.",
+      "authority": "Owner request 2026-10-27: deliver all contextual AI coach, player memory and recommendations",
+      "supersedes": [
+        "D-HG-012 player direct AI deferred"
+      ]
     }
   ]
 }

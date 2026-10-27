@@ -14,6 +14,7 @@ class WorkerConfigTests(unittest.TestCase):
             "HG_MODEL": "qwen2.5:7b",
             "HG_MODEL_DIGEST": "sha256:" + "a" * 64,
             "HG_PROMPT_HASH": "b" * 64,
+            "HG_SHARED_AI_API_KEY": "synthetic-placeholder-shared-ai-secret-that-is-long-enough",
         }
 
     def test_accepts_scoped_worker_environment(self):
@@ -21,6 +22,8 @@ class WorkerConfigTests(unittest.TestCase):
         self.assertEqual(config.model, "qwen2.5:7b")
         self.assertEqual(config.service_id, "worker-test")
         self.assertNotIn("synthetic-placeholder-worker-secret", repr(config))
+        self.assertNotIn("synthetic-placeholder-shared-ai-secret", repr(config))
+        self.assertEqual(config.shared_ai_model, "auto")
 
     def test_requires_all_worker_values(self):
         del self.env["HG_MODEL_DIGEST"]

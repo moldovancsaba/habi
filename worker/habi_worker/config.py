@@ -20,6 +20,9 @@ class WorkerConfig:
     cloud_api_origin: Optional[str] = None
     service_id: Optional[str] = None
     bearer_token: Optional[str] = field(default=None, repr=False)
+    shared_ai_origin: Optional[str] = None
+    shared_ai_key: Optional[str] = field(default=None, repr=False)
+    shared_ai_model: str = "auto"
 
 
 def _validate_model_release(env):
@@ -71,7 +74,7 @@ def load_config(env):
             raise ValueError("local_synthetic worker requires development and synthetic-only mode")
         forbidden = [
             key for key in env
-            if key.startswith(("HG_CLOUD_", "HG_WORKER_SERVICE_", "HG_WORKER_BEARER_", "HG_ATLAS_", "HG_SESSION_", "HG_REFRESH_", "HG_CURSOR_", "HG_SSO_", "HG_EXTERNAL_"))
+            if key.startswith(("HG_CLOUD_", "HG_WORKER_SERVICE_", "HG_WORKER_BEARER_", "HG_ATLAS_", "HG_SESSION_", "HG_REFRESH_", "HG_CURSOR_", "HG_SSO_", "HG_EXTERNAL_", "HG_SHARED_AI_"))
             or "MONGODB" in key
         ]
         if forbidden:
@@ -99,6 +102,23 @@ def load_config(env):
     if len(env["HG_WORKER_BEARER_TOKEN"].encode("utf-8")) < 32:
         raise ValueError("HG_WORKER_BEARER_TOKEN must contain at least 32 bytes")
 
+    shared_origin_value = None
+    shared_key = None
+    shared_model = "auto"
+    if not local_test:
+        shared_origin = urlparse(env.get("HG_SHARED_AI_BASE_URL", "https://chatbotapi.haho.ai/v1"))
+        if shared_origin.scheme != "https" or shared_origin.hostname != "chatbotapi.haho.ai" or shared_origin.path.rstrip("/") != "/v1":
+            raise ValueError("HG_SHARED_AI_BASE_URL must be https://chatbotapi.haho.ai/v1")
+        if shared_origin.username or shared_origin.password or shared_origin.query or shared_origin.fragment:
+            raise ValueError("HG_SHARED_AI_BASE_URL must not contain credentials, query, or fragment")
+        shared_key = env.get("HG_SHARED_AI_API_KEY", "").strip()
+        if len(shared_key.encode("utf-8")) < 32:
+            raise ValueError("HG_SHARED_AI_API_KEY must contain at least 32 bytes")
+        shared_model = env.get("HG_SHARED_AI_MODEL", "auto").strip()
+        if not re.fullmatch(r"auto|[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}", shared_model):
+            raise ValueError("HG_SHARED_AI_MODEL is invalid")
+        shared_origin_value = shared_origin.geturl().rstrip("/")
+
     base = _build_config(env, mode)
     forbidden = [
         key for key in env
@@ -113,4 +133,7 @@ def load_config(env):
         cloud_api_origin=cloud.geturl().rstrip("/"),
         service_id=env["HG_WORKER_SERVICE_ID"],
         bearer_token=env["HG_WORKER_BEARER_TOKEN"],
+        shared_ai_origin=shared_origin_value,
+        shared_ai_key=shared_key,
+        shared_ai_model=shared_model,
     )

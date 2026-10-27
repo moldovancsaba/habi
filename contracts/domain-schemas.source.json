@@ -292,7 +292,11 @@
           "const": 2
         },
         "retrievalVersion": {
-          "const": "retrieval-v1"
+          "type": "string",
+          "enum": [
+            "retrieval-v1",
+            "coach-memory-v1"
+          ]
         },
         "policyVersion": {
           "const": "policy-v2"
@@ -2808,7 +2812,8 @@
           "enum": [
             "personalInterpretation",
             "externalKnowledge",
-            "reportScan"
+            "reportScan",
+            "coachConversation"
           ]
         },
         "requesterActorId": {
@@ -7682,6 +7687,835 @@
         "note",
         "recordId",
         "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "CoachContext": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "string",
+          "enum": [
+            "overview",
+            "journal",
+            "checkin",
+            "conversations",
+            "timeline",
+            "reports",
+            "tasks-feedback",
+            "player-tools",
+            "assessments",
+            "knowledge"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "page",
+            "record",
+            "checkin_result",
+            "plan",
+            "coach_material",
+            "monthly_reflection",
+            "assessment_result",
+            "report",
+            "extraction",
+            "interpretation",
+            "practice",
+            "topic",
+            "assessment",
+            "metric",
+            "chart",
+            "message"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "days": {
+          "type": "integer",
+          "enum": [
+            7,
+            14,
+            28,
+            42,
+            90
+          ]
+        },
+        "metric": {
+          "type": "string",
+          "enum": [
+            "all",
+            "energy",
+            "sleep",
+            "focus",
+            "mood",
+            "load"
+          ]
+        },
+        "from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "to": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "actorRole": {
+          "type": "string",
+          "enum": [
+            "all",
+            "player",
+            "parent",
+            "coach"
+          ]
+        },
+        "eventKind": {
+          "type": "string",
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "page",
+        "kind",
+        "id",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "CoachSource": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "span": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "at": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "role": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "eventKind": {
+          "type": "string",
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "span",
+        "kind",
+        "title",
+        "text",
+        "at",
+        "role"
+      ],
+      "additionalProperties": false
+    },
+    "CoachFact": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "known",
+            "recent",
+            "pattern",
+            "helped",
+            "question"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "maxItems": 20
+        },
+        "at": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "recorded",
+            "candidate",
+            "corrected"
+          ]
+        },
+        "counterEvidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "id",
+        "category",
+        "text",
+        "sourceRefs",
+        "at",
+        "status",
+        "counterEvidence"
+      ],
+      "additionalProperties": false
+    },
+    "CoachRecommendation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "practiceId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "what": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "why": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "uncertainty": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "reviewAt": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "maxItems": 20
+        },
+        "feedback": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "practiceId",
+        "title",
+        "what",
+        "why",
+        "uncertainty",
+        "reviewAt",
+        "sourceRefs",
+        "feedback"
+      ],
+      "additionalProperties": false
+    },
+    "CoachThread": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "tenantId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "schemaVersion": {
+          "const": 2
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retentionPolicyId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "playerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "actorId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "player",
+            "parent",
+            "coach"
+          ]
+        },
+        "context": {
+          "$ref": "#/$defs/CoachContext"
+        },
+        "opening": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "closed"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "tenantId",
+        "schemaVersion",
+        "revision",
+        "createdAt",
+        "updatedAt",
+        "retentionPolicyId",
+        "playerId",
+        "actorId",
+        "role",
+        "context",
+        "opening",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "CoachTurn": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "tenantId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "schemaVersion": {
+          "const": 2
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retentionPolicyId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "playerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "actorId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "player",
+            "parent",
+            "coach"
+          ]
+        },
+        "threadId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "question": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "maxItems": 20
+        },
+        "answer": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Answer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "answered",
+            "failed"
+          ]
+        },
+        "jobId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "reviewState": {
+          "type": "string",
+          "enum": [
+            "none",
+            "requested",
+            "approved",
+            "rejected"
+          ]
+        },
+        "reviewRationale": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "reviewerActorId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context": {
+          "$ref": "#/$defs/CoachContext"
+        },
+        "profileSnapshot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CoachSource"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "profileSources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "maxItems": 200
+        }
+      },
+      "required": [
+        "id",
+        "tenantId",
+        "schemaVersion",
+        "revision",
+        "createdAt",
+        "updatedAt",
+        "retentionPolicyId",
+        "playerId",
+        "actorId",
+        "role",
+        "threadId",
+        "question",
+        "sourceRefs",
+        "answer",
+        "status",
+        "jobId",
+        "reviewState",
+        "reviewRationale",
+        "reviewerActorId",
+        "context",
+        "profileSnapshot",
+        "profileSources"
+      ],
+      "additionalProperties": false
+    },
+    "CoachProfile": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "tenantId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "schemaVersion": {
+          "const": 2
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retentionPolicyId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "playerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "actorId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "player",
+            "parent",
+            "coach"
+          ]
+        },
+        "fingerprint": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "facts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CoachFact"
+          },
+          "maxItems": 2000
+        },
+        "recommendations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CoachRecommendation"
+          },
+          "maxItems": 20
+        },
+        "sourceCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverageFrom": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverageTo": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "tenantId",
+        "schemaVersion",
+        "revision",
+        "createdAt",
+        "updatedAt",
+        "retentionPolicyId",
+        "playerId",
+        "actorId",
+        "role",
+        "fingerprint",
+        "facts",
+        "recommendations",
+        "sourceCount",
+        "coverageFrom",
+        "coverageTo"
+      ],
+      "additionalProperties": false
+    },
+    "CoachProfileEvent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "tenantId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "schemaVersion": {
+          "const": 2
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retentionPolicyId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "playerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "actorId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "player",
+            "parent",
+            "coach"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "correction",
+            "memory",
+            "feedback"
+          ]
+        },
+        "targetId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "value": {
+          "type": "string",
+          "enum": [
+            "",
+            "outdated",
+            "incorrect",
+            "helped",
+            "not_helped",
+            "try",
+            "adapt",
+            "dismiss",
+            "not_yet"
+          ]
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "id",
+        "tenantId",
+        "schemaVersion",
+        "revision",
+        "createdAt",
+        "updatedAt",
+        "retentionPolicyId",
+        "playerId",
+        "actorId",
+        "role",
+        "kind",
+        "targetId",
+        "text",
+        "value",
+        "sourceRefs"
+      ],
+      "additionalProperties": false
+    },
+    "CoachChatInput": {
+      "type": "object",
+      "properties": {
+        "threadId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "question": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "context": {
+          "$ref": "#/$defs/CoachContext"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "threadId",
+        "question",
+        "context",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "CoachEventInput": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "correction",
+            "memory",
+            "feedback"
+          ]
+        },
+        "targetId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "value": {
+          "type": "string",
+          "enum": [
+            "",
+            "outdated",
+            "incorrect",
+            "helped",
+            "not_helped",
+            "try",
+            "adapt",
+            "dismiss",
+            "not_yet"
+          ]
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "kind",
+        "targetId",
+        "text",
+        "value",
+        "sourceRefs"
+      ],
+      "additionalProperties": false
+    },
+    "CoachReviewInput": {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": [
+            "request",
+            "approved",
+            "rejected"
+          ]
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rationale": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "decision",
+        "expectedRevision",
+        "rationale"
       ],
       "additionalProperties": false
     }

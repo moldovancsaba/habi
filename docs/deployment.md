@@ -49,7 +49,7 @@ Commit `cc87390d62a99fc626b04308bf3d893158d99278` is READY in Vercel Production 
 - Production serves the role workspace at `/` and the SSO-admin console at `/admin`. First-login SSO app-permission provisioning is deployed from commit `82d37bf`, deployment `dpl_6eeVijeCXsQwbsdXXmLMFJE7AWJa` (READY); `/`, `/api/health`, and `/api/ready` returned HTTP 200. A real new-identity callback remains the live integration check because it requires an authenticated SSO account.
 - Production exposes the `/admin` invitation and role-revocation UI, the player/parent/coach workspace, session-bound admin grant, role-invitation/claim routes, migration 011 and an admin-only idempotent bootstrap for tenant `habi`. The bootstrap uses the MVP draft policy references in `docs/policies/` and will not overwrite a tenant with different references. The tenant bootstrap remains pending an authenticated Habi admin action.
 - The first deployment surfaced an invalid worker verifier value because the newline from its protected hash file was retained. The Production verifier was replaced with a newline-free SHA-256 value and the subsequent deployment passed `/api/health` and `/api/ready` with HTTP 200.
-- The local Mac worker LaunchAgent `com.doneisbetter.habi-worker` is installed and running. It uses `qwen2.5:7b` locally and successfully polls `https://habigoal.com/api/v1/worker/jobs/claim` with HTTP 204 responses, meaning authentication works and no eligible jobs are queued. Its launch script sets Homebrew PATH explicitly for `launchd`.
+- The local Mac worker LaunchAgent `com.doneisbetter.habi-worker` is installed and running. It polls `https://habigoal.com/api/v1/worker/jobs/claim`; hosted interpretation generation uses the shared Hetzner `text_chat` async API with model `auto`. Local `qwen2.5:7b` remains the synthetic/test model. The Hetzner service key is stored only in the ignored mode-0600 worker env file; it is never configured in Vercel.
 - Apex is the configured SSO callback origin. The callback no longer crosses hosts, avoiding loss of the `__Host-` transaction cookie. A real browser SSO callback/session still requires the owner to complete sign-in. See [verification](verification.md).
 
 ## Release procedure
@@ -60,7 +60,7 @@ Commit `cc87390d62a99fc626b04308bf3d893158d99278` is READY in Vercel Production 
 4. After verified SSO admin login, use `/admin` to run the idempotent schema bootstrap and create/verify the `habi` tenant. Migration checksums are recorded in `_habi_migrations`; existing records are not bulk-deleted or imported into role identities. Confirm all currently registered migrations, including `014-experience-drafts` and `015-monthly-reflections`, are listed as applied before relying on resumable or structured monthly reflections.
 5. Push the reviewed commit to `main`. Vercel Git integration creates the Production deployment with the configured Production variables.
 6. Verify deployment state, `/`, `/admin`, `/api/health`, `/api/ready`, and SSO login/callback. A successful first login should create only the SSO `user` app permission. A Habi product role still requires an administrator-issued invitation and verified claim.
-7. The `hosted` worker is installed as the `com.doneisbetter.habi-worker` LaunchAgent on the Mac. It connects outward to Habi over HTTPS and reaches Ollama only on loopback; Tailscale Funnel is not part of this flow.
+7. The `hosted` worker is installed as the `com.doneisbetter.habi-worker` LaunchAgent on the Mac. It connects outward to Habi and to the shared Hetzner AI API over HTTPS. Tailscale Funnel is not part of this flow. The shared API receives the selected player source bundle; provider data handling and Hungarian answer quality are separate verification items.
 
 ## Canonical SSO origin and retired data-transfer path
 
@@ -116,3 +116,7 @@ No record transfer or email-based identity matching is part of the new product.
 ## Local test boundaries
 
 `npm test` uses the explicitly configured localhost replica set and a disposable `_test` database. The production migration is not part of local test scripts. The browser MVP must not be run locally against Atlas or real user sessions. Development remains synthetic-only; production secrets and OIDC client credentials remain in Vercel.
+
+## Kontextusos AI-edző kiadása
+
+A `018-contextual-ai-coach` migráció a hitelesített új AI-útvonalakon idempotensen lefut, és csak az új privát kollekciókat, indexeket és a jobvalidátor új típusát telepíti. A webkiadás READY állapota után a `com.doneisbetter.habi-worker` LaunchAgent újraindítása szükséges, hogy a `coachConversation` típust is kérje. A `coach-prompt.md` külön hash-ellenőrzést kap. A kiadás szintetikus, production-buildes háromszereplős böngészőpróbája a tényleges shared AI API-t használta; a beszélgetést és profiladatot a tesztadatbázisban tartotta.

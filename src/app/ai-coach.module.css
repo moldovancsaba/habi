@@ -1,0 +1,240 @@
+.launcher {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 28px;
+  background: #245ee7;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  box-shadow: 0 6px 24px #19335930;
+  cursor: pointer;
+}
+.contextButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 4px 8px 8px 0;
+  padding: 8px 10px;
+  border: 1px solid #cddbf3;
+  border-radius: 14px;
+  background: #f0f5ff;
+  color: #2853a7;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.dialog {
+  position: fixed;
+  inset: 16px 16px 16px auto;
+  width: min(760px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  height: calc(100dvh - 32px);
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  margin: 0;
+  border: 1px solid #d2def1;
+  border-radius: 24px;
+  color: #172c4f;
+  background: #f4f7fc;
+  box-shadow: 0 20px 80px #152b4b40;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.dialog::backdrop {
+  background: #10213d66;
+}
+.panel {
+  padding: 24px;
+  overflow-wrap: anywhere;
+  min-height: 100%;
+}
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: #f4f7fc;
+  padding-block: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.header h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  color: #31599a;
+}
+.close {
+  flex-shrink: 0;
+}
+.context {
+  padding: 12px;
+  border-radius: 12px;
+  background: #e7efff;
+  font-weight: 700;
+}
+.privacy,
+.muted {
+  color: #5b6f8d;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 16px 0;
+}
+.tabs button[aria-current="page"] {
+  background: #245ee7;
+  color: #fff;
+}
+.panel button {
+  min-height: 44px;
+  border: 1px solid #cddbf3;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: #fff;
+}
+.panel button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.panel button:focus-visible,
+.contextButton:focus-visible,
+.launcher:focus-visible {
+  outline: 3px solid #d58b12;
+  outline-offset: 3px;
+}
+.panel .primary {
+  background: #245ee7;
+  color: #fff;
+  border-color: #245ee7;
+}
+.assistant,
+.card,
+.sourceView {
+  padding: 18px;
+  margin: 16px 0;
+  background: #fff;
+  border: 1px solid #d7e2f4;
+  border-radius: 18px;
+}
+.user {
+  margin: 20px 0 8px 40px;
+  padding: 14px 18px;
+  background: #e1ebff;
+  border-radius: 18px;
+}
+.turn p,
+.card p,
+.assistant p {
+  line-height: 1.65;
+}
+.prewrap {
+  white-space: pre-wrap;
+}
+.sources,
+.suggestions,
+.history {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+.panel .sourceButton {
+  font-size: 12px;
+  color: #31599a;
+  background: #f2f6fd;
+}
+.notice {
+  padding: 14px;
+  background: #fff5dc;
+  border: 1px solid #edcf90;
+  border-radius: 14px;
+}
+.panel label {
+  display: block;
+  font-weight: 700;
+  margin: 12px 0 6px;
+}
+.panel textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 88px;
+  padding: 12px;
+  border: 1px solid #c9d8ef;
+  border-radius: 12px;
+  font: inherit;
+  color: inherit;
+  background: #fff;
+  resize: vertical;
+  margin-bottom: 10px;
+}
+.composer {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #d1ddf0;
+}
+.sourceView {
+  background: #f8fbff;
+  border: 2px solid #89ade8;
+}
+.history {
+  flex-direction: column;
+}
+.history button {
+  text-align: left;
+}
+@media (max-width: 600px) {
+  .dialog {
+    inset: 0;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+  .panel {
+    padding: 16px;
+  }
+  .header {
+    align-items: flex-start;
+  }
+  .header .close {
+    font-size: 13px;
+    max-width: 120px;
+  }
+  .launcher {
+    right: 14px;
+    bottom: 14px;
+  }
+  .buttonText {
+    font-size: 12px;
+  }
+  .user {
+    margin-left: 20px;
+  }
+}

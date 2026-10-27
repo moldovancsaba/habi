@@ -82,3 +82,11 @@ Edzőként a **Felmérések** oldalon a PDF-feltöltés mellett megnyithatod az 
 Szülőként és edzőként a **Beszélgetések** oldalon AI nélkül is indíthatsz közös témát és válaszolhatsz a hozzászólásokra. Az edző lezárhatja vagy újranyithatja a témát. Az AI-magyarázat jóváhagyásához az edző megnyitja az eredeti forrásokat, és állításonként rögzíti az ellenőrzést és az indoklást. Visszavont forrásból származó magyarázat nem marad aktuális családi válasz.
 
 A közös tervnél konkrét felelős, határidő, indok és leállási feltétel adható meg. Az elfogadott terv szüneteltethető, folytatható és lezárható. A **Tervek** oldalon a szülő a ténylegesen megosztott edzői anyagokat is látja. Az edző az anyagot új verzióként módosíthatja, megoszthatja és visszavonhatja. A **Tudástár** oldalon új általánosított szakmai minta rögzíthető és külön ellenőrzési lépésekkel jóváhagyható.
+
+## Habi AI-edző
+
+Az **AI-edző** gomb bármelyik munkaterületi oldalról megnyitja a saját AI-beszélgetésedet. Az egyes tartalmak melletti robotgomb az adott bejegyzést, grafikont, kérdést vagy gyakorlatot kapcsolja a beszélgetéshez. Habi elmagyarázza, miről van szó; utána ugyanabban a beszélgetésben kérdezhetsz tovább. A **Vissza az oldalra** megőrzi az oldalad állapotát. A **Korábbi AI-beszélgetéseim** alatt a mentett beszélgetések újranyithatók.
+
+Az **Amit Habi tud** nézet megmutatja a profilodban rendezett információkat, dátumokat és forrásokat. Saját kiegészítést adhatsz, illetve pontosíthatsz vagy elavultnak jelölhetsz egy megállapítást. A **Javaslatok** nézetben láthatod, melyik gyakorlat miért kapcsolódhat a mentett beszámolóidhoz vagy saját célodhoz, és mikor érdemes újranézni. A kipróbálásról, módosításról és eredményről adott visszajelzésed mentődik.
+
+A privát AI-beszélgetésed és saját AI-memóriád a kérdező szerepköréhez kötött. Egy személyes következtetést külön megoszthatsz edzői ellenőrzésre; ekkor az adott kérdés, válasz és hivatkozott források válnak elérhetővé, a teljes beszélgetés külön marad. Az edző az **Ellenőrzés** nézetben indokolt döntést rögzíthet.

@@ -1,4 +1,5 @@
 "use client";
+import { AiCoachButton } from "./ai-coach";
 import { useCallback, useEffect, useState } from "react";
 import { productRequest, commandMessage } from "./product-request";
 import styles from "./workspace.module.css";
@@ -64,6 +65,13 @@ export default function CoachRecords({
           );
           return (
             <article className={styles.dataCard} key={r.id}>
+              <AiCoachButton
+                context={{
+                  kind: "record",
+                  id: r.id,
+                  revision: r.revision ?? 1,
+                }}
+              />
               <p className={styles.eyebrow}>
                 {publication ? "SZÜLŐKKEL MEGOSZTVA" : "BELSŐ EDZŐI ANYAG"}
               </p>

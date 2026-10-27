@@ -5,6 +5,11 @@
  * source path at runtime, where Next's traced deployment assets are renamed.
  */
 export const migrationChecksums = Object.freeze({
+  "018-contextual-ai-coach": Object.freeze({
+    file: "018-contextual-ai-coach.mjs",
+    checksum:
+      "a60667cd902c651c78f7e6f577cf0e33e0a7899907efa5da4b09007dc7459967",
+  }),
   "001-initial-schema": Object.freeze({
     file: "001-initial-schema.mjs",
     checksum:

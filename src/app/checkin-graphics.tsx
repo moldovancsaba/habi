@@ -1,4 +1,5 @@
 "use client";
+import { AiCoachButton } from "./ai-coach";
 
 import {
   useEffect,
@@ -197,6 +198,15 @@ export default function CheckinTrends({ checkins }: { checkins: Checkin[] }) {
     <section className={styles.trends} aria-labelledby={`${id}-heading`}>
       <div className={styles.heading}>
         <h3 id={`${id}-heading`}>Állapotjelzések alakulása</h3>
+        <AiCoachButton
+          context={{
+            kind: "chart",
+            id: metric,
+            metric,
+            days: period,
+            revision: 1,
+          }}
+        />
         <div className={styles.periodControl}>
           <label htmlFor={`${id}-period`}>Időszak</label>
           <select

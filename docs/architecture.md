@@ -6,8 +6,9 @@ A termék neve **Habi**. A **Habigoal** a kliensbemutató prototípus és a spec
 
 - **Vercel:** Habi webalkalmazás és azonos eredetű API.
 - **MongoDB Atlas:** a hosztolt runtime tervezett kanonikus adatbázisa. A helyi szintetikus próba nem éri el.
-- **Mac worker:** a későbbi, csak kifelé kapcsolatot kezdeményező AI-worker; a már elfogadott Ollama `qwen2.5:7b` modellt és a közös hostzárat használja. Közvetlen Atlas-kapcsolatot és felhasználói SSO-titkot nem kaphat.
-- **Külső AI:** személyes tartalom feldolgozására tiltott.
+- **Mac worker:** kifelé kezdeményez kapcsolatot Habihoz és a megosztott Hetzner AI API-hoz. Nem kap közvetlen Atlas-kapcsolatot vagy felhasználói SSO-titkot. A helyi szintetikus és tesztmód továbbra is a meglévő Ollama `qwen2.5:7b` modellt használja.
+- **Hosztolt AI:** a szülői/edzői, forrásolt értelmezési és a játékosi/szülői/edzői privát AI-coach jobok a `https://chatbotapi.haho.ai/v1` szerveroldali `text_chat` feladatát használják `auto` modellválasztással. A Mac worker csak a Habi által az adott kérő számára kiválasztott és revisionnel rögzített forráscsomagot, a kérdést és a promptot küldi; böngészőből nincs közvetlen AI-hívás. A kérés aszinkron job; a szolgáltató job-eredménye körülbelül 15 percig érhető el, a worker legfeljebb 300 másodpercig követi. A titok és a forrásszöveg nem kerül worker logba.
+- **AI minőségi korlát:** a 2026-10-27-i kontextusos szintetikus böngészőpróbán az induló magyarázat és a folytató kérdés is pontos hivatkozásokat adott a közös API-n keresztül. Ez nem általános szakmai minőségi elfogadás. A személyes következtetés emberi ellenőrzésig elkülönül; hiányzó alátámasztásból nem lesz személyes állítás. A privát dialógust és a forrásolt játékosmemóriát a [kontextusos AI-edző](ai-coach.md) dokumentálja.
 
 A jelenlegi fejlesztői tesztkörnyezet Vercel nélkül, `127.0.0.1` címen, elkülönített Mongo replica seten és kizárólag szintetikus adatokkal fut. Ez nem módosítja a tervezett production architektúrát.
 
@@ -61,7 +62,7 @@ Az új SSO-belépés ellenőrzött issuer+subject alapján kapcsolódik a Habi a
 
 ## Személyes és gyermekadatok
 
-Személyes vagy gyermekadatokkal végzett pilot előtt szükséges a jóváhagyott consent/retention szabályzat, a forrásjogok bizonyítéka, a felelős owner kijelölése és az elkülönített Atlas tesztkörnyezet. A retention és adatkezelői szabályzat felülvizsgálati tervezetei: [adatmegőrzés](policies/2026-10-26-retention-policy-draft.md) és [adatkezelői szerepek](policies/2026-10-26-controller-policy-draft.md). Ezek nem jóváhagyott szabályok és nem használhatók tenant-aktiváláshoz. A szintetikus szerződéses fixture nem alakítható át valódi profilként. Exportot nem engedélyez a normál olvasási jogosultság; külön adatvédelmi folyamat szükséges.
+Személyes vagy gyermekadatokkal végzett pilot előtt szükséges a jóváhagyott consent/retention szabályzat, a forrásjogok bizonyítéka, a felelős owner kijelölése és az elkülönített Atlas tesztkörnyezet. A retention és adatkezelői szabályzat felülvizsgálati tervezetei: [adatmegőrzés](policies/2026-10-26-retention-policy-draft.md) és [adatkezelői szerepek](policies/2026-10-26-controller-policy-draft.md). Ezek nem jóváhagyott szabályok és nem használhatók tenant-aktiváláshoz. A közös AI-szolgáltató adatkezelési, régiós, naplózási és törlési feltételeit személyes adatos pilot előtt ellenőrizni kell; a technikai integráció önmagában ezekről nem bizonyít semmit. A szintetikus szerződéses fixture nem alakítható át valódi profilként. Exportot nem engedélyez a normál olvasási jogosultság; külön adatvédelmi folyamat szükséges.
 
 ## Normatív szerződések
 

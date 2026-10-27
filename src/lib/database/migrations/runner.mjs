@@ -17,6 +17,8 @@ import { migration as monthlyReflections } from "./015-monthly-reflections.mjs";
 import { migration as ssoOwnerSessionDisplayName } from "./016-sso-owner-session-display-name.mjs";
 import { migration as playerContinuityDrafts } from "./017-player-continuity-drafts.mjs";
 
+import { migration as contextualAiCoach } from "./018-contextual-ai-coach.mjs";
+
 const MIGRATIONS = [
   initialSchema,
   authTransactions,
@@ -35,6 +37,7 @@ const MIGRATIONS = [
   monthlyReflections,
   ssoOwnerSessionDisplayName,
   playerContinuityDrafts,
+  contextualAiCoach,
 ];
 
 /** @param {string[] | null} migrationIds */

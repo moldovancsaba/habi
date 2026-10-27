@@ -39,6 +39,10 @@ export const COLLECTIONS = Object.freeze([
   "knowledge_sources",
   "habi_experience_drafts",
   "monthly_reflections",
+  "habi_coach_threads",
+  "habi_coach_turns",
+  "habi_coach_profiles",
+  "habi_coach_profile_events",
 ]);
 
 export const INTERNAL_COLLECTIONS = Object.freeze(["auth_transactions"]);
@@ -65,6 +69,11 @@ export const COLLECTION_SCHEMA = Object.freeze({
   habi_role_requests: null,
   habi_experience_drafts: "ExperienceDraft",
   monthly_reflections: "MonthlyReflection",
+  habi_coach_threads: "CoachThread",
+  habi_coach_turns: "CoachTurn",
+  habi_coach_profiles: "CoachProfile",
+  habi_coach_profile_events: "CoachProfileEvent",
+
   sessions: "Session",
   memberships: "Membership",
   players: "Player",
@@ -103,6 +112,35 @@ export const COLLECTION_SCHEMA = Object.freeze({
 });
 
 export const INDEXES = Object.freeze({
+  habi_coach_threads: [
+    { key: { tenantId: 1, id: 1 }, name: "tenant_id_unique", unique: true },
+    {
+      key: { tenantId: 1, playerId: 1, actorId: 1, role: 1, createdAt: -1 },
+      name: "coach_owner_history",
+    },
+  ],
+  habi_coach_turns: [
+    { key: { tenantId: 1, id: 1 }, name: "tenant_id_unique", unique: true },
+    {
+      key: { tenantId: 1, playerId: 1, actorId: 1, role: 1, createdAt: -1 },
+      name: "coach_owner_history",
+    },
+  ],
+  habi_coach_profiles: [
+    { key: { tenantId: 1, id: 1 }, name: "tenant_id_unique", unique: true },
+    {
+      key: { tenantId: 1, playerId: 1, actorId: 1, role: 1, createdAt: -1 },
+      name: "coach_owner_history",
+    },
+  ],
+  habi_coach_profile_events: [
+    { key: { tenantId: 1, id: 1 }, name: "tenant_id_unique", unique: true },
+    {
+      key: { tenantId: 1, playerId: 1, actorId: 1, role: 1, createdAt: -1 },
+      name: "coach_owner_history",
+    },
+  ],
+
   tenants: [
     { key: { tenantId: 1, id: 1 }, name: "tenant_id_unique", unique: true },
   ],

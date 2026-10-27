@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import styles from "./workspace.module.css";
+import { AiCoachProvider, AiCoachButton } from "./ai-coach";
 import MetroTimeline, { ActorBadge, type TimelinePage } from "./metro-timeline";
 import CoachReportWorkspace from "./coach-report-workspace";
 import RoutineHistory from "./routine-history";
@@ -2604,425 +2605,419 @@ export default function HabiWorkspace() {
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.shell}>
-        <header className={styles.header}>
-          <a className={styles.brand} href="/" aria-label="Habi kezdőlap">
-            <span className={styles.brandMark}>H</span>
-            <span>Habi</span>
-          </a>
-          <span className={styles.headerLabel}>Közös sportolói támogatás</span>
-          {active && active.memberships.length > 1 && (
-            <label className={styles.roleSwitcher}>
-              <span className={styles.srOnly}>Szerepkör és játékos</span>
-              <select
-                aria-label="Szerepkör és játékos váltása"
-                value={active.activeMembershipId ?? ""}
-                onChange={(event) => void switchMembership(event.target.value)}
-                disabled={busy}
-              >
-                {active.memberships.map((membership) => {
-                  const playerLabel = membership.playerDisplayName
-                    ? ` · ${membership.playerDisplayName}`
-                    : "";
-                  return (
-                    <option key={membership.id} value={membership.id}>
-                      {roleLabel(membership.role)}
-                      {playerLabel}
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
-          )}
-          {active || app.state === "admin" || app.state === "no-role" ? (
-            <button
-              type="button"
-              className={styles.secondary}
-              onClick={() => void (active ? signOut() : logOutFromHabi())}
-            >
-              Kilépés
-            </button>
-          ) : null}
-        </header>
-
-        {app.state === "loading" && (
-          <section className={styles.panel} role="status">
-            Betöltjük a Habi munkaterületet…
-          </section>
-        )}
-        {app.state === "signed-out" && (
-          <section className={`${styles.hero} information-block`}>
-            <span className="route-motif" aria-hidden="true">
-              <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
-                <path d="M8 8v32h32" />
-                <circle cx="8" cy="8" />
-                <circle cx="8" cy="40" />
-                <circle cx="24" cy="40" />
-                <circle cx="40" cy="40" />
-              </svg>
+    <AiCoachProvider
+      actorId={active?.actorId ?? null}
+      role={active?.activeRole ?? ""}
+      playerId={selectedPlayer?.id ?? null}
+      csrfToken={active?.csrfToken ?? ""}
+      page={tab}
+      filters={
+        tab === "timeline"
+          ? {
+              ...(localDayBounds(timelineDayFilter) ?? {}),
+              ...(timelinePeriod ? { days: timelinePeriod } : {}),
+              actorRole: timelineRole,
+              eventKind: timelineKind,
+            }
+          : {}
+      }
+    >
+      <main className={styles.page}>
+        <div className={styles.shell}>
+          <header className={styles.header}>
+            <a className={styles.brand} href="/" aria-label="Habi kezdőlap">
+              <span className={styles.brandMark}>H</span>
+              <span>Habi</span>
+            </a>
+            <span className={styles.headerLabel}>
+              Közös sportolói támogatás
             </span>
-            <p className={styles.eyebrow}>Sportolói támogatás</p>
-            <div className="story-legend">
-              {(["player", "parent", "coach"] as const).map((role) => (
-                <span className={`role-badge actor-${role}`} key={role}>
-                  {roleLabel(role)}
-                </span>
-              ))}
-            </div>
-            {signInFailure === "APP_PERMISSION_SETUP_REQUIRED" ? (
-              <>
-                <h1>A Habi SSO-beállítása még nem kész.</h1>
-                <p role="alert" className={styles.signInAlert}>
-                  Az automatikus felhasználói hozzáférés egy egyszeri SSO
-                  adminisztrátori beállítást igényel. Próbáld újra, miután a
-                  Habi alkalmazás hozzáférés-kezelése engedélyezve lett.
-                </p>
-                <div className={styles.actions}>
-                  <a
-                    className={styles.primary}
-                    href="/auth/login?returnTo=%2F&prompt=login"
-                  >
-                    Újrapróbálkozás
-                  </a>
-                  <button
-                    className={styles.secondary}
-                    type="button"
-                    onClick={() => void logOutFromHabi()}
-                  >
-                    Kilépés a Habiból
-                  </button>
-                </div>
-              </>
-            ) : signInFailure === "APP_PERMISSION_DENIED" ? (
-              <>
-                <h1>A fiók még nem fér hozzá a Habihoz.</h1>
-                <p role="alert" className={styles.signInAlert}>
-                  A DoneIsBetter-belépés megtörtént, de ehhez a fiókhoz nincs
-                  engedélyezve a Habi alkalmazás. Kérd a Habi-hozzáférés
-                  engedélyezését, vagy lépj be egy másik DoneIsBetter-fiókkal.
-                </p>
-                <div className={styles.actions}>
-                  <a
-                    className={styles.primary}
-                    href="/auth/login?returnTo=%2F&prompt=select_account"
-                  >
-                    Másik fiók használata
-                  </a>
-                  <a
-                    className={styles.secondary}
-                    href="/auth/login?returnTo=%2F&prompt=login"
-                  >
-                    Újrapróbálkozás
-                  </a>
-                  <button
-                    className={styles.secondary}
-                    type="button"
-                    onClick={() => void logOutFromHabi()}
-                  >
-                    Kilépés a Habiból
-                  </button>
-                </div>
-              </>
-            ) : signInFailure ? (
-              <>
-                <h1>A bejelentkezés nem fejeződött be.</h1>
-                <p role="alert" className={styles.signInAlert}>
-                  Próbáld újra. Ha a hiba ismétlődik, jelezd a Habi
-                  rendszergazdájának.
-                </p>
-                <a className={styles.primary} href="/auth/login?returnTo=%2F">
-                  Belépés DoneIsBetter-fiókkal
-                </a>
-              </>
-            ) : (
-              <>
-                <h1>Sportolói támogatás, közösen.</h1>
-                <p>
-                  Biztonságos munkaterület játékosoknak, szülőknek és edzőknek.
-                </p>
-                <a className={styles.primary} href="/auth/login?returnTo=%2F">
-                  Belépés DoneIsBetter-fiókkal
-                </a>
-              </>
+            {active && active.memberships.length > 1 && (
+              <label className={styles.roleSwitcher}>
+                <span className={styles.srOnly}>Szerepkör és játékos</span>
+                <select
+                  aria-label="Szerepkör és játékos váltása"
+                  value={active.activeMembershipId ?? ""}
+                  onChange={(event) =>
+                    void switchMembership(event.target.value)
+                  }
+                  disabled={busy}
+                >
+                  {active.memberships.map((membership) => {
+                    const playerLabel = membership.playerDisplayName
+                      ? ` · ${membership.playerDisplayName}`
+                      : "";
+                    return (
+                      <option key={membership.id} value={membership.id}>
+                        {roleLabel(membership.role)}
+                        {playerLabel}
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
             )}
-          </section>
-        )}
-        {app.state === "admin" && (
-          <section className={`${styles.hero} information-block`}>
-            <span className="route-motif" aria-hidden="true">
-              <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
-                <path d="M8 8v32h32" />
-                <circle cx="8" cy="8" />
-                <circle cx="8" cy="40" />
-                <circle cx="24" cy="40" />
-                <circle cx="40" cy="40" />
-              </svg>
-            </span>
-            <p className={styles.eyebrow}>ADMINISZTRÁCIÓ</p>
-            <h1>Üdv a Habiban.</h1>
-            <p>
-              Az adminisztrátori fiókoddal felhasználói meghívókat és
-              szerepköröket kezelhetsz.
-            </p>
-            <h2>A saját Habi-szerepköreid</h2>
-            {app.memberships.length ? (
-              <div className={styles.roleCards}>
-                {app.memberships.map((membership) => (
-                  <article className={styles.roleCard} key={membership.id}>
-                    <span className={`role-badge actor-${membership.role}`}>
-                      {roleLabel(membership.role)}
-                    </span>
-                    <p className={styles.roleDescription}>
-                      {membership.role === "coach"
-                        ? "Edzői munkaterület"
-                        : membership.role === "player"
-                          ? (membership.playerDisplayName ??
-                            "Saját sportolói napló")
-                          : membership.playerDisplayName
-                            ? `Szülői hozzáférés · ${membership.playerDisplayName}`
-                            : "Szülői hozzáférés a kapcsolódó játékoshoz"}
-                    </p>
-                    <button
-                      className={styles.primary}
-                      type="button"
-                      disabled={Boolean(enteringRoleId)}
-                      onClick={() => void enterRole(membership.id)}
-                    >
-                      {enteringRoleId === membership.id
-                        ? "Munkaterület megnyitása…"
-                        : "Belépés ebben a szerepben"}
-                    </button>
-                  </article>
+            {active || app.state === "admin" || app.state === "no-role" ? (
+              <button
+                type="button"
+                className={styles.secondary}
+                onClick={() => void (active ? signOut() : logOutFromHabi())}
+              >
+                Kilépés
+              </button>
+            ) : null}
+          </header>
+
+          {app.state === "loading" && (
+            <section className={styles.panel} role="status">
+              Betöltjük a Habi munkaterületet…
+            </section>
+          )}
+          {app.state === "signed-out" && (
+            <section className={`${styles.hero} information-block`}>
+              <span className="route-motif" aria-hidden="true">
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
+                  <path d="M8 8v32h32" />
+                  <circle cx="8" cy="8" />
+                  <circle cx="8" cy="40" />
+                  <circle cx="24" cy="40" />
+                  <circle cx="40" cy="40" />
+                </svg>
+              </span>
+              <p className={styles.eyebrow}>Sportolói támogatás</p>
+              <div className="story-legend">
+                {(["player", "parent", "coach"] as const).map((role) => (
+                  <span className={`role-badge actor-${role}`} key={role}>
+                    {roleLabel(role)}
+                  </span>
                 ))}
               </div>
-            ) : (
-              <p>
-                Még nincs játékos, szülői vagy edzői hozzáférés hozzárendelve
-                ehhez a fiókhoz.
-              </p>
-            )}
-            <div className={styles.adminActions}>
-              <a className={styles.primary} href="/admin">
-                Adminfelület megnyitása
-              </a>
-              <a className={styles.secondary} href="/admin#my-access">
-                Szerepkör kérése a saját fiókomhoz
-              </a>
-            </div>
-            {roleEntryError && (
-              <p className={styles.signInAlert} role="alert">
-                {roleEntryError}
-              </p>
-            )}
-          </section>
-        )}
-        {app.state === "no-role" && (
-          <section className={`${styles.hero} information-block`}>
-            <span className="route-motif" aria-hidden="true">
-              <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
-                <path d="M8 8v32h32" />
-                <circle cx="8" cy="8" />
-                <circle cx="8" cy="40" />
-                <circle cx="24" cy="40" />
-                <circle cx="40" cy="40" />
-              </svg>
-            </span>
-            <p className={styles.eyebrow}>MEGHÍVÓ SZÜKSÉGES</p>
-            <h1>Még nincs Habi-szerepköröd.</h1>
-            <p>
-              Itt közvetlenül kérhetsz játékos, szülői vagy edzői hozzáférést. A
-              kérelmet a Habi adminisztrátora nézi át; a szerepkör csak a saját,
-              ellenőrzött SSO-fiókoddal elfogadott meghívó után aktiválódik.
-            </p>
-            <section
-              className={styles.roleRequest}
-              aria-labelledby="role-request-title"
-            >
-              {roleRequest ? (
+              {signInFailure === "APP_PERMISSION_SETUP_REQUIRED" ? (
                 <>
-                  <p className={styles.eyebrow}>HOZZÁFÉRÉSI KÉRELEM</p>
-                  <h2 id="role-request-title">
-                    {roleRequest.status === "active"
-                      ? "A hozzáférésed aktív"
-                      : roleRequest.status === "invitation-issued"
-                        ? "Elkészült a meghívód"
-                        : roleRequest.status === "declined"
-                          ? "A kérelmet lezárták"
-                          : "A kérelmed megérkezett"}
-                  </h2>
-                  <p>
-                    Kért szerepkör:{" "}
-                    <strong>{roleLabel(roleRequest.role)}</strong> · a név, amit
-                    megadtál: <strong>{roleRequest.displayName}</strong>
+                  <h1>A Habi SSO-beállítása még nem kész.</h1>
+                  <p role="alert" className={styles.signInAlert}>
+                    Az automatikus felhasználói hozzáférés egy egyszeri SSO
+                    adminisztrátori beállítást igényel. Próbáld újra, miután a
+                    Habi alkalmazás hozzáférés-kezelése engedélyezve lett.
                   </p>
-                  <p role="status" aria-live="polite">
-                    {roleRequest.status === "active"
-                      ? "Frissítsd az oldalt a munkaterület megnyitásához."
-                      : roleRequest.status === "invitation-issued"
-                        ? "Az adminisztrátor elkészítette a meghívót. Kérd el tőle a meghívó hivatkozását, majd fogadd el ezzel az SSO-fiókkal."
-                        : roleRequest.status === "declined"
-                          ? "Ha továbbra is hozzáférésre van szükséged, küldhetsz új kérelmet."
-                          : "Az adminisztrátor áttekinti a kérelmet. A hozzáférés még nem aktív."}
-                  </p>
-                  {roleRequest.status !== "pending" &&
-                    roleRequest.status !== "invitation-issued" && (
-                      <button
-                        type="button"
-                        className={styles.secondary}
-                        onClick={() => {
-                          setRoleRequest(null);
-                          setRoleRequestMessage("");
-                        }}
-                      >
-                        Új kérelem indítása
-                      </button>
-                    )}
-                  {roleRequest.status === "pending" && (
-                    <button
-                      type="button"
-                      className={styles.secondary}
-                      onClick={() =>
-                        void fetch("/api/identity/role-requests", {
-                          cache: "no-store",
-                          credentials: "same-origin",
-                        })
-                          .then((response) => response.json())
-                          .then((body) => {
-                            if (body?.request) setRoleRequest(body.request);
-                          })
-                      }
+                  <div className={styles.actions}>
+                    <a
+                      className={styles.primary}
+                      href="/auth/login?returnTo=%2F&prompt=login"
                     >
-                      Kérelem állapotának frissítése
+                      Újrapróbálkozás
+                    </a>
+                    <button
+                      className={styles.secondary}
+                      type="button"
+                      onClick={() => void logOutFromHabi()}
+                    >
+                      Kilépés a Habiból
                     </button>
-                  )}
+                  </div>
+                </>
+              ) : signInFailure === "APP_PERMISSION_DENIED" ? (
+                <>
+                  <h1>A fiók még nem fér hozzá a Habihoz.</h1>
+                  <p role="alert" className={styles.signInAlert}>
+                    A DoneIsBetter-belépés megtörtént, de ehhez a fiókhoz nincs
+                    engedélyezve a Habi alkalmazás. Kérd a Habi-hozzáférés
+                    engedélyezését, vagy lépj be egy másik DoneIsBetter-fiókkal.
+                  </p>
+                  <div className={styles.actions}>
+                    <a
+                      className={styles.primary}
+                      href="/auth/login?returnTo=%2F&prompt=select_account"
+                    >
+                      Másik fiók használata
+                    </a>
+                    <a
+                      className={styles.secondary}
+                      href="/auth/login?returnTo=%2F&prompt=login"
+                    >
+                      Újrapróbálkozás
+                    </a>
+                    <button
+                      className={styles.secondary}
+                      type="button"
+                      onClick={() => void logOutFromHabi()}
+                    >
+                      Kilépés a Habiból
+                    </button>
+                  </div>
+                </>
+              ) : signInFailure ? (
+                <>
+                  <h1>A bejelentkezés nem fejeződött be.</h1>
+                  <p role="alert" className={styles.signInAlert}>
+                    Próbáld újra. Ha a hiba ismétlődik, jelezd a Habi
+                    rendszergazdájának.
+                  </p>
+                  <a className={styles.primary} href="/auth/login?returnTo=%2F">
+                    Belépés DoneIsBetter-fiókkal
+                  </a>
                 </>
               ) : (
                 <>
-                  <p className={styles.eyebrow}>HOZZÁFÉRÉS KÉRÉSE</p>
-                  <h2 id="role-request-title">
-                    Milyen szerepben használnád a Habi-t?
-                  </h2>
-                  <form
-                    className={styles.roleRequestForm}
-                    onSubmit={(event) => void submitRoleRequest(event)}
-                  >
-                    <label className={styles.label} htmlFor="requested-role">
-                      Kért szerepkör
-                    </label>
-                    <select
-                      id="requested-role"
-                      value={requestedRole}
-                      onChange={(event) =>
-                        setRequestedRole(event.target.value as Role)
-                      }
-                    >
-                      <option value="player">
-                        Játékos – saját sportolói napló
-                      </option>
-                      <option value="parent">
-                        Szülő – kapcsolódó játékos támogatása
-                      </option>
-                      <option value="coach">Edző – játékosok támogatása</option>
-                    </select>
-                    <label
-                      className={styles.label}
-                      htmlFor="request-display-name"
-                    >
-                      A neved, amelyen az adminisztrátor felismer
-                    </label>
-                    <input
-                      id="request-display-name"
-                      autoComplete="name"
-                      maxLength={100}
-                      minLength={2}
-                      required
-                      value={requesterName}
-                      readOnly={Boolean(requesterName)}
-                      onChange={(event) => setRequesterName(event.target.value)}
-                    />
-                    <p className={styles.muted}>
-                      Ezt a nevet csak a kérelem elbírálásához használjuk. A
-                      jogosultságot az adminisztrátor állítja be; ez az űrlap
-                      önmagában nem ad hozzáférést.
-                    </p>
-                    <button
-                      className={styles.primary}
-                      type="submit"
-                      disabled={
-                        roleRequestBusy || requesterName.trim().length < 2
-                      }
-                    >
-                      {roleRequestBusy
-                        ? "Kérelem küldése…"
-                        : "Szerepkör kérése"}
-                    </button>
-                  </form>
+                  <h1>Sportolói támogatás, közösen.</h1>
+                  <p>
+                    Biztonságos munkaterület játékosoknak, szülőknek és
+                    edzőknek.
+                  </p>
+                  <a className={styles.primary} href="/auth/login?returnTo=%2F">
+                    Belépés DoneIsBetter-fiókkal
+                  </a>
                 </>
               )}
-              {roleRequestMessage && (
-                <p role="status" aria-live="polite">
-                  {roleRequestMessage}
+            </section>
+          )}
+          {app.state === "admin" && (
+            <section className={`${styles.hero} information-block`}>
+              <span className="route-motif" aria-hidden="true">
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
+                  <path d="M8 8v32h32" />
+                  <circle cx="8" cy="8" />
+                  <circle cx="8" cy="40" />
+                  <circle cx="24" cy="40" />
+                  <circle cx="40" cy="40" />
+                </svg>
+              </span>
+              <p className={styles.eyebrow}>ADMINISZTRÁCIÓ</p>
+              <h1>Üdv a Habiban.</h1>
+              <p>
+                Az adminisztrátori fiókoddal felhasználói meghívókat és
+                szerepköröket kezelhetsz.
+              </p>
+              <h2>A saját Habi-szerepköreid</h2>
+              <AiCoachButton />
+              {app.memberships.length ? (
+                <div className={styles.roleCards}>
+                  {app.memberships.map((membership) => (
+                    <article className={styles.roleCard} key={membership.id}>
+                      <span className={`role-badge actor-${membership.role}`}>
+                        {roleLabel(membership.role)}
+                      </span>
+                      <p className={styles.roleDescription}>
+                        {membership.role === "coach"
+                          ? "Edzői munkaterület"
+                          : membership.role === "player"
+                            ? (membership.playerDisplayName ??
+                              "Saját sportolói napló")
+                            : membership.playerDisplayName
+                              ? `Szülői hozzáférés · ${membership.playerDisplayName}`
+                              : "Szülői hozzáférés a kapcsolódó játékoshoz"}
+                      </p>
+                      <button
+                        className={styles.primary}
+                        type="button"
+                        disabled={Boolean(enteringRoleId)}
+                        onClick={() => void enterRole(membership.id)}
+                      >
+                        {enteringRoleId === membership.id
+                          ? "Munkaterület megnyitása…"
+                          : "Belépés ebben a szerepben"}
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p>
+                  Még nincs játékos, szülői vagy edzői hozzáférés hozzárendelve
+                  ehhez a fiókhoz.
+                </p>
+              )}
+              <div className={styles.adminActions}>
+                <a className={styles.primary} href="/admin">
+                  Adminfelület megnyitása
+                </a>
+                <a className={styles.secondary} href="/admin#my-access">
+                  Szerepkör kérése a saját fiókomhoz
+                </a>
+              </div>
+              {roleEntryError && (
+                <p className={styles.signInAlert} role="alert">
+                  {roleEntryError}
                 </p>
               )}
             </section>
-          </section>
-        )}
-        {active && (
-          <>
-            <nav className={styles.nav} aria-label="Munkaterület nézetei">
-              {workspaceViews.map((view) => (
-                <button
-                  key={view.id}
-                  type="button"
-                  aria-current={tab === view.id ? "page" : undefined}
-                  className={tab === view.id ? styles.navActive : ""}
-                  onClick={() => {
-                    navigateTab(view.id);
-                    setNotice("");
-                  }}
-                >
-                  {view.label}
-                </button>
-              ))}
-            </nav>
-            <section className={styles.heroCompact}>
-              <div className={styles.roleHeading}>
-                <span className="route-motif" aria-hidden="true">
-                  <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
-                    <path d="M8 8v32h32" />
-                    <circle cx="8" cy="8" />
-                    <circle cx="8" cy="24" />
-                    <circle cx="8" cy="40" />
-                    <circle cx="24" cy="40" />
-                    <circle cx="40" cy="40" />
-                  </svg>
-                </span>
-                <ActorBadge role={active.activeRole} />
-              </div>
-              <p className={styles.eyebrow}>
-                {roleLabel(active.activeRole).toLocaleUpperCase("hu-HU")}{" "}
-                MUNKATERÜLET
-              </p>
-              <h1>
-                {active.activeRole === "player"
-                  ? "Hogy vagy ma?"
-                  : active.activeRole === "parent"
-                    ? "A sportolói napló"
-                    : "Edzői munkaterület"}
-              </h1>
+          )}
+          {app.state === "no-role" && (
+            <section className={`${styles.hero} information-block`}>
+              <span className="route-motif" aria-hidden="true">
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48">
+                  <path d="M8 8v32h32" />
+                  <circle cx="8" cy="8" />
+                  <circle cx="8" cy="40" />
+                  <circle cx="24" cy="40" />
+                  <circle cx="40" cy="40" />
+                </svg>
+              </span>
+              <p className={styles.eyebrow}>MEGHÍVÓ SZÜKSÉGES</p>
+              <h1>Még nincs Habi-szerepköröd.</h1>
               <p>
-                {active.activeRole === "player"
-                  ? "Jelezd röviden, hogyan érzed magad a sportban."
-                  : "Kövesd a megosztott állapotjelzéseket, és rögzítsd a megfigyeléseidet."}
+                Itt közvetlenül kérhetsz játékos, szülői vagy edzői hozzáférést.
+                A kérelmet a Habi adminisztrátora nézi át; a szerepkör csak a
+                saját, ellenőrzött SSO-fiókoddal elfogadott meghívó után
+                aktiválódik.
               </p>
-            </section>
-            {selectedPlayer && (
               <section
-                className={styles.playerContext}
-                aria-label="Kiválasztott játékos"
+                className={styles.roleRequest}
+                aria-labelledby="role-request-title"
               >
-                <div className={styles.playerContextHeading}>
+                {roleRequest ? (
+                  <>
+                    <p className={styles.eyebrow}>HOZZÁFÉRÉSI KÉRELEM</p>
+                    <h2 id="role-request-title">
+                      {roleRequest.status === "active"
+                        ? "A hozzáférésed aktív"
+                        : roleRequest.status === "invitation-issued"
+                          ? "Elkészült a meghívód"
+                          : roleRequest.status === "declined"
+                            ? "A kérelmet lezárták"
+                            : "A kérelmed megérkezett"}
+                    </h2>
+                    <p>
+                      Kért szerepkör:{" "}
+                      <strong>{roleLabel(roleRequest.role)}</strong> · a név,
+                      amit megadtál: <strong>{roleRequest.displayName}</strong>
+                    </p>
+                    <p role="status" aria-live="polite">
+                      {roleRequest.status === "active"
+                        ? "Frissítsd az oldalt a munkaterület megnyitásához."
+                        : roleRequest.status === "invitation-issued"
+                          ? "Az adminisztrátor elkészítette a meghívót. Kérd el tőle a meghívó hivatkozását, majd fogadd el ezzel az SSO-fiókkal."
+                          : roleRequest.status === "declined"
+                            ? "Ha továbbra is hozzáférésre van szükséged, küldhetsz új kérelmet."
+                            : "Az adminisztrátor áttekinti a kérelmet. A hozzáférés még nem aktív."}
+                    </p>
+                    {roleRequest.status !== "pending" &&
+                      roleRequest.status !== "invitation-issued" && (
+                        <button
+                          type="button"
+                          className={styles.secondary}
+                          onClick={() => {
+                            setRoleRequest(null);
+                            setRoleRequestMessage("");
+                          }}
+                        >
+                          Új kérelem indítása
+                        </button>
+                      )}
+                    {roleRequest.status === "pending" && (
+                      <button
+                        type="button"
+                        className={styles.secondary}
+                        onClick={() =>
+                          void fetch("/api/identity/role-requests", {
+                            cache: "no-store",
+                            credentials: "same-origin",
+                          })
+                            .then((response) => response.json())
+                            .then((body) => {
+                              if (body?.request) setRoleRequest(body.request);
+                            })
+                        }
+                      >
+                        Kérelem állapotának frissítése
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className={styles.eyebrow}>HOZZÁFÉRÉS KÉRÉSE</p>
+                    <h2 id="role-request-title">
+                      Milyen szerepben használnád a Habi-t?
+                    </h2>
+                    <AiCoachButton />
+                    <form
+                      className={styles.roleRequestForm}
+                      onSubmit={(event) => void submitRoleRequest(event)}
+                    >
+                      <label className={styles.label} htmlFor="requested-role">
+                        Kért szerepkör
+                      </label>
+                      <select
+                        id="requested-role"
+                        value={requestedRole}
+                        onChange={(event) =>
+                          setRequestedRole(event.target.value as Role)
+                        }
+                      >
+                        <option value="player">
+                          Játékos – saját sportolói napló
+                        </option>
+                        <option value="parent">
+                          Szülő – kapcsolódó játékos támogatása
+                        </option>
+                        <option value="coach">
+                          Edző – játékosok támogatása
+                        </option>
+                      </select>
+                      <label
+                        className={styles.label}
+                        htmlFor="request-display-name"
+                      >
+                        A neved, amelyen az adminisztrátor felismer
+                      </label>
+                      <input
+                        id="request-display-name"
+                        autoComplete="name"
+                        maxLength={100}
+                        minLength={2}
+                        required
+                        value={requesterName}
+                        readOnly={Boolean(requesterName)}
+                        onChange={(event) =>
+                          setRequesterName(event.target.value)
+                        }
+                      />
+                      <p className={styles.muted}>
+                        Ezt a nevet csak a kérelem elbírálásához használjuk. A
+                        jogosultságot az adminisztrátor állítja be; ez az űrlap
+                        önmagában nem ad hozzáférést.
+                      </p>
+                      <button
+                        className={styles.primary}
+                        type="submit"
+                        disabled={
+                          roleRequestBusy || requesterName.trim().length < 2
+                        }
+                      >
+                        {roleRequestBusy
+                          ? "Kérelem küldése…"
+                          : "Szerepkör kérése"}
+                      </button>
+                    </form>
+                  </>
+                )}
+                {roleRequestMessage && (
+                  <p role="status" aria-live="polite">
+                    {roleRequestMessage}
+                  </p>
+                )}
+              </section>
+            </section>
+          )}
+          {active && (
+            <>
+              <nav className={styles.nav} aria-label="Munkaterület nézetei">
+                {workspaceViews.map((view) => (
+                  <button
+                    key={view.id}
+                    type="button"
+                    aria-current={tab === view.id ? "page" : undefined}
+                    className={tab === view.id ? styles.navActive : ""}
+                    onClick={() => {
+                      navigateTab(view.id);
+                      setNotice("");
+                    }}
+                  >
+                    {view.label}
+                  </button>
+                ))}
+              </nav>
+              <section className={styles.heroCompact}>
+                <div className={styles.roleHeading}>
                   <span className="route-motif" aria-hidden="true">
                     <svg
                       aria-hidden="true"
@@ -3031,435 +3026,185 @@ export default function HabiWorkspace() {
                     >
                       <path d="M8 8v32h32" />
                       <circle cx="8" cy="8" />
+                      <circle cx="8" cy="24" />
                       <circle cx="8" cy="40" />
                       <circle cx="24" cy="40" />
                       <circle cx="40" cy="40" />
                     </svg>
                   </span>
-                  <span className="role-badge actor-player">
-                    Játékos profil
-                  </span>
+                  <ActorBadge role={active.activeRole} />
                 </div>
-                {active.activeRole !== "player" && players.length > 1 && (
-                  <>
-                    <label htmlFor="active-player">Játékos</label>
-                    <select
-                      id="active-player"
-                      value={playerId}
-                      onChange={(event) => {
-                        if (
-                          !window.dispatchEvent(
-                            new Event("habi:before-navigate", {
-                              cancelable: true,
-                            }),
-                          )
-                        )
-                          return;
-                        if (
-                          observation.trim() &&
-                          !window.confirm(
-                            "A be nem küldött jegyzetet elveted a játékosváltással?",
-                          )
-                        )
-                          return;
-                        setObservation("");
-                        setPlanDraft("");
-                        setPlanOwnerId("");
-                        setMaterialTitle("");
-                        setMaterialText("");
-                        setMaterialSupersedes(null);
-                        setSelectedPlayerId(event.target.value);
-                        setData([]);
-                        setTimeline(null);
-                        setNotice("");
-                        setQuestionFeedback(null);
-                        setQuestionJob(null);
-                        setQuestionAnswer(null);
-                        setQuestionStatusUnavailable(false);
-                      }}
-                    >
-                      {players.map((player) => (
-                        <option key={player.id} value={player.id}>
-                          {player.displayName ?? "Kapcsolt játékos"}
-                        </option>
-                      ))}
-                    </select>
-                  </>
-                )}
-                <strong>
-                  {selectedPlayer.displayName ??
-                    (active.activeRole === "player"
-                      ? "Saját sportolói napló"
-                      : "Kapcsolt játékos")}
-                </strong>
+                <p className={styles.eyebrow}>
+                  {roleLabel(active.activeRole).toLocaleUpperCase("hu-HU")}{" "}
+                  MUNKATERÜLET
+                </p>
+                <h1>
+                  {active.activeRole === "player"
+                    ? "Hogy vagy ma?"
+                    : active.activeRole === "parent"
+                      ? "A sportolói napló"
+                      : "Edzői munkaterület"}
+                </h1>
+                <p>
+                  {active.activeRole === "player"
+                    ? "Jelezd röviden, hogyan érzed magad a sportban."
+                    : "Kövesd a megosztott állapotjelzéseket, és rögzítsd a megfigyeléseidet."}
+                </p>
               </section>
-            )}
-            {!selectedPlayer &&
-              (active.activeRole === "coach" ||
-                active.activeRole === "parent") && (
-                <p className={styles.notice} role="status">
-                  Ehhez a fiókhoz még nincs kapcsolt játékos. Kérd meg a
-                  Habi-adminisztrátort, hogy rendelje hozzá a megfelelő
-                  játékost.
-                </p>
-              )}
-            {notice && (
-              <p
-                className={`${styles.notice} ${
-                  noticeKind === "success"
-                    ? styles.noticeSuccess
-                    : noticeKind === "error"
-                      ? styles.noticeError
-                      : ""
-                }`}
-                role={noticeKind === "error" ? "alert" : "status"}
-              >
-                {notice}
-              </p>
-            )}
-            {tab === "overview" && active.activeRole === "player" && (
-              <section className={`${styles.panel} workspace-section`}>
-                <p className={styles.eyebrow}>A TE NAPLÓD</p>
-                <h2>Egy rövid megálló magadra.</h2>
-                <p className={styles.muted}>
-                  {data[0]?.checkins.length
-                    ? `Legutóbbi állapotjelzés: ${new Date(data[0].checkins[0].completedAt ?? "").toLocaleDateString("hu-HU")}. A korábbi válaszaidat az Idővonalon nézheted meg.`
-                    : "Még nincs állapotjelzésed. Öt rövid kérdés segít rögzíteni, hogyan vagy ma."}
-                </p>
-                <button
-                  type="button"
-                  className={styles.primary}
-                  onClick={() => navigateTab("checkin")}
+              {selectedPlayer && (
+                <section
+                  className={styles.playerContext}
+                  aria-label="Kiválasztott játékos"
                 >
-                  {data[0]?.checkins.length
-                    ? "Új állapotjelzés"
-                    : "Állapotjelzés indítása"}
-                </button>
-                <button
-                  type="button"
-                  className={styles.secondary}
-                  onClick={() => navigateTab("timeline")}
-                >
-                  Megnyitom az idővonalat
-                </button>
-                {dueOwnGoals.length > 0 && (
-                  <aside className={styles.notice} role="status">
-                    <p>
-                      {dueOwnGoals.length === 1
-                        ? "Elérkezett az idő, hogy újra ránézz a saját célodra."
-                        : `${dueOwnGoals.length} saját célodnál elérkezett az újranézés ideje.`}
-                    </p>
-                    {dueOwnGoals.map((goal) => (
-                      <button
-                        className={styles.secondary}
-                        type="button"
-                        key={goal.id}
-                        onClick={() => {
-                          navigateTab("player-tools");
-                          setReviewingGoalId(goal.id);
+                  <div className={styles.playerContextHeading}>
+                    <span className="route-motif" aria-hidden="true">
+                      <svg
+                        aria-hidden="true"
+                        focusable="false"
+                        viewBox="0 0 48 48"
+                      >
+                        <path d="M8 8v32h32" />
+                        <circle cx="8" cy="8" />
+                        <circle cx="8" cy="40" />
+                        <circle cx="24" cy="40" />
+                        <circle cx="40" cy="40" />
+                      </svg>
+                    </span>
+                    <span className="role-badge actor-player">
+                      Játékos profil
+                    </span>
+                  </div>
+                  {active.activeRole !== "player" && players.length > 1 && (
+                    <>
+                      <label htmlFor="active-player">Játékos</label>
+                      <select
+                        id="active-player"
+                        value={playerId}
+                        onChange={(event) => {
+                          if (
+                            !window.dispatchEvent(
+                              new Event("habi:before-navigate", {
+                                cancelable: true,
+                              }),
+                            )
+                          )
+                            return;
+                          if (
+                            observation.trim() &&
+                            !window.confirm(
+                              "A be nem küldött jegyzetet elveted a játékosváltással?",
+                            )
+                          )
+                            return;
+                          setObservation("");
+                          setPlanDraft("");
+                          setPlanOwnerId("");
+                          setMaterialTitle("");
+                          setMaterialText("");
+                          setMaterialSupersedes(null);
+                          setSelectedPlayerId(event.target.value);
+                          setData([]);
+                          setTimeline(null);
+                          setNotice("");
+                          setQuestionFeedback(null);
+                          setQuestionJob(null);
+                          setQuestionAnswer(null);
+                          setQuestionStatusUnavailable(false);
                         }}
                       >
-                        Megnézem: {ownGoalText(goal)}
-                      </button>
-                    ))}
-                  </aside>
-                )}
-                {latestCheckinConversationOpening ? (
-                  <details className={styles.formGroup}>
-                    <summary>A legutóbbi válaszaim</summary>
-                    <dl className={styles.summaryMetrics}>
-                      {latestPlayerCheckin.answerCodes?.map(
-                        ({ metric, code }) => {
-                          const definition = metrics.find(
-                            ([key]) => key === metric,
-                          );
-                          return definition ? (
-                            <div key={metric}>
-                              <dt>
-                                <MetricGraphic metric={metric} code={code} />
-                                <span className={styles.metricQuestion}>
-                                  {definition[1]}
-                                </span>
-                              </dt>
-                              <dd>{definition[2][code] ?? "Nincs válasz"}</dd>
-                            </div>
-                          ) : null;
-                        },
-                      ) ?? null}
-                    </dl>
-                    <p className={styles.muted}>
-                      Ha szeretnéd, ezekből készíthetsz egy általad
-                      szerkeszthető beszélgetéskezdést. Habi nem értelmezi a
-                      válaszaidat.
-                    </p>
-                    <button
-                      type="button"
-                      className={styles.secondary}
-                      onClick={() => {
-                        setGuidedTopicInput(latestCheckinConversationOpening);
-                        setGuidedTopicSuggestions(null);
-                        navigateTab("player-tools");
-                      }}
-                    >
-                      Beszélgetek a válaszaimról
-                    </button>
-                    {latestDailySituationOptions.length > 0 && (
-                      <div className={styles.formGroup}>
-                        <p className={styles.muted}>
-                          Választhatsz egy előre megírt beszélgetést a
-                          kapcsolódó válaszhoz. Habi nem von le következtetést.
-                        </p>
-                        {latestDailySituationOptions.map(
-                          (option: {
-                            situationId: string;
-                            title: string;
-                            checkinId: string;
-                            metric: string;
-                          }) => (
-                            <button
-                              className={styles.secondary}
-                              type="button"
-                              key={option.metric}
-                              disabled={busy || !experienceDraftsReady}
-                              onClick={() => {
-                                navigateTab("player-tools");
-                                void startGuidedSituation(
-                                  option.situationId,
-                                  option.checkinId,
-                                );
-                              }}
-                            >
-                              {option.title}
-                            </button>
-                          ),
-                        )}
-                      </div>
-                    )}
-                  </details>
-                ) : null}
-                {reminderType && (
-                  <aside className={styles.notice} role="status">
-                    <p>
-                      {reminderType === "morning"
-                        ? "A napi állapotjelzésed még vár rád."
-                        : "Ha szeretnéd, most visszatekinthetsz a napodra."}
-                    </p>
-                    <div className={styles.actions}>
-                      <button
-                        className={styles.primary}
-                        type="button"
-                        onClick={() =>
-                          navigateTab(
-                            reminderType === "morning"
-                              ? "checkin"
-                              : "player-tools",
-                          )
-                        }
-                      >
-                        {reminderType === "morning"
-                          ? "Állapotjelzés indítása"
-                          : "Visszatekintés megnyitása"}
-                      </button>
-                      <button
-                        className={styles.secondary}
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void dismissReminder(reminderType)}
-                      >
-                        Ma inkább kihagyom
-                      </button>
-                    </div>
-                  </aside>
-                )}
-                <details className={styles.formGroup}>
-                  <summary>Emlékeztetők beállítása</summary>
-                  <form onSubmit={saveReminderSettings}>
-                    <p className={styles.muted}>
-                      A Habi csak az alkalmazás megnyitásakor mutat
-                      emlékeztetőt. Nem küld értesítést az eszközödre.
-                    </p>
-                    <label className={styles.label}>
-                      <input
-                        type="checkbox"
-                        checked={reminderPrefs.enabled}
-                        onChange={(event) =>
-                          setReminderPrefs((current) => ({
-                            ...current,
-                            enabled: event.target.checked,
-                          }))
-                        }
-                      />{" "}
-                      Kérek emlékeztetőt
-                    </label>
-                    <label className={styles.label} htmlFor="reminder-morning">
-                      Napi állapotjelzés ideje
-                    </label>
-                    <input
-                      id="reminder-morning"
-                      type="time"
-                      value={reminderPrefs.morning}
-                      onChange={(event) =>
-                        setReminderPrefs((current) => ({
-                          ...current,
-                          morning: event.target.value,
-                        }))
-                      }
-                    />
-                    <label className={styles.label} htmlFor="reminder-evening">
-                      Napi visszatekintés ideje
-                    </label>
-                    <input
-                      id="reminder-evening"
-                      type="time"
-                      value={reminderPrefs.evening}
-                      onChange={(event) =>
-                        setReminderPrefs((current) => ({
-                          ...current,
-                          evening: event.target.value,
-                        }))
-                      }
-                    />
-                    <button
-                      className={styles.primary}
-                      type="submit"
-                      disabled={busy}
-                    >
-                      Emlékeztetők mentése
-                    </button>
-                  </form>
-                </details>
-              </section>
-            )}
-            {tab === "overview" && active.activeRole !== "player" && (
-              <section className={`${styles.panel} workspace-section`}>
-                <p className={styles.eyebrow}>
-                  {active.activeRole === "coach"
-                    ? "CSAPATKÖVETÉS"
-                    : "KAPCSOLÓDÓ JÁTÉKOS"}
-                </p>
-                <h2>{selectedPlayer?.displayName ?? "Válassz játékost"}</h2>
-                {data[0]?.checkins[0] ? (
-                  <>
-                    <p className={styles.muted}>
-                      A legutóbbi elérhető saját beszámoló.
-                    </p>
-                    <dl className={styles.summaryMetrics}>
-                      {data[0].checkins[0].answerCodes?.map(
-                        ({ metric, code }) => {
-                          const definition = metrics.find(
-                            ([key]) => key === metric,
-                          );
-                          return definition ? (
-                            <div key={metric}>
-                              <dt>
-                                <MetricGraphic metric={metric} code={code} />
-                                <span className={styles.metricQuestion}>
-                                  {definition[1]}
-                                </span>
-                              </dt>
-                              <dd>{definition[2][code] ?? "Nincs válasz"}</dd>
-                            </div>
-                          ) : null;
-                        },
-                      )}
-                    </dl>
-                  </>
-                ) : (
-                  <p className={styles.muted}>
-                    Ehhez a játékoshoz még nincs elérhető napi állapotjelzés.
+                        {players.map((player) => (
+                          <option key={player.id} value={player.id}>
+                            {player.displayName ?? "Kapcsolt játékos"}
+                          </option>
+                        ))}
+                      </select>
+                    </>
+                  )}
+                  <strong>
+                    {selectedPlayer.displayName ??
+                      (active.activeRole === "player"
+                        ? "Saját sportolói napló"
+                        : "Kapcsolt játékos")}
+                  </strong>
+                </section>
+              )}
+              {!selectedPlayer &&
+                (active.activeRole === "coach" ||
+                  active.activeRole === "parent") && (
+                  <p className={styles.notice} role="status">
+                    Ehhez a fiókhoz még nincs kapcsolt játékos. Kérd meg a
+                    Habi-adminisztrátort, hogy rendelje hozzá a megfelelő
+                    játékost.
                   </p>
                 )}
-                <div className={styles.actions}>
+              {notice && (
+                <p
+                  className={`${styles.notice} ${
+                    noticeKind === "success"
+                      ? styles.noticeSuccess
+                      : noticeKind === "error"
+                        ? styles.noticeError
+                        : ""
+                  }`}
+                  role={noticeKind === "error" ? "alert" : "status"}
+                >
+                  {notice}
+                </p>
+              )}
+              {tab === "overview" && active.activeRole === "player" && (
+                <section className={`${styles.panel} workspace-section`}>
+                  <p className={styles.eyebrow}>A TE NAPLÓD</p>
+                  <h2>Egy rövid megálló magadra.</h2>
+                  <AiCoachButton />
+                  <p className={styles.muted}>
+                    {data[0]?.checkins.length
+                      ? `Legutóbbi állapotjelzés: ${new Date(data[0].checkins[0].completedAt ?? "").toLocaleDateString("hu-HU")}. A korábbi válaszaidat az Idővonalon nézheted meg.`
+                      : "Még nincs állapotjelzésed. Öt rövid kérdés segít rögzíteni, hogyan vagy ma."}
+                  </p>
+                  <button
+                    type="button"
+                    className={styles.primary}
+                    onClick={() => navigateTab("checkin")}
+                  >
+                    {data[0]?.checkins.length
+                      ? "Új állapotjelzés"
+                      : "Állapotjelzés indítása"}
+                  </button>
                   <button
                     type="button"
                     className={styles.secondary}
                     onClick={() => navigateTab("timeline")}
                   >
-                    A történet megnyitása
+                    Megnyitom az idővonalat
                   </button>
-                  <button
-                    type="button"
-                    className={styles.secondary}
-                    onClick={() =>
-                      navigateTab(
-                        active.activeRole === "coach"
-                          ? "reports"
-                          : "conversations",
-                      )
-                    }
-                  >
-                    {active.activeRole === "coach"
-                      ? "Riportok és tervek"
-                      : "Beszélgetések"}
-                  </button>
-                </div>
-              </section>
-            )}
-            {tab === "overview" && selectedPlayer && (
-              <section className={`${styles.panel} workspace-section`}>
-                <p className={styles.eyebrow}>A KÖZÖS TÖRTÉNET</p>
-                <h2>A közelmúlt fontos eseményei</h2>
-                <MetroTimeline
-                  page={timeline}
-                  records={historyItems}
-                  playerName={selectedPlayer.displayName ?? "Játékos"}
-                  playerId={selectedPlayer.id}
-                  onLoadMore={() => void loadOlderTimeline()}
-                  loadingMore={loadingOlder}
-                />
-                <button
-                  type="button"
-                  className={styles.secondary}
-                  onClick={() => navigateTab("timeline")}
-                >
-                  A teljes idővonal megnyitása
-                </button>
-              </section>
-            )}
-            {tab === "checkin" &&
-              active.activeRole === "player" &&
-              playerId && (
-                <>
-                  <DailyCheckin
-                    key={`${active.actorId}-${playerId}`}
-                    playerId={playerId}
-                    csrfToken={active.csrfToken}
-                    onSaved={() => void load()}
-                  />
-                  <CheckinTrends
-                    checkins={mergePartialCheckins(
-                      ownPlayerData?.checkins ?? [],
-                      ownPlayerData?.records ?? [],
-                    )}
-                  />
-                </>
-              )}
-            {tab === "checkin" &&
-              active.activeRole !== "player" &&
-              selectedPlayer && (
-                <section className={styles.panel}>
-                  <p className={styles.eyebrow}>A JÁTÉKOS SAJÁT BESZÁMOLÓI</p>
-                  <h2>Állapotjelzések</h2>
-                  <p className={styles.muted}>
-                    A válaszok a játékos tapasztalatai. Ne kezeld őket külső
-                    értékelésként.
-                  </p>
-                  <CheckinTrends
-                    checkins={mergePartialCheckins(
-                      data[0]?.checkins ?? [],
-                      data[0]?.records ?? [],
-                    )}
-                  />
-                  {data[0]?.checkins.length ? (
-                    data[0].checkins.map((item) => (
-                      <article className={styles.dataCard} key={item.id}>
-                        <h3>
-                          {item.completedAt
-                            ? new Date(item.completedAt).toLocaleString("hu-HU")
-                            : "Dátum nélkül"}
-                        </h3>
-                        <dl className={styles.summaryMetrics}>
-                          {item.answerCodes?.map(({ metric, code }) => {
+                  {dueOwnGoals.length > 0 && (
+                    <aside className={styles.notice} role="status">
+                      <p>
+                        {dueOwnGoals.length === 1
+                          ? "Elérkezett az idő, hogy újra ránézz a saját célodra."
+                          : `${dueOwnGoals.length} saját célodnál elérkezett az újranézés ideje.`}
+                      </p>
+                      {dueOwnGoals.map((goal) => (
+                        <button
+                          className={styles.secondary}
+                          type="button"
+                          key={goal.id}
+                          onClick={() => {
+                            navigateTab("player-tools");
+                            setReviewingGoalId(goal.id);
+                          }}
+                        >
+                          Megnézem: {ownGoalText(goal)}
+                        </button>
+                      ))}
+                    </aside>
+                  )}
+                  {latestCheckinConversationOpening ? (
+                    <details className={styles.formGroup}>
+                      <summary>A legutóbbi válaszaim</summary>
+                      <dl className={styles.summaryMetrics}>
+                        {latestPlayerCheckin.answerCodes?.map(
+                          ({ metric, code }) => {
                             const definition = metrics.find(
                               ([key]) => key === metric,
                             );
@@ -3474,952 +3219,298 @@ export default function HabiWorkspace() {
                                 <dd>{definition[2][code] ?? "Nincs válasz"}</dd>
                               </div>
                             ) : null;
-                          })}
-                        </dl>
-                      </article>
-                    ))
-                  ) : (
-                    <p className={styles.emptyState}>
-                      Még nincs a szerepkörödnek megosztott állapotjelzés.
-                    </p>
-                  )}
-                </section>
-              )}
-            {(tab === "journal" ||
-              (tab === "conversations" &&
-                (active.activeRole === "parent" ||
-                  active.activeRole === "coach"))) &&
-              selectedPlayer && (
-                <>
-                  {tab === "journal" && (
-                    <section className={styles.panel}>
-                      <p className={styles.eyebrow}>
-                        {active.activeRole === "coach"
-                          ? "EDZŐI MEGFIGYELÉS"
-                          : active.activeRole === "parent"
-                            ? "SZÜLŐI NAPLÓ"
-                            : "JÁTÉKOSNAPLÓ"}
+                          },
+                        ) ?? null}
+                      </dl>
+                      <p className={styles.muted}>
+                        Ha szeretnéd, ezekből készíthetsz egy általad
+                        szerkeszthető beszélgetéskezdést. Habi nem értelmezi a
+                        válaszaidat.
                       </p>
-                      <h2>
-                        {active.activeRole === "player"
-                          ? "Rögzíts egy saját bejegyzést"
-                          : "Rögzíts egy észrevételt"}
-                      </h2>
-                      {active.activeRole !== "player" && (
-                        <>
-                          <label htmlFor="observation-source">
-                            Az információ forrása
-                          </label>
-                          <select
-                            id="observation-source"
-                            value={observationSource}
-                            onChange={(e) =>
-                              setObservationSource(e.target.value)
-                            }
-                          >
-                            <option value="observation">
-                              Saját megfigyelésem
-                            </option>
-                            <option value="proxy">A játékos elmondása</option>
-                          </select>
-                        </>
-                      )}
-                      <label htmlFor="observation-at">
-                        Mikor történt? (üresen hagyva: most)
-                      </label>
-                      <input
-                        id="observation-at"
-                        type="datetime-local"
-                        value={observationAt}
-                        onChange={(e) => setObservationAt(e.target.value)}
-                      />
-                      <label htmlFor="observation-setting">Helyzet</label>
-                      <select
-                        id="observation-setting"
-                        value={observationSetting}
-                        onChange={(e) => setObservationSetting(e.target.value)}
-                      >
-                        <option value="training">Edzés</option>
-                        <option value="competition">
-                          Verseny vagy mérkőzés
-                        </option>
-                        <option value="home">Otthon</option>
-                        <option value="other">Más helyzet</option>
-                      </select>
-                      <label className={styles.label} htmlFor="observation">
-                        {active.activeRole === "player"
-                          ? "Mit szeretnél megőrizni a naplódban?"
-                          : "Milyen konkrét helyzetet szeretnél megosztani?"}
-                      </label>
-                      <textarea
-                        id="observation"
-                        value={observation}
-                        onChange={(event) => {
-                          setObservation(event.target.value);
-                          setObservationFeedback(null);
-                        }}
-                        rows={4}
-                        maxLength={2000}
-                      />
                       <button
                         type="button"
-                        className={styles.primary}
-                        disabled={busy || !observation.trim()}
-                        onClick={() => void submitObservation()}
+                        className={styles.secondary}
+                        onClick={() => {
+                          setGuidedTopicInput(latestCheckinConversationOpening);
+                          setGuidedTopicSuggestions(null);
+                          navigateTab("player-tools");
+                        }}
                       >
-                        Megfigyelés mentése
+                        Beszélgetek a válaszaimról
                       </button>
-                      {observationFeedback && (
-                        <p
-                          ref={observationFeedbackRef}
-                          className={styles.actionFeedback}
-                          data-state={observationFeedback.kind}
-                          role={
-                            observationFeedback.kind === "error"
-                              ? "alert"
-                              : "status"
-                          }
-                        >
-                          {observationFeedback.message}
-                        </p>
-                      )}
-                    </section>
-                  )}
-                  {(active.activeRole === "parent" ||
-                    active.activeRole === "coach") &&
-                    tab === "conversations" && (
-                      <section className={styles.panel}>
-                        <p className={styles.eyebrow}>
-                          {active.activeRole === "coach"
-                            ? "EDZŐI SEGÍTSÉGKÉRÉS"
-                            : "KÉRDÉS A HABINAK"}
-                        </p>
-                        <h2>
-                          {active.activeRole === "coach"
-                            ? "Mit szeretnél jobban megérteni a forrásokból?"
-                            : "Mit szeretnél jobban megérteni?"}
-                        </h2>
-                        <label className={styles.label} htmlFor="question">
-                          Kérdés
-                        </label>
-                        <textarea
-                          id="question"
-                          value={question}
-                          onChange={(event) => {
-                            setQuestion(event.target.value);
-                            setQuestionFeedback(null);
-                          }}
-                          rows={3}
-                          maxLength={1000}
-                        />
-                        <button
-                          type="button"
-                          className={styles.secondary}
-                          disabled={
-                            busy ||
-                            !question.trim() ||
-                            (active.activeRole !== "coach" && !questionSource)
-                          }
-                          onClick={() => void askQuestion()}
-                        >
-                          Kérdés elküldése a helyi AI-nak
-                        </button>
-                        {active.activeRole === "coach" ? (
-                          <p className={styles.actionInfo} role="note">
-                            A Habi a játékos legutóbbi, számodra elérhető
-                            visszajelzéseit, bejegyzéseit és ellenőrzött
-                            felmérési adatait veszi figyelembe. A választ a
-                            forrásokkal és a bizonytalanságokkal együtt mutatja.
-                          </p>
-                        ) : !questionSource ? (
-                          <p className={styles.actionInfo} role="note">
-                            A kérdés elküldéséhez előbb a játékosnak ki kell
-                            töltenie egy napi állapotjelzést. Utána a választ a
-                            Habi ezen a helyen mutatja meg, az edzői ellenőrzés
-                            után.
-                          </p>
-                        ) : null}
-                        {questionFeedback && (
-                          <p
-                            ref={questionFeedbackRef}
-                            className={styles.actionFeedback}
-                            data-state={questionFeedback.kind}
-                            role={
-                              questionFeedback.kind === "error"
-                                ? "alert"
-                                : "status"
-                            }
-                          >
-                            {questionFeedback.message}
-                          </p>
-                        )}
-                        {questionJob && (
-                          <section
-                            ref={questionResultRef}
-                            className={styles.questionResult}
-                            aria-label="A kérés eredménye"
-                          >
-                            {submittedQuestion && (
-                              <p className={styles.questionPrompt}>
-                                <strong>Kérdésed:</strong> {submittedQuestion}
-                              </p>
-                            )}
-                            <h3>
-                              {questionJob.status === "queued"
-                                ? "A kérdés várakozik"
-                                : questionJob.status === "processing"
-                                  ? "A Habi feldolgozza a kérdést"
-                                  : questionJob.status === "review"
-                                    ? "Edzői ellenőrzésre vár"
-                                    : questionJob.status === "ready"
-                                      ? "Elkészült a válasz"
-                                      : questionJob.status === "cancelled"
-                                        ? "A kérés megszakadt"
-                                        : "A kérés feldolgozása megállt"}
-                            </h3>
-                            {questionStatusUnavailable ? (
-                              <p role="status">
-                                Most nem érjük el az állapotot. A kérésed
-                                megmaradt, és újra próbáljuk ellenőrizni.
-                              </p>
-                            ) : questionJob.status === "queued" ? (
-                              <p role="status">
-                                A helyi feldolgozó elindulására vár. Ez még nem
-                                hiba.
-                              </p>
-                            ) : questionJob.status === "processing" ? (
-                              <p role="status">A helyi feldolgozó dolgozik.</p>
-                            ) : questionJob.status === "review" ? (
-                              <p role="status">
-                                A válasz elkészült. Az edző ellenőrzi a
-                                forrásokat; jóváhagyás után itt jelenik meg.
-                              </p>
-                            ) : questionJob.status === "ready" &&
-                              questionAnswer?.answerState === "no_evidence" ? (
-                              <p role="status">
-                                A Habi nem talált ellenőrizhető, forrásolt
-                                választ. Nem vont le következtetést.
-                              </p>
-                            ) : questionJob.status === "ready" &&
-                              questionAnswer?.answer ? (
-                              <div aria-live="polite">
-                                {questionAnswer.answer.unknowns.length > 0 && (
-                                  <p>
-                                    {questionAnswer.answer.unknowns.join(" ")}
-                                  </p>
-                                )}
-                                <ul>
-                                  {questionAnswer.answer.claims.map((claim) => (
-                                    <li key={claim.id}>{claim.text}</li>
-                                  ))}
-                                </ul>
-                                <p className={styles.muted}>
-                                  Forrásolt, edző által ellenőrzött válasz.
-                                </p>
-                              </div>
-                            ) : questionJob.status === "ready" ? (
-                              <p role="status">
-                                A választ nem tettük közzé. Kérd meg az edzőt,
-                                hogy ellenőrizze a forrásokat.
-                              </p>
-                            ) : (
-                              <p role="alert">
-                                A feladat nem készült el. Próbáld újra később,
-                                vagy kérj segítséget az edzőtől.
-                              </p>
-                            )}
-                          </section>
-                        )}
-                        <p className={styles.muted}>
-                          A személyes válasz forrásolt, és edzői jóváhagyás után
-                          jelenik meg.
-                        </p>
-                      </section>
-                    )}
-                </>
-              )}
-            {tab === "journal" && selectedPlayer && (
-              <section className={styles.panel}>
-                <h2>A napló korábbi bejegyzései</h2>
-                {data[0]?.records
-                  .filter(
-                    (record) =>
-                      record.kind !== "checkin_answer" &&
-                      (active.activeRole !== "coach" ||
-                        record.recordedBy?.role !== "coach"),
-                  )
-                  .map((record) => (
-                    <article className={styles.dataCard} key={record.id}>
-                      <p className={styles.eyebrow}>
-                        {roleLabel(
-                          record.recordedBy?.role ?? active.activeRole,
-                        )}{" "}
-                        ·{" "}
-                        {record.source?.kind === "proxy"
-                          ? "A játékos elmondása; más rögzítette"
-                          : record.source?.kind === "self"
-                            ? "Saját beszámoló"
-                            : "Saját megfigyelés"}
-                      </p>
-                      <p style={{ whiteSpace: "pre-wrap" }}>{record.text}</p>
-                      {record.occurredAt && (
-                        <time dateTime={record.occurredAt}>
-                          {new Date(record.occurredAt).toLocaleString("hu-HU")}
-                        </time>
-                      )}
-                    </article>
-                  ))}
-                {recordCursor && (
-                  <button
-                    className={styles.secondary}
-                    type="button"
-                    disabled={loadingOlderRecords}
-                    onClick={() => void loadOlderRecords()}
-                  >
-                    Korábbi naplóbejegyzések betöltése
-                  </button>
-                )}
-              </section>
-            )}
-            {tab === "conversations" &&
-              selectedPlayer &&
-              active.activeRole !== "player" && (
-                <SharedConversations
-                  key={`${active.actorId}-${selectedPlayer.id}`}
-                  playerId={selectedPlayer.id}
-                  csrfToken={active.csrfToken}
-                  role={active.activeRole}
-                />
-              )}
-            {tab === "reports" && selectedPlayer && (
-              <section className={styles.panel}>
-                <p className={styles.eyebrow}>
-                  {active.activeRole === "coach"
-                    ? "KÖZÖS TERVEK"
-                    : "EDZŐI TERVEK"}
-                </p>
-                <h2>Megértésből következő lépés</h2>
-                {active.activeRole === "coach" && (
-                  <div className={styles.formGroup}>
-                    <label className={styles.label} htmlFor="plan-action">
-                      Mi legyen a következő kipróbálható lépés?
-                    </label>
-                    <textarea
-                      id="plan-action"
-                      rows={3}
-                      maxLength={1000}
-                      value={planDraft}
-                      onChange={(event) => setPlanDraft(event.target.value)}
-                      placeholder="Egy konkrét, a játékossal egyeztetett teendő"
-                    />
-                    <label htmlFor="plan-source">Kapcsolódó forrás</label>
-                    <select
-                      id="plan-source"
-                      value={questionSource?.id ?? ""}
-                      onChange={(e) => setEvidenceId(e.target.value)}
-                    >
-                      {evidenceOptions.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.text?.split("\n")[0].slice(0, 100) ??
-                            `Állapotjelzés · ${new Date(item.completedAt ?? "").toLocaleString("hu-HU")}`}
-                        </option>
-                      ))}
-                    </select>
-                    <label htmlFor="plan-owner">
-                      Ki vállalja a következő lépést?
-                    </label>
-                    <select
-                      id="plan-owner"
-                      value={planOwnerId || active.actorId}
-                      onChange={(e) => setPlanOwnerId(e.target.value)}
-                    >
-                      {participants.map((participant) => (
-                        <option
-                          key={participant.actorId}
-                          value={participant.actorId}
-                        >
-                          {participant.label}
-                        </option>
-                      ))}
-                    </select>
-                    <label htmlFor="plan-why">
-                      Miért ezt a lépést választjuk?
-                    </label>
-                    <textarea
-                      id="plan-why"
-                      value={planWhy}
-                      maxLength={1000}
-                      onChange={(e) => setPlanWhy(e.target.value)}
-                    />
-                    <label htmlFor="plan-due">
-                      Mikor beszéljük meg a tapasztalatot?
-                    </label>
-                    <input
-                      id="plan-due"
-                      type="datetime-local"
-                      value={planDue}
-                      onChange={(e) => setPlanDue(e.target.value)}
-                    />
-                    <label htmlFor="plan-stop">
-                      Mikor álljunk meg vagy módosítsuk?
-                    </label>
-                    <textarea
-                      id="plan-stop"
-                      value={planStop}
-                      maxLength={1000}
-                      onChange={(e) => setPlanStop(e.target.value)}
-                    />
-                    <button
-                      className={styles.primary}
-                      type="button"
-                      disabled={busy || !planDraft.trim() || !questionSource}
-                      onClick={() => void createSharedPlan()}
-                    >
-                      Közös terv készítése
-                    </button>
-                    {!questionSource && (
-                      <p className={styles.actionInfo}>
-                        Tervet akkor lehet létrehozni, ha van hozzá kapcsolható,
-                        forrásolt játékos-beszámoló.
-                      </p>
-                    )}
-                  </div>
-                )}
-                {plans.length ? (
-                  plans.map((plan) => (
-                    <article className={styles.dataCard} key={plan.id}>
-                      <p className={styles.eyebrow}>
-                        ÁLLAPOT:{" "}
-                        {plan.status === "proposed"
-                          ? "JÓVÁHAGYÁSRA VÁR"
-                          : plan.status === "active"
-                            ? "AKTÍV"
-                            : plan.status.toLocaleUpperCase("hu-HU")}
-                      </p>
-                      {plan.actions.map((action) => (
-                        <div key={action.id}>
-                          <h3>{action.what}</h3>
-                          <p>{action.why}</p>
+                      {latestDailySituationOptions.length > 0 && (
+                        <div className={styles.formGroup}>
                           <p className={styles.muted}>
-                            Határidő:{" "}
-                            {new Date(action.dueAt).toLocaleDateString("hu-HU")}{" "}
-                            · Leállítási feltétel: {action.stopCondition}
+                            Választhatsz egy előre megírt beszélgetést a
+                            kapcsolódó válaszhoz. Habi nem von le
+                            következtetést.
                           </p>
-                          {plan.status === "active" && (
-                            <div className={styles.formGroup}>
-                              <label
-                                className={styles.label}
-                                htmlFor={`followup-outcome-${plan.id}-${action.id}`}
-                              >
-                                Hogyan alakult a kipróbálás?
-                              </label>
-                              <select
-                                id={`followup-outcome-${plan.id}-${action.id}`}
-                                value={followupOutcome}
-                                onChange={(event) =>
-                                  setFollowupOutcome(
-                                    event.target
-                                      .value as typeof followupOutcome,
-                                  )
-                                }
-                              >
-                                <option value="helped">Segített</option>
-                                <option value="not_helped">Nem segített</option>
-                                <option value="adjust">Módosítani kell</option>
-                                <option value="unknown">Még nem tudom</option>
-                              </select>
-                              <label
-                                className={styles.label}
-                                htmlFor={`followup-text-${plan.id}-${action.id}`}
-                              >
-                                Mit szeretnél hozzáfűzni?
-                              </label>
-                              <textarea
-                                id={`followup-text-${plan.id}-${action.id}`}
-                                rows={2}
-                                maxLength={4000}
-                                value={followupText}
-                                onChange={(event) =>
-                                  setFollowupText(event.target.value)
-                                }
-                              />
+                          {latestDailySituationOptions.map(
+                            (option: {
+                              situationId: string;
+                              title: string;
+                              checkinId: string;
+                              metric: string;
+                            }) => (
                               <button
                                 className={styles.secondary}
                                 type="button"
-                                disabled={busy || !followupText.trim()}
-                                onClick={() =>
-                                  void submitFollowUp(plan, action.id)
-                                }
-                              >
-                                Utánkövetés rögzítése
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                      {plan.status === "proposed" &&
-                        (active.activeRole === "player" ||
-                          active.activeRole === "parent") && (
-                          <div className={styles.actions}>
-                            <button
-                              className={styles.primary}
-                              type="button"
-                              disabled={busy}
-                              onClick={() => void decidePlan(plan, "accept")}
-                            >
-                              Elfogadom
-                            </button>
-                            <button
-                              className={styles.secondary}
-                              type="button"
-                              disabled={busy}
-                              onClick={() => void decidePlan(plan, "decline")}
-                            >
-                              Nem ezt javaslom
-                            </button>
-                          </div>
-                        )}
-                      {active.activeRole === "coach" &&
-                        ["active", "paused"].includes(plan.status) && (
-                          <div className={styles.actions}>
-                            {(plan.status === "active"
-                              ? [
-                                  ["paused", "Terv félretétele"],
-                                  ["completed", "Terv lezárása"],
-                                  ["withdrawn", "Terv visszavonása"],
-                                ]
-                              : [
-                                  ["active", "Terv folytatása"],
-                                  ["completed", "Terv lezárása"],
-                                ]
-                            ).map(([status, label]) => (
-                              <button
-                                className={styles.secondary}
-                                type="button"
-                                key={status}
-                                disabled={busy}
+                                key={option.metric}
+                                disabled={busy || !experienceDraftsReady}
                                 onClick={() => {
-                                  setBusy(true);
-                                  void productRequest(
-                                    `/api/v1/plans/${encodeURIComponent(plan.id)}/state`,
-                                    active.csrfToken,
-                                    { expectedRevision: plan.revision, status },
-                                  )
-                                    .then((updated) =>
-                                      setPlans((items) =>
-                                        items.map((p) =>
-                                          p.id === updated.id ? updated : p,
-                                        ),
-                                      ),
-                                    )
-                                    .catch((e) => setNotice(commandMessage(e)))
-                                    .finally(() => setBusy(false));
+                                  navigateTab("player-tools");
+                                  void startGuidedSituation(
+                                    option.situationId,
+                                    option.checkinId,
+                                  );
                                 }}
                               >
-                                {label}
+                                {option.title}
                               </button>
-                            ))}
-                          </div>
-                        )}
-                      <p className={styles.muted}>
-                        Forrásolt terv · {plan.sourceRefs.length} kapcsolt
-                        forrás · {plan.acceptances.length} válasz
+                            ),
+                          )}
+                        </div>
+                      )}
+                    </details>
+                  ) : null}
+                  {reminderType && (
+                    <aside className={styles.notice} role="status">
+                      <p>
+                        {reminderType === "morning"
+                          ? "A napi állapotjelzésed még vár rád."
+                          : "Ha szeretnéd, most visszatekinthetsz a napodra."}
                       </p>
-                    </article>
-                  ))
-                ) : (
-                  <p className={styles.emptyState}>
-                    Még nincs rögzített közös terv.
-                  </p>
-                )}
-                {active.activeRole === "coach" && (
-                  <div className={styles.formGroup}>
-                    <p className={styles.eyebrow}>EDZŐI ANYAG</p>
-                    <h3>Ossz meg egy pontosan verziózott anyagot</h3>
-                    <label className={styles.label} htmlFor="material-title">
-                      Anyag címe
-                    </label>
-                    <input
-                      id="material-title"
-                      value={materialTitle}
-                      maxLength={200}
-                      onChange={(event) => setMaterialTitle(event.target.value)}
-                    />
-                    <label className={styles.label} htmlFor="material-text">
-                      Az edzői anyag szövege
-                    </label>
-                    <textarea
-                      id="material-text"
-                      rows={5}
-                      maxLength={8000}
-                      value={materialText}
-                      onChange={(event) => setMaterialText(event.target.value)}
-                    />
-                    <button
-                      className={styles.secondary}
-                      type="button"
-                      disabled={
-                        busy ||
-                        !materialTitle.trim() ||
-                        !materialText.trim() ||
-                        !questionSource
-                      }
-                      onClick={() => void saveCoachMaterial()}
-                    >
-                      Piszkozat mentése forrással
-                    </button>
-                    {!questionSource && (
-                      <p className={styles.actionInfo}>
-                        Az anyag csak ellenőrizhető, kapcsolt forrással
-                        menthető.
-                      </p>
-                    )}
-                  </div>
-                )}
-                {materials.map((material) => (
-                  <article className={styles.dataCard} key={material.id}>
-                    <p className={styles.eyebrow}>
-                      EDZŐI ANYAG ·{" "}
-                      {active.activeRole !== "coach" ||
-                      materialPublications[material.id]
-                        ? "MEGOSZTVA"
-                        : "PISZKOZAT"}{" "}
-                      · {material.version}. VERZIÓ
-                    </p>
-                    <h3>{material.title}</h3>
-                    <p style={{ whiteSpace: "pre-wrap" }}>{material.text}</p>
-                    {active.activeRole === "coach" && (
                       <div className={styles.actions}>
-                        <button
-                          className={styles.secondary}
-                          type="button"
-                          disabled={busy}
-                          onClick={() => {
-                            setMaterialSupersedes({
-                              id: material.id,
-                              revision: material.revision,
-                            });
-                            setMaterialTitle(material.title);
-                            setMaterialText(material.text);
-                          }}
-                        >
-                          Új változat készítése
-                        </button>
-                        {materialPublications[material.id] && (
-                          <button
-                            className={styles.secondary}
-                            type="button"
-                            disabled={busy}
-                            onClick={() => {
-                              const publication =
-                                materialPublications[material.id];
-                              setBusy(true);
-                              void productRequest(
-                                `/api/v1/publications/${encodeURIComponent(publication.id)}/withdraw`,
-                                active.csrfToken,
-                                { expectedRevision: publication.revision },
-                              )
-                                .then(() =>
-                                  setMaterialPublications((current) =>
-                                    Object.fromEntries(
-                                      Object.entries(current).filter(
-                                        ([id]) => id !== material.id,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .catch((e) => setNotice(commandMessage(e)))
-                                .finally(() => setBusy(false));
-                            }}
-                          >
-                            Megosztás visszavonása
-                          </button>
-                        )}
-                      </div>
-                    )}
-                    {active.activeRole === "coach" &&
-                      !materialPublications[material.id] && (
                         <button
                           className={styles.primary}
                           type="button"
-                          disabled={busy}
-                          onClick={() => void publishCoachMaterial(material)}
+                          onClick={() =>
+                            navigateTab(
+                              reminderType === "morning"
+                                ? "checkin"
+                                : "player-tools",
+                            )
+                          }
                         >
-                          Megosztom a szülőkkel
+                          {reminderType === "morning"
+                            ? "Állapotjelzés indítása"
+                            : "Visszatekintés megnyitása"}
                         </button>
-                      )}
-                  </article>
-                ))}
-              </section>
-            )}
-            {tab === "assessments" &&
-              active.activeRole === "coach" &&
-              selectedPlayer && (
-                <>
-                  <section className={styles.panel}>
-                    <p className={styles.eyebrow}>FELMÉRÉSEK ÉS EREDMÉNYEK</p>
-                    <h2>Rögzítsd a forrást és ellenőrizd az adatokat</h2>
-                    <p className={styles.muted}>
-                      Tölts fel egy kérdőíveredményt, vagy vidd be kézzel a
-                      mezőket az eredeti dokumentum alapján. Az értékeket a Habi
-                      nem következteti ki.
-                    </p>
-                  </section>
-                  <CoachAssessments
-                    key={selectedPlayer.id}
-                    playerId={selectedPlayer.id}
-                    csrfToken={active.csrfToken}
-                    onSaved={() => void load()}
-                  />
-                  <InterpretationReviews
-                    key={`review-${selectedPlayer.id}`}
-                    playerId={selectedPlayer.id}
-                    csrfToken={active.csrfToken}
-                  />
-                  <CoachReportWorkspace
-                    playerId={selectedPlayer.id}
-                    playerName={
-                      selectedPlayer.displayName ?? "A kiválasztott játékos"
-                    }
-                    csrfToken={active.csrfToken}
-                  />
-                </>
-              )}
-            {(tab === "journal" ||
-              tab === "assessments" ||
-              tab === "reports") &&
-              active.activeRole === "coach" &&
-              selectedPlayer && (
-                <CoachRecords
-                  key={`records-${selectedPlayer.id}`}
-                  records={data[0]?.records ?? []}
-                  playerId={selectedPlayer.id}
-                  csrfToken={active.csrfToken}
-                />
-              )}
-            {tab === "knowledge" && active.activeRole === "coach" && (
-              <KnowledgeWorkspace csrfToken={active.csrfToken} />
-            )}
-            {tab === "knowledge" && active.activeRole === "coach" && (
-              <section className={styles.panel}>
-                <p className={styles.eyebrow}>TUDÁSTÁR</p>
-                <h2>Segítség konkrét helyzetekhez</h2>
-                <p className={styles.muted}>
-                  Válassz egy kapcsolódó gyakorlatot. Ezek általános támogatási
-                  ötletek, nem diagnózisok és nem egyéni értékelések.
-                </p>
-                <label className={styles.label} htmlFor="practice-search">
-                  Keresés a tudástárban
-                </label>
-                <input
-                  id="practice-search"
-                  type="search"
-                  value={practiceSearch}
-                  onChange={(event) => setPracticeSearch(event.target.value)}
-                />
-                <div className={styles.knowledgeList}>
-                  {(
-                    practices.items as Array<{
-                      id: string;
-                      title: string;
-                      what: string;
-                      how: string;
-                    }>
-                  )
-                    .filter((practice) =>
-                      `${practice.title} ${practice.what} ${practice.how}`
-                        .toLocaleLowerCase("hu-HU")
-                        .includes(practiceSearch.toLocaleLowerCase("hu-HU")),
-                    )
-                    .map((practice) => (
-                      <details
-                        id={`practice-${practice.id}`}
-                        className={styles.dataCard}
-                        key={practice.id}
+                        <button
+                          className={styles.secondary}
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void dismissReminder(reminderType)}
+                        >
+                          Ma inkább kihagyom
+                        </button>
+                      </div>
+                    </aside>
+                  )}
+                  <details className={styles.formGroup}>
+                    <summary>Emlékeztetők beállítása</summary>
+                    <form onSubmit={saveReminderSettings}>
+                      <p className={styles.muted}>
+                        A Habi csak az alkalmazás megnyitásakor mutat
+                        emlékeztetőt. Nem küld értesítést az eszközödre.
+                      </p>
+                      <label className={styles.label}>
+                        <input
+                          type="checkbox"
+                          checked={reminderPrefs.enabled}
+                          onChange={(event) =>
+                            setReminderPrefs((current) => ({
+                              ...current,
+                              enabled: event.target.checked,
+                            }))
+                          }
+                        />{" "}
+                        Kérek emlékeztetőt
+                      </label>
+                      <label
+                        className={styles.label}
+                        htmlFor="reminder-morning"
                       >
-                        <summary>
-                          <strong className={styles.knowledgeCardTitle}>
-                            {practice.title}
-                          </strong>
-                          <span className={styles.practiceDescription}>
-                            {practice.what}
-                          </span>
-                        </summary>
-                        <p>{practice.how}</p>
-                        <p className={styles.muted}>
-                          Általános gyakorlat · a helyzethez való
-                          alkalmazhatóságot az edzőnek kell mérlegelnie.
-                        </p>
-                      </details>
-                    ))}
-                </div>
-              </section>
-            )}
-            {checkinCursor && (tab === "checkin" || tab === "player-tools") && (
-              <button
-                className={styles.secondary}
-                type="button"
-                disabled={loadingCheckins}
-                onClick={() => {
-                  setLoadingCheckins(true);
-                  const query = new URLSearchParams({
-                    limit: "100",
-                    cursor: checkinCursor,
-                    ...(localDayBounds(timelineDayFilter) ?? {}),
-                  });
-                  void productRequest(
-                    `/api/v1/players/${encodeURIComponent(playerId)}/checkin-results?${query}`,
-                    active.csrfToken,
-                    undefined,
-                    "GET",
-                  )
-                    .then((body) => {
-                      setData((items) =>
-                        items.map((item) =>
-                          item.id === playerId
-                            ? {
-                                ...item,
-                                checkins: [...item.checkins, ...body.items],
-                              }
-                            : item,
-                        ),
-                      );
-                      setCheckinCursor(body.nextCursor);
-                    })
-                    .catch((e) => setNotice(commandMessage(e)))
-                    .finally(() => setLoadingCheckins(false));
-                }}
-              >
-                Korábbi állapotjelzések betöltése
-              </button>
-            )}
-            {tab === "timeline" && (
-              <section className={styles.panel}>
-                <p className={styles.eyebrow}>ELŐZMÉNYEK</p>
-                <h2>A napló eseményei</h2>
-                <fieldset className={styles.timelineFilter}>
-                  <legend>Betöltött események szűrése</legend>
-                  <label htmlFor="history-kind">
-                    Típus
-                    <select
-                      id="history-kind"
-                      value={timelineKind}
-                      onChange={(e) => setTimelineKind(e.target.value)}
-                    >
-                      <option value="all">Minden típus</option>
-                      {[
-                        ...new Set(
-                          timeline?.nodes.map((node) => node.kind) ?? [],
-                        ),
-                      ].map((kind) => (
-                        <option key={kind} value={kind}>
-                          {(
-                            {
-                              record: "Bejegyzés",
-                              checkin: "Állapotjelzés",
-                              "checkin.completed": "Lezárt állapotjelzés",
-                              checkin_answer: "Beküldött napi válasz",
-                              diary: "Naplóbejegyzés",
-                              observation: "Megfigyelés",
-                              "thread.message": "Hozzászólás",
-                              "interpretation.ready": "Forrásolt magyarázat",
-                              "interpretation.no_evidence":
-                                "Forrás nélküli kérdéseredmény",
-                              "plan.follow_up": "Terv utánkövetése",
-                              "plan.proposed": "Tervjavaslat",
-                              "plan.active": "Aktív terv",
-                              "plan.paused": "Félretett terv",
-                              "plan.completed": "Lezárt terv",
-                              "plan.withdrawn": "Visszavont terv",
-                              "plan.declined": "Elutasított terv",
-                              message: "Hozzászólás",
-                              interpretation: "Forrásolt magyarázat",
-                              plan: "Közös terv",
-                              follow_up: "Utánkövetés",
-                              report: "Riport",
-                            } as Record<string, string>
-                          )[kind] ?? "Kapcsolódó esemény"}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label htmlFor="history-role">
-                    Forrás
-                    <select
-                      id="history-role"
-                      value={timelineRole}
-                      onChange={(e) => setTimelineRole(e.target.value)}
-                    >
-                      <option value="all">Minden szereplő</option>
-                      <option value="player">Játékos</option>
-                      <option value="parent">Szülő</option>
-                      <option value="coach">Edző</option>
-                    </select>
-                  </label>
-                  <label htmlFor="history-period">
-                    Időszak
-                    <select
-                      id="history-period"
-                      value={timelinePeriod}
-                      onChange={(e) =>
-                        setTimelinePeriod(Number(e.target.value))
-                      }
-                    >
-                      <option value={0}>Minden betöltött esemény</option>
-                      <option value={7}>7 nap</option>
-                      <option value={14}>14 nap</option>
-                      <option value={28}>28 nap</option>
-                      <option value={42}>42 nap</option>
-                    </select>
-                  </label>
-                </fieldset>
-                <div className={styles.timelineFilter}>
-                  <div>
-                    <label className={styles.label} htmlFor="timeline-day">
-                      Egy nap eseményei
-                    </label>
-                    <input
-                      id="timeline-day"
-                      type="date"
-                      value={timelineDayFilter}
-                      onChange={(event) => {
-                        setTimelineDayFilter(event.target.value);
-                        setLoadingOlder(false);
-                      }}
-                    />
-                  </div>
-                  {timelineDayFilter ? (
+                        Napi állapotjelzés ideje
+                      </label>
+                      <input
+                        id="reminder-morning"
+                        type="time"
+                        value={reminderPrefs.morning}
+                        onChange={(event) =>
+                          setReminderPrefs((current) => ({
+                            ...current,
+                            morning: event.target.value,
+                          }))
+                        }
+                      />
+                      <label
+                        className={styles.label}
+                        htmlFor="reminder-evening"
+                      >
+                        Napi visszatekintés ideje
+                      </label>
+                      <input
+                        id="reminder-evening"
+                        type="time"
+                        value={reminderPrefs.evening}
+                        onChange={(event) =>
+                          setReminderPrefs((current) => ({
+                            ...current,
+                            evening: event.target.value,
+                          }))
+                        }
+                      />
+                      <button
+                        className={styles.primary}
+                        type="submit"
+                        disabled={busy}
+                      >
+                        Emlékeztetők mentése
+                      </button>
+                    </form>
+                  </details>
+                </section>
+              )}
+              {tab === "overview" && active.activeRole !== "player" && (
+                <section className={`${styles.panel} workspace-section`}>
+                  <p className={styles.eyebrow}>
+                    {active.activeRole === "coach"
+                      ? "CSAPATKÖVETÉS"
+                      : "KAPCSOLÓDÓ JÁTÉKOS"}
+                  </p>
+                  <h2>{selectedPlayer?.displayName ?? "Válassz játékost"}</h2>
+                  {data[0]?.checkins[0] ? (
+                    <>
+                      <p className={styles.muted}>
+                        A legutóbbi elérhető saját beszámoló.
+                      </p>
+                      <dl className={styles.summaryMetrics}>
+                        {data[0].checkins[0].answerCodes?.map(
+                          ({ metric, code }) => {
+                            const definition = metrics.find(
+                              ([key]) => key === metric,
+                            );
+                            return definition ? (
+                              <div key={metric}>
+                                <dt>
+                                  <MetricGraphic metric={metric} code={code} />
+                                  <span className={styles.metricQuestion}>
+                                    {definition[1]}
+                                  </span>
+                                </dt>
+                                <dd>{definition[2][code] ?? "Nincs válasz"}</dd>
+                              </div>
+                            ) : null;
+                          },
+                        )}
+                      </dl>
+                    </>
+                  ) : (
+                    <p className={styles.muted}>
+                      Ehhez a játékoshoz még nincs elérhető napi állapotjelzés.
+                    </p>
+                  )}
+                  <div className={styles.actions}>
                     <button
                       type="button"
                       className={styles.secondary}
-                      onClick={() => setTimelineDayFilter("")}
+                      onClick={() => navigateTab("timeline")}
                     >
-                      Teljes idővonal
+                      A történet megnyitása
                     </button>
-                  ) : null}
-                </div>
-                {timelineDayFilter ? (
-                  <article
-                    className={styles.dataCard}
-                    aria-label="Napi összefoglaló"
+                    <button
+                      type="button"
+                      className={styles.secondary}
+                      onClick={() =>
+                        navigateTab(
+                          active.activeRole === "coach"
+                            ? "reports"
+                            : "conversations",
+                        )
+                      }
+                    >
+                      {active.activeRole === "coach"
+                        ? "Riportok és tervek"
+                        : "Beszélgetések"}
+                    </button>
+                  </div>
+                </section>
+              )}
+              {tab === "overview" && selectedPlayer && (
+                <section className={`${styles.panel} workspace-section`}>
+                  <p className={styles.eyebrow}>A KÖZÖS TÖRTÉNET</p>
+                  <h2>A közelmúlt fontos eseményei</h2>
+                  <AiCoachButton />
+                  <MetroTimeline
+                    page={timeline}
+                    records={historyItems}
+                    playerName={selectedPlayer.displayName ?? "Játékos"}
+                    playerId={selectedPlayer.id}
+                    onLoadMore={() => void loadOlderTimeline()}
+                    loadingMore={loadingOlder}
+                  />
+                  <button
+                    type="button"
+                    className={styles.secondary}
+                    onClick={() => navigateTab("timeline")}
                   >
-                    <p className={styles.eyebrow}>NAPI ÖSSZEFOGLALÓ</p>
-                    <h3>
-                      {new Date(
-                        `${timelineDayFilter}T00:00:00`,
-                      ).toLocaleDateString("hu-HU", { dateStyle: "full" })}
-                    </h3>
+                    A teljes idővonal megnyitása
+                  </button>
+                </section>
+              )}
+              {tab === "checkin" &&
+                active.activeRole === "player" &&
+                playerId && (
+                  <>
+                    <DailyCheckin
+                      key={`${active.actorId}-${playerId}`}
+                      playerId={playerId}
+                      csrfToken={active.csrfToken}
+                      onSaved={() => void load()}
+                    />
+                    <CheckinTrends
+                      checkins={mergePartialCheckins(
+                        ownPlayerData?.checkins ?? [],
+                        ownPlayerData?.records ?? [],
+                      )}
+                    />
+                  </>
+                )}
+              {tab === "checkin" &&
+                active.activeRole !== "player" &&
+                selectedPlayer && (
+                  <section className={styles.panel}>
+                    <p className={styles.eyebrow}>A JÁTÉKOS SAJÁT BESZÁMOLÓI</p>
+                    <h2>Állapotjelzések</h2>
+                    <AiCoachButton />
+                    <p className={styles.muted}>
+                      A válaszok a játékos tapasztalatai. Ne kezeld őket külső
+                      értékelésként.
+                    </p>
+                    <CheckinTrends
+                      checkins={mergePartialCheckins(
+                        data[0]?.checkins ?? [],
+                        data[0]?.records ?? [],
+                      )}
+                    />
                     {data[0]?.checkins.length ? (
                       data[0].checkins.map((item) => (
-                        <div key={item.id}>
-                          <p className={styles.muted}>
+                        <article className={styles.dataCard} key={item.id}>
+                          <AiCoachButton
+                            context={{
+                              kind: "checkin_result",
+                              id: item.id,
+                              revision: item.revision ?? 1,
+                            }}
+                          />
+                          <h3>
                             {item.completedAt
-                              ? new Date(item.completedAt).toLocaleTimeString(
+                              ? new Date(item.completedAt).toLocaleString(
                                   "hu-HU",
-                                  { hour: "2-digit", minute: "2-digit" },
                                 )
-                              : "Állapotjelzés"}
-                          </p>
+                              : "Dátum nélkül"}
+                          </h3>
                           <dl className={styles.summaryMetrics}>
                             {item.answerCodes?.map(({ metric, code }) => {
                               const definition = metrics.find(
@@ -4443,1972 +3534,474 @@ export default function HabiWorkspace() {
                               ) : null;
                             })}
                           </dl>
-                        </div>
+                        </article>
                       ))
                     ) : (
-                      <p className={styles.muted}>
-                        Ezen a napon nincs rögzített állapotjelzés.
-                      </p>
-                    )}
-                  </article>
-                ) : null}
-                <div className="story-legend">
-                  {(["player", "parent", "coach"] as const).map((role) => (
-                    <span className={`role-badge actor-${role}`} key={role}>
-                      {roleLabel(role)}
-                    </span>
-                  ))}
-                </div>
-                <MetroTimeline
-                  page={filterTimelinePage(timeline, {
-                    kind: timelineKind,
-                    role: timelineRole,
-                    days: timelinePeriod,
-                    now: clientNow ?? Date.now(),
-                  })}
-                  records={historyItems}
-                  playerName={
-                    selectedPlayer?.displayName ??
-                    (active.activeRole === "player"
-                      ? "Saját sportolói napló"
-                      : "Kapcsolt játékos")
-                  }
-                  playerId={playerId}
-                  onLoadMore={() => void loadOlderTimeline()}
-                  loadingMore={loadingOlder}
-                />
-              </section>
-            )}
-            {tab === "overview" &&
-              active.activeRole === "player" &&
-              (playerGoalDraft.trim() ||
-                routineDraft.trim() ||
-                practiceFeedback.trim() ||
-                Object.values(trustedAdultPrep).some((value) => value.trim()) ||
-                guidedTreeDraft ||
-                guidedSituationId ||
-                monthlyAnswers.some((value) => value !== null) ||
-                Object.values(reflectionAnswers.daily).some((value) =>
-                  value.trim(),
-                ) ||
-                Object.values(reflectionAnswers.weekly).some((value) =>
-                  value.trim(),
-                )) && (
-                <aside className={styles.formGroup}>
-                  <h3>Folytathatod, amit elkezdtél</h3>
-                  <p>
-                    A saját célod, gyakorlatod vagy beszélgetésed piszkozata
-                    megmaradt.
-                  </p>
-                  <button
-                    className={styles.secondary}
-                    type="button"
-                    onClick={() => navigateTab("player-tools")}
-                  >
-                    Folytatom a saját munkámat
-                  </button>
-                </aside>
-              )}
-            {tab === "overview" &&
-              active.activeRole === "player" &&
-              playerId && (
-                <PlayerSupportLoop
-                  compact
-                  playerId={playerId}
-                  actorId={active.actorId}
-                  csrfToken={active.csrfToken}
-                  records={ownPlayerData?.records ?? []}
-                  save={savePlayerDiary}
-                  onOpen={() => navigateTab("player-tools")}
-                />
-              )}
-            {tab === "player-tools" &&
-              active.activeRole === "player" &&
-              selectedPlayer && (
-                <section className={styles.panel}>
-                  <p className={styles.eyebrow}>SAJÁT SPORTOLÓI MUNKA</p>
-                  <h2>Gyakorlatok és saját célok</h2>
-                  <PlayerSupportLoop
-                    playerId={playerId}
-                    actorId={active.actorId}
-                    csrfToken={active.csrfToken}
-                    records={ownPlayerData?.records ?? []}
-                    save={savePlayerDiary}
-                  />
-                  {continuity.status && (
-                    <p role="status">{continuity.status}</p>
-                  )}
-
-                  <p className={styles.muted}>
-                    Válassz egy rövid, nem klinikai gyakorlatot, rögzítsd a
-                    tapasztalatodat, vagy tűzz ki egy saját célt. Minden mentés
-                    a naplódhoz kapcsolódik.
-                  </p>
-                  <div className={styles.formGroup}>
-                    <h3>{guidedConversationContent.labels.title}</h3>
-                    <p className={styles.muted}>
-                      Válassz egy témát. A beszélgetés a te válaszaid alapján,
-                      előre megírt kérdésekkel halad; bármikor folytathatod
-                      később.
-                    </p>
-                    {!guidedTreeDraft ? (
-                      <>
-                        <label
-                          className={styles.label}
-                          htmlFor="guided-topic-input"
-                        >
-                          Vagy írd le röviden, mi foglalkoztat
-                        </label>
-                        <textarea
-                          id="guided-topic-input"
-                          value={guidedTopicInput}
-                          maxLength={1000}
-                          rows={3}
-                          onChange={(event) => {
-                            setGuidedTopicInput(event.target.value);
-                            setGuidedTopicSuggestions(null);
-                          }}
-                        />
-                        <button
-                          type="button"
-                          className={styles.secondary}
-                          disabled={busy || !guidedTopicInput.trim()}
-                          onClick={suggestGuidedTopics}
-                        >
-                          Témák mutatása
-                        </button>
-                        {guidedTopicSuggestions && (
-                          <p className={styles.muted} role="status">
-                            Válaszd ki, melyik téma áll a legközelebb ahhoz,
-                            amit leírtál. A témák sorrendje szövegegyezésen
-                            alapul; Habi nem állapítja meg, mit érzel.
-                          </p>
-                        )}
-                        <div className={styles.knowledgeList}>
-                          {guidedConversationContent.categories
-                            .filter(
-                              (category) =>
-                                !guidedTopicSuggestions ||
-                                guidedTopicSuggestions.includes(category.id),
-                            )
-                            .sort((a, b) =>
-                              guidedTopicSuggestions
-                                ? guidedTopicSuggestions.indexOf(a.id) -
-                                  guidedTopicSuggestions.indexOf(b.id)
-                                : 0,
-                            )
-                            .map((category) => (
-                              <button
-                                className={styles.secondary}
-                                key={category.id}
-                                type="button"
-                                disabled={busy || !experienceDraftsReady}
-                                onClick={() =>
-                                  void startGuidedTopic(category.id)
-                                }
-                              >
-                                {category.label}
-                              </button>
-                            ))}
-                        </div>
-                      </>
-                    ) : guidedTreePaused ? (
-                      <article className={styles.dataCard}>
-                        <p className={styles.eyebrow}>
-                          FOLYTATHATÓ BESZÉLGETÉS
-                        </p>
-                        <h4>
-                          {
-                            guidedConversationContent.categories.find(
-                              (category) =>
-                                category.id === guidedTreeDraft.categoryId,
-                            )?.label
-                          }
-                        </h4>
-                        <p>
-                          {guidedTreeDraft.turns.length} válaszod már mentve
-                          van.
-                        </p>
-                        <div className={styles.actions}>
-                          <button
-                            className={styles.primary}
-                            type="button"
-                            onClick={() => setGuidedTreePaused(false)}
-                          >
-                            Folytatom
-                          </button>
-                          <button
-                            className={styles.secondary}
-                            type="button"
-                            disabled={busy}
-                            onClick={() => void discardGuidedTopic()}
-                          >
-                            Beszélgetés elvetése
-                          </button>
-                        </div>
-                      </article>
-                    ) : (
-                      (() => {
-                        const state =
-                          resolveGuidedConversation(guidedTreeDraft);
-                        if (!state) return null;
-                        return (
-                          <article className={styles.dataCard}>
-                            <p className={styles.eyebrow}>
-                              {state.category.label}
-                            </p>
-                            {guidedTreeDraft.opening && (
-                              <p>
-                                <strong>Te mondtad:</strong>{" "}
-                                {guidedTreeDraft.opening}
-                              </p>
-                            )}
-                            {state.turns.map(({ node, option }) => (
-                              <div key={`${node.question}-${option.id}`}>
-                                <p>
-                                  <strong>{node.response}</strong>
-                                </p>
-                                <p>{node.question}</p>
-                                <p className={styles.muted}>{option.label}</p>
-                              </div>
-                            ))}
-                            {state.currentNode ? (
-                              <>
-                                <p>
-                                  <strong>{state.currentNode.response}</strong>
-                                </p>
-                                <h4>{state.currentNode.question}</h4>
-                                <div className={styles.knowledgeList}>
-                                  {state.currentNode.options.map(
-                                    (option: { id: string; label: string }) => (
-                                      <button
-                                        className={styles.secondary}
-                                        key={option.id}
-                                        type="button"
-                                        disabled={busy}
-                                        onClick={() =>
-                                          void answerGuidedTopic(option.id)
-                                        }
-                                      >
-                                        {option.label}
-                                      </button>
-                                    ),
-                                  )}
-                                </div>
-                              </>
-                            ) : state.outcome ? (
-                              <>
-                                <h4>Habi válasza</h4>
-                                <p>{state.outcome.text}</p>
-                                {state.outcome.id !== "immediate-adult" && (
-                                  <div className={styles.actions}>
-                                    <button
-                                      className={styles.secondary}
-                                      type="button"
-                                      onClick={() => {
-                                        setPlayerGoalDraft(
-                                          state.outcome?.text.slice(0, 500) ??
-                                            "",
-                                        );
-                                        document
-                                          .getElementById("own-goal")
-                                          ?.scrollIntoView({ block: "center" });
-                                      }}
-                                    >
-                                      Ezt próbálnám ki saját célként
-                                    </button>
-                                    <button
-                                      className={styles.secondary}
-                                      type="button"
-                                      onClick={() => {
-                                        setTrustedAdultPrep({
-                                          person: "",
-                                          topic:
-                                            guidedTreeDraft.opening ??
-                                            state.category.label,
-                                          ask: "Szeretném, ha meghallgatnál, és együtt átgondolnánk.",
-                                        });
-                                        setTrustedAdultPreview(false);
-                                        document
-                                          .getElementById("preparation-form")
-                                          ?.scrollIntoView({ block: "center" });
-                                      }}
-                                    >
-                                      Beszélgetés előkészítése
-                                    </button>
-                                    {state.outcome.practice && (
-                                      <button
-                                        className={styles.secondary}
-                                        type="button"
-                                        onClick={() => {
-                                          const target =
-                                            document.getElementById(
-                                              `practice-${state.outcome?.practice}`,
-                                            );
-                                          if (
-                                            target instanceof HTMLDetailsElement
-                                          ) {
-                                            target.open = true;
-                                            target.scrollIntoView({
-                                              block: "center",
-                                            });
-                                          }
-                                        }}
-                                      >
-                                        Kapcsolódó gyakorlat megnyitása
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
-                                <details className={styles.dataCard}>
-                                  <summary>Beszélgetés összefoglalója</summary>
-                                  <pre className={styles.summaryText}>
-                                    {createGuidedConversationSummary(
-                                      guidedTreeDraft,
-                                    )}
-                                  </pre>
-                                </details>
-                                <div className={styles.actions}>
-                                  <button
-                                    className={styles.primary}
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() => void saveGuidedTopic()}
-                                  >
-                                    Beszélgetés mentése a naplóba
-                                  </button>
-                                  <button
-                                    className={styles.secondary}
-                                    type="button"
-                                    onClick={() =>
-                                      downloadGuidedTopicSummary(
-                                        createGuidedConversationSummary(
-                                          guidedTreeDraft,
-                                        ) ?? "",
-                                      )
-                                    }
-                                  >
-                                    Beszélgetés letöltése
-                                  </button>
-                                  <button
-                                    className={styles.secondary}
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() => void discardGuidedTopic()}
-                                  >
-                                    Beszélgetés elvetése
-                                  </button>
-                                </div>
-                              </>
-                            ) : null}
-                            {!state.outcome && (
-                              <button
-                                className={styles.textButton}
-                                type="button"
-                                disabled={busy}
-                                onClick={() => setGuidedTreePaused(true)}
-                              >
-                                Később folytatom
-                              </button>
-                            )}
-                          </article>
-                        );
-                      })()
-                    )}
-                    {guidedTreeDraft && experienceDraftsReady && (
-                      <p className={styles.actionFeedback} role="status">
-                        {draftNotice ||
-                          "A válaszaid piszkozatként mentve vannak."}
-                      </p>
-                    )}
-                    {completedGuidedTreeSummary && (
-                      <article className={styles.dataCard} role="status">
-                        <p>A beszélgetés bekerült a naplódba.</p>
-                        <button
-                          className={styles.secondary}
-                          type="button"
-                          onClick={() =>
-                            downloadGuidedTopicSummary(
-                              completedGuidedTreeSummary,
-                            )
-                          }
-                        >
-                          Beszélgetés letöltése
-                        </button>
-                      </article>
-                    )}
-                  </div>
-                  <div className={styles.formGroup}>
-                    <h3>Vezetett beszélgetés</h3>
-                    <p className={styles.muted}>
-                      Válassz egy helyzetet, és haladj a saját tempódban. A
-                      válaszaid minden lépésnél elmentődnek, így később innen
-                      folytathatod.
-                    </p>
-                    {guidedSituationId && experienceDraftsReady && (
-                      <p className={styles.actionFeedback} role="status">
-                        {draftNotice || "A beszélgetés piszkozatként mentve."}
-                      </p>
-                    )}
-                  </div>
-                  <CheckinTrends
-                    checkins={mergePartialCheckins(
-                      ownPlayerData?.checkins ?? [],
-                      ownPlayerData?.records ?? [],
-                    )}
-                  />
-                  <div className={styles.formGroup}>
-                    <h3>Fájdalmat érzel?</h3>
-                    <p className={styles.muted}>
-                      Ez nem orvosi értékelés. Ha egy mozdulat fáj, ne ismételd
-                      meg csak azért, hogy teljesítsd a feladatot. Szólj egy
-                      megbízható felnőttnek; ha a fájdalom erős vagy
-                      rosszabbodik, kérj tőle segítséget most.
-                    </p>
-                    {painStep === null ? (
-                      <button
-                        className={styles.secondary}
-                        type="button"
-                        onClick={startPainSupport}
-                      >
-                        Segítségkérő mondat összeállítása
-                      </button>
-                    ) : painStep < 3 ? (
-                      <div className={styles.dataCard}>
-                        <p className={styles.eyebrow}>
-                          FÁJDALOMRÓL SZÓLÓ BESZÉLGETÉS · {painStep + 1}/3
-                        </p>
-                        <h4>
-                          {
-                            [
-                              "Hol érzed a fájdalmat?",
-                              "Mióta érzed?",
-                              "Mikor jelentkezik?",
-                            ][painStep]
-                          }
-                        </h4>
-                        <div className={styles.knowledgeList}>
-                          {[
-                            [
-                              "A lábamban vagy a lábfejemben.",
-                              "A karomban vagy a vállamban.",
-                              "Máshol, vagy nehéz megmondanom.",
-                            ],
-                            [
-                              "Most kezdődött.",
-                              "Ma már korábban is éreztem.",
-                              "Több napja visszatér.",
-                            ],
-                            [
-                              "Egy bizonyos mozdulatnál.",
-                              "Mozgás közben többféle helyzetben.",
-                              "Pihenés közben is, vagy nehéz megmondanom.",
-                            ],
-                          ][painStep]?.map((choice, index) => (
-                            <button
-                              className={styles.secondary}
-                              type="button"
-                              key={choice}
-                              onClick={() => answerPainSupport(index)}
-                            >
-                              {choice}
-                            </button>
-                          ))}
-                        </div>
-                        <button
-                          className={styles.secondary}
-                          type="button"
-                          onClick={() =>
-                            painStep === 0
-                              ? setPainStep(null)
-                              : setPainStep(painStep - 1)
-                          }
-                        >
-                          Vissza
-                        </button>
-                        <button
-                          className={styles.secondary}
-                          type="button"
-                          onClick={() =>
-                            setPainStep(painStep === 2 ? 3 : painStep + 1)
-                          }
-                        >
-                          Kihagyom
-                        </button>
-                      </div>
-                    ) : (
-                      <div className={styles.dataCard}>
-                        <h4>Segítségkérő mondat</h4>
-                        <p>
-                          Fájdalmat érzek
-                          {painAnswers[0] !== undefined
-                            ? ` ${
-                                [
-                                  "a lábamban vagy a lábfejemben",
-                                  "a karomban vagy a vállamban",
-                                  "máshol",
-                                ][painAnswers[0] ?? 2]
-                              }`
-                            : ""}
-                          {painPlaceDetail.trim()
-                            ? ` (${painPlaceDetail.trim()})`
-                            : ""}
-                          {painAnswers[1] !== undefined
-                            ? ` ${[
-                                "Most kezdődött",
-                                "Ma már korábban is éreztem",
-                                "Több napja visszatér",
-                              ][painAnswers[1] ?? 0].toLowerCase()}`
-                            : ""}
-                          {painAnswers[2] !== undefined
-                            ? ` ${
-                                [
-                                  "egy bizonyos mozdulatnál",
-                                  "mozgás közben többféle helyzetben",
-                                  "pihenés közben is, vagy nem tudom pontosan mikor",
-                                ][painAnswers[2] ?? 0]
-                              }`
-                            : ""}
-                          . Szeretnék segítséget kérni.
-                        </p>
-                        <label
-                          className={styles.label}
-                          htmlFor="pain-place-detail"
-                        >
-                          Szeretnéd pontosítani, hol érzed? (nem kötelező)
-                        </label>
-                        <input
-                          id="pain-place-detail"
-                          maxLength={160}
-                          value={painPlaceDetail}
-                          onChange={(event) =>
-                            setPainPlaceDetail(event.target.value)
-                          }
-                        />
-                        <p className={styles.muted}>
-                          Ezt a mondatot itt nem mentjük el, és nem küldjük el
-                          senkinek. Te döntöd el, kinek mondod el.
-                        </p>
-                        <button
-                          className={styles.secondary}
-                          type="button"
-                          onClick={startPainSupport}
-                        >
-                          Újrakezdem
-                        </button>
-                        <button
-                          className={styles.secondary}
-                          type="button"
-                          onClick={() => setPainStep(null)}
-                        >
-                          Bezárom
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className={styles.formGroup}>
-                    <h3>Beszéljünk egy konkrét helyzetről</h3>
-                    <p className={styles.muted}>
-                      A Habi vezeti ezt a rövid beszélgetést. A válaszaidból nem
-                      készít diagnózist; a beszélgetés végén te döntöd el, mit
-                      próbálsz ki.
-                    </p>
-                    {!guidedSituationId || guidedPaused ? (
-                      <div className={styles.knowledgeList}>
-                        {guidedSituationId && guidedPaused && (
-                          <article className={styles.dataCard}>
-                            <h4>
-                              {journeyContent.situations.find(
-                                (item) => item.id === guidedSituationId,
-                              )?.opening ?? "A félretett beszélgetésed"}
-                            </h4>
-                            <p className={styles.muted}>
-                              {guidedAnswers.length} válaszod már megvan.
-                              Folytathatod innen, vagy másik helyzetet
-                              választhatsz.
-                            </p>
-                            <button
-                              className={styles.primary}
-                              type="button"
-                              onClick={() => setGuidedPaused(false)}
-                            >
-                              Folytatom
-                            </button>
-                          </article>
-                        )}
-                        {journeyContent.situations.map((situation) => (
-                          <button
-                            className={styles.secondary}
-                            key={situation.id}
-                            type="button"
-                            disabled={busy || !experienceDraftsReady}
-                            onClick={() => startGuidedSituation(situation.id)}
-                          >
-                            {situation.opening}
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      (() => {
-                        const situation = journeyContent.situations.find(
-                          (item) => item.id === guidedSituationId,
-                        );
-                        if (!situation) return null;
-                        const step = guidedAnswers.length;
-                        const choices = [
-                          situation.options,
-                          journeyContent.chat.options,
-                          [
-                            situation.action,
-                            journeyContent.chat.askChoice,
-                            journeyContent.chat.reflectChoice,
-                          ],
-                        ][step];
-                        const prompt = [
-                          situation.question,
-                          journeyContent.chat.question,
-                          journeyContent.chat.lastQuestion,
-                        ][step];
-                        return (
-                          <article className={styles.dataCard}>
-                            <h4>{situation.opening}</h4>
-                            {guidedSourceCheckinId &&
-                              (() => {
-                                const sourceCheckin =
-                                  ownPlayerData?.checkins.find(
-                                    (item) => item.id === guidedSourceCheckinId,
-                                  );
-                                const sourceMetric =
-                                  guidedSituationId === "too-fast"
-                                    ? "focus"
-                                    : "mood";
-                                const sourceAnswer =
-                                  sourceCheckin?.answerCodes?.find(
-                                    (item) => item.metric === sourceMetric,
-                                  );
-                                const sourceDefinition = sourceAnswer
-                                  ? metrics.find(
-                                      ([key]) => key === sourceAnswer.metric,
-                                    )
-                                  : null;
-                                return (
-                                  <p className={styles.muted}>
-                                    Kapcsolódó állapotjelzés
-                                    {sourceCheckin?.completedAt
-                                      ? ` · ${new Date(sourceCheckin.completedAt).toLocaleString("hu-HU")}`
-                                      : ""}
-                                    {sourceAnswer && sourceDefinition
-                                      ? ` · ${sourceDefinition[1]} — ${sourceDefinition[2][sourceAnswer.code] ?? "Nincs válasz"}`
-                                      : " · A válasz részlete jelenleg nem érhető el."}
-                                  </p>
-                                );
-                              })()}
-                            {guidedAnswers.map((answer, index) => {
-                              const priorChoices = [
-                                situation.options,
-                                journeyContent.chat.options,
-                                [
-                                  situation.action,
-                                  journeyContent.chat.askChoice,
-                                  journeyContent.chat.reflectChoice,
-                                ],
-                              ][index];
-                              const priorPrompt = [
-                                situation.question,
-                                journeyContent.chat.question,
-                                journeyContent.chat.lastQuestion,
-                              ][index];
-                              return (
-                                <p key={priorPrompt}>
-                                  <strong>{priorPrompt}</strong>{" "}
-                                  {priorChoices[answer]}
-                                </p>
-                              );
-                            })}
-                            <button
-                              className={styles.textButton}
-                              type="button"
-                              disabled={busy}
-                              onClick={() => setGuidedPaused(true)}
-                            >
-                              Később folytatom
-                            </button>
-                            {choices && prompt ? (
-                              <>
-                                <h4>{prompt}</h4>
-                                <div className={styles.knowledgeList}>
-                                  {choices.map((choice, index) => (
-                                    <button
-                                      className={styles.secondary}
-                                      key={choice}
-                                      type="button"
-                                      disabled={busy}
-                                      onClick={() =>
-                                        answerGuidedSituation(index)
-                                      }
-                                    >
-                                      {choice}
-                                    </button>
-                                  ))}
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <h4>Habi válasza</h4>
-                                <p>
-                                  {guidedAnswers[2] === 0
-                                    ? situation.action
-                                    : guidedAnswers[2] === 1
-                                      ? journeyContent.chat.goalAsk
-                                      : journeyContent.labels.endReflect}
-                                </p>
-                                <div className={styles.actions}>
-                                  <button
-                                    className={styles.primary}
-                                    type="button"
-                                    disabled={busy || !experienceDraftsReady}
-                                    onClick={() =>
-                                      void saveGuidedConversation()
-                                    }
-                                  >
-                                    Beszélgetés mentése a naplóba
-                                  </button>
-                                  <button
-                                    className={styles.secondary}
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() =>
-                                      void startGuidedSituation("")
-                                    }
-                                  >
-                                    Beszélgetés elvetése
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </article>
-                        );
-                      })()
-                    )}
-                  </div>
-                  <form
-                    id="preparation-form"
-                    className={styles.formGroup}
-                    onSubmit={saveTrustedAdultPrep}
-                  >
-                    <h3>Beszélgetés előkészítése</h3>
-                    <p className={styles.muted}>
-                      Itt leírhatod, mit szeretnél elmondani egy általad
-                      választott, megbízható felnőttnek. Előbb átnézheted és
-                      javíthatod. Habi nem küldi el senkinek.
-                    </p>
-                    {!trustedAdultPreview && (
-                      <details>
-                        <summary>Segítség az elinduláshoz</summary>
-                        <p>Kivel beszélnél?</p>
-                        {supportLoopContent.people.map(([key, label]) => (
-                          <button
-                            type="button"
-                            className={styles.secondary}
-                            key={key}
-                            disabled={!continuity.loaded}
-                            onClick={() =>
-                              setTrustedAdultPrep({
-                                ...trustedAdultPrep,
-                                person: label,
-                              })
-                            }
-                          >
-                            {label}
-                          </button>
-                        ))}
-                        <p>Mi esne jól tőle?</p>
-                        {supportLoopContent.needs.map(([key, label]) => (
-                          <button
-                            type="button"
-                            className={styles.secondary}
-                            key={key}
-                            disabled={!continuity.loaded}
-                            onClick={() =>
-                              setTrustedAdultPrep({
-                                ...trustedAdultPrep,
-                                ask: supportLoopContent.needSentences[
-                                  key as keyof typeof supportLoopContent.needSentences
-                                ],
-                              })
-                            }
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </details>
-                    )}
-                    {!trustedAdultPreview ? (
-                      <>
-                        {(
-                          [
-                            ["person", "Kivel szeretnél beszélni?"],
-                            ["topic", "Mit szeretnél elmondani?"],
-                            ["ask", "Milyen segítség esne jól?"],
-                          ] as const
-                        ).map(([key, label]) => (
-                          <div key={key}>
-                            <label
-                              className={styles.label}
-                              htmlFor={`trusted-adult-${key}`}
-                            >
-                              {label}
-                            </label>
-                            <textarea
-                              id={`trusted-adult-${key}`}
-                              disabled={!continuity.loaded}
-                              rows={2}
-                              maxLength={1000}
-                              value={trustedAdultPrep[key]}
-                              onChange={(event) =>
-                                setTrustedAdultPrep((current) => ({
-                                  ...current,
-                                  [key]: event.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                        ))}
-                        <button
-                          className={styles.primary}
-                          type="submit"
-                          disabled={
-                            busy ||
-                            !Object.values(trustedAdultPrep).some((value) =>
-                              value.trim(),
-                            )
-                          }
-                        >
-                          Előnézet és átnézés
-                        </button>
-                      </>
-                    ) : (
-                      <section
-                        className={styles.dataCard}
-                        aria-live="polite"
-                        aria-label="Üzenet előnézete"
-                      >
-                        <h4>Így készítetted elő</h4>
-                        <pre className={styles.preformatted}>
-                          {createTrustedAdultMessage(trustedAdultPrep)}
-                        </pre>
-                        <p className={styles.muted}>
-                          Ez csak előnézet. A Habi nem küldi el. Letöltheted,
-                          vagy elmentheted a saját naplódba.
-                        </p>
-                        <div className={styles.actions}>
-                          <button
-                            className={styles.primary}
-                            type="button"
-                            disabled={busy}
-                            onClick={() => void saveTrustedAdultPrepToDiary()}
-                          >
-                            Mentés a saját naplómba
-                          </button>
-                          <button
-                            className={styles.secondary}
-                            type="button"
-                            onClick={downloadTrustedAdultPrep}
-                          >
-                            Letöltöm a szöveget
-                          </button>
-                          <button
-                            className={styles.secondary}
-                            type="button"
-                            onClick={() => setTrustedAdultPreview(false)}
-                          >
-                            Vissza a szerkesztéshez
-                          </button>
-                        </div>
-                      </section>
-                    )}
-                  </form>
-                  <form className={styles.formGroup} onSubmit={saveOwnGoal}>
-                    <label htmlFor="goal-when">
-                      Mikor férne bele? (nem kötelező)
-                    </label>
-                    <input
-                      id="goal-when"
-                      disabled={!continuity.loaded}
-                      value={goalWhen}
-                      maxLength={200}
-                      onChange={(e) => setGoalWhen(e.target.value)}
-                    />
-                    <label className={styles.label} htmlFor="own-goal">
-                      Saját cél
-                    </label>
-                    <textarea
-                      id="own-goal"
-                      disabled={!continuity.loaded}
-                      rows={2}
-                      maxLength={500}
-                      value={playerGoalDraft}
-                      onChange={(event) =>
-                        setPlayerGoalDraft(event.target.value)
-                      }
-                      placeholder="Például: edzés előtt elvégzem a bemelegítést."
-                    />
-                    <label className={styles.label} htmlFor="goal-review-days">
-                      Mikor nézzünk rá újra?
-                    </label>
-                    <select
-                      id="goal-review-days"
-                      value={goalReviewDays}
-                      onChange={(event) =>
-                        setGoalReviewDays(event.target.value)
-                      }
-                    >
-                      <option value="7">Egy hét múlva</option>
-                      <option value="14">Két hét múlva</option>
-                      <option value="28">Négy hét múlva</option>
-                      <option value="none">Ne emlékeztess</option>
-                    </select>
-                    <button
-                      className={styles.primary}
-                      type="submit"
-                      disabled={busy || !playerGoalDraft.trim()}
-                    >
-                      Cél mentése
-                    </button>
-                  </form>
-                  <div className={styles.taskList}>
-                    {ownPlayerData?.records
-                      .filter((record) =>
-                        ownGoals.some((goal) => goal.id === record.id),
-                      )
-                      .map((record) => {
-                        const goal = ownGoalText(record);
-                        const status = ownGoalStatus(record);
-                        const reviewDate = latestGoalReviewDate(
-                          ownPlayerData?.records ?? [],
-                          record.id,
-                        );
-                        const superseded = status === "superseded";
-                        const closed =
-                          status === "closed" ||
-                          status === "habit" ||
-                          superseded;
-                        const activeGoal = ownGoals.find(
-                          (candidate) => ownGoalStatus(candidate) === "active",
-                        );
-                        return (
-                          <article className={styles.taskCard} key={record.id}>
-                            <p className={styles.eyebrow}>
-                              {status === "paused"
-                                ? "FÉLRETETT SAJÁT CÉL"
-                                : superseded
-                                  ? "LECSERÉLT SAJÁT CÉL"
-                                  : status === "habit"
-                                    ? "SZOKÁSKÉNT FOLYTATOTT CÉL"
-                                    : closed
-                                      ? "LEZÁRT SAJÁT CÉL"
-                                      : "AKTÍV SAJÁT CÉL"}
-                            </p>
-                            <h3>{goal}</h3>
-                            {reviewDate && status === "active" ? (
-                              <p className={styles.muted}>
-                                Újranézés: {reviewDate}
-                                {isGoalReviewDue(reviewDate, localToday)
-                                  ? " · esedékes"
-                                  : ""}
-                              </p>
-                            ) : null}
-                            <button
-                              className={styles.secondary}
-                              type="button"
-                              onClick={() => {
-                                setExportingGoalId(
-                                  exportingGoalId === record.id
-                                    ? ""
-                                    : record.id,
-                                );
-                                setIncludeGoalHistory(false);
-                              }}
-                            >
-                              Összefoglaló letöltése
-                            </button>
-                            {exportingGoalId === record.id && (
-                              <div className={styles.formGroup}>
-                                <label className={styles.label}>
-                                  <input
-                                    type="checkbox"
-                                    checked={includeGoalHistory}
-                                    onChange={(event) =>
-                                      setIncludeGoalHistory(
-                                        event.target.checked,
-                                      )
-                                    }
-                                  />
-                                  A cél módosításait, állapotait és
-                                  visszatekintéseit is hozzáadom
-                                </label>
-                                <p className={styles.muted}>
-                                  A fájl csak a saját eszközödre töltődik le.
-                                </p>
-                                <div className={styles.actions}>
-                                  <button
-                                    className={styles.primary}
-                                    type="button"
-                                    onClick={() => downloadOwnGoal(record)}
-                                  >
-                                    Letöltés
-                                  </button>
-                                  <button
-                                    className={styles.textButton}
-                                    type="button"
-                                    onClick={() => setExportingGoalId("")}
-                                  >
-                                    Mégse
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                            <time dateTime={record.occurredAt}>
-                              Rögzítve:{" "}
-                              {record.occurredAt
-                                ? new Date(record.occurredAt).toLocaleString(
-                                    "hu-HU",
-                                    { dateStyle: "medium", timeStyle: "short" },
-                                  )
-                                : "—"}
-                            </time>
-                            {superseded && activeGoal ? (
-                              <button
-                                className={styles.secondary}
-                                type="button"
-                                disabled={busy}
-                                onClick={() =>
-                                  void replaceOwnGoal(
-                                    activeGoal.id,
-                                    ownGoalText(record),
-                                  )
-                                }
-                              >
-                                Ezt a korábbi célt állítom vissza
-                              </button>
-                            ) : null}
-                            {!closed && (
-                              <>
-                                <div className={styles.actions}>
-                                  <button
-                                    className={styles.secondary}
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() => {
-                                      setReplacingGoalId(
-                                        replacingGoalId === record.id
-                                          ? ""
-                                          : record.id,
-                                      );
-                                      setReplacementGoalText("");
-                                    }}
-                                  >
-                                    Cél cseréje
-                                  </button>
-                                </div>
-                                {replacingGoalId === record.id && (
-                                  <form
-                                    onSubmit={saveOwnGoalReplacement}
-                                    className={styles.formGroup}
-                                  >
-                                    <label
-                                      className={styles.label}
-                                      htmlFor={`replace-goal-${record.id}`}
-                                    >
-                                      Mi legyen az új cél?
-                                    </label>
-                                    <textarea
-                                      id={`replace-goal-${record.id}`}
-                                      rows={2}
-                                      maxLength={500}
-                                      value={replacementGoalText}
-                                      onChange={(event) =>
-                                        setReplacementGoalText(
-                                          event.target.value,
-                                        )
-                                      }
-                                      required
-                                    />
-                                    <div className={styles.actions}>
-                                      <button
-                                        className={styles.primary}
-                                        type="submit"
-                                        disabled={
-                                          busy || !replacementGoalText.trim()
-                                        }
-                                      >
-                                        Célcsere mentése
-                                      </button>
-                                      <button
-                                        className={styles.textButton}
-                                        type="button"
-                                        onClick={() => setReplacingGoalId("")}
-                                      >
-                                        Mégse
-                                      </button>
-                                    </div>
-                                  </form>
-                                )}
-                                <div className={styles.actions}>
-                                  <button
-                                    className={styles.secondary}
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() => {
-                                      setEditingGoalId(record.id);
-                                      setEditingGoalText(goal);
-                                    }}
-                                  >
-                                    Cél módosítása
-                                  </button>
-                                  <button
-                                    className={styles.secondary}
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() =>
-                                      void setOwnGoalState(
-                                        record.id,
-                                        status === "paused"
-                                          ? "active"
-                                          : "paused",
-                                      )
-                                    }
-                                  >
-                                    {status === "paused"
-                                      ? "Újra előveszem"
-                                      : "Most félreteszem"}
-                                  </button>
-                                  <button
-                                    className={styles.secondary}
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() => {
-                                      setReviewingGoalId(
-                                        reviewingGoalId === record.id
-                                          ? ""
-                                          : record.id,
-                                      );
-                                      setGoalReviewNote("");
-                                    }}
-                                  >
-                                    Visszatekintek
-                                  </button>
-                                  <button
-                                    className={styles.secondary}
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() =>
-                                      void setOwnGoalState(record.id, "habit")
-                                    }
-                                  >
-                                    Szokásként folytatom
-                                  </button>
-                                  <button
-                                    className={styles.secondary}
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() =>
-                                      void setOwnGoalState(record.id, "closed")
-                                    }
-                                  >
-                                    Ezt a célt lezárom
-                                  </button>
-                                </div>
-                                {editingGoalId === record.id && (
-                                  <form
-                                    onSubmit={saveOwnGoalEdit}
-                                    className={styles.formGroup}
-                                  >
-                                    <label
-                                      className={styles.label}
-                                      htmlFor={`edit-goal-${record.id}`}
-                                    >
-                                      A cél új szövege
-                                    </label>
-                                    <label
-                                      className={styles.label}
-                                      htmlFor={`review-cycle-${record.id}`}
-                                    >
-                                      Mikor nézzünk rá újra?
-                                    </label>
-                                    <select
-                                      id={`review-cycle-${record.id}`}
-                                      value={goalReviewDays}
-                                      onChange={(event) =>
-                                        setGoalReviewDays(event.target.value)
-                                      }
-                                    >
-                                      <option value="7">Egy hét múlva</option>
-                                      <option value="14">Két hét múlva</option>
-                                      <option value="28">Négy hét múlva</option>
-                                      <option value="none">
-                                        Ne emlékeztess
-                                      </option>
-                                    </select>
-                                    <textarea
-                                      id={`edit-goal-${record.id}`}
-                                      rows={2}
-                                      maxLength={500}
-                                      value={editingGoalText}
-                                      onChange={(event) =>
-                                        setEditingGoalText(event.target.value)
-                                      }
-                                    />
-                                    <button
-                                      className={styles.primary}
-                                      type="submit"
-                                      disabled={busy || !editingGoalText.trim()}
-                                    >
-                                      Módosítás mentése
-                                    </button>
-                                  </form>
-                                )}
-                                {reviewingGoalId === record.id && (
-                                  <div className={styles.formGroup}>
-                                    <label
-                                      className={styles.label}
-                                      htmlFor={`review-goal-${record.id}`}
-                                    >
-                                      Mi segített, mi volt nehéz, vagy min
-                                      változtatnál?
-                                    </label>
-                                    <textarea
-                                      id={`review-goal-${record.id}`}
-                                      rows={3}
-                                      maxLength={1000}
-                                      value={goalReviewNote}
-                                      onChange={(event) =>
-                                        setGoalReviewNote(event.target.value)
-                                      }
-                                    />
-                                    <button
-                                      className={styles.primary}
-                                      type="button"
-                                      disabled={busy || !goalReviewNote.trim()}
-                                      onClick={() =>
-                                        void saveOwnGoalReview(record.id)
-                                      }
-                                    >
-                                      Visszatekintés mentése
-                                    </button>
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </article>
-                        );
-                      })}
-                  </div>
-                  <form className={styles.formGroup} onSubmit={saveRoutine}>
-                    <h3>Saját rutin</h3>
-                    <p className={styles.muted}>
-                      Rögzíthetsz egy egyszerű, általad választott rutint, és
-                      naponta feljegyezheted, ha kipróbáltad.
-                    </p>
-                    <label htmlFor="routine-when">
-                      Mikor szeretnéd kipróbálni? (nem kötelező)
-                    </label>
-                    <input
-                      id="routine-when"
-                      disabled={!continuity.loaded}
-                      value={routineWhen}
-                      maxLength={200}
-                      onChange={(e) => setRoutineWhen(e.target.value)}
-                    />
-                    <label className={styles.label} htmlFor="own-routine">
-                      Mit szeretnél rendszeresen kipróbálni?
-                    </label>
-                    <input
-                      id="own-routine"
-                      disabled={!continuity.loaded}
-                      maxLength={300}
-                      value={routineDraft}
-                      onChange={(event) => setRoutineDraft(event.target.value)}
-                    />
-                    <button
-                      className={styles.primary}
-                      type="submit"
-                      disabled={busy || !routineDraft.trim()}
-                    >
-                      Rutin mentése
-                    </button>
-                    <RoutineHistory
-                      records={ownPlayerData?.records ?? []}
-                      save={savePlayerDiary}
-                      routines={[
-                        ...(ownPlayerData?.records ?? [])
-                          .filter((record) =>
-                            record.text?.startsWith("Saját rutin:"),
-                          )
-                          .map((record) => ({
-                            id: record.id,
-                            text:
-                              record.text
-                                ?.slice("Saját rutin:".length)
-                                .trim() ?? "",
-                          })),
-                        ...ownGoals
-                          .filter((goal) => ownGoalStatus(goal) === "habit")
-                          .map((goal) => ({
-                            id: goal.id,
-                            text: ownGoalText(goal),
-                          })),
-                      ]}
-                    />
-                  </form>
-                  <form className={styles.formGroup} onSubmit={saveReflection}>
-                    <h3>Napi és heti visszatekintés</h3>
-                    <p className={styles.muted}>
-                      Írd le, amit szeretnél megőrizni a napodból vagy a
-                      hetedből. Bármelyik kérdést kihagyhatod; a kész
-                      visszatekintés a naplódban jelenik meg.
-                    </p>
-                    {draftNotice ? (
-                      <p
-                        role="status"
-                        aria-live="polite"
-                        className={styles.muted}
-                      >
-                        {draftNotice}
-                      </p>
-                    ) : null}
-                    <label className={styles.label} htmlFor="reflection-type">
-                      Melyikre tekintenél vissza?
-                    </label>
-                    <select
-                      id="reflection-type"
-                      value={reflectionType}
-                      disabled={!experienceDraftsReady}
-                      onChange={(event) =>
-                        setReflectionType(
-                          event.target.value as "daily" | "weekly",
-                        )
-                      }
-                    >
-                      <option value="daily">A napom</option>
-                      <option value="weekly">A hetem</option>
-                    </select>
-                    {(reflectionType === "daily"
-                      ? ([
-                          ["moment", "Mi maradt meg a mai napból?"],
-                          ["helped", "Mi segített ma?"],
-                        ] as const)
-                      : ([
-                          ["helped", "Mi segített ezen a héten?"],
-                          ["hard", "Mi volt sok vagy nehéz?"],
-                          ["next", "Mit próbálnál ki jövő héten?"],
-                        ] as const)
-                    ).map(([key, label]) => (
-                      <div key={`${reflectionType}-${key}`}>
-                        <label
-                          className={styles.label}
-                          htmlFor={`reflection-${reflectionType}-${key}`}
-                        >
-                          {label}
-                        </label>
-                        <textarea
-                          id={`reflection-${reflectionType}-${key}`}
-                          rows={2}
-                          maxLength={1000}
-                          disabled={!experienceDraftsReady}
-                          value={reflectionAnswers[reflectionType][key]}
-                          onChange={(event) =>
-                            setReflectionAnswers((current) => ({
-                              ...current,
-                              [reflectionType]: {
-                                ...current[reflectionType],
-                                [key]: event.target.value,
-                              },
-                            }))
-                          }
-                        />
-                      </div>
-                    ))}
-                    <div className={styles.actions}>
-                      <button
-                        className={styles.secondary}
-                        type="button"
-                        disabled={!experienceDraftsReady}
-                        onClick={() =>
-                          void saveExperienceDraft(
-                            reflectionType === "daily"
-                              ? "daily-reflection"
-                              : "weekly-reflection",
-                            reflectionType === "daily"
-                              ? reflectionAnswers.daily
-                              : reflectionAnswers.weekly,
-                          )
-                        }
-                      >
-                        Piszkozat mentése
-                      </button>
-                      <button
-                        className={styles.primary}
-                        type="submit"
-                        disabled={
-                          busy ||
-                          !experienceDraftsReady ||
-                          !Object.values(
-                            reflectionAnswers[reflectionType],
-                          ).some((value) => value.trim())
-                        }
-                      >
-                        Visszatekintés mentése a naplóba
-                      </button>
-                    </div>
-                  </form>
-                  <section
-                    className={styles.formGroup}
-                    aria-labelledby="reflection-history-heading"
-                  >
-                    <h3 id="reflection-history-heading">
-                      Korábbi napi és heti visszatekintéseid
-                    </h3>
-                    {(ownPlayerData?.records ?? [])
-                      .filter(
-                        (record) =>
-                          record.text?.startsWith("Napi visszatekintés ·") ||
-                          record.text?.startsWith("Heti visszatekintés ·"),
-                      )
-                      .map((record) => (
-                        <article className={styles.dataCard} key={record.id}>
-                          <p>{record.text}</p>
-                          <time dateTime={record.occurredAt}>
-                            {record.occurredAt
-                              ? new Date(record.occurredAt).toLocaleString(
-                                  "hu-HU",
-                                  { dateStyle: "medium", timeStyle: "short" },
-                                )
-                              : ""}
-                          </time>
-                        </article>
-                      ))}
-                    {recordCursor ? (
-                      <button
-                        className={styles.secondary}
-                        type="button"
-                        disabled={loadingOlderRecords}
-                        onClick={() => void loadOlderRecords()}
-                      >
-                        {loadingOlderRecords
-                          ? "Régebbi bejegyzések betöltése…"
-                          : "Régebbi naplóbejegyzések betöltése"}
-                      </button>
-                    ) : (
-                      <p className={styles.muted}>
-                        {ownPlayerData?.records.length
-                          ? "A betöltött naplóbejegyzések végére értél."
-                          : "Még nincs naplóbejegyzés."}
+                      <p className={styles.emptyState}>
+                        Még nincs a szerepkörödnek megosztott állapotjelzés.
                       </p>
                     )}
                   </section>
-                  <form
-                    className={styles.formGroup}
-                    onSubmit={saveMonthlyReflection}
-                  >
-                    <h3>Havi visszatekintés</h3>
-                    <p className={styles.muted}>
-                      Gondolj az elmúlt négy hétre. A 16 rövid kérdést egyenként
-                      nézheted végig; bármelyiket kihagyhatod.
-                    </p>
-                    <p className={styles.eyebrow}>
-                      {monthlyReflectionStep <
-                      monthlyReflectionContent.questions.length
-                        ? `HAVI VISSZATEKINTÉS · ${monthlyReflectionStep + 1}/${monthlyReflectionContent.questions.length}`
-                        : "HAVI VISSZATEKINTÉS · ÁTTEKINTÉS"}
-                    </p>
-                    {monthlyReflectionStep <
-                    monthlyReflectionContent.questions.length ? (
-                      <>
-                        <p className={styles.muted}>
-                          {
-                            monthlyReflectionContent.questions[
-                              monthlyReflectionStep
-                            ]?.domain
-                          }
+                )}
+              {(tab === "journal" ||
+                (tab === "conversations" &&
+                  (active.activeRole === "parent" ||
+                    active.activeRole === "coach"))) &&
+                selectedPlayer && (
+                  <>
+                    {tab === "journal" && (
+                      <section className={styles.panel}>
+                        <p className={styles.eyebrow}>
+                          {active.activeRole === "coach"
+                            ? "EDZŐI MEGFIGYELÉS"
+                            : active.activeRole === "parent"
+                              ? "SZÜLŐI NAPLÓ"
+                              : "JÁTÉKOSNAPLÓ"}
                         </p>
-                        <h4>
-                          {
-                            monthlyReflectionContent.questions[
-                              monthlyReflectionStep
-                            ]?.text
-                          }
-                        </h4>
-                        <div className={styles.knowledgeList}>
-                          {monthlyReflectionContent.choices.map(
-                            (choice, index) => (
-                              <button
-                                className={styles.secondary}
-                                type="button"
-                                key={choice}
-                                disabled={!experienceDraftsReady}
-                                onClick={() =>
-                                  answerMonthlyReflection(index + 1)
-                                }
-                              >
-                                {choice}
-                              </button>
-                            ),
-                          )}
-                          <button
-                            className={styles.secondary}
-                            type="button"
-                            disabled={!experienceDraftsReady}
-                            onClick={() =>
-                              answerMonthlyReflection("not-applicable")
-                            }
-                          >
-                            {monthlyReflectionContent.notApplicable}
-                          </button>
-                          <button
-                            className={styles.secondary}
-                            type="button"
-                            disabled={!experienceDraftsReady}
-                            onClick={() => answerMonthlyReflection("skip")}
-                          >
-                            {monthlyReflectionContent.skipped}
-                          </button>
-                        </div>
-                        {monthlyReflectionStep > 0 && (
-                          <button
-                            className={styles.secondary}
-                            type="button"
-                            disabled={!experienceDraftsReady}
-                            onClick={() =>
-                              setMonthlyReflectionStep((step) => step - 1)
-                            }
-                          >
-                            Vissza az előző kérdéshez
-                          </button>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <h4>Válaszaid áttekintése</h4>
-                        <div className={styles.knowledgeList}>
-                          {monthlyReflectionContent.questions.map(
-                            (item, index) => {
-                              const answer = monthlyAnswers[index];
-                              const label =
-                                typeof answer === "number"
-                                  ? monthlyReflectionContent.choices[answer - 1]
-                                  : answer === "not-applicable"
-                                    ? monthlyReflectionContent.notApplicable
-                                    : monthlyReflectionContent.skipped;
-                              return (
-                                <article
-                                  className={styles.dataCard}
-                                  key={`${item.domain}-${item.text}`}
-                                >
-                                  <h4>{item.text}</h4>
-                                  <p>{label}</p>
-                                </article>
-                              );
-                            },
-                          )}
-                        </div>
-                        <label
-                          className={styles.label}
-                          htmlFor="monthly-next-step"
-                        >
-                          Mire szeretnél figyelni a következő hónapban? (nem
-                          kötelező)
-                        </label>
-                        <textarea
-                          id="monthly-next-step"
-                          rows={2}
-                          maxLength={500}
-                          disabled={!experienceDraftsReady}
-                          value={monthlyNextStep}
-                          onChange={(event) =>
-                            setMonthlyNextStep(event.target.value)
-                          }
-                        />
-                        <label className={styles.label} htmlFor="monthly-note">
-                          Saját megjegyzés (nem kötelező)
-                        </label>
-                        <textarea
-                          id="monthly-note"
-                          rows={2}
-                          maxLength={1000}
-                          disabled={!experienceDraftsReady}
-                          value={monthlyNote}
-                          onChange={(event) =>
-                            setMonthlyNote(event.target.value)
-                          }
-                        />
-                        <div className={styles.actions}>
-                          <button
-                            className={styles.secondary}
-                            type="button"
-                            disabled={!experienceDraftsReady}
-                            onClick={() =>
-                              setMonthlyReflectionStep(
-                                monthlyReflectionContent.questions.length - 1,
-                              )
-                            }
-                          >
-                            Vissza az utolsó kérdéshez
-                          </button>
-                          <button
-                            className={styles.secondary}
-                            type="button"
-                            disabled={!experienceDraftsReady}
-                            onClick={() =>
-                              void saveExperienceDraft("monthly-reflection", {
-                                step: monthlyReflectionStep,
-                                answers: monthlyAnswers,
-                                nextFocus: monthlyNextStep,
-                                note: monthlyNote,
-                              })
-                            }
-                          >
-                            Piszkozat mentése
-                          </button>
-                          <button
-                            className={styles.primary}
-                            type="submit"
-                            disabled={busy}
-                          >
-                            Havi visszatekintés mentése
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </form>
-                  <div className={styles.formGroup}>
-                    <h3>Korábbi visszatekintések</h3>
-                    {ownPlayerData?.records
-                      .filter((record) =>
-                        record.text?.startsWith("Havi visszatekintés"),
-                      )
-                      .map((record) => (
-                        <article className={styles.dataCard} key={record.id}>
-                          <p>{record.text}</p>
-                          <time dateTime={record.occurredAt}>
-                            {record.occurredAt
-                              ? new Date(record.occurredAt).toLocaleString(
-                                  "hu-HU",
-                                  { dateStyle: "medium", timeStyle: "short" },
-                                )
-                              : ""}
-                          </time>
-                        </article>
-                      ))}
-                  </div>
-                  <div className={styles.formGroup}>
-                    <h3>Rövid gyakorlatok</h3>
-                    <p className={styles.muted}>
-                      Ezek általános ötletek; bármelyiket kihagyhatod, és
-                      bármikor kérhetsz segítséget egy megbízható felnőttől.
-                    </p>
-                    <fieldset>
-                      <legend>A hozzám illő példák</legend>
-                      {[
-                        ["sport", "Sportolás közben"],
-                        ["everyday", "A hétköznapokban"],
-                        ["neutral", "Egyszerű példa"],
-                      ].map(([key, label]) => (
-                        <button
-                          className={styles.secondary}
-                          key={key}
-                          type="button"
-                          aria-pressed={examplePreference === key}
-                          onClick={() => setExamplePreference(key)}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </fieldset>
-                    <label htmlFor="practice-goal">
-                      Kapcsolódó saját cél (nem kötelező)
-                    </label>
-                    <select
-                      id="practice-goal"
-                      disabled={!continuity.loaded}
-                      value={practiceGoalId}
-                      onChange={(e) => setPracticeGoalId(e.target.value)}
-                    >
-                      <option value="">Most nem kapcsolom célhoz</option>
-                      {ownGoals.map((goal) => (
-                        <option key={goal.id} value={goal.id}>
-                          {ownGoalText(goal)}
-                        </option>
-                      ))}
-                    </select>
-                    <label className={styles.label} htmlFor="practice-feedback">
-                      Saját megjegyzés a gyakorlathoz (nem kötelező)
-                    </label>
-                    <textarea
-                      id="practice-feedback"
-                      disabled={!continuity.loaded}
-                      rows={2}
-                      maxLength={1000}
-                      value={practiceFeedback}
-                      onChange={(event) =>
-                        setPracticeFeedback(event.target.value)
-                      }
-                    />
-                    <div className={styles.knowledgeList}>
-                      {(
-                        practices.items as Array<{
-                          id: string;
-                          title: string;
-                          what: string;
-                          how: string;
-                        }>
-                      ).map((practice) => (
-                        <details
-                          id={`practice-${practice.id}`}
-                          className={styles.dataCard}
-                          key={practice.id}
-                        >
-                          <summary>
-                            <strong>{practice.title}</strong>
-                            <span className={styles.practiceDescription}>
-                              {practice.what}
-                            </span>
-                          </summary>
-                          <p>{practice.how}</p>
-                          {Object.values(journeyContent.topics)
-                            .filter((topic) => topic.practice === practice.id)
-                            .map((topic) => (
-                              <details key={topic.title}>
-                                <summary>{topic.title}</summary>
-                                <p>{topic.text}</p>
-                                <p>
-                                  {
-                                    topic[
-                                      examplePreference as
-                                        | "sport"
-                                        | "everyday"
-                                        | "neutral"
-                                    ]
-                                  }
-                                </p>
-                              </details>
-                            ))}
-                          <div className={styles.actions}>
-                            {(
-                              [
-                                "Segített",
-                                "Részben segített",
-                                "Nem segített",
-                              ] as const
-                            ).map((rating) => (
-                              <button
-                                className={styles.secondary}
-                                type="button"
-                                key={rating}
-                                disabled={busy}
-                                onClick={() =>
-                                  void savePracticeFeedback(practice, rating)
-                                }
-                              >
-                                {rating}
-                              </button>
-                            ))}
-                          </div>
-                        </details>
-                      ))}
-                    </div>
-                  </div>
-                  <div className={styles.formGroup}>
-                    <h3>Korábbi gyakorlataid</h3>
-                    {ownPlayerData?.records
-                      .filter(
-                        (record) =>
-                          record.kind === "diary" &&
-                          record.text?.startsWith("Gyakorlat:"),
-                      )
-                      .map((record) => (
-                        <article className={styles.dataCard} key={record.id}>
-                          <p>{record.text}</p>
-                          <time dateTime={record.occurredAt}>
-                            {record.occurredAt
-                              ? new Date(record.occurredAt).toLocaleString(
-                                  "hu-HU",
-                                  { dateStyle: "medium", timeStyle: "short" },
-                                )
-                              : ""}
-                          </time>
-                        </article>
-                      ))}
-                  </div>
-                </section>
-              )}
-            {tab === "tasks-feedback" && selectedPlayer && (
-              <section className={styles.panel}>
-                {active.activeRole === "player" && (
-                  <div className={styles.formGroup}>
-                    <p className={styles.eyebrow}>A MAI ÁLLAPOTJELZÉSEDHEZ</p>
-                    <p className={styles.eyebrow}>
-                      A LEGUTÓBBI ÁLLAPOTJELZÉSEDHEZ
-                    </p>
-                    <h2>Válassz egy saját következő lépést</h2>
-                    {!latestPlayerCheckin ? (
-                      <p className={styles.emptyState}>
-                        Először töltsd ki a napi állapotjelzésedet. Utána itt
-                        választhatsz egy neked megfelelő következő lépést.
-                      </p>
-                    ) : !latestPlayerTask ? (
-                      <>
-                        <p className={styles.muted}>
-                          A válaszaid alapján Habi nem dönt helyetted. Válaszd
-                          azt, ami ma neked hasznosnak tűnik.
-                        </p>
-                        <div className={styles.knowledgeList}>
-                          {[
-                            "Átgondolom, melyik válaszom a legfontosabb ma.",
-                            "Elmondom egy megbízható felnőttnek, hogyan vagyok.",
-                            "Kiválasztok egy rövid gyakorlatot.",
-                          ].map((action) => (
-                            <button
-                              className={styles.secondary}
-                              type="button"
-                              key={action}
-                              disabled={busy}
-                              onClick={() =>
-                                void chooseDailyPlayerTask(
-                                  latestPlayerCheckin.id,
-                                  action,
-                                )
+                        <h2>
+                          {active.activeRole === "player"
+                            ? "Rögzíts egy saját bejegyzést"
+                            : "Rögzíts egy észrevételt"}
+                        </h2>
+                        {active.activeRole !== "player" && (
+                          <>
+                            <label htmlFor="observation-source">
+                              Az információ forrása
+                            </label>
+                            <select
+                              id="observation-source"
+                              value={observationSource}
+                              onChange={(e) =>
+                                setObservationSource(e.target.value)
                               }
                             >
-                              {action}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    ) : (
-                      <article className={styles.taskCard}>
-                        <h3>
-                          {latestPlayerTask.text
-                            ?.split(" · ")
-                            .slice(2)
-                            .join(" · ")}
-                        </h3>
-                        <p className={styles.muted}>
-                          {latestPlayerTaskDone
-                            ? "Ezt a lépést elvégezted."
-                            : "Akkor jelöld késznek, amikor neked megfelel."}
-                        </p>
-                        {!latestPlayerTaskDone && (
-                          <button
-                            className={styles.primary}
-                            type="button"
-                            disabled={busy}
-                            onClick={() =>
-                              void completeDailyPlayerTask(
-                                latestPlayerCheckin.id,
-                              )
+                              <option value="observation">
+                                Saját megfigyelésem
+                              </option>
+                              <option value="proxy">A játékos elmondása</option>
+                            </select>
+                          </>
+                        )}
+                        <label htmlFor="observation-at">
+                          Mikor történt? (üresen hagyva: most)
+                        </label>
+                        <input
+                          id="observation-at"
+                          type="datetime-local"
+                          value={observationAt}
+                          onChange={(e) => setObservationAt(e.target.value)}
+                        />
+                        <label htmlFor="observation-setting">Helyzet</label>
+                        <select
+                          id="observation-setting"
+                          value={observationSetting}
+                          onChange={(e) =>
+                            setObservationSetting(e.target.value)
+                          }
+                        >
+                          <option value="training">Edzés</option>
+                          <option value="competition">
+                            Verseny vagy mérkőzés
+                          </option>
+                          <option value="home">Otthon</option>
+                          <option value="other">Más helyzet</option>
+                        </select>
+                        <label className={styles.label} htmlFor="observation">
+                          {active.activeRole === "player"
+                            ? "Mit szeretnél megőrizni a naplódban?"
+                            : "Milyen konkrét helyzetet szeretnél megosztani?"}
+                        </label>
+                        <textarea
+                          id="observation"
+                          value={observation}
+                          onChange={(event) => {
+                            setObservation(event.target.value);
+                            setObservationFeedback(null);
+                          }}
+                          rows={4}
+                          maxLength={2000}
+                        />
+                        <button
+                          type="button"
+                          className={styles.primary}
+                          disabled={busy || !observation.trim()}
+                          onClick={() => void submitObservation()}
+                        >
+                          Megfigyelés mentése
+                        </button>
+                        {observationFeedback && (
+                          <p
+                            ref={observationFeedbackRef}
+                            className={styles.actionFeedback}
+                            data-state={observationFeedback.kind}
+                            role={
+                              observationFeedback.kind === "error"
+                                ? "alert"
+                                : "status"
                             }
                           >
-                            Elvégeztem
+                            {observationFeedback.message}
+                          </p>
+                        )}
+                      </section>
+                    )}
+                    {(active.activeRole === "parent" ||
+                      active.activeRole === "coach") &&
+                      tab === "conversations" && (
+                        <section className={styles.panel}>
+                          <p className={styles.eyebrow}>
+                            {active.activeRole === "coach"
+                              ? "EDZŐI SEGÍTSÉGKÉRÉS"
+                              : "KÉRDÉS A HABINAK"}
+                          </p>
+                          <h2>
+                            {active.activeRole === "coach"
+                              ? "Mit szeretnél jobban megérteni a forrásokból?"
+                              : "Mit szeretnél jobban megérteni?"}
+                          </h2>
+                          <label className={styles.label} htmlFor="question">
+                            Kérdés
+                          </label>
+                          <textarea
+                            id="question"
+                            value={question}
+                            onChange={(event) => {
+                              setQuestion(event.target.value);
+                              setQuestionFeedback(null);
+                            }}
+                            rows={3}
+                            maxLength={1000}
+                          />
+                          <button
+                            type="button"
+                            className={styles.secondary}
+                            disabled={
+                              busy ||
+                              !question.trim() ||
+                              (active.activeRole !== "coach" && !questionSource)
+                            }
+                            onClick={() => void askQuestion()}
+                          >
+                            Kérdés elküldése a helyi AI-nak
                           </button>
+                          {active.activeRole === "coach" ? (
+                            <p className={styles.actionInfo} role="note">
+                              A Habi a játékos legutóbbi, számodra elérhető
+                              visszajelzéseit, bejegyzéseit és ellenőrzött
+                              felmérési adatait veszi figyelembe. A választ a
+                              forrásokkal és a bizonytalanságokkal együtt
+                              mutatja.
+                            </p>
+                          ) : !questionSource ? (
+                            <p className={styles.actionInfo} role="note">
+                              A kérdés elküldéséhez előbb a játékosnak ki kell
+                              töltenie egy napi állapotjelzést. Utána a választ
+                              a Habi ezen a helyen mutatja meg, az edzői
+                              ellenőrzés után.
+                            </p>
+                          ) : null}
+                          {questionFeedback && (
+                            <p
+                              ref={questionFeedbackRef}
+                              className={styles.actionFeedback}
+                              data-state={questionFeedback.kind}
+                              role={
+                                questionFeedback.kind === "error"
+                                  ? "alert"
+                                  : "status"
+                              }
+                            >
+                              {questionFeedback.message}
+                            </p>
+                          )}
+                          {questionJob && (
+                            <section
+                              ref={questionResultRef}
+                              className={styles.questionResult}
+                              aria-label="A kérés eredménye"
+                            >
+                              {submittedQuestion && (
+                                <p className={styles.questionPrompt}>
+                                  <strong>Kérdésed:</strong> {submittedQuestion}
+                                </p>
+                              )}
+                              <h3>
+                                {questionJob.status === "queued"
+                                  ? "A kérdés várakozik"
+                                  : questionJob.status === "processing"
+                                    ? "A Habi feldolgozza a kérdést"
+                                    : questionJob.status === "review"
+                                      ? "Edzői ellenőrzésre vár"
+                                      : questionJob.status === "ready"
+                                        ? "Elkészült a válasz"
+                                        : questionJob.status === "cancelled"
+                                          ? "A kérés megszakadt"
+                                          : "A kérés feldolgozása megállt"}
+                              </h3>
+                              {questionStatusUnavailable ? (
+                                <p role="status">
+                                  Most nem érjük el az állapotot. A kérésed
+                                  megmaradt, és újra próbáljuk ellenőrizni.
+                                </p>
+                              ) : questionJob.status === "queued" ? (
+                                <p role="status">
+                                  A helyi feldolgozó elindulására vár. Ez még
+                                  nem hiba.
+                                </p>
+                              ) : questionJob.status === "processing" ? (
+                                <p role="status">
+                                  A helyi feldolgozó dolgozik.
+                                </p>
+                              ) : questionJob.status === "review" ? (
+                                <p role="status">
+                                  A válasz elkészült. Az edző ellenőrzi a
+                                  forrásokat; jóváhagyás után itt jelenik meg.
+                                </p>
+                              ) : questionJob.status === "ready" &&
+                                questionAnswer?.answerState ===
+                                  "no_evidence" ? (
+                                <p role="status">
+                                  A Habi nem talált ellenőrizhető, forrásolt
+                                  választ. Nem vont le következtetést.
+                                </p>
+                              ) : questionJob.status === "ready" &&
+                                questionAnswer?.answer ? (
+                                <div aria-live="polite">
+                                  {questionAnswer.answer.unknowns.length >
+                                    0 && (
+                                    <p>
+                                      {questionAnswer.answer.unknowns.join(" ")}
+                                    </p>
+                                  )}
+                                  <ul>
+                                    {questionAnswer.answer.claims.map(
+                                      (claim) => (
+                                        <li key={claim.id}>{claim.text}</li>
+                                      ),
+                                    )}
+                                  </ul>
+                                  <p className={styles.muted}>
+                                    Forrásolt, edző által ellenőrzött válasz.
+                                  </p>
+                                </div>
+                              ) : questionJob.status === "ready" ? (
+                                <p role="status">
+                                  A választ nem tettük közzé. Kérd meg az edzőt,
+                                  hogy ellenőrizze a forrásokat.
+                                </p>
+                              ) : (
+                                <p role="alert">
+                                  A feladat nem készült el. Próbáld újra később,
+                                  vagy kérj segítséget az edzőtől.
+                                </p>
+                              )}
+                            </section>
+                          )}
+                          <p className={styles.muted}>
+                            A személyes válasz forrásolt, és edzői jóváhagyás
+                            után jelenik meg.
+                          </p>
+                        </section>
+                      )}
+                  </>
+                )}
+              {tab === "journal" && selectedPlayer && (
+                <section className={styles.panel}>
+                  <h2>A napló korábbi bejegyzései</h2>
+                  <AiCoachButton />
+                  {data[0]?.records
+                    .filter(
+                      (record) =>
+                        record.kind !== "checkin_answer" &&
+                        (active.activeRole !== "coach" ||
+                          record.recordedBy?.role !== "coach"),
+                    )
+                    .map((record) => (
+                      <article className={styles.dataCard} key={record.id}>
+                        <AiCoachButton
+                          context={{
+                            kind: "record",
+                            id: record.id,
+                            revision: record.revision ?? 1,
+                          }}
+                        />
+                        <p className={styles.eyebrow}>
+                          {roleLabel(
+                            record.recordedBy?.role ?? active.activeRole,
+                          )}{" "}
+                          ·{" "}
+                          {record.source?.kind === "proxy"
+                            ? "A játékos elmondása; más rögzítette"
+                            : record.source?.kind === "self"
+                              ? "Saját beszámoló"
+                              : "Saját megfigyelés"}
+                        </p>
+                        <p style={{ whiteSpace: "pre-wrap" }}>{record.text}</p>
+                        {record.occurredAt && (
+                          <time dateTime={record.occurredAt}>
+                            {new Date(record.occurredAt).toLocaleString(
+                              "hu-HU",
+                            )}
+                          </time>
                         )}
                       </article>
-                    )}
-                  </div>
+                    ))}
+                  {recordCursor && (
+                    <button
+                      className={styles.secondary}
+                      type="button"
+                      disabled={loadingOlderRecords}
+                      onClick={() => void loadOlderRecords()}
+                    >
+                      Korábbi naplóbejegyzések betöltése
+                    </button>
+                  )}
+                </section>
+              )}
+              {tab === "conversations" &&
+                selectedPlayer &&
+                active.activeRole !== "player" && (
+                  <SharedConversations
+                    key={`${active.actorId}-${selectedPlayer.id}`}
+                    playerId={selectedPlayer.id}
+                    csrfToken={active.csrfToken}
+                    role={active.activeRole}
+                  />
                 )}
-                <p className={styles.eyebrow}>KÖZÖS MUNKA</p>
-                <h2>Feladatok és visszajelzések</h2>
-                <p className={styles.muted}>
-                  A közös tervhez kapcsolt teendők, döntések és utánkövetések.
-                  Minden visszajelzés a naplóban is megjelenik.
-                </p>
-                {tasksLoading ? (
-                  <p className={styles.emptyState} role="status">
-                    A feladatok és visszajelzések betöltése…
+              {tab === "reports" && selectedPlayer && (
+                <section className={styles.panel}>
+                  <p className={styles.eyebrow}>
+                    {active.activeRole === "coach"
+                      ? "KÖZÖS TERVEK"
+                      : "EDZŐI TERVEK"}
                   </p>
-                ) : plans.length === 0 ? (
-                  <p className={styles.emptyState}>
-                    Még nincs közös feladat. Az edző által készített terv itt
-                    jelenik meg, miután kapcsolódó játékos vagy szülő elfogadta.
-                  </p>
-                ) : (
-                  <div className={styles.taskList}>
-                    {plans.flatMap((plan) =>
-                      plan.actions.map((action) => {
-                        const feedback = followUps.filter(
-                          (item) =>
-                            item.planRef.id === plan.id &&
-                            item.actionId === action.id,
-                        );
-                        const outcomeLabel: Record<string, string> = {
-                          helped: "Segített",
-                          not_helped: "Nem segített",
-                          unknown: "Még nem tudom",
-                          adjust: "Módosítani kell",
-                        };
-                        return (
-                          <article
-                            className={styles.taskCard}
-                            key={`${plan.id}:${action.id}`}
+                  <h2>Megértésből következő lépés</h2>
+                  <AiCoachButton />
+                  {active.activeRole === "coach" && (
+                    <div className={styles.formGroup}>
+                      <label className={styles.label} htmlFor="plan-action">
+                        Mi legyen a következő kipróbálható lépés?
+                      </label>
+                      <textarea
+                        id="plan-action"
+                        rows={3}
+                        maxLength={1000}
+                        value={planDraft}
+                        onChange={(event) => setPlanDraft(event.target.value)}
+                        placeholder="Egy konkrét, a játékossal egyeztetett teendő"
+                      />
+                      <label htmlFor="plan-source">Kapcsolódó forrás</label>
+                      <select
+                        id="plan-source"
+                        value={questionSource?.id ?? ""}
+                        onChange={(e) => setEvidenceId(e.target.value)}
+                      >
+                        {evidenceOptions.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.text?.split("\n")[0].slice(0, 100) ??
+                              `Állapotjelzés · ${new Date(item.completedAt ?? "").toLocaleString("hu-HU")}`}
+                          </option>
+                        ))}
+                      </select>
+                      <label htmlFor="plan-owner">
+                        Ki vállalja a következő lépést?
+                      </label>
+                      <select
+                        id="plan-owner"
+                        value={planOwnerId || active.actorId}
+                        onChange={(e) => setPlanOwnerId(e.target.value)}
+                      >
+                        {participants.map((participant) => (
+                          <option
+                            key={participant.actorId}
+                            value={participant.actorId}
                           >
-                            <div className={styles.taskHeading}>
-                              <div>
-                                <p className={styles.eyebrow}>
-                                  {plan.status === "proposed"
-                                    ? "JÓVÁHAGYÁSRA VÁR"
-                                    : plan.status === "active"
-                                      ? "AKTÍV FELADAT"
-                                      : "LEZÁRT TERV"}
-                                </p>
-                                <h3>{action.what}</h3>
-                              </div>
-                              <time dateTime={action.dueAt}>
-                                Határidő:{" "}
-                                {new Date(action.dueAt).toLocaleDateString(
-                                  "hu-HU",
-                                )}
-                              </time>
-                            </div>
+                            {participant.label}
+                          </option>
+                        ))}
+                      </select>
+                      <label htmlFor="plan-why">
+                        Miért ezt a lépést választjuk?
+                      </label>
+                      <textarea
+                        id="plan-why"
+                        value={planWhy}
+                        maxLength={1000}
+                        onChange={(e) => setPlanWhy(e.target.value)}
+                      />
+                      <label htmlFor="plan-due">
+                        Mikor beszéljük meg a tapasztalatot?
+                      </label>
+                      <input
+                        id="plan-due"
+                        type="datetime-local"
+                        value={planDue}
+                        onChange={(e) => setPlanDue(e.target.value)}
+                      />
+                      <label htmlFor="plan-stop">
+                        Mikor álljunk meg vagy módosítsuk?
+                      </label>
+                      <textarea
+                        id="plan-stop"
+                        value={planStop}
+                        maxLength={1000}
+                        onChange={(e) => setPlanStop(e.target.value)}
+                      />
+                      <button
+                        className={styles.primary}
+                        type="button"
+                        disabled={busy || !planDraft.trim() || !questionSource}
+                        onClick={() => void createSharedPlan()}
+                      >
+                        Közös terv készítése
+                      </button>
+                      {!questionSource && (
+                        <p className={styles.actionInfo}>
+                          Tervet akkor lehet létrehozni, ha van hozzá
+                          kapcsolható, forrásolt játékos-beszámoló.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {plans.length ? (
+                    plans.map((plan) => (
+                      <article className={styles.dataCard} key={plan.id}>
+                        <AiCoachButton
+                          context={{
+                            kind: "plan",
+                            id: plan.id,
+                            revision: plan.revision,
+                          }}
+                        />
+                        <p className={styles.eyebrow}>
+                          ÁLLAPOT:{" "}
+                          {plan.status === "proposed"
+                            ? "JÓVÁHAGYÁSRA VÁR"
+                            : plan.status === "active"
+                              ? "AKTÍV"
+                              : plan.status.toLocaleUpperCase("hu-HU")}
+                        </p>
+                        {plan.actions.map((action) => (
+                          <div key={action.id}>
+                            <h3>{action.what}</h3>
                             <p>{action.why}</p>
                             <p className={styles.muted}>
-                              Leállítási feltétel: {action.stopCondition}
+                              Határidő:{" "}
+                              {new Date(action.dueAt).toLocaleDateString(
+                                "hu-HU",
+                              )}{" "}
+                              · Leállítási feltétel: {action.stopCondition}
                             </p>
-                            {plan.status === "proposed" &&
-                              (active.activeRole === "player" ||
-                                active.activeRole === "parent") && (
-                                <div className={styles.actions}>
-                                  <button
-                                    className={styles.primary}
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() =>
-                                      void decidePlan(plan, "accept")
-                                    }
-                                  >
-                                    Elfogadom
-                                  </button>
-                                  <button
-                                    className={styles.secondary}
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() =>
-                                      void decidePlan(plan, "decline")
-                                    }
-                                  >
-                                    Nem ezt javaslom
-                                  </button>
-                                </div>
-                              )}
                             {plan.status === "active" && (
                               <div className={styles.formGroup}>
                                 <label
                                   className={styles.label}
-                                  htmlFor={`task-outcome-${plan.id}-${action.id}`}
+                                  htmlFor={`followup-outcome-${plan.id}-${action.id}`}
                                 >
-                                  Hogyan alakult?
+                                  Hogyan alakult a kipróbálás?
                                 </label>
                                 <select
-                                  id={`task-outcome-${plan.id}-${action.id}`}
+                                  id={`followup-outcome-${plan.id}-${action.id}`}
                                   value={followupOutcome}
                                   onChange={(event) =>
                                     setFollowupOutcome(
@@ -6428,13 +4021,13 @@ export default function HabiWorkspace() {
                                 </select>
                                 <label
                                   className={styles.label}
-                                  htmlFor={`task-feedback-${plan.id}-${action.id}`}
+                                  htmlFor={`followup-text-${plan.id}-${action.id}`}
                                 >
-                                  Visszajelzés
+                                  Mit szeretnél hozzáfűzni?
                                 </label>
                                 <textarea
-                                  id={`task-feedback-${plan.id}-${action.id}`}
-                                  rows={3}
+                                  id={`followup-text-${plan.id}-${action.id}`}
+                                  rows={2}
                                   maxLength={4000}
                                   value={followupText}
                                   onChange={(event) =>
@@ -6442,57 +4035,2687 @@ export default function HabiWorkspace() {
                                   }
                                 />
                                 <button
-                                  className={styles.primary}
+                                  className={styles.secondary}
                                   type="button"
                                   disabled={busy || !followupText.trim()}
                                   onClick={() =>
                                     void submitFollowUp(plan, action.id)
                                   }
                                 >
-                                  Visszajelzés mentése
+                                  Utánkövetés rögzítése
                                 </button>
                               </div>
                             )}
-                            <div className={styles.feedbackList}>
-                              <h4>Korábbi visszajelzések</h4>
-                              {feedback.length ? (
-                                feedback.map((item) => (
-                                  <article key={item.id}>
-                                    <p>
-                                      <strong>
-                                        {outcomeLabel[item.outcome] ??
-                                          item.outcome}
-                                      </strong>
-                                      {" · "}
-                                      <time dateTime={item.occurredAt}>
-                                        {new Date(
-                                          item.occurredAt,
-                                        ).toLocaleString("hu-HU", {
-                                          dateStyle: "medium",
-                                          timeStyle: "short",
-                                        })}
-                                      </time>
-                                    </p>
-                                    <p>{item.text}</p>
-                                  </article>
-                                ))
-                              ) : (
-                                <p className={styles.muted}>
-                                  Ehhez a feladathoz még nincs visszajelzés.
+                          </div>
+                        ))}
+                        {plan.status === "proposed" &&
+                          (active.activeRole === "player" ||
+                            active.activeRole === "parent") && (
+                            <div className={styles.actions}>
+                              <button
+                                className={styles.primary}
+                                type="button"
+                                disabled={busy}
+                                onClick={() => void decidePlan(plan, "accept")}
+                              >
+                                Elfogadom
+                              </button>
+                              <button
+                                className={styles.secondary}
+                                type="button"
+                                disabled={busy}
+                                onClick={() => void decidePlan(plan, "decline")}
+                              >
+                                Nem ezt javaslom
+                              </button>
+                            </div>
+                          )}
+                        {active.activeRole === "coach" &&
+                          ["active", "paused"].includes(plan.status) && (
+                            <div className={styles.actions}>
+                              {(plan.status === "active"
+                                ? [
+                                    ["paused", "Terv félretétele"],
+                                    ["completed", "Terv lezárása"],
+                                    ["withdrawn", "Terv visszavonása"],
+                                  ]
+                                : [
+                                    ["active", "Terv folytatása"],
+                                    ["completed", "Terv lezárása"],
+                                  ]
+                              ).map(([status, label]) => (
+                                <button
+                                  className={styles.secondary}
+                                  type="button"
+                                  key={status}
+                                  disabled={busy}
+                                  onClick={() => {
+                                    setBusy(true);
+                                    void productRequest(
+                                      `/api/v1/plans/${encodeURIComponent(plan.id)}/state`,
+                                      active.csrfToken,
+                                      {
+                                        expectedRevision: plan.revision,
+                                        status,
+                                      },
+                                    )
+                                      .then((updated) =>
+                                        setPlans((items) =>
+                                          items.map((p) =>
+                                            p.id === updated.id ? updated : p,
+                                          ),
+                                        ),
+                                      )
+                                      .catch((e) =>
+                                        setNotice(commandMessage(e)),
+                                      )
+                                      .finally(() => setBusy(false));
+                                  }}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        <p className={styles.muted}>
+                          Forrásolt terv · {plan.sourceRefs.length} kapcsolt
+                          forrás · {plan.acceptances.length} válasz
+                        </p>
+                      </article>
+                    ))
+                  ) : (
+                    <p className={styles.emptyState}>
+                      Még nincs rögzített közös terv.
+                    </p>
+                  )}
+                  {active.activeRole === "coach" && (
+                    <div className={styles.formGroup}>
+                      <p className={styles.eyebrow}>EDZŐI ANYAG</p>
+                      <h3>Ossz meg egy pontosan verziózott anyagot</h3>
+                      <AiCoachButton />
+                      <label className={styles.label} htmlFor="material-title">
+                        Anyag címe
+                      </label>
+                      <input
+                        id="material-title"
+                        value={materialTitle}
+                        maxLength={200}
+                        onChange={(event) =>
+                          setMaterialTitle(event.target.value)
+                        }
+                      />
+                      <label className={styles.label} htmlFor="material-text">
+                        Az edzői anyag szövege
+                      </label>
+                      <textarea
+                        id="material-text"
+                        rows={5}
+                        maxLength={8000}
+                        value={materialText}
+                        onChange={(event) =>
+                          setMaterialText(event.target.value)
+                        }
+                      />
+                      <button
+                        className={styles.secondary}
+                        type="button"
+                        disabled={
+                          busy ||
+                          !materialTitle.trim() ||
+                          !materialText.trim() ||
+                          !questionSource
+                        }
+                        onClick={() => void saveCoachMaterial()}
+                      >
+                        Piszkozat mentése forrással
+                      </button>
+                      {!questionSource && (
+                        <p className={styles.actionInfo}>
+                          Az anyag csak ellenőrizhető, kapcsolt forrással
+                          menthető.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {materials.map((material) => (
+                    <article className={styles.dataCard} key={material.id}>
+                      <AiCoachButton
+                        context={{
+                          kind: "coach_material",
+                          id: material.id,
+                          revision: material.revision,
+                        }}
+                      />
+                      <p className={styles.eyebrow}>
+                        EDZŐI ANYAG ·{" "}
+                        {active.activeRole !== "coach" ||
+                        materialPublications[material.id]
+                          ? "MEGOSZTVA"
+                          : "PISZKOZAT"}{" "}
+                        · {material.version}. VERZIÓ
+                      </p>
+                      <h3>{material.title}</h3>
+                      <p style={{ whiteSpace: "pre-wrap" }}>{material.text}</p>
+                      {active.activeRole === "coach" && (
+                        <div className={styles.actions}>
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => {
+                              setMaterialSupersedes({
+                                id: material.id,
+                                revision: material.revision,
+                              });
+                              setMaterialTitle(material.title);
+                              setMaterialText(material.text);
+                            }}
+                          >
+                            Új változat készítése
+                          </button>
+                          {materialPublications[material.id] && (
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              disabled={busy}
+                              onClick={() => {
+                                const publication =
+                                  materialPublications[material.id];
+                                setBusy(true);
+                                void productRequest(
+                                  `/api/v1/publications/${encodeURIComponent(publication.id)}/withdraw`,
+                                  active.csrfToken,
+                                  { expectedRevision: publication.revision },
+                                )
+                                  .then(() =>
+                                    setMaterialPublications((current) =>
+                                      Object.fromEntries(
+                                        Object.entries(current).filter(
+                                          ([id]) => id !== material.id,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .catch((e) => setNotice(commandMessage(e)))
+                                  .finally(() => setBusy(false));
+                              }}
+                            >
+                              Megosztás visszavonása
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {active.activeRole === "coach" &&
+                        !materialPublications[material.id] && (
+                          <button
+                            className={styles.primary}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void publishCoachMaterial(material)}
+                          >
+                            Megosztom a szülőkkel
+                          </button>
+                        )}
+                    </article>
+                  ))}
+                </section>
+              )}
+              {tab === "assessments" &&
+                active.activeRole === "coach" &&
+                selectedPlayer && (
+                  <>
+                    <section className={styles.panel}>
+                      <p className={styles.eyebrow}>FELMÉRÉSEK ÉS EREDMÉNYEK</p>
+                      <h2>Rögzítsd a forrást és ellenőrizd az adatokat</h2>
+                      <AiCoachButton />
+                      <p className={styles.muted}>
+                        Tölts fel egy kérdőíveredményt, vagy vidd be kézzel a
+                        mezőket az eredeti dokumentum alapján. Az értékeket a
+                        Habi nem következteti ki.
+                      </p>
+                    </section>
+                    <CoachAssessments
+                      key={selectedPlayer.id}
+                      playerId={selectedPlayer.id}
+                      csrfToken={active.csrfToken}
+                      onSaved={() => void load()}
+                    />
+                    <InterpretationReviews
+                      key={`review-${selectedPlayer.id}`}
+                      playerId={selectedPlayer.id}
+                      csrfToken={active.csrfToken}
+                    />
+                    <CoachReportWorkspace
+                      playerId={selectedPlayer.id}
+                      playerName={
+                        selectedPlayer.displayName ?? "A kiválasztott játékos"
+                      }
+                      csrfToken={active.csrfToken}
+                    />
+                  </>
+                )}
+              {(tab === "journal" ||
+                tab === "assessments" ||
+                tab === "reports") &&
+                active.activeRole === "coach" &&
+                selectedPlayer && (
+                  <CoachRecords
+                    key={`records-${selectedPlayer.id}`}
+                    records={data[0]?.records ?? []}
+                    playerId={selectedPlayer.id}
+                    csrfToken={active.csrfToken}
+                  />
+                )}
+              {tab === "knowledge" && active.activeRole === "coach" && (
+                <KnowledgeWorkspace csrfToken={active.csrfToken} />
+              )}
+              {tab === "knowledge" && active.activeRole === "coach" && (
+                <section className={styles.panel}>
+                  <p className={styles.eyebrow}>TUDÁSTÁR</p>
+                  <h2>Segítség konkrét helyzetekhez</h2>
+                  <AiCoachButton />
+                  <p className={styles.muted}>
+                    Válassz egy kapcsolódó gyakorlatot. Ezek általános
+                    támogatási ötletek, nem diagnózisok és nem egyéni
+                    értékelések.
+                  </p>
+                  <label className={styles.label} htmlFor="practice-search">
+                    Keresés a tudástárban
+                  </label>
+                  <input
+                    id="practice-search"
+                    type="search"
+                    value={practiceSearch}
+                    onChange={(event) => setPracticeSearch(event.target.value)}
+                  />
+                  <div className={styles.knowledgeList}>
+                    {(
+                      practices.items as Array<{
+                        id: string;
+                        title: string;
+                        what: string;
+                        how: string;
+                      }>
+                    )
+                      .filter((practice) =>
+                        `${practice.title} ${practice.what} ${practice.how}`
+                          .toLocaleLowerCase("hu-HU")
+                          .includes(practiceSearch.toLocaleLowerCase("hu-HU")),
+                      )
+                      .map((practice) => (
+                        <details
+                          id={`practice-${practice.id}`}
+                          className={styles.dataCard}
+                          key={practice.id}
+                        >
+                          <summary>
+                            <strong className={styles.knowledgeCardTitle}>
+                              {practice.title}
+                            </strong>
+                            <span className={styles.practiceDescription}>
+                              {practice.what}
+                            </span>
+                          </summary>
+                          <AiCoachButton
+                            context={{
+                              kind: "practice",
+                              id: practice.id,
+                              revision: 1,
+                            }}
+                          />
+                          <p>{practice.how}</p>
+                          <p className={styles.muted}>
+                            Általános gyakorlat · a helyzethez való
+                            alkalmazhatóságot az edzőnek kell mérlegelnie.
+                          </p>
+                        </details>
+                      ))}
+                  </div>
+                </section>
+              )}
+              {checkinCursor &&
+                (tab === "checkin" || tab === "player-tools") && (
+                  <button
+                    className={styles.secondary}
+                    type="button"
+                    disabled={loadingCheckins}
+                    onClick={() => {
+                      setLoadingCheckins(true);
+                      const query = new URLSearchParams({
+                        limit: "100",
+                        cursor: checkinCursor,
+                        ...(localDayBounds(timelineDayFilter) ?? {}),
+                      });
+                      void productRequest(
+                        `/api/v1/players/${encodeURIComponent(playerId)}/checkin-results?${query}`,
+                        active.csrfToken,
+                        undefined,
+                        "GET",
+                      )
+                        .then((body) => {
+                          setData((items) =>
+                            items.map((item) =>
+                              item.id === playerId
+                                ? {
+                                    ...item,
+                                    checkins: [...item.checkins, ...body.items],
+                                  }
+                                : item,
+                            ),
+                          );
+                          setCheckinCursor(body.nextCursor);
+                        })
+                        .catch((e) => setNotice(commandMessage(e)))
+                        .finally(() => setLoadingCheckins(false));
+                    }}
+                  >
+                    Korábbi állapotjelzések betöltése
+                  </button>
+                )}
+              {tab === "timeline" && (
+                <section className={styles.panel}>
+                  <p className={styles.eyebrow}>ELŐZMÉNYEK</p>
+                  <h2>A napló eseményei</h2>
+                  <AiCoachButton />
+                  <fieldset className={styles.timelineFilter}>
+                    <legend>Betöltött események szűrése</legend>
+                    <label htmlFor="history-kind">
+                      Típus
+                      <select
+                        id="history-kind"
+                        value={timelineKind}
+                        onChange={(e) => setTimelineKind(e.target.value)}
+                      >
+                        <option value="all">Minden típus</option>
+                        {[
+                          ...new Set(
+                            timeline?.nodes.map((node) => node.kind) ?? [],
+                          ),
+                        ].map((kind) => (
+                          <option key={kind} value={kind}>
+                            {(
+                              {
+                                record: "Bejegyzés",
+                                checkin: "Állapotjelzés",
+                                "checkin.completed": "Lezárt állapotjelzés",
+                                checkin_answer: "Beküldött napi válasz",
+                                diary: "Naplóbejegyzés",
+                                observation: "Megfigyelés",
+                                "thread.message": "Hozzászólás",
+                                "interpretation.ready": "Forrásolt magyarázat",
+                                "interpretation.no_evidence":
+                                  "Forrás nélküli kérdéseredmény",
+                                "plan.follow_up": "Terv utánkövetése",
+                                "plan.proposed": "Tervjavaslat",
+                                "plan.active": "Aktív terv",
+                                "plan.paused": "Félretett terv",
+                                "plan.completed": "Lezárt terv",
+                                "plan.withdrawn": "Visszavont terv",
+                                "plan.declined": "Elutasított terv",
+                                message: "Hozzászólás",
+                                interpretation: "Forrásolt magyarázat",
+                                plan: "Közös terv",
+                                follow_up: "Utánkövetés",
+                                report: "Riport",
+                              } as Record<string, string>
+                            )[kind] ?? "Kapcsolódó esemény"}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label htmlFor="history-role">
+                      Forrás
+                      <select
+                        id="history-role"
+                        value={timelineRole}
+                        onChange={(e) => setTimelineRole(e.target.value)}
+                      >
+                        <option value="all">Minden szereplő</option>
+                        <option value="player">Játékos</option>
+                        <option value="parent">Szülő</option>
+                        <option value="coach">Edző</option>
+                      </select>
+                    </label>
+                    <label htmlFor="history-period">
+                      Időszak
+                      <select
+                        id="history-period"
+                        value={timelinePeriod}
+                        onChange={(e) =>
+                          setTimelinePeriod(Number(e.target.value))
+                        }
+                      >
+                        <option value={0}>Minden betöltött esemény</option>
+                        <option value={7}>7 nap</option>
+                        <option value={14}>14 nap</option>
+                        <option value={28}>28 nap</option>
+                        <option value={42}>42 nap</option>
+                      </select>
+                    </label>
+                  </fieldset>
+                  <div className={styles.timelineFilter}>
+                    <div>
+                      <label className={styles.label} htmlFor="timeline-day">
+                        Egy nap eseményei
+                      </label>
+                      <input
+                        id="timeline-day"
+                        type="date"
+                        value={timelineDayFilter}
+                        onChange={(event) => {
+                          setTimelineDayFilter(event.target.value);
+                          setLoadingOlder(false);
+                        }}
+                      />
+                    </div>
+                    {timelineDayFilter ? (
+                      <button
+                        type="button"
+                        className={styles.secondary}
+                        onClick={() => setTimelineDayFilter("")}
+                      >
+                        Teljes idővonal
+                      </button>
+                    ) : null}
+                  </div>
+                  {timelineDayFilter ? (
+                    <article
+                      className={styles.dataCard}
+                      aria-label="Napi összefoglaló"
+                    >
+                      <p className={styles.eyebrow}>NAPI ÖSSZEFOGLALÓ</p>
+                      <h3>
+                        {new Date(
+                          `${timelineDayFilter}T00:00:00`,
+                        ).toLocaleDateString("hu-HU", { dateStyle: "full" })}
+                      </h3>
+                      {data[0]?.checkins.length ? (
+                        data[0].checkins.map((item) => (
+                          <div key={item.id}>
+                            <p className={styles.muted}>
+                              {item.completedAt
+                                ? new Date(item.completedAt).toLocaleTimeString(
+                                    "hu-HU",
+                                    { hour: "2-digit", minute: "2-digit" },
+                                  )
+                                : "Állapotjelzés"}
+                            </p>
+                            <dl className={styles.summaryMetrics}>
+                              {item.answerCodes?.map(({ metric, code }) => {
+                                const definition = metrics.find(
+                                  ([key]) => key === metric,
+                                );
+                                return definition ? (
+                                  <div key={metric}>
+                                    <dt>
+                                      <MetricGraphic
+                                        metric={metric}
+                                        code={code}
+                                      />
+                                      <span className={styles.metricQuestion}>
+                                        {definition[1]}
+                                      </span>
+                                    </dt>
+                                    <dd>
+                                      {definition[2][code] ?? "Nincs válasz"}
+                                    </dd>
+                                  </div>
+                                ) : null;
+                              })}
+                            </dl>
+                          </div>
+                        ))
+                      ) : (
+                        <p className={styles.muted}>
+                          Ezen a napon nincs rögzített állapotjelzés.
+                        </p>
+                      )}
+                    </article>
+                  ) : null}
+                  <div className="story-legend">
+                    {(["player", "parent", "coach"] as const).map((role) => (
+                      <span className={`role-badge actor-${role}`} key={role}>
+                        {roleLabel(role)}
+                      </span>
+                    ))}
+                  </div>
+                  <MetroTimeline
+                    page={filterTimelinePage(timeline, {
+                      kind: timelineKind,
+                      role: timelineRole,
+                      days: timelinePeriod,
+                      now: clientNow ?? Date.now(),
+                    })}
+                    records={historyItems}
+                    playerName={
+                      selectedPlayer?.displayName ??
+                      (active.activeRole === "player"
+                        ? "Saját sportolói napló"
+                        : "Kapcsolt játékos")
+                    }
+                    playerId={playerId}
+                    onLoadMore={() => void loadOlderTimeline()}
+                    loadingMore={loadingOlder}
+                  />
+                </section>
+              )}
+              {tab === "overview" &&
+                active.activeRole === "player" &&
+                (playerGoalDraft.trim() ||
+                  routineDraft.trim() ||
+                  practiceFeedback.trim() ||
+                  Object.values(trustedAdultPrep).some((value) =>
+                    value.trim(),
+                  ) ||
+                  guidedTreeDraft ||
+                  guidedSituationId ||
+                  monthlyAnswers.some((value) => value !== null) ||
+                  Object.values(reflectionAnswers.daily).some((value) =>
+                    value.trim(),
+                  ) ||
+                  Object.values(reflectionAnswers.weekly).some((value) =>
+                    value.trim(),
+                  )) && (
+                  <aside className={styles.formGroup}>
+                    <h3>Folytathatod, amit elkezdtél</h3>
+                    <AiCoachButton />
+                    <p>
+                      A saját célod, gyakorlatod vagy beszélgetésed piszkozata
+                      megmaradt.
+                    </p>
+                    <button
+                      className={styles.secondary}
+                      type="button"
+                      onClick={() => navigateTab("player-tools")}
+                    >
+                      Folytatom a saját munkámat
+                    </button>
+                  </aside>
+                )}
+              {tab === "overview" &&
+                active.activeRole === "player" &&
+                playerId && (
+                  <PlayerSupportLoop
+                    compact
+                    playerId={playerId}
+                    actorId={active.actorId}
+                    csrfToken={active.csrfToken}
+                    records={ownPlayerData?.records ?? []}
+                    save={savePlayerDiary}
+                    onOpen={() => navigateTab("player-tools")}
+                  />
+                )}
+              {tab === "player-tools" &&
+                active.activeRole === "player" &&
+                selectedPlayer && (
+                  <section className={styles.panel}>
+                    <p className={styles.eyebrow}>SAJÁT SPORTOLÓI MUNKA</p>
+                    <h2>Gyakorlatok és saját célok</h2>
+                    <AiCoachButton />
+                    <PlayerSupportLoop
+                      playerId={playerId}
+                      actorId={active.actorId}
+                      csrfToken={active.csrfToken}
+                      records={ownPlayerData?.records ?? []}
+                      save={savePlayerDiary}
+                    />
+                    {continuity.status && (
+                      <p role="status">{continuity.status}</p>
+                    )}
+
+                    <p className={styles.muted}>
+                      Válassz egy rövid, nem klinikai gyakorlatot, rögzítsd a
+                      tapasztalatodat, vagy tűzz ki egy saját célt. Minden
+                      mentés a naplódhoz kapcsolódik.
+                    </p>
+                    <div className={styles.formGroup}>
+                      <h3>{guidedConversationContent.labels.title}</h3>
+                      <p className={styles.muted}>
+                        Válassz egy témát. A beszélgetés a te válaszaid alapján,
+                        előre megírt kérdésekkel halad; bármikor folytathatod
+                        később.
+                      </p>
+                      {!guidedTreeDraft ? (
+                        <>
+                          <label
+                            className={styles.label}
+                            htmlFor="guided-topic-input"
+                          >
+                            Vagy írd le röviden, mi foglalkoztat
+                          </label>
+                          <textarea
+                            id="guided-topic-input"
+                            value={guidedTopicInput}
+                            maxLength={1000}
+                            rows={3}
+                            onChange={(event) => {
+                              setGuidedTopicInput(event.target.value);
+                              setGuidedTopicSuggestions(null);
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className={styles.secondary}
+                            disabled={busy || !guidedTopicInput.trim()}
+                            onClick={suggestGuidedTopics}
+                          >
+                            Témák mutatása
+                          </button>
+                          {guidedTopicSuggestions && (
+                            <p className={styles.muted} role="status">
+                              Válaszd ki, melyik téma áll a legközelebb ahhoz,
+                              amit leírtál. A témák sorrendje szövegegyezésen
+                              alapul; Habi nem állapítja meg, mit érzel.
+                            </p>
+                          )}
+                          <div className={styles.knowledgeList}>
+                            {guidedConversationContent.categories
+                              .filter(
+                                (category) =>
+                                  !guidedTopicSuggestions ||
+                                  guidedTopicSuggestions.includes(category.id),
+                              )
+                              .sort((a, b) =>
+                                guidedTopicSuggestions
+                                  ? guidedTopicSuggestions.indexOf(a.id) -
+                                    guidedTopicSuggestions.indexOf(b.id)
+                                  : 0,
+                              )
+                              .map((category) => (
+                                <button
+                                  className={styles.secondary}
+                                  key={category.id}
+                                  type="button"
+                                  disabled={busy || !experienceDraftsReady}
+                                  onClick={() =>
+                                    void startGuidedTopic(category.id)
+                                  }
+                                >
+                                  {category.label}
+                                </button>
+                              ))}
+                          </div>
+                        </>
+                      ) : guidedTreePaused ? (
+                        <article className={styles.dataCard}>
+                          <p className={styles.eyebrow}>
+                            FOLYTATHATÓ BESZÉLGETÉS
+                          </p>
+                          <h4>
+                            {
+                              guidedConversationContent.categories.find(
+                                (category) =>
+                                  category.id === guidedTreeDraft.categoryId,
+                              )?.label
+                            }
+                          </h4>
+                          <p>
+                            {guidedTreeDraft.turns.length} válaszod már mentve
+                            van.
+                          </p>
+                          <div className={styles.actions}>
+                            <button
+                              className={styles.primary}
+                              type="button"
+                              onClick={() => setGuidedTreePaused(false)}
+                            >
+                              Folytatom
+                            </button>
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void discardGuidedTopic()}
+                            >
+                              Beszélgetés elvetése
+                            </button>
+                          </div>
+                        </article>
+                      ) : (
+                        (() => {
+                          const state =
+                            resolveGuidedConversation(guidedTreeDraft);
+                          if (!state) return null;
+                          return (
+                            <article className={styles.dataCard}>
+                              <p className={styles.eyebrow}>
+                                {state.category.label}
+                              </p>
+                              {guidedTreeDraft.opening && (
+                                <p>
+                                  <strong>Te mondtad:</strong>{" "}
+                                  {guidedTreeDraft.opening}
                                 </p>
                               )}
+                              {state.turns.map(({ node, option }) => (
+                                <div key={`${node.question}-${option.id}`}>
+                                  <p>
+                                    <strong>{node.response}</strong>
+                                  </p>
+                                  <p>{node.question}</p>
+                                  <p className={styles.muted}>{option.label}</p>
+                                </div>
+                              ))}
+                              {state.currentNode ? (
+                                <>
+                                  <p>
+                                    <strong>
+                                      {state.currentNode.response}
+                                    </strong>
+                                  </p>
+                                  <h4>{state.currentNode.question}</h4>
+                                  <div className={styles.knowledgeList}>
+                                    {state.currentNode.options.map(
+                                      (option: {
+                                        id: string;
+                                        label: string;
+                                      }) => (
+                                        <button
+                                          className={styles.secondary}
+                                          key={option.id}
+                                          type="button"
+                                          disabled={busy}
+                                          onClick={() =>
+                                            void answerGuidedTopic(option.id)
+                                          }
+                                        >
+                                          {option.label}
+                                        </button>
+                                      ),
+                                    )}
+                                  </div>
+                                </>
+                              ) : state.outcome ? (
+                                <>
+                                  <h4>Habi válasza</h4>
+                                  <p>{state.outcome.text}</p>
+                                  {state.outcome.id !== "immediate-adult" && (
+                                    <div className={styles.actions}>
+                                      <button
+                                        className={styles.secondary}
+                                        type="button"
+                                        onClick={() => {
+                                          setPlayerGoalDraft(
+                                            state.outcome?.text.slice(0, 500) ??
+                                              "",
+                                          );
+                                          document
+                                            .getElementById("own-goal")
+                                            ?.scrollIntoView({
+                                              block: "center",
+                                            });
+                                        }}
+                                      >
+                                        Ezt próbálnám ki saját célként
+                                      </button>
+                                      <button
+                                        className={styles.secondary}
+                                        type="button"
+                                        onClick={() => {
+                                          setTrustedAdultPrep({
+                                            person: "",
+                                            topic:
+                                              guidedTreeDraft.opening ??
+                                              state.category.label,
+                                            ask: "Szeretném, ha meghallgatnál, és együtt átgondolnánk.",
+                                          });
+                                          setTrustedAdultPreview(false);
+                                          document
+                                            .getElementById("preparation-form")
+                                            ?.scrollIntoView({
+                                              block: "center",
+                                            });
+                                        }}
+                                      >
+                                        Beszélgetés előkészítése
+                                      </button>
+                                      {state.outcome.practice && (
+                                        <button
+                                          className={styles.secondary}
+                                          type="button"
+                                          onClick={() => {
+                                            const target =
+                                              document.getElementById(
+                                                `practice-${state.outcome?.practice}`,
+                                              );
+                                            if (
+                                              target instanceof
+                                              HTMLDetailsElement
+                                            ) {
+                                              target.open = true;
+                                              target.scrollIntoView({
+                                                block: "center",
+                                              });
+                                            }
+                                          }}
+                                        >
+                                          Kapcsolódó gyakorlat megnyitása
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                  <details className={styles.dataCard}>
+                                    <summary>
+                                      Beszélgetés összefoglalója
+                                    </summary>
+                                    <pre className={styles.summaryText}>
+                                      {createGuidedConversationSummary(
+                                        guidedTreeDraft,
+                                      )}
+                                    </pre>
+                                  </details>
+                                  <div className={styles.actions}>
+                                    <button
+                                      className={styles.primary}
+                                      type="button"
+                                      disabled={busy}
+                                      onClick={() => void saveGuidedTopic()}
+                                    >
+                                      Beszélgetés mentése a naplóba
+                                    </button>
+                                    <button
+                                      className={styles.secondary}
+                                      type="button"
+                                      onClick={() =>
+                                        downloadGuidedTopicSummary(
+                                          createGuidedConversationSummary(
+                                            guidedTreeDraft,
+                                          ) ?? "",
+                                        )
+                                      }
+                                    >
+                                      Beszélgetés letöltése
+                                    </button>
+                                    <button
+                                      className={styles.secondary}
+                                      type="button"
+                                      disabled={busy}
+                                      onClick={() => void discardGuidedTopic()}
+                                    >
+                                      Beszélgetés elvetése
+                                    </button>
+                                  </div>
+                                </>
+                              ) : null}
+                              {!state.outcome && (
+                                <button
+                                  className={styles.textButton}
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => setGuidedTreePaused(true)}
+                                >
+                                  Később folytatom
+                                </button>
+                              )}
+                            </article>
+                          );
+                        })()
+                      )}
+                      {guidedTreeDraft && experienceDraftsReady && (
+                        <p className={styles.actionFeedback} role="status">
+                          {draftNotice ||
+                            "A válaszaid piszkozatként mentve vannak."}
+                        </p>
+                      )}
+                      {completedGuidedTreeSummary && (
+                        <article className={styles.dataCard} role="status">
+                          <p>A beszélgetés bekerült a naplódba.</p>
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            onClick={() =>
+                              downloadGuidedTopicSummary(
+                                completedGuidedTreeSummary,
+                              )
+                            }
+                          >
+                            Beszélgetés letöltése
+                          </button>
+                        </article>
+                      )}
+                    </div>
+                    <div className={styles.formGroup}>
+                      <h3>Vezetett beszélgetés</h3>
+                      <AiCoachButton />
+                      <p className={styles.muted}>
+                        Válassz egy helyzetet, és haladj a saját tempódban. A
+                        válaszaid minden lépésnél elmentődnek, így később innen
+                        folytathatod.
+                      </p>
+                      {guidedSituationId && experienceDraftsReady && (
+                        <p className={styles.actionFeedback} role="status">
+                          {draftNotice || "A beszélgetés piszkozatként mentve."}
+                        </p>
+                      )}
+                    </div>
+                    <CheckinTrends
+                      checkins={mergePartialCheckins(
+                        ownPlayerData?.checkins ?? [],
+                        ownPlayerData?.records ?? [],
+                      )}
+                    />
+                    <div className={styles.formGroup}>
+                      <h3>Fájdalmat érzel?</h3>
+                      <AiCoachButton />
+                      <p className={styles.muted}>
+                        Ez nem orvosi értékelés. Ha egy mozdulat fáj, ne
+                        ismételd meg csak azért, hogy teljesítsd a feladatot.
+                        Szólj egy megbízható felnőttnek; ha a fájdalom erős vagy
+                        rosszabbodik, kérj tőle segítséget most.
+                      </p>
+                      {painStep === null ? (
+                        <button
+                          className={styles.secondary}
+                          type="button"
+                          onClick={startPainSupport}
+                        >
+                          Segítségkérő mondat összeállítása
+                        </button>
+                      ) : painStep < 3 ? (
+                        <div className={styles.dataCard}>
+                          <p className={styles.eyebrow}>
+                            FÁJDALOMRÓL SZÓLÓ BESZÉLGETÉS · {painStep + 1}/3
+                          </p>
+                          <h4>
+                            {
+                              [
+                                "Hol érzed a fájdalmat?",
+                                "Mióta érzed?",
+                                "Mikor jelentkezik?",
+                              ][painStep]
+                            }
+                          </h4>
+                          <div className={styles.knowledgeList}>
+                            {[
+                              [
+                                "A lábamban vagy a lábfejemben.",
+                                "A karomban vagy a vállamban.",
+                                "Máshol, vagy nehéz megmondanom.",
+                              ],
+                              [
+                                "Most kezdődött.",
+                                "Ma már korábban is éreztem.",
+                                "Több napja visszatér.",
+                              ],
+                              [
+                                "Egy bizonyos mozdulatnál.",
+                                "Mozgás közben többféle helyzetben.",
+                                "Pihenés közben is, vagy nehéz megmondanom.",
+                              ],
+                            ][painStep]?.map((choice, index) => (
+                              <button
+                                className={styles.secondary}
+                                type="button"
+                                key={choice}
+                                onClick={() => answerPainSupport(index)}
+                              >
+                                {choice}
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            onClick={() =>
+                              painStep === 0
+                                ? setPainStep(null)
+                                : setPainStep(painStep - 1)
+                            }
+                          >
+                            Vissza
+                          </button>
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            onClick={() =>
+                              setPainStep(painStep === 2 ? 3 : painStep + 1)
+                            }
+                          >
+                            Kihagyom
+                          </button>
+                        </div>
+                      ) : (
+                        <div className={styles.dataCard}>
+                          <h4>Segítségkérő mondat</h4>
+                          <p>
+                            Fájdalmat érzek
+                            {painAnswers[0] !== undefined
+                              ? ` ${
+                                  [
+                                    "a lábamban vagy a lábfejemben",
+                                    "a karomban vagy a vállamban",
+                                    "máshol",
+                                  ][painAnswers[0] ?? 2]
+                                }`
+                              : ""}
+                            {painPlaceDetail.trim()
+                              ? ` (${painPlaceDetail.trim()})`
+                              : ""}
+                            {painAnswers[1] !== undefined
+                              ? ` ${[
+                                  "Most kezdődött",
+                                  "Ma már korábban is éreztem",
+                                  "Több napja visszatér",
+                                ][painAnswers[1] ?? 0].toLowerCase()}`
+                              : ""}
+                            {painAnswers[2] !== undefined
+                              ? ` ${
+                                  [
+                                    "egy bizonyos mozdulatnál",
+                                    "mozgás közben többféle helyzetben",
+                                    "pihenés közben is, vagy nem tudom pontosan mikor",
+                                  ][painAnswers[2] ?? 0]
+                                }`
+                              : ""}
+                            . Szeretnék segítséget kérni.
+                          </p>
+                          <label
+                            className={styles.label}
+                            htmlFor="pain-place-detail"
+                          >
+                            Szeretnéd pontosítani, hol érzed? (nem kötelező)
+                          </label>
+                          <input
+                            id="pain-place-detail"
+                            maxLength={160}
+                            value={painPlaceDetail}
+                            onChange={(event) =>
+                              setPainPlaceDetail(event.target.value)
+                            }
+                          />
+                          <p className={styles.muted}>
+                            Ezt a mondatot itt nem mentjük el, és nem küldjük el
+                            senkinek. Te döntöd el, kinek mondod el.
+                          </p>
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            onClick={startPainSupport}
+                          >
+                            Újrakezdem
+                          </button>
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            onClick={() => setPainStep(null)}
+                          >
+                            Bezárom
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.formGroup}>
+                      <h3>Beszéljünk egy konkrét helyzetről</h3>
+                      <AiCoachButton />
+                      <p className={styles.muted}>
+                        A Habi vezeti ezt a rövid beszélgetést. A válaszaidból
+                        nem készít diagnózist; a beszélgetés végén te döntöd el,
+                        mit próbálsz ki.
+                      </p>
+                      {!guidedSituationId || guidedPaused ? (
+                        <div className={styles.knowledgeList}>
+                          {guidedSituationId && guidedPaused && (
+                            <article className={styles.dataCard}>
+                              <h4>
+                                {journeyContent.situations.find(
+                                  (item) => item.id === guidedSituationId,
+                                )?.opening ?? "A félretett beszélgetésed"}
+                              </h4>
+                              <p className={styles.muted}>
+                                {guidedAnswers.length} válaszod már megvan.
+                                Folytathatod innen, vagy másik helyzetet
+                                választhatsz.
+                              </p>
+                              <button
+                                className={styles.primary}
+                                type="button"
+                                onClick={() => setGuidedPaused(false)}
+                              >
+                                Folytatom
+                              </button>
+                            </article>
+                          )}
+                          {journeyContent.situations.map((situation) => (
+                            <button
+                              className={styles.secondary}
+                              key={situation.id}
+                              type="button"
+                              disabled={busy || !experienceDraftsReady}
+                              onClick={() => startGuidedSituation(situation.id)}
+                            >
+                              {situation.opening}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        (() => {
+                          const situation = journeyContent.situations.find(
+                            (item) => item.id === guidedSituationId,
+                          );
+                          if (!situation) return null;
+                          const step = guidedAnswers.length;
+                          const choices = [
+                            situation.options,
+                            journeyContent.chat.options,
+                            [
+                              situation.action,
+                              journeyContent.chat.askChoice,
+                              journeyContent.chat.reflectChoice,
+                            ],
+                          ][step];
+                          const prompt = [
+                            situation.question,
+                            journeyContent.chat.question,
+                            journeyContent.chat.lastQuestion,
+                          ][step];
+                          return (
+                            <article className={styles.dataCard}>
+                              <h4>{situation.opening}</h4>
+                              {guidedSourceCheckinId &&
+                                (() => {
+                                  const sourceCheckin =
+                                    ownPlayerData?.checkins.find(
+                                      (item) =>
+                                        item.id === guidedSourceCheckinId,
+                                    );
+                                  const sourceMetric =
+                                    guidedSituationId === "too-fast"
+                                      ? "focus"
+                                      : "mood";
+                                  const sourceAnswer =
+                                    sourceCheckin?.answerCodes?.find(
+                                      (item) => item.metric === sourceMetric,
+                                    );
+                                  const sourceDefinition = sourceAnswer
+                                    ? metrics.find(
+                                        ([key]) => key === sourceAnswer.metric,
+                                      )
+                                    : null;
+                                  return (
+                                    <p className={styles.muted}>
+                                      Kapcsolódó állapotjelzés
+                                      {sourceCheckin?.completedAt
+                                        ? ` · ${new Date(sourceCheckin.completedAt).toLocaleString("hu-HU")}`
+                                        : ""}
+                                      {sourceAnswer && sourceDefinition
+                                        ? ` · ${sourceDefinition[1]} — ${sourceDefinition[2][sourceAnswer.code] ?? "Nincs válasz"}`
+                                        : " · A válasz részlete jelenleg nem érhető el."}
+                                    </p>
+                                  );
+                                })()}
+                              {guidedAnswers.map((answer, index) => {
+                                const priorChoices = [
+                                  situation.options,
+                                  journeyContent.chat.options,
+                                  [
+                                    situation.action,
+                                    journeyContent.chat.askChoice,
+                                    journeyContent.chat.reflectChoice,
+                                  ],
+                                ][index];
+                                const priorPrompt = [
+                                  situation.question,
+                                  journeyContent.chat.question,
+                                  journeyContent.chat.lastQuestion,
+                                ][index];
+                                return (
+                                  <p key={priorPrompt}>
+                                    <strong>{priorPrompt}</strong>{" "}
+                                    {priorChoices[answer]}
+                                  </p>
+                                );
+                              })}
+                              <button
+                                className={styles.textButton}
+                                type="button"
+                                disabled={busy}
+                                onClick={() => setGuidedPaused(true)}
+                              >
+                                Később folytatom
+                              </button>
+                              {choices && prompt ? (
+                                <>
+                                  <h4>{prompt}</h4>
+                                  <div className={styles.knowledgeList}>
+                                    {choices.map((choice, index) => (
+                                      <button
+                                        className={styles.secondary}
+                                        key={choice}
+                                        type="button"
+                                        disabled={busy}
+                                        onClick={() =>
+                                          answerGuidedSituation(index)
+                                        }
+                                      >
+                                        {choice}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <h4>Habi válasza</h4>
+                                  <p>
+                                    {guidedAnswers[2] === 0
+                                      ? situation.action
+                                      : guidedAnswers[2] === 1
+                                        ? journeyContent.chat.goalAsk
+                                        : journeyContent.labels.endReflect}
+                                  </p>
+                                  <div className={styles.actions}>
+                                    <button
+                                      className={styles.primary}
+                                      type="button"
+                                      disabled={busy || !experienceDraftsReady}
+                                      onClick={() =>
+                                        void saveGuidedConversation()
+                                      }
+                                    >
+                                      Beszélgetés mentése a naplóba
+                                    </button>
+                                    <button
+                                      className={styles.secondary}
+                                      type="button"
+                                      disabled={busy}
+                                      onClick={() =>
+                                        void startGuidedSituation("")
+                                      }
+                                    >
+                                      Beszélgetés elvetése
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </article>
+                          );
+                        })()
+                      )}
+                    </div>
+                    <form
+                      id="preparation-form"
+                      className={styles.formGroup}
+                      onSubmit={saveTrustedAdultPrep}
+                    >
+                      <h3>Beszélgetés előkészítése</h3>
+                      <AiCoachButton />
+                      <p className={styles.muted}>
+                        Itt leírhatod, mit szeretnél elmondani egy általad
+                        választott, megbízható felnőttnek. Előbb átnézheted és
+                        javíthatod. Habi nem küldi el senkinek.
+                      </p>
+                      {!trustedAdultPreview && (
+                        <details>
+                          <summary>Segítség az elinduláshoz</summary>
+                          <p>Kivel beszélnél?</p>
+                          {supportLoopContent.people.map(([key, label]) => (
+                            <button
+                              type="button"
+                              className={styles.secondary}
+                              key={key}
+                              disabled={!continuity.loaded}
+                              onClick={() =>
+                                setTrustedAdultPrep({
+                                  ...trustedAdultPrep,
+                                  person: label,
+                                })
+                              }
+                            >
+                              {label}
+                            </button>
+                          ))}
+                          <p>Mi esne jól tőle?</p>
+                          {supportLoopContent.needs.map(([key, label]) => (
+                            <button
+                              type="button"
+                              className={styles.secondary}
+                              key={key}
+                              disabled={!continuity.loaded}
+                              onClick={() =>
+                                setTrustedAdultPrep({
+                                  ...trustedAdultPrep,
+                                  ask: supportLoopContent.needSentences[
+                                    key as keyof typeof supportLoopContent.needSentences
+                                  ],
+                                })
+                              }
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </details>
+                      )}
+                      {!trustedAdultPreview ? (
+                        <>
+                          {(
+                            [
+                              ["person", "Kivel szeretnél beszélni?"],
+                              ["topic", "Mit szeretnél elmondani?"],
+                              ["ask", "Milyen segítség esne jól?"],
+                            ] as const
+                          ).map(([key, label]) => (
+                            <div key={key}>
+                              <label
+                                className={styles.label}
+                                htmlFor={`trusted-adult-${key}`}
+                              >
+                                {label}
+                              </label>
+                              <textarea
+                                id={`trusted-adult-${key}`}
+                                disabled={!continuity.loaded}
+                                rows={2}
+                                maxLength={1000}
+                                value={trustedAdultPrep[key]}
+                                onChange={(event) =>
+                                  setTrustedAdultPrep((current) => ({
+                                    ...current,
+                                    [key]: event.target.value,
+                                  }))
+                                }
+                              />
                             </div>
+                          ))}
+                          <button
+                            className={styles.primary}
+                            type="submit"
+                            disabled={
+                              busy ||
+                              !Object.values(trustedAdultPrep).some((value) =>
+                                value.trim(),
+                              )
+                            }
+                          >
+                            Előnézet és átnézés
+                          </button>
+                        </>
+                      ) : (
+                        <section
+                          className={styles.dataCard}
+                          aria-live="polite"
+                          aria-label="Üzenet előnézete"
+                        >
+                          <h4>Így készítetted elő</h4>
+                          <pre className={styles.preformatted}>
+                            {createTrustedAdultMessage(trustedAdultPrep)}
+                          </pre>
+                          <p className={styles.muted}>
+                            Ez csak előnézet. A Habi nem küldi el. Letöltheted,
+                            vagy elmentheted a saját naplódba.
+                          </p>
+                          <div className={styles.actions}>
+                            <button
+                              className={styles.primary}
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void saveTrustedAdultPrepToDiary()}
+                            >
+                              Mentés a saját naplómba
+                            </button>
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              onClick={downloadTrustedAdultPrep}
+                            >
+                              Letöltöm a szöveget
+                            </button>
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              onClick={() => setTrustedAdultPreview(false)}
+                            >
+                              Vissza a szerkesztéshez
+                            </button>
+                          </div>
+                        </section>
+                      )}
+                    </form>
+                    <form className={styles.formGroup} onSubmit={saveOwnGoal}>
+                      <label htmlFor="goal-when">
+                        Mikor férne bele? (nem kötelező)
+                      </label>
+                      <input
+                        id="goal-when"
+                        disabled={!continuity.loaded}
+                        value={goalWhen}
+                        maxLength={200}
+                        onChange={(e) => setGoalWhen(e.target.value)}
+                      />
+                      <label className={styles.label} htmlFor="own-goal">
+                        Saját cél
+                      </label>
+                      <textarea
+                        id="own-goal"
+                        disabled={!continuity.loaded}
+                        rows={2}
+                        maxLength={500}
+                        value={playerGoalDraft}
+                        onChange={(event) =>
+                          setPlayerGoalDraft(event.target.value)
+                        }
+                        placeholder="Például: edzés előtt elvégzem a bemelegítést."
+                      />
+                      <label
+                        className={styles.label}
+                        htmlFor="goal-review-days"
+                      >
+                        Mikor nézzünk rá újra?
+                      </label>
+                      <select
+                        id="goal-review-days"
+                        value={goalReviewDays}
+                        onChange={(event) =>
+                          setGoalReviewDays(event.target.value)
+                        }
+                      >
+                        <option value="7">Egy hét múlva</option>
+                        <option value="14">Két hét múlva</option>
+                        <option value="28">Négy hét múlva</option>
+                        <option value="none">Ne emlékeztess</option>
+                      </select>
+                      <button
+                        className={styles.primary}
+                        type="submit"
+                        disabled={busy || !playerGoalDraft.trim()}
+                      >
+                        Cél mentése
+                      </button>
+                    </form>
+                    <div className={styles.taskList}>
+                      {ownPlayerData?.records
+                        .filter((record) =>
+                          ownGoals.some((goal) => goal.id === record.id),
+                        )
+                        .map((record) => {
+                          const goal = ownGoalText(record);
+                          const status = ownGoalStatus(record);
+                          const reviewDate = latestGoalReviewDate(
+                            ownPlayerData?.records ?? [],
+                            record.id,
+                          );
+                          const superseded = status === "superseded";
+                          const closed =
+                            status === "closed" ||
+                            status === "habit" ||
+                            superseded;
+                          const activeGoal = ownGoals.find(
+                            (candidate) =>
+                              ownGoalStatus(candidate) === "active",
+                          );
+                          return (
+                            <article
+                              className={styles.taskCard}
+                              key={record.id}
+                            >
+                              <AiCoachButton
+                                context={{
+                                  kind: "record",
+                                  id: record.id,
+                                  revision: record.revision ?? 1,
+                                }}
+                              />
+                              <p className={styles.eyebrow}>
+                                {status === "paused"
+                                  ? "FÉLRETETT SAJÁT CÉL"
+                                  : superseded
+                                    ? "LECSERÉLT SAJÁT CÉL"
+                                    : status === "habit"
+                                      ? "SZOKÁSKÉNT FOLYTATOTT CÉL"
+                                      : closed
+                                        ? "LEZÁRT SAJÁT CÉL"
+                                        : "AKTÍV SAJÁT CÉL"}
+                              </p>
+                              <h3>{goal}</h3>
+                              {reviewDate && status === "active" ? (
+                                <p className={styles.muted}>
+                                  Újranézés: {reviewDate}
+                                  {isGoalReviewDue(reviewDate, localToday)
+                                    ? " · esedékes"
+                                    : ""}
+                                </p>
+                              ) : null}
+                              <button
+                                className={styles.secondary}
+                                type="button"
+                                onClick={() => {
+                                  setExportingGoalId(
+                                    exportingGoalId === record.id
+                                      ? ""
+                                      : record.id,
+                                  );
+                                  setIncludeGoalHistory(false);
+                                }}
+                              >
+                                Összefoglaló letöltése
+                              </button>
+                              {exportingGoalId === record.id && (
+                                <div className={styles.formGroup}>
+                                  <label className={styles.label}>
+                                    <input
+                                      type="checkbox"
+                                      checked={includeGoalHistory}
+                                      onChange={(event) =>
+                                        setIncludeGoalHistory(
+                                          event.target.checked,
+                                        )
+                                      }
+                                    />
+                                    A cél módosításait, állapotait és
+                                    visszatekintéseit is hozzáadom
+                                  </label>
+                                  <p className={styles.muted}>
+                                    A fájl csak a saját eszközödre töltődik le.
+                                  </p>
+                                  <div className={styles.actions}>
+                                    <button
+                                      className={styles.primary}
+                                      type="button"
+                                      onClick={() => downloadOwnGoal(record)}
+                                    >
+                                      Letöltés
+                                    </button>
+                                    <button
+                                      className={styles.textButton}
+                                      type="button"
+                                      onClick={() => setExportingGoalId("")}
+                                    >
+                                      Mégse
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              <time dateTime={record.occurredAt}>
+                                Rögzítve:{" "}
+                                {record.occurredAt
+                                  ? new Date(record.occurredAt).toLocaleString(
+                                      "hu-HU",
+                                      {
+                                        dateStyle: "medium",
+                                        timeStyle: "short",
+                                      },
+                                    )
+                                  : "—"}
+                              </time>
+                              {superseded && activeGoal ? (
+                                <button
+                                  className={styles.secondary}
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() =>
+                                    void replaceOwnGoal(
+                                      activeGoal.id,
+                                      ownGoalText(record),
+                                    )
+                                  }
+                                >
+                                  Ezt a korábbi célt állítom vissza
+                                </button>
+                              ) : null}
+                              {!closed && (
+                                <>
+                                  <div className={styles.actions}>
+                                    <button
+                                      className={styles.secondary}
+                                      type="button"
+                                      disabled={busy}
+                                      onClick={() => {
+                                        setReplacingGoalId(
+                                          replacingGoalId === record.id
+                                            ? ""
+                                            : record.id,
+                                        );
+                                        setReplacementGoalText("");
+                                      }}
+                                    >
+                                      Cél cseréje
+                                    </button>
+                                  </div>
+                                  {replacingGoalId === record.id && (
+                                    <form
+                                      onSubmit={saveOwnGoalReplacement}
+                                      className={styles.formGroup}
+                                    >
+                                      <label
+                                        className={styles.label}
+                                        htmlFor={`replace-goal-${record.id}`}
+                                      >
+                                        Mi legyen az új cél?
+                                      </label>
+                                      <textarea
+                                        id={`replace-goal-${record.id}`}
+                                        rows={2}
+                                        maxLength={500}
+                                        value={replacementGoalText}
+                                        onChange={(event) =>
+                                          setReplacementGoalText(
+                                            event.target.value,
+                                          )
+                                        }
+                                        required
+                                      />
+                                      <div className={styles.actions}>
+                                        <button
+                                          className={styles.primary}
+                                          type="submit"
+                                          disabled={
+                                            busy || !replacementGoalText.trim()
+                                          }
+                                        >
+                                          Célcsere mentése
+                                        </button>
+                                        <button
+                                          className={styles.textButton}
+                                          type="button"
+                                          onClick={() => setReplacingGoalId("")}
+                                        >
+                                          Mégse
+                                        </button>
+                                      </div>
+                                    </form>
+                                  )}
+                                  <div className={styles.actions}>
+                                    <button
+                                      className={styles.secondary}
+                                      type="button"
+                                      disabled={busy}
+                                      onClick={() => {
+                                        setEditingGoalId(record.id);
+                                        setEditingGoalText(goal);
+                                      }}
+                                    >
+                                      Cél módosítása
+                                    </button>
+                                    <button
+                                      className={styles.secondary}
+                                      type="button"
+                                      disabled={busy}
+                                      onClick={() =>
+                                        void setOwnGoalState(
+                                          record.id,
+                                          status === "paused"
+                                            ? "active"
+                                            : "paused",
+                                        )
+                                      }
+                                    >
+                                      {status === "paused"
+                                        ? "Újra előveszem"
+                                        : "Most félreteszem"}
+                                    </button>
+                                    <button
+                                      className={styles.secondary}
+                                      type="button"
+                                      disabled={busy}
+                                      onClick={() => {
+                                        setReviewingGoalId(
+                                          reviewingGoalId === record.id
+                                            ? ""
+                                            : record.id,
+                                        );
+                                        setGoalReviewNote("");
+                                      }}
+                                    >
+                                      Visszatekintek
+                                    </button>
+                                    <button
+                                      className={styles.secondary}
+                                      type="button"
+                                      disabled={busy}
+                                      onClick={() =>
+                                        void setOwnGoalState(record.id, "habit")
+                                      }
+                                    >
+                                      Szokásként folytatom
+                                    </button>
+                                    <button
+                                      className={styles.secondary}
+                                      type="button"
+                                      disabled={busy}
+                                      onClick={() =>
+                                        void setOwnGoalState(
+                                          record.id,
+                                          "closed",
+                                        )
+                                      }
+                                    >
+                                      Ezt a célt lezárom
+                                    </button>
+                                  </div>
+                                  {editingGoalId === record.id && (
+                                    <form
+                                      onSubmit={saveOwnGoalEdit}
+                                      className={styles.formGroup}
+                                    >
+                                      <label
+                                        className={styles.label}
+                                        htmlFor={`edit-goal-${record.id}`}
+                                      >
+                                        A cél új szövege
+                                      </label>
+                                      <label
+                                        className={styles.label}
+                                        htmlFor={`review-cycle-${record.id}`}
+                                      >
+                                        Mikor nézzünk rá újra?
+                                      </label>
+                                      <select
+                                        id={`review-cycle-${record.id}`}
+                                        value={goalReviewDays}
+                                        onChange={(event) =>
+                                          setGoalReviewDays(event.target.value)
+                                        }
+                                      >
+                                        <option value="7">Egy hét múlva</option>
+                                        <option value="14">
+                                          Két hét múlva
+                                        </option>
+                                        <option value="28">
+                                          Négy hét múlva
+                                        </option>
+                                        <option value="none">
+                                          Ne emlékeztess
+                                        </option>
+                                      </select>
+                                      <textarea
+                                        id={`edit-goal-${record.id}`}
+                                        rows={2}
+                                        maxLength={500}
+                                        value={editingGoalText}
+                                        onChange={(event) =>
+                                          setEditingGoalText(event.target.value)
+                                        }
+                                      />
+                                      <button
+                                        className={styles.primary}
+                                        type="submit"
+                                        disabled={
+                                          busy || !editingGoalText.trim()
+                                        }
+                                      >
+                                        Módosítás mentése
+                                      </button>
+                                    </form>
+                                  )}
+                                  {reviewingGoalId === record.id && (
+                                    <div className={styles.formGroup}>
+                                      <label
+                                        className={styles.label}
+                                        htmlFor={`review-goal-${record.id}`}
+                                      >
+                                        Mi segített, mi volt nehéz, vagy min
+                                        változtatnál?
+                                      </label>
+                                      <textarea
+                                        id={`review-goal-${record.id}`}
+                                        rows={3}
+                                        maxLength={1000}
+                                        value={goalReviewNote}
+                                        onChange={(event) =>
+                                          setGoalReviewNote(event.target.value)
+                                        }
+                                      />
+                                      <button
+                                        className={styles.primary}
+                                        type="button"
+                                        disabled={
+                                          busy || !goalReviewNote.trim()
+                                        }
+                                        onClick={() =>
+                                          void saveOwnGoalReview(record.id)
+                                        }
+                                      >
+                                        Visszatekintés mentése
+                                      </button>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </article>
+                          );
+                        })}
+                    </div>
+                    <form className={styles.formGroup} onSubmit={saveRoutine}>
+                      <h3>Saját rutin</h3>
+                      <AiCoachButton />
+                      <p className={styles.muted}>
+                        Rögzíthetsz egy egyszerű, általad választott rutint, és
+                        naponta feljegyezheted, ha kipróbáltad.
+                      </p>
+                      <label htmlFor="routine-when">
+                        Mikor szeretnéd kipróbálni? (nem kötelező)
+                      </label>
+                      <input
+                        id="routine-when"
+                        disabled={!continuity.loaded}
+                        value={routineWhen}
+                        maxLength={200}
+                        onChange={(e) => setRoutineWhen(e.target.value)}
+                      />
+                      <label className={styles.label} htmlFor="own-routine">
+                        Mit szeretnél rendszeresen kipróbálni?
+                      </label>
+                      <input
+                        id="own-routine"
+                        disabled={!continuity.loaded}
+                        maxLength={300}
+                        value={routineDraft}
+                        onChange={(event) =>
+                          setRoutineDraft(event.target.value)
+                        }
+                      />
+                      <button
+                        className={styles.primary}
+                        type="submit"
+                        disabled={busy || !routineDraft.trim()}
+                      >
+                        Rutin mentése
+                      </button>
+                      <RoutineHistory
+                        records={ownPlayerData?.records ?? []}
+                        save={savePlayerDiary}
+                        routines={[
+                          ...(ownPlayerData?.records ?? [])
+                            .filter((record) =>
+                              record.text?.startsWith("Saját rutin:"),
+                            )
+                            .map((record) => ({
+                              id: record.id,
+                              text:
+                                record.text
+                                  ?.slice("Saját rutin:".length)
+                                  .trim() ?? "",
+                            })),
+                          ...ownGoals
+                            .filter((goal) => ownGoalStatus(goal) === "habit")
+                            .map((goal) => ({
+                              id: goal.id,
+                              text: ownGoalText(goal),
+                            })),
+                        ]}
+                      />
+                    </form>
+                    <form
+                      className={styles.formGroup}
+                      onSubmit={saveReflection}
+                    >
+                      <h3>Napi és heti visszatekintés</h3>
+                      <AiCoachButton />
+                      <p className={styles.muted}>
+                        Írd le, amit szeretnél megőrizni a napodból vagy a
+                        hetedből. Bármelyik kérdést kihagyhatod; a kész
+                        visszatekintés a naplódban jelenik meg.
+                      </p>
+                      {draftNotice ? (
+                        <p
+                          role="status"
+                          aria-live="polite"
+                          className={styles.muted}
+                        >
+                          {draftNotice}
+                        </p>
+                      ) : null}
+                      <label className={styles.label} htmlFor="reflection-type">
+                        Melyikre tekintenél vissza?
+                      </label>
+                      <select
+                        id="reflection-type"
+                        value={reflectionType}
+                        disabled={!experienceDraftsReady}
+                        onChange={(event) =>
+                          setReflectionType(
+                            event.target.value as "daily" | "weekly",
+                          )
+                        }
+                      >
+                        <option value="daily">A napom</option>
+                        <option value="weekly">A hetem</option>
+                      </select>
+                      {(reflectionType === "daily"
+                        ? ([
+                            ["moment", "Mi maradt meg a mai napból?"],
+                            ["helped", "Mi segített ma?"],
+                          ] as const)
+                        : ([
+                            ["helped", "Mi segített ezen a héten?"],
+                            ["hard", "Mi volt sok vagy nehéz?"],
+                            ["next", "Mit próbálnál ki jövő héten?"],
+                          ] as const)
+                      ).map(([key, label]) => (
+                        <div key={`${reflectionType}-${key}`}>
+                          <label
+                            className={styles.label}
+                            htmlFor={`reflection-${reflectionType}-${key}`}
+                          >
+                            {label}
+                          </label>
+                          <textarea
+                            id={`reflection-${reflectionType}-${key}`}
+                            rows={2}
+                            maxLength={1000}
+                            disabled={!experienceDraftsReady}
+                            value={reflectionAnswers[reflectionType][key]}
+                            onChange={(event) =>
+                              setReflectionAnswers((current) => ({
+                                ...current,
+                                [reflectionType]: {
+                                  ...current[reflectionType],
+                                  [key]: event.target.value,
+                                },
+                              }))
+                            }
+                          />
+                        </div>
+                      ))}
+                      <div className={styles.actions}>
+                        <button
+                          className={styles.secondary}
+                          type="button"
+                          disabled={!experienceDraftsReady}
+                          onClick={() =>
+                            void saveExperienceDraft(
+                              reflectionType === "daily"
+                                ? "daily-reflection"
+                                : "weekly-reflection",
+                              reflectionType === "daily"
+                                ? reflectionAnswers.daily
+                                : reflectionAnswers.weekly,
+                            )
+                          }
+                        >
+                          Piszkozat mentése
+                        </button>
+                        <button
+                          className={styles.primary}
+                          type="submit"
+                          disabled={
+                            busy ||
+                            !experienceDraftsReady ||
+                            !Object.values(
+                              reflectionAnswers[reflectionType],
+                            ).some((value) => value.trim())
+                          }
+                        >
+                          Visszatekintés mentése a naplóba
+                        </button>
+                      </div>
+                    </form>
+                    <section
+                      className={styles.formGroup}
+                      aria-labelledby="reflection-history-heading"
+                    >
+                      <h3 id="reflection-history-heading">
+                        Korábbi napi és heti visszatekintéseid
+                      </h3>
+                      <AiCoachButton />
+                      {(ownPlayerData?.records ?? [])
+                        .filter(
+                          (record) =>
+                            record.text?.startsWith("Napi visszatekintés ·") ||
+                            record.text?.startsWith("Heti visszatekintés ·"),
+                        )
+                        .map((record) => (
+                          <article className={styles.dataCard} key={record.id}>
+                            <AiCoachButton
+                              context={{
+                                kind: "record",
+                                id: record.id,
+                                revision: record.revision ?? 1,
+                              }}
+                            />
+                            <p>{record.text}</p>
+                            <time dateTime={record.occurredAt}>
+                              {record.occurredAt
+                                ? new Date(record.occurredAt).toLocaleString(
+                                    "hu-HU",
+                                    { dateStyle: "medium", timeStyle: "short" },
+                                  )
+                                : ""}
+                            </time>
                           </article>
-                        );
-                      }),
-                    )}
-                  </div>
+                        ))}
+                      {recordCursor ? (
+                        <button
+                          className={styles.secondary}
+                          type="button"
+                          disabled={loadingOlderRecords}
+                          onClick={() => void loadOlderRecords()}
+                        >
+                          {loadingOlderRecords
+                            ? "Régebbi bejegyzések betöltése…"
+                            : "Régebbi naplóbejegyzések betöltése"}
+                        </button>
+                      ) : (
+                        <p className={styles.muted}>
+                          {ownPlayerData?.records.length
+                            ? "A betöltött naplóbejegyzések végére értél."
+                            : "Még nincs naplóbejegyzés."}
+                        </p>
+                      )}
+                    </section>
+                    <form
+                      className={styles.formGroup}
+                      onSubmit={saveMonthlyReflection}
+                    >
+                      <h3>Havi visszatekintés</h3>
+                      <AiCoachButton />
+                      <p className={styles.muted}>
+                        Gondolj az elmúlt négy hétre. A 16 rövid kérdést
+                        egyenként nézheted végig; bármelyiket kihagyhatod.
+                      </p>
+                      <p className={styles.eyebrow}>
+                        {monthlyReflectionStep <
+                        monthlyReflectionContent.questions.length
+                          ? `HAVI VISSZATEKINTÉS · ${monthlyReflectionStep + 1}/${monthlyReflectionContent.questions.length}`
+                          : "HAVI VISSZATEKINTÉS · ÁTTEKINTÉS"}
+                      </p>
+                      {monthlyReflectionStep <
+                      monthlyReflectionContent.questions.length ? (
+                        <>
+                          <p className={styles.muted}>
+                            {
+                              monthlyReflectionContent.questions[
+                                monthlyReflectionStep
+                              ]?.domain
+                            }
+                          </p>
+                          <h4>
+                            {
+                              monthlyReflectionContent.questions[
+                                monthlyReflectionStep
+                              ]?.text
+                            }
+                          </h4>
+                          <div className={styles.knowledgeList}>
+                            {monthlyReflectionContent.choices.map(
+                              (choice, index) => (
+                                <button
+                                  className={styles.secondary}
+                                  type="button"
+                                  key={choice}
+                                  disabled={!experienceDraftsReady}
+                                  onClick={() =>
+                                    answerMonthlyReflection(index + 1)
+                                  }
+                                >
+                                  {choice}
+                                </button>
+                              ),
+                            )}
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              disabled={!experienceDraftsReady}
+                              onClick={() =>
+                                answerMonthlyReflection("not-applicable")
+                              }
+                            >
+                              {monthlyReflectionContent.notApplicable}
+                            </button>
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              disabled={!experienceDraftsReady}
+                              onClick={() => answerMonthlyReflection("skip")}
+                            >
+                              {monthlyReflectionContent.skipped}
+                            </button>
+                          </div>
+                          {monthlyReflectionStep > 0 && (
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              disabled={!experienceDraftsReady}
+                              onClick={() =>
+                                setMonthlyReflectionStep((step) => step - 1)
+                              }
+                            >
+                              Vissza az előző kérdéshez
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <h4>Válaszaid áttekintése</h4>
+                          <div className={styles.knowledgeList}>
+                            {monthlyReflectionContent.questions.map(
+                              (item, index) => {
+                                const answer = monthlyAnswers[index];
+                                const label =
+                                  typeof answer === "number"
+                                    ? monthlyReflectionContent.choices[
+                                        answer - 1
+                                      ]
+                                    : answer === "not-applicable"
+                                      ? monthlyReflectionContent.notApplicable
+                                      : monthlyReflectionContent.skipped;
+                                return (
+                                  <article
+                                    className={styles.dataCard}
+                                    key={`${item.domain}-${item.text}`}
+                                  >
+                                    <h4>{item.text}</h4>
+                                    <p>{label}</p>
+                                  </article>
+                                );
+                              },
+                            )}
+                          </div>
+                          <label
+                            className={styles.label}
+                            htmlFor="monthly-next-step"
+                          >
+                            Mire szeretnél figyelni a következő hónapban? (nem
+                            kötelező)
+                          </label>
+                          <textarea
+                            id="monthly-next-step"
+                            rows={2}
+                            maxLength={500}
+                            disabled={!experienceDraftsReady}
+                            value={monthlyNextStep}
+                            onChange={(event) =>
+                              setMonthlyNextStep(event.target.value)
+                            }
+                          />
+                          <label
+                            className={styles.label}
+                            htmlFor="monthly-note"
+                          >
+                            Saját megjegyzés (nem kötelező)
+                          </label>
+                          <textarea
+                            id="monthly-note"
+                            rows={2}
+                            maxLength={1000}
+                            disabled={!experienceDraftsReady}
+                            value={monthlyNote}
+                            onChange={(event) =>
+                              setMonthlyNote(event.target.value)
+                            }
+                          />
+                          <div className={styles.actions}>
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              disabled={!experienceDraftsReady}
+                              onClick={() =>
+                                setMonthlyReflectionStep(
+                                  monthlyReflectionContent.questions.length - 1,
+                                )
+                              }
+                            >
+                              Vissza az utolsó kérdéshez
+                            </button>
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              disabled={!experienceDraftsReady}
+                              onClick={() =>
+                                void saveExperienceDraft("monthly-reflection", {
+                                  step: monthlyReflectionStep,
+                                  answers: monthlyAnswers,
+                                  nextFocus: monthlyNextStep,
+                                  note: monthlyNote,
+                                })
+                              }
+                            >
+                              Piszkozat mentése
+                            </button>
+                            <button
+                              className={styles.primary}
+                              type="submit"
+                              disabled={busy}
+                            >
+                              Havi visszatekintés mentése
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </form>
+                    <div className={styles.formGroup}>
+                      <h3>Korábbi visszatekintések</h3>
+                      <AiCoachButton />
+                      {ownPlayerData?.records
+                        .filter((record) =>
+                          record.text?.startsWith("Havi visszatekintés"),
+                        )
+                        .map((record) => (
+                          <article className={styles.dataCard} key={record.id}>
+                            <AiCoachButton
+                              context={{
+                                kind: "record",
+                                id: record.id,
+                                revision: record.revision ?? 1,
+                              }}
+                            />
+                            <p>{record.text}</p>
+                            <time dateTime={record.occurredAt}>
+                              {record.occurredAt
+                                ? new Date(record.occurredAt).toLocaleString(
+                                    "hu-HU",
+                                    { dateStyle: "medium", timeStyle: "short" },
+                                  )
+                                : ""}
+                            </time>
+                          </article>
+                        ))}
+                    </div>
+                    <div className={styles.formGroup}>
+                      <h3>Rövid gyakorlatok</h3>
+                      <AiCoachButton />
+                      <p className={styles.muted}>
+                        Ezek általános ötletek; bármelyiket kihagyhatod, és
+                        bármikor kérhetsz segítséget egy megbízható felnőttől.
+                      </p>
+                      <fieldset>
+                        <legend>A hozzám illő példák</legend>
+                        {[
+                          ["sport", "Sportolás közben"],
+                          ["everyday", "A hétköznapokban"],
+                          ["neutral", "Egyszerű példa"],
+                        ].map(([key, label]) => (
+                          <button
+                            className={styles.secondary}
+                            key={key}
+                            type="button"
+                            aria-pressed={examplePreference === key}
+                            onClick={() => setExamplePreference(key)}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </fieldset>
+                      <label htmlFor="practice-goal">
+                        Kapcsolódó saját cél (nem kötelező)
+                      </label>
+                      <select
+                        id="practice-goal"
+                        disabled={!continuity.loaded}
+                        value={practiceGoalId}
+                        onChange={(e) => setPracticeGoalId(e.target.value)}
+                      >
+                        <option value="">Most nem kapcsolom célhoz</option>
+                        {ownGoals.map((goal) => (
+                          <option key={goal.id} value={goal.id}>
+                            {ownGoalText(goal)}
+                          </option>
+                        ))}
+                      </select>
+                      <label
+                        className={styles.label}
+                        htmlFor="practice-feedback"
+                      >
+                        Saját megjegyzés a gyakorlathoz (nem kötelező)
+                      </label>
+                      <textarea
+                        id="practice-feedback"
+                        disabled={!continuity.loaded}
+                        rows={2}
+                        maxLength={1000}
+                        value={practiceFeedback}
+                        onChange={(event) =>
+                          setPracticeFeedback(event.target.value)
+                        }
+                      />
+                      <div className={styles.knowledgeList}>
+                        {(
+                          practices.items as Array<{
+                            id: string;
+                            title: string;
+                            what: string;
+                            how: string;
+                          }>
+                        ).map((practice) => (
+                          <details
+                            id={`practice-${practice.id}`}
+                            className={styles.dataCard}
+                            key={practice.id}
+                          >
+                            <summary>
+                              <strong>{practice.title}</strong>
+                              <span className={styles.practiceDescription}>
+                                {practice.what}
+                              </span>
+                            </summary>
+                            <AiCoachButton
+                              context={{
+                                kind: "practice",
+                                id: practice.id,
+                                revision: 1,
+                              }}
+                            />
+                            <p>{practice.how}</p>
+                            {Object.values(journeyContent.topics)
+                              .filter((topic) => topic.practice === practice.id)
+                              .map((topic) => (
+                                <details key={topic.title}>
+                                  <summary>{topic.title}</summary>
+                                  <p>{topic.text}</p>
+                                  <p>
+                                    {
+                                      topic[
+                                        examplePreference as
+                                          | "sport"
+                                          | "everyday"
+                                          | "neutral"
+                                      ]
+                                    }
+                                  </p>
+                                </details>
+                              ))}
+                            <div className={styles.actions}>
+                              {(
+                                [
+                                  "Segített",
+                                  "Részben segített",
+                                  "Nem segített",
+                                ] as const
+                              ).map((rating) => (
+                                <button
+                                  className={styles.secondary}
+                                  type="button"
+                                  key={rating}
+                                  disabled={busy}
+                                  onClick={() =>
+                                    void savePracticeFeedback(practice, rating)
+                                  }
+                                >
+                                  {rating}
+                                </button>
+                              ))}
+                            </div>
+                          </details>
+                        ))}
+                      </div>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <h3>Korábbi gyakorlataid</h3>
+                      <AiCoachButton />
+                      {ownPlayerData?.records
+                        .filter(
+                          (record) =>
+                            record.kind === "diary" &&
+                            record.text?.startsWith("Gyakorlat:"),
+                        )
+                        .map((record) => (
+                          <article className={styles.dataCard} key={record.id}>
+                            <AiCoachButton
+                              context={{
+                                kind: "record",
+                                id: record.id,
+                                revision: record.revision ?? 1,
+                              }}
+                            />
+                            <p>{record.text}</p>
+                            <time dateTime={record.occurredAt}>
+                              {record.occurredAt
+                                ? new Date(record.occurredAt).toLocaleString(
+                                    "hu-HU",
+                                    { dateStyle: "medium", timeStyle: "short" },
+                                  )
+                                : ""}
+                            </time>
+                          </article>
+                        ))}
+                    </div>
+                  </section>
                 )}
-              </section>
-            )}
-          </>
-        )}
-      </div>
-    </main>
+              {tab === "tasks-feedback" && selectedPlayer && (
+                <section className={styles.panel}>
+                  {active.activeRole === "player" && (
+                    <div className={styles.formGroup}>
+                      <p className={styles.eyebrow}>A MAI ÁLLAPOTJELZÉSEDHEZ</p>
+                      <p className={styles.eyebrow}>
+                        A LEGUTÓBBI ÁLLAPOTJELZÉSEDHEZ
+                      </p>
+                      <h2>Válassz egy saját következő lépést</h2>
+                      <AiCoachButton />
+                      {!latestPlayerCheckin ? (
+                        <p className={styles.emptyState}>
+                          Először töltsd ki a napi állapotjelzésedet. Utána itt
+                          választhatsz egy neked megfelelő következő lépést.
+                        </p>
+                      ) : !latestPlayerTask ? (
+                        <>
+                          <p className={styles.muted}>
+                            A válaszaid alapján Habi nem dönt helyetted. Válaszd
+                            azt, ami ma neked hasznosnak tűnik.
+                          </p>
+                          <div className={styles.knowledgeList}>
+                            {[
+                              "Átgondolom, melyik válaszom a legfontosabb ma.",
+                              "Elmondom egy megbízható felnőttnek, hogyan vagyok.",
+                              "Kiválasztok egy rövid gyakorlatot.",
+                            ].map((action) => (
+                              <button
+                                className={styles.secondary}
+                                type="button"
+                                key={action}
+                                disabled={busy}
+                                onClick={() =>
+                                  void chooseDailyPlayerTask(
+                                    latestPlayerCheckin.id,
+                                    action,
+                                  )
+                                }
+                              >
+                                {action}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <article className={styles.taskCard}>
+                          <h3>
+                            {latestPlayerTask.text
+                              ?.split(" · ")
+                              .slice(2)
+                              .join(" · ")}
+                          </h3>
+                          <p className={styles.muted}>
+                            {latestPlayerTaskDone
+                              ? "Ezt a lépést elvégezted."
+                              : "Akkor jelöld késznek, amikor neked megfelel."}
+                          </p>
+                          {!latestPlayerTaskDone && (
+                            <button
+                              className={styles.primary}
+                              type="button"
+                              disabled={busy}
+                              onClick={() =>
+                                void completeDailyPlayerTask(
+                                  latestPlayerCheckin.id,
+                                )
+                              }
+                            >
+                              Elvégeztem
+                            </button>
+                          )}
+                        </article>
+                      )}
+                    </div>
+                  )}
+                  <p className={styles.eyebrow}>KÖZÖS MUNKA</p>
+                  <h2>Feladatok és visszajelzések</h2>
+                  <AiCoachButton />
+                  <p className={styles.muted}>
+                    A közös tervhez kapcsolt teendők, döntések és utánkövetések.
+                    Minden visszajelzés a naplóban is megjelenik.
+                  </p>
+                  {tasksLoading ? (
+                    <p className={styles.emptyState} role="status">
+                      A feladatok és visszajelzések betöltése…
+                    </p>
+                  ) : plans.length === 0 ? (
+                    <p className={styles.emptyState}>
+                      Még nincs közös feladat. Az edző által készített terv itt
+                      jelenik meg, miután kapcsolódó játékos vagy szülő
+                      elfogadta.
+                    </p>
+                  ) : (
+                    <div className={styles.taskList}>
+                      {plans.flatMap((plan) =>
+                        plan.actions.map((action) => {
+                          const feedback = followUps.filter(
+                            (item) =>
+                              item.planRef.id === plan.id &&
+                              item.actionId === action.id,
+                          );
+                          const outcomeLabel: Record<string, string> = {
+                            helped: "Segített",
+                            not_helped: "Nem segített",
+                            unknown: "Még nem tudom",
+                            adjust: "Módosítani kell",
+                          };
+                          return (
+                            <article
+                              className={styles.taskCard}
+                              key={`${plan.id}:${action.id}`}
+                            >
+                              <div className={styles.taskHeading}>
+                                <div>
+                                  <p className={styles.eyebrow}>
+                                    {plan.status === "proposed"
+                                      ? "JÓVÁHAGYÁSRA VÁR"
+                                      : plan.status === "active"
+                                        ? "AKTÍV FELADAT"
+                                        : "LEZÁRT TERV"}
+                                  </p>
+                                  <h3>{action.what}</h3>
+                                </div>
+                                <time dateTime={action.dueAt}>
+                                  Határidő:{" "}
+                                  {new Date(action.dueAt).toLocaleDateString(
+                                    "hu-HU",
+                                  )}
+                                </time>
+                              </div>
+                              <p>{action.why}</p>
+                              <p className={styles.muted}>
+                                Leállítási feltétel: {action.stopCondition}
+                              </p>
+                              {plan.status === "proposed" &&
+                                (active.activeRole === "player" ||
+                                  active.activeRole === "parent") && (
+                                  <div className={styles.actions}>
+                                    <button
+                                      className={styles.primary}
+                                      type="button"
+                                      disabled={busy}
+                                      onClick={() =>
+                                        void decidePlan(plan, "accept")
+                                      }
+                                    >
+                                      Elfogadom
+                                    </button>
+                                    <button
+                                      className={styles.secondary}
+                                      type="button"
+                                      disabled={busy}
+                                      onClick={() =>
+                                        void decidePlan(plan, "decline")
+                                      }
+                                    >
+                                      Nem ezt javaslom
+                                    </button>
+                                  </div>
+                                )}
+                              {plan.status === "active" && (
+                                <div className={styles.formGroup}>
+                                  <label
+                                    className={styles.label}
+                                    htmlFor={`task-outcome-${plan.id}-${action.id}`}
+                                  >
+                                    Hogyan alakult?
+                                  </label>
+                                  <select
+                                    id={`task-outcome-${plan.id}-${action.id}`}
+                                    value={followupOutcome}
+                                    onChange={(event) =>
+                                      setFollowupOutcome(
+                                        event.target
+                                          .value as typeof followupOutcome,
+                                      )
+                                    }
+                                  >
+                                    <option value="helped">Segített</option>
+                                    <option value="not_helped">
+                                      Nem segített
+                                    </option>
+                                    <option value="adjust">
+                                      Módosítani kell
+                                    </option>
+                                    <option value="unknown">
+                                      Még nem tudom
+                                    </option>
+                                  </select>
+                                  <label
+                                    className={styles.label}
+                                    htmlFor={`task-feedback-${plan.id}-${action.id}`}
+                                  >
+                                    Visszajelzés
+                                  </label>
+                                  <textarea
+                                    id={`task-feedback-${plan.id}-${action.id}`}
+                                    rows={3}
+                                    maxLength={4000}
+                                    value={followupText}
+                                    onChange={(event) =>
+                                      setFollowupText(event.target.value)
+                                    }
+                                  />
+                                  <button
+                                    className={styles.primary}
+                                    type="button"
+                                    disabled={busy || !followupText.trim()}
+                                    onClick={() =>
+                                      void submitFollowUp(plan, action.id)
+                                    }
+                                  >
+                                    Visszajelzés mentése
+                                  </button>
+                                </div>
+                              )}
+                              <div className={styles.feedbackList}>
+                                <h4>Korábbi visszajelzések</h4>
+                                {feedback.length ? (
+                                  feedback.map((item) => (
+                                    <article key={item.id}>
+                                      <p>
+                                        <strong>
+                                          {outcomeLabel[item.outcome] ??
+                                            item.outcome}
+                                        </strong>
+                                        {" · "}
+                                        <time dateTime={item.occurredAt}>
+                                          {new Date(
+                                            item.occurredAt,
+                                          ).toLocaleString("hu-HU", {
+                                            dateStyle: "medium",
+                                            timeStyle: "short",
+                                          })}
+                                        </time>
+                                      </p>
+                                      <p>{item.text}</p>
+                                    </article>
+                                  ))
+                                ) : (
+                                  <p className={styles.muted}>
+                                    Ehhez a feladathoz még nincs visszajelzés.
+                                  </p>
+                                )}
+                              </div>
+                            </article>
+                          );
+                        }),
+                      )}
+                    </div>
+                  )}
+                </section>
+              )}
+            </>
+          )}
+        </div>
+      </main>
+    </AiCoachProvider>
   );
 }

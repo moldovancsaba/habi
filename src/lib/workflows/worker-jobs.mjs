@@ -11,6 +11,8 @@ import {
 import { workerLeaseHash } from "../auth/worker-guard.mjs";
 import { verifySourceSet } from "./interpretations.mjs";
 
+import { coachWorkerContext, completeCoachTurn } from "./ai-coach.mjs";
+
 const LEASE_MS = 90_000;
 const RETRY_DELAYS = [5, 15, 60, 300];
 const SOURCE_COLLECTIONS = [
@@ -278,6 +280,29 @@ export async function getWorkerJobContext({
       fence: job.fence,
       deadline: new Date(now.getTime() + 240_000).toISOString(),
     };
+    if (!isValidApiInput("WorkerContext", context))
+      throw new HabiApiError("DEPENDENCY_UNAVAILABLE");
+    return context;
+  }
+  if (job.kind === "coachConversation") {
+    const principal = await requesterScope(db, job);
+    if (!principal) throw new HabiApiError("NOT_FOUND");
+    const manifest = await promptManifest();
+    manifest.promptHash = createHash("sha256")
+      .update(
+        await readFile(
+          new URL("../../../contracts/coach-prompt.md", import.meta.url),
+        ),
+      )
+      .digest("hex");
+    manifest.retrievalVersion = "coach-memory-v1";
+    const context = await coachWorkerContext({
+      db,
+      principal,
+      job,
+      manifest,
+      now,
+    });
     if (!isValidApiInput("WorkerContext", context))
       throw new HabiApiError("DEPENDENCY_UNAVAILABLE");
     return context;
@@ -550,6 +575,11 @@ export async function completeWorkerJob({
     input,
     now,
     action: async ({ tx, session, job, input: body }) => {
+      if (job.kind === "coachConversation") {
+        const principal = await requesterScope(tx, job, session);
+        if (!principal) throw new HabiApiError("NOT_FOUND");
+        return completeCoachTurn({ tx, session, job, principal, body, now });
+      }
       if (job.kind !== "personalInterpretation" || !job.turnId)
         throw new HabiApiError("INVALID_INPUT");
       const principal = await requesterScope(tx, job, session);

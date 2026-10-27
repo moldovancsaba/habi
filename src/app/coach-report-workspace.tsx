@@ -1,4 +1,5 @@
 "use client";
+import { AiCoachButton } from "./ai-coach";
 
 import { useCallback, useEffect, useState } from "react";
 import styles from "./coach-report-workspace.module.css";
@@ -540,6 +541,7 @@ export default function CoachReportWorkspace({
         <p className={styles.eyebrow}>KÉRDŐÍVEK ÉS EREDMÉNYEK</p>
       </div>
       <h2 id="coach-reports-heading">Feltöltés és adatbevitel</h2>
+      <AiCoachButton />
       <p className={styles.intro}>
         {playerName} sportolói kérdőívének PDF-eredményét töltsd fel. A
         biztonsági vizsgálat után vidd be az adatokat az eredeti oldalszámokkal,
@@ -572,6 +574,7 @@ export default function CoachReportWorkspace({
       )}
 
       <h3>Korábbi feltöltések</h3>
+      <AiCoachButton />
       {!reports.length ? (
         <p className={styles.intro}>
           Ehhez a játékoshoz még nincs feltöltött kérdőíveredmény.
@@ -743,6 +746,7 @@ export default function CoachReportWorkspace({
         aria-labelledby="report-interpretation-heading"
       >
         <h3 id="report-interpretation-heading">Kérdezz a játékosról</h3>
+        <AiCoachButton />
         <p className={styles.intro}>
           Kérdezz a játékos Habi-ban elérhető visszajelzéseiről és
           előzményeiről. A helyi AI a legutóbbi 20 hozzáférhető forrást veszi

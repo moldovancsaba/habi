@@ -1,4 +1,5 @@
 "use client";
+import { AiCoachButton } from "./ai-coach";
 import { useCallback, useEffect, useState } from "react";
 import { productRequest, commandMessage } from "./product-request";
 import styles from "./workspace.module.css";
@@ -53,6 +54,7 @@ export default function KnowledgeWorkspace({
   return (
     <section className={styles.panel}>
       <h2>Szakmai minták és felülvizsgálat</h2>
+      <AiCoachButton />
       <p>
         Általánosított helyzeteket rögzíts személyes részletek nélkül. A
         jóváhagyás forrás-, személytelenségi és jogellenőrzéshez kötött.

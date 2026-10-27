@@ -1,4 +1,5 @@
 "use client";
+import { AiCoachButton } from "./ai-coach";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import instrument from "../../contracts/instrument.json" with { type: "json" };
@@ -555,6 +556,32 @@ export default function MetroTimeline({
               <h3 className="story-date">{dateTime}</h3>
               <div className="story-card">
                 <article className="event-card">
+                  <AiCoachButton
+                    context={{
+                      kind:
+                        event.kind === "thread.message"
+                          ? "message"
+                          : event.kind.startsWith("interpretation.")
+                            ? "interpretation"
+                            : event.kind.startsWith("plan.") &&
+                                event.kind !== "plan.follow_up"
+                              ? "plan"
+                              : record?.answerCodes
+                                ? "checkin_result"
+                                : record?.text
+                                  ? "record"
+                                  : "page",
+                      id:
+                        event.kind === "thread.message" ||
+                        event.kind.startsWith("interpretation.") ||
+                        (event.kind.startsWith("plan.") &&
+                          event.kind !== "plan.follow_up")
+                          ? event.resourceRef.id
+                          : (record?.id ?? "timeline"),
+                      revision:
+                        record?.revision ?? event.resourceRef.revision ?? 1,
+                    }}
+                  />
                   <div className="event-meta">
                     <ActorBadge role={event.actorRole} />
                     <span>{playerName}</span>

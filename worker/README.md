@@ -2,7 +2,7 @@
 
 ## Szerep és határok
 
-A Mac worker kifelé hívja a Habi API-t; nem csatlakozik közvetlenül MongoDB Atlashoz, nem kap felhasználói SSO credentialt, és nem fogad be tetszőleges hálózati kapcsolatot. A helyi modell a rögzített `qwen2.5:7b`; a modell digestjét és a prompt SHA-256 értékét a `contracts/runtime-manifest.json` rögzíti.
+A Mac worker kifelé hívja a Habi API-t és a megosztott Hetzner AI API-t; nem csatlakozik közvetlenül MongoDB Atlashoz, nem kap felhasználói SSO credentialt, és nem fogad be tetszőleges hálózati kapcsolatot. A `hosted` értelmezési jobok a `text_chat` feladatot és alapértelmezésben az `auto` modellt használják. A helyi szintetikus/teszt mód továbbra is a rögzített `qwen2.5:7b` modellt használja; ennek digestjét és a prompt SHA-256 értékét a `contracts/runtime-manifest.json` rögzíti.
 
 A `run-service` a Habi worker API-t használja: egy jobot claimel, lease alatt időnként heartbeatet küld, majd betölti az engedélyezett kontextust, és eredményt küld vissza. A személyes magyarázat forrásrefjeit a szerver újraellenőrzi; állításokat tartalmazó modellválasz emberi coach review-ra vár. Riportnál a worker a karanténban tartott PDF-et letölti, ellenőrzi a hash-t és ClamAV-val vizsgálja; csak `clean` eredmény után válik a riport olvashatóvá. Ismeretlen vagy hibás scanner-válasz esetén a riport karanténban marad.
 
@@ -10,11 +10,11 @@ A `run-service` a Habi worker API-t használja: egy jobot claimel, lease alatt i
 
 - `local_synthetic`: Ollama-verzió, modell, prompt hash, inference és kizárólagos hostzár ellenőrzése. Csak `development` + `HG_SYNTHETIC_DATA_ONLY=true`; felhő-, adatbázis- és felhasználói credentialt nem fogad el.
 - `local_test`: localhoston futó Habi API-val dolgozó end-to-end worker. Kizárólag `test`, localhost HTTP, szintetikus DB és a repository `.env.test.example` tokenje engedélyezett.
-- `hosted`: HTTPS Habi API és operátori konfiguráció kell. A nyers worker bearer csak a Macen marad; Vercelre kizárólag SHA-256 verifier kerül. A Habi worker kifelé kapcsolódik a Vercel API-hoz; a Tailscale Funnel nem szükséges, mert az Ollama ugyanazon a Macen fut loopback címen.
+- `hosted`: HTTPS Habi API, a Hetzner szolgáltatásspecifikus kulcsa és operátori konfiguráció kell. A két bearer csak a Macen marad; Vercelre kizárólag a Habi worker bearer SHA-256 verifiere kerül. A dolgozó szöveg és a kijelölt, jogosultság-ellenőrzött forráscsomag a Macről HTTPS-en a Hetzner API-hoz kerül. A Tailscale Funnel nem része ennek a kapcsolatnak.
 
 ## Helyi előfeltételek
 
-- A helyi Ollama elérhető `127.0.0.1:11434` címen, a manifest szerinti modell digesttel.
+- A helyi acceptancehez az Ollama elérhető `127.0.0.1:11434` címen, a manifest szerinti modell digesttel. A hosted mód a `https://chatbotapi.haho.ai/v1` API-t használja, nem helyi Ollama inference-t.
 - `uv` és a repository lockfile szerinti Python-környezet.
 - ClamAV telepítve, a `clamscan` elérhető a `PATH`-on, és az aláírás-adatbázis frissítve `freshclam` paranccsal. A worker 48 óránál régebbi adatbázissal nem adhat tiszta verdictet. Egyedi binárisútvonal esetén a `HG_CLAMSCAN_PATH` változó használható.
 - Helyi, replica-setes Mongo tesztadatbázis és a futó Habi fejlesztői szerver.
@@ -41,17 +41,19 @@ A `.env.test.example` értékei kizárólag localhoston és szintetikus adatokka
 
 ## Tartós macOS Production worker
 
-A Production worker külön, gitignored `worker/.env.production.local` fájlt használ 0600 jogosultsággal. Ebben csak a cloud API origin, a Habi worker service ID és bearer token, a lokális Ollama/model/prompt beállítás, a host lock és a ClamAV útvonala lehet. Atlas-, session- vagy SSO-kulcs tilos a worker környezetében. A bearer hash-ét a Habi Vercel Production `HG_WORKER_BEARER_SHA256` változója ellenőrzi.
+A Production worker külön, gitignored `worker/.env.production.local` fájlt használ 0600 jogosultsággal. Ebben van a Habi API origin, a worker service ID/bearer, `HG_SHARED_AI_BASE_URL`, `HG_SHARED_AI_API_KEY`, `HG_SHARED_AI_MODEL=auto`, a prompt/release metaadat, a host lock és a ClamAV útvonala. Atlas-, session- vagy felhasználói SSO-kulcs tilos a worker környezetében. A Hetzner kulcs csak a worker folyamatnak adható, Vercelbe vagy böngészőbe nem kerülhet; a Habi worker bearer hash-ét a Habi Vercel Production `HG_WORKER_BEARER_SHA256` változója ellenőrzi.
 
 A `launchd/com.doneisbetter.habi-worker.plist` fájlt a `~/Library/LaunchAgents` könyvtárba kell telepíteni. A `scripts/run-worker-production.sh` beolvassa a lokális titkos env fájlt, majd a lockfile-os szolgáltatást indítja. Állapot: `launchctl print gui/$(id -u)/com.doneisbetter.habi-worker`; leállítás: `launchctl bootout gui/$(id -u)/com.doneisbetter.habi-worker`. A stdout és stderr a `~/Library/Logs/habi-worker*.log` fájlokba kerül; token, prompt és személyes forrásszöveg nem kerülhet bele.
 
 ## Hibák és helyreállítás
 
 - `HOST_LOCK_BUSY`: már fut egy worker ugyanazzal a lockfile-lal. Állítsd le a másik példányt; ne töröld a lockot élő worker mellett.
-- `WORKER_API_UNAVAILABLE` vagy Ollama/ClamAV hiány: a worker várakozik, a job retryra kerül. Helyreállás után ugyanaz a job új lease-t kap.
+- `WORKER_API_UNAVAILABLE`, `SHARED_AI_UNAVAILABLE`, `SHARED_AI_CAPACITY` vagy ClamAV hiány: a worker késleltetve újrapróbálja vagy a Habi jobot defereli. A Hetzner job-létrehozás idempotenciakulccsal védett; a polling legfeljebb 300 másodpercig tart, majd a Habi recovery út dönt a retryról.
+- `SHARED_AI_AUTHORIZATION_FAILED`, `SHARED_AI_TEXT_CHAT_NOT_PERMITTED`: állítsd le és javítsd a szolgáltatásspecifikus kulcsot/jogosultságot; ne próbálkozz másik projekt kulcsával.
+- `SHARED_AI_RESULT_INVALID`, `SHARED_AI_JOB_EXPIRED`, `SHARED_AI_JOB_FAILED` vagy `SHARED_AI_INPUT_TOO_LARGE`: nincs válasz elfogadva; ellenőrizd a Habi worker jobját és az engedélyezett forráscsomag méretét.
 - `AUTH_REVOKED`, `SOURCE_INVALIDATED`, `INVALID_INPUT`: a job terminális lehet; ellenőrizd a szerver oldali jogosultságot vagy az inputot. Ne reseteld számlálóit közvetlen DB-módosítással.
 - `REVISION_CONFLICT`: a lease lejárt vagy új fence nyert. A régi worker nem írhat; kérjen új jobot.
 - Malware verdict: az upload nem lesz olvasható, a blob törlése szükséges; a job okkódja `MALWARE_DETECTED`.
 - Árva vagy beragadt job: diagnosztizáld a job státuszát, attempts/fence/leaseUntil mezőit és a redaktált worker logot. Ugyanazt a workflow/API recovery utat használd; kézi counter reset vagy bulk requeue tilos.
 
-Worker JSON log nem ír promptot, személyes forrásszöveget, PDF-t vagy nyers credentialt. A worker service loop és a cloud API integráció ettől még nem igazolt Vercel/Atlas környezetben; az első end-to-end bizonyítékot kizárólag a helyi szintetikus acceptance futtatás adja.
+Worker JSON log nem ír promptot, személyes forrásszöveget, PDF-t vagy nyers credentialt. A Hetzner job API aszinkron sorának elérhetősége korlátozott; a job eredménye körülbelül 15 percig érhető el, ezért nem ez a Habi kanonikus tárolója. Habi ellenőrzi a source revisionöket és claim-citációkat mentés előtt. A transport teszt nem igazolja a magyar modellminőséget: eddigi szintetikus magyar válasz nem volt használható, ezért a hasznos válaszminőség külön értékelést igényel. Camera-képek Habi-ban nincsenek; a riport PDF ClamAV vizsgálata változatlan és nem AI moderáció.

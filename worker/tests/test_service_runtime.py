@@ -15,6 +15,7 @@ class InterpretationEvidenceTests(unittest.TestCase):
         self.prompt_path = Path(self.temp.name) / "prompt.md"
         self.prompt_path.write_text("synthetic system prompt", encoding="utf-8")
         self.config = SimpleNamespace(
+            mode="local_test",
             prompt_path=str(self.prompt_path),
             ollama_origin="http://127.0.0.1:11434",
             model="qwen2.5:7b",
@@ -26,6 +27,7 @@ class InterpretationEvidenceTests(unittest.TestCase):
             "promptManifest": {"promptHash": hashlib.sha256(b"synthetic").hexdigest()},
             "question": "Mit mutat ez a napi állapotjelzés?",
             "turnRevision": 1,
+            "jobId": "synthetic-job",
         }
 
     def tearDown(self):
@@ -58,6 +60,36 @@ class InterpretationEvidenceTests(unittest.TestCase):
 
         self.assertEqual(result["status"], "no_evidence")
         self.assertEqual(result["claims"], [])
+
+    def test_hosted_mode_uses_shared_api_and_records_actual_model(self):
+        self.config.mode = "hosted"
+        self.config.shared_ai_model = "auto"
+        generated = {"claims": [], "unknowns": ["Nincs elegendő forrásadat."], "attributions": []}
+        with patch("habi_worker.service_runtime.shared_ai_generate", return_value=(generated, "granite4:1b-h")) as request:
+            result = _answer_for_context(self.config, self.context)
+        self.assertEqual(result["status"], "no_evidence")
+        self.assertEqual(result["manifest"]["modelArtifact"], "granite4:1b-h")
+        self.assertEqual(result["questionRevision"], self.context["turnRevision"])
+        self.assertEqual(request.call_args.args[0], self.config)
+        self.assertIn("SOURCE_MANIFEST", request.call_args.args[2])
+
+    def test_coach_followup_uses_dialogue_and_role_with_authored_evidence(self):
+        self.prompt_path.with_name("coach-prompt.md").write_text("synthetic coach prompt", encoding="utf-8")
+        self.context["promptManifest"]["promptHash"] = hashlib.sha256(b"synthetic coach prompt").hexdigest()
+        self.context.update(coachMode=True, viewerRole="player", opening="Alvás", dialogue=[{"question":"Mit jelent?", "answer":"A saját beszámolódat mutatja."}])
+        result, prompt = self.answer([{"text":"A kijelzés saját beszámoló.", "kind":"general", "evidenceRefs":[self.ref]}])
+        self.assertEqual(result["status"], "ready")
+        self.assertIn("A saját beszámolódat mutatja.", prompt)
+        self.assertIn("player", prompt)
+        self.assertIn("nem új bizonyíték", prompt)
+
+    def test_coach_personal_inference_still_requires_review(self):
+        self.prompt_path.with_name("coach-prompt.md").write_text("synthetic coach prompt", encoding="utf-8")
+        self.context["promptManifest"]["promptHash"] = hashlib.sha256(b"synthetic coach prompt").hexdigest()
+        self.context.update(coachMode=True, viewerRole="player", opening="Alvás", dialogue=[])
+        result, _ = self.answer([{"text":"Lehetséges összefüggés.", "kind":"inference", "evidenceRefs":[self.ref]}])
+        self.assertEqual(result["status"], "awaiting_review")
+        self.assertEqual(result["validity"], "review_required")
 
 
 if __name__ == "__main__":

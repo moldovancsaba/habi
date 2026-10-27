@@ -1,4 +1,5 @@
 "use client";
+import { AiCoachButton } from "./ai-coach";
 import { useState } from "react";
 import content from "../lib/content/support-loop-v1.json";
 import { useContinuityDraft } from "./use-continuity-draft";
@@ -111,6 +112,7 @@ export default function PlayerSupportLoop({
   return (
     <section className={styles.formGroup}>
       <h3>Valami előtt vagy után</h3>
+      <AiCoachButton />
       <p>{content.labels.eventIntro}</p>
       {draft.status && <p role="status">{draft.status}</p>}
       {notice && <p role="status">{notice}</p>}

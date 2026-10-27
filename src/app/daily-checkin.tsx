@@ -1,4 +1,5 @@
 "use client";
+import { AiCoachButton } from "./ai-coach";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { checkinMetrics } from "../lib/workflows/checkin-chart.mjs";
 import { productRequest, commandMessage } from "./product-request";
@@ -175,6 +176,14 @@ export default function DailyCheckin({
             aria-label="Állapotjelzés előrehaladása"
           />
           <h3>{question[1]}</h3>
+          <AiCoachButton
+            context={{
+              kind: "metric",
+              id: question[0],
+              metric: question[0],
+              revision: 1,
+            }}
+          />
           <details>
             <summary>Hogyan válasszak?</summary>
             <p>{hints[question[0]]}</p>
@@ -289,6 +298,7 @@ export default function DailyCheckin({
       ) : (
         <>
           <h3>Beküldött válaszaid</h3>
+          <AiCoachButton />
           {session.answers.map((a) => (
             <p key={a.metric}>
               {checkinMetrics.find(([metric]) => metric === a.metric)?.[1]} ·{" "}
