@@ -26,6 +26,11 @@ import {
   createGoalExport,
   summarizeRecordedAnswers,
 } from "../lib/workflows/goal-export.mjs";
+import {
+  isGoalReviewDue,
+  latestGoalReviewDate,
+  nextGoalReviewDate,
+} from "../lib/workflows/goal-review.mjs";
 import { createCheckinConversationOpening } from "../lib/workflows/checkin-conversation-opening.mjs";
 import { createTrustedAdultMessage } from "../lib/workflows/trusted-adult-message.mjs";
 
@@ -326,6 +331,7 @@ export default function HabiWorkspace() {
   >("unknown");
   const [practiceSearch, setPracticeSearch] = useState("");
   const [playerGoalDraft, setPlayerGoalDraft] = useState("");
+  const [goalReviewDays, setGoalReviewDays] = useState("7");
   const [editingGoalId, setEditingGoalId] = useState("");
   const [editingGoalText, setEditingGoalText] = useState("");
   const [reviewingGoalId, setReviewingGoalId] = useState("");
@@ -1090,6 +1096,21 @@ export default function HabiWorkspace() {
       ? "closed"
       : "active";
   }
+  const ownGoals = (ownPlayerData?.records ?? []).filter(
+    (record) =>
+      record.kind === "diary" && record.text?.startsWith("Saját cél:"),
+  );
+  const dueOwnGoals = ownGoals.filter((goal) => {
+    const status = ownGoalStatus(goal);
+    const reviewDate = latestGoalReviewDate(
+      ownPlayerData?.records ?? [],
+      goal.id,
+    );
+    return (
+      status === "active" &&
+      Boolean(reviewDate && isGoalReviewDue(reviewDate, localToday))
+    );
+  });
   const questionSource = data[0]?.checkins[0] ?? null;
   const historyItems: HistoryItem[] = data
     .flatMap((person) => [
@@ -1554,10 +1575,10 @@ export default function HabiWorkspace() {
       const body = await response.json().catch(() => null);
       if (!response.ok) throw new Error(body?.code ?? "SAVE_FAILED");
       await load();
-      return true;
+      return body as RecordItem;
     } catch (error) {
       setNotice(messageFor(error));
-      return false;
+      return null;
     } finally {
       setBusy(false);
     }
@@ -1602,7 +1623,13 @@ export default function HabiWorkspace() {
     event.preventDefault();
     const goal = playerGoalDraft.trim();
     if (!goal || goal.length > 500) return;
-    if (await savePlayerDiary(`Saját cél: ${goal}`)) setPlayerGoalDraft("");
+    const saved = await savePlayerDiary(`Saját cél: ${goal}`);
+    if (!saved?.id) return;
+    setPlayerGoalDraft("");
+    const reviewDate = nextGoalReviewDate(localToday, Number(goalReviewDays));
+    await savePlayerDiary(
+      `Saját cél újranézés · ${saved.id} · ${reviewDate ?? "kikapcsolva"}`,
+    );
   }
 
   async function setOwnGoalState(
@@ -1627,9 +1654,14 @@ export default function HabiWorkspace() {
   async function saveOwnGoalReview(goalId: string) {
     const note = goalReviewNote.trim();
     if (!goalId || !note) return;
-    if (
-      await savePlayerDiary(`Saját cél visszatekintés · ${goalId} · ${note}`)
-    ) {
+    const saved = await savePlayerDiary(
+      `Saját cél visszatekintés · ${goalId} · ${note}`,
+    );
+    if (saved) {
+      const reviewDate = nextGoalReviewDate(localToday, Number(goalReviewDays));
+      await savePlayerDiary(
+        `Saját cél újranézés · ${goalId} · ${reviewDate ?? "kikapcsolva"}`,
+      );
       setReviewingGoalId("");
       setGoalReviewNote("");
     }
@@ -2968,6 +3000,28 @@ export default function HabiWorkspace() {
                 >
                   Megnyitom az idővonalat
                 </button>
+                {dueOwnGoals.length > 0 && (
+                  <aside className={styles.notice} role="status">
+                    <p>
+                      {dueOwnGoals.length === 1
+                        ? "Elérkezett az idő, hogy újra ránézz a saját célodra."
+                        : `${dueOwnGoals.length} saját célodnál elérkezett az újranézés ideje.`}
+                    </p>
+                    {dueOwnGoals.map((goal) => (
+                      <button
+                        className={styles.secondary}
+                        type="button"
+                        key={goal.id}
+                        onClick={() => {
+                          setTab("player-tools");
+                          setReviewingGoalId(goal.id);
+                        }}
+                      >
+                        Megnézem: {ownGoalText(goal)}
+                      </button>
+                    ))}
+                  </aside>
+                )}
                 {latestCheckinConversationOpening ? (
                   <details className={styles.formGroup}>
                     <summary>A legutóbbi válaszaim</summary>
@@ -4773,6 +4827,21 @@ export default function HabiWorkspace() {
                       }
                       placeholder="Például: edzés előtt elvégzem a bemelegítést."
                     />
+                    <label className={styles.label} htmlFor="goal-review-days">
+                      Mikor nézzünk rá újra?
+                    </label>
+                    <select
+                      id="goal-review-days"
+                      value={goalReviewDays}
+                      onChange={(event) =>
+                        setGoalReviewDays(event.target.value)
+                      }
+                    >
+                      <option value="7">Egy hét múlva</option>
+                      <option value="14">Két hét múlva</option>
+                      <option value="28">Négy hét múlva</option>
+                      <option value="none">Ne emlékeztess</option>
+                    </select>
                     <button
                       className={styles.primary}
                       type="submit"
@@ -4783,14 +4852,16 @@ export default function HabiWorkspace() {
                   </form>
                   <div className={styles.taskList}>
                     {ownPlayerData?.records
-                      .filter(
-                        (record) =>
-                          record.kind === "diary" &&
-                          record.text?.startsWith("Saját cél:"),
+                      .filter((record) =>
+                        ownGoals.some((goal) => goal.id === record.id),
                       )
                       .map((record) => {
                         const goal = ownGoalText(record);
                         const status = ownGoalStatus(record);
+                        const reviewDate = latestGoalReviewDate(
+                          ownPlayerData?.records ?? [],
+                          record.id,
+                        );
                         const closed =
                           status === "closed" || status === "habit";
                         return (
@@ -4805,6 +4876,14 @@ export default function HabiWorkspace() {
                                     : "AKTÍV SAJÁT CÉL"}
                             </p>
                             <h3>{goal}</h3>
+                            {reviewDate && status === "active" ? (
+                              <p className={styles.muted}>
+                                Újranézés: {reviewDate}
+                                {isGoalReviewDue(reviewDate, localToday)
+                                  ? " · esedékes"
+                                  : ""}
+                              </p>
+                            ) : null}
                             <button
                               className={styles.secondary}
                               type="button"
@@ -4942,6 +5021,26 @@ export default function HabiWorkspace() {
                                     >
                                       A cél új szövege
                                     </label>
+                                    <label
+                                      className={styles.label}
+                                      htmlFor={`review-cycle-${record.id}`}
+                                    >
+                                      Mikor nézzünk rá újra?
+                                    </label>
+                                    <select
+                                      id={`review-cycle-${record.id}`}
+                                      value={goalReviewDays}
+                                      onChange={(event) =>
+                                        setGoalReviewDays(event.target.value)
+                                      }
+                                    >
+                                      <option value="7">Egy hét múlva</option>
+                                      <option value="14">Két hét múlva</option>
+                                      <option value="28">Négy hét múlva</option>
+                                      <option value="none">
+                                        Ne emlékeztess
+                                      </option>
+                                    </select>
                                     <textarea
                                       id={`edit-goal-${record.id}`}
                                       rows={2}

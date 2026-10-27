@@ -46,6 +46,8 @@ A `/legacy` útvonal a bejelentkezett szerepkör natív Habi-funkcióit nyitja m
 
 A **Beszélgetés előkészítése** résznél megadhatod, kivel és miről szeretnél beszélni, majd az **Előnézet és átnézés** gombbal ellenőrizheted a szöveget. Visszaléphetsz javítani, a saját naplódba mentheted vagy letöltheted. A letöltött szöveget te oszthatod meg; a Habi nem küldi el senkinek.
 
+A saját cél létrehozásakor válaszd ki, hogy egy, két vagy négy hét múlva nézz rá újra, vagy kapcsold ki a jelzést. A visszatekintés mentésekor újra beállíthatod a ciklust. Az esedékes jelzés az alkalmazás áttekintésén jelenik meg, amikor megnyitod a Habi-t; a Habi nem küld push-, e-mail- vagy WhatsApp-értesítést. A célcserét és annak visszavonását a Habi még nem kezeli külön műveletként.
+
 ## Feladatok, visszajelzések és kérdőíveredmények
 
 - A **Feladatok és visszajelzések** nézet a szerepkörök navigációjából nyílik. A tervek és utánkövetések a Habi API-ból töltődnek be; az elfogadás, elutasítás és visszajelzés mentése a játékos napló-idővonalához kapcsolódik.

@@ -1,5 +1,14 @@
 # Habi — ellenőrzési napló
 
+## Saját célok újranézési ciklusa · 2026-10-27
+
+- A cél létrehozásakor választható 7, 14 vagy 28 napos újranézés, illetve a jelzés kikapcsolása. Visszatekintés mentésekor a ciklus újra beállítható. Az esedékes cél a játékos áttekintésén jelenik meg, amikor a Habi meg van nyitva; nincs push, e-mail vagy külső értesítés. Az új dátum célazonosítóhoz kötött naplóesemény, a régi cél- és naplóbejegyzéseket nem módosítja.
+- `node --test tests/goal-review.test.mjs tests/goal-export.test.mjs` — PASS, exit 0; 6 passed, 0 failed.
+- `npm test` — PASS, exit 0; 143 passed, 0 failed, 1 Atlas-only replica-set integration test skipped (no isolated Atlas test URI in this run).
+- `npm run lint` — PASS, exit 0; Biome checked 206 files. `npm run typecheck` — PASS, exit 0. `npm run build` — PASS, exit 0. `git diff --check` — PASS, exit 0.
+- Környezet: helyi Habi checkout, szintetikus tesztadatok; Production adatot vagy SSO-munkamenetet nem használtunk. A hitelesített böngészős mentés és a Production esedékességi jelzés még nincs ellenőrizve.
+- Visszaállítás: korábbi Production release-re történő visszaállítás. Nincs külön migráció vagy Atlas-sémaváltozás.
+
 ## Saját cél exportja és tényszerű állapotjelzés-összegzés · 2026-10-27
 
 - A játékos a saját céljánál szövegfájlt tölthet le. Alapból csak a cél szövege, állapota és létrehozási ideje kerül bele; külön jelöléssel a célhoz pontosan kapcsolt módosítások, állapotváltások és visszatekintések is hozzáadhatók. A fájl a böngészőben készül, az export nem ír vissza a szerverre.

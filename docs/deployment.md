@@ -2,6 +2,12 @@
 
 ## Production status · 2026-10-27
 
+## Saját cél újranézési ciklusa · 2026-10-27
+
+- A játékos 7/14/28 napos vagy kikapcsolt újranézést állíthat be cél létrehozásakor, illetve minden visszatekintés után. Esedékességkor jelzés jelenik meg az alkalmazás áttekintésén. A beállítás célazonosítóhoz kötött naplóeseményként mentődik; nincs időzóna-beállítás, push vagy külső értesítés.
+- Helyi teljes suite 143 passed / 0 failed / 1 Atlas-only skip; lint, typecheck, production build és diff check pass. Részletek: [verification](verification.md#saját-célok-újranézési-ciklusa--2026-10-27).
+- Ez a változás még nincs kiadva. Authenticated Production write és UI ellenőrzés még nincs igazolva; nem állítjuk, hogy már élesben használható.
+
 ## HABI2 topic conversation release · 2026-10-27
 
 - The current release adds seven topic choices backed by three versioned authored conversation trees. Each answer is saved as a player-owned revision-fenced draft; a completed transcript is written to the diary. The trees are deterministic, and no personal conversation content is sent to an AI service.
