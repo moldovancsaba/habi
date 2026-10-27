@@ -102,6 +102,7 @@ export function createSsoBrowserCallbackHandler({
   oidc = {},
   prepareSession = async () => {},
   onFailure,
+  onInternalError,
   now = () => new Date(),
 }) {
   if (!db || !config || typeof hmacKey !== "string") {
@@ -209,7 +210,12 @@ export function createSsoBrowserCallbackHandler({
       );
     }
 
-    await prepareSession();
+    try {
+      await prepareSession();
+    } catch (error) {
+      onInternalError?.("session_preparation", error);
+      throw error;
+    }
     const displayName = verifiedDisplayName(userinfo, claims);
     let link;
     try {
@@ -243,19 +249,25 @@ export function createSsoBrowserCallbackHandler({
       );
     }
 
-    const issued = await createSsoOwnerSession(
-      db.collection("habi_sso_owner_sessions"),
-      {
-        identityHash: link.identityHash,
-        ownerHash: link.ownerHash,
-        issuer: claims.issuer,
-        subject: claims.subject,
-        permissionRole: permission.role,
-        displayName,
-        hmacKey,
-        now: now(),
-      },
-    );
+    let issued;
+    try {
+      issued = await createSsoOwnerSession(
+        db.collection("habi_sso_owner_sessions"),
+        {
+          identityHash: link.identityHash,
+          ownerHash: link.ownerHash,
+          issuer: claims.issuer,
+          subject: claims.subject,
+          permissionRole: permission.role,
+          displayName,
+          hmacKey,
+          now: now(),
+        },
+      );
+    } catch (error) {
+      onInternalError?.("session_issue", error);
+      throw error;
+    }
     const target = new URL(transaction.returnTo, url.origin);
     const response = new Response(null, {
       status: 303,

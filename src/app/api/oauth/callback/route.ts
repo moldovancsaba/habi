@@ -38,6 +38,25 @@ export async function GET(request: Request) {
             reasonCode,
           }),
         ),
+      onInternalError: (stage: string, error: unknown) => {
+        const kind =
+          error instanceof Error && error.name === "MongoServerError"
+            ? "database_rejected_operation"
+            : error instanceof Error && error.name === "MongoNetworkError"
+              ? "database_unavailable"
+              : error instanceof Error &&
+                  error.message === "DEPENDENCY_UNAVAILABLE"
+                ? "database_unavailable"
+                : "unexpected_internal_error";
+        console.error(
+          JSON.stringify({
+            event: "habi.sso.callback_internal_error",
+            requestId: request.headers.get("x-vercel-id"),
+            stage,
+            kind,
+          }),
+        );
+      },
     })(request);
   });
 }
