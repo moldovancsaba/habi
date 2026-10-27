@@ -96,6 +96,10 @@ Legacy browser-owner transfer is retired and blocked by the current SSO-browser 
 
 Commit `0a1252b` is live in Production as deployment `dpl_GY8wVdYDQrSvKBfTTbdSCEUbsQWh` (READY), with aliases including `habigoal.com`. Production callback diagnostics identified Atlas rejecting owner-session creation because the existing validator omitted optional verified `displayName`. Migration `016-sso-owner-session-display-name` repairs that validator automatically before the callback inserts a new session. The migration is additive and leaves existing records untouched. Health/readiness and the SSO authorization redirect are live; a complete user-authenticated callback has not yet been verified. See [verification](verification.md).
 
+## Coach shared-plan creation · 2026-10-27
+
+Commit `a84112c` is live in Production as deployment `dpl_3CznDjhKoWwA644371FJy1nggJcg` (READY), with aliases including `habigoal.com`. The coach form now sends the required whole-record `span: null` source reference. Plan creation recognizes the active tenant-scoped coach membership. The authenticated save itself was verified against the isolated local replica set; no Production record was created during verification. See [verification](verification.md).
+
 No record transfer or email-based identity matching is part of the new product.
 
 ## Rollback and recovery
