@@ -8,6 +8,7 @@ import {
 } from "../src/lib/database/tenant-repository.mjs";
 import { runIdempotentCommand } from "../src/lib/database/idempotent-command.mjs";
 import { runMigrations } from "../src/lib/database/migrations/runner.mjs";
+import { createPlan } from "../src/lib/workflows/plans.mjs";
 import { applySyntheticSeed } from "../src/lib/database/seed.mjs";
 import {
   deleteExperienceDraft,
@@ -333,6 +334,76 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
     assert.equal(await db.collection("actors").countDocuments(), 6);
     assert.equal(await db.collection("memberships").countDocuments(), 6);
   });
+
+  await t.test(
+    "tenant coach can create a plan for a player with a sourced record",
+    async () => {
+      const now = new Date("2026-10-27T10:00:00.000Z");
+      const source = {
+        id: "coach-plan-source",
+        tenantId: "seed-tenant-a",
+        schemaVersion: 2,
+        revision: 1,
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+        retentionPolicyId: "synthetic-retention-v1",
+        playerId: "seed-player-001",
+        kind: "observation",
+        recordedBy: { actorId: "seed-a-player-actor", role: "player" },
+        source: { kind: "self", respondentActorId: "seed-a-player-actor" },
+        occurredAt: now.toISOString(),
+        submittedAt: now.toISOString(),
+        timeZone: "Europe/Budapest",
+        sharingClass: "player_direct",
+        text: "A player-shared training reflection.",
+        sessionId: null,
+        metric: null,
+        answerCode: null,
+        questionVersion: null,
+        context: null,
+        supersedesId: null,
+      };
+      await db.collection("records").insertOne(source);
+      const action = {
+        id: "coach-plan-action",
+        what: "Try a short, agreed training step.",
+        why: "A concrete next step agreed with the player.",
+        ownerActorId: "seed-a-coach-one",
+        dueAt: new Date(now.getTime() + 7 * 86_400_000).toISOString(),
+        stopCondition: "Pause and review if it does not feel right.",
+      };
+      const result = await createPlan({
+        request: new Request(
+          "https://habi.example/api/v1/players/seed-player-001/plans",
+          {
+            method: "POST",
+            headers: { "Idempotency-Key": "coach-plan-create-1" },
+            body: JSON.stringify({
+              sourceRefs: [
+                { id: source.id, revision: source.revision, span: null },
+              ],
+              answerRef: null,
+              actions: [action],
+            }),
+          },
+        ),
+        client,
+        db,
+        principal: {
+          actorId: "seed-a-coach-one",
+          role: "coach",
+          tenantId: "seed-tenant-a",
+          retentionPolicyId: "synthetic-retention-v1",
+          playerId: null,
+        },
+        playerId: "seed-player-001",
+        now,
+      });
+      assert.equal(result.status, 201);
+      assert.equal(result.body.status, "proposed");
+      assert.equal(result.body.actions[0].ownerActorId, "seed-a-coach-one");
+    },
+  );
 
   await t.test(
     "reflection drafts persist, revision-fence, isolate roles, and clear",

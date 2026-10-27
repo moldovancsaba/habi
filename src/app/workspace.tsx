@@ -2363,7 +2363,9 @@ export default function HabiWorkspace() {
             "Idempotency-Key": crypto.randomUUID(),
           },
           body: JSON.stringify({
-            sourceRefs: [{ id: source.id, revision: source.revision }],
+            sourceRefs: [
+              { id: source.id, revision: source.revision, span: null },
+            ],
             answerRef: null,
             actions: [
               {

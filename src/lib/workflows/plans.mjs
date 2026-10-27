@@ -106,9 +106,9 @@ export async function createPlan({
   for (const action of input.actions) {
     const owner = await db.collection("memberships").findOne({
       tenantId: principal.tenantId,
-      playerId,
       actorId: action.ownerActorId,
       status: "active",
+      $or: [{ playerId }, { playerId: null, role: "coach" }],
     });
     if (!owner) throw new HabiApiError("INVALID_INPUT");
   }
