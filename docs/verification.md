@@ -863,6 +863,16 @@ This is a functional migration slice, not complete legacy parity. Durable record
 - Verification on the local Habi checkout: `npm run typecheck` PASS; `npm run lint` PASS (188 files); `npm test` PASS (117 passed, 0 failed, 1 Atlas-only integration test skipped); `npm run build` PASS; `git diff --check` PASS.
 - Limitation: this first version uses the diary record store for preferences and only reads the initial records page on load; a dedicated settings endpoint is still needed to make preference lookup independent from diary pagination. Authenticated production interaction is pending this release.
 
+## Structured monthly reflection persistence · 2026-10-27
+
+- Added a versioned `monthly_reflections` domain collection with a unique player/month constraint and an API for authorized reads. Finalizing the 16-question reflection writes its structured response and complete question/answer timeline record in one transaction, then removes the matching draft. Repeated identical submissions are idempotent; conflicting or stale submissions do not create a second result. The form requires all questions to be answered, explicitly skipped, or marked not applicable.
+- The timeline record preserves the original questions, answers, authored content version, optional focus and note, and submission timestamp. No score, trend, diagnosis, or generated recommendation is produced.
+- `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs node --test tests/database-persistence.test.mjs` — PASS, exit 0; 16 tests, including real migration, transaction, replay, timeline linkage, and draft removal against the disposable local replica set.
+- `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` — PASS, exit 0; 162 passed, 0 failed, 0 skipped.
+- `npm run lint` — PASS, exit 0; Biome checked 211 files. `npm run typecheck` — PASS, exit 0. `npm run build` — PASS, exit 0; includes `/api/v1/players/[playerId]/monthly-reflections`. `git diff --check` — PASS, exit 0.
+- Environment: local Habi checkout, disposable localhost MongoDB replica set `habiTestRs`, synthetic identities and responses only. No Production records or user sessions were used. Migration `015-monthly-reflections` must be applied through the authenticated `/admin` database update before relying on this workflow in Production. No authenticated Production write has been verified.
+- Rollback: redeploy the preceding application version. The migration is additive; retain the collection, indexes, and migration ledger entry. Existing records are not rewritten or deleted.
+
 ## Resumable reflection drafts · 2026-10-27
 
 - Added the player-only `GET`, `PUT`, and `DELETE /api/v1/players/{playerId}/drafts/{draftKey}` API for daily, weekly, and monthly reflection drafts. Writes use an idempotency key and `expectedRevision`; draft reads and writes require the exact active player identity and membership. Parent and coach roles cannot read or edit these private drafts.

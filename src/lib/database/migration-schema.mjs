@@ -38,6 +38,7 @@ export const COLLECTIONS = Object.freeze([
   "knowledge_versions",
   "knowledge_sources",
   "habi_experience_drafts",
+  "monthly_reflections",
 ]);
 
 export const INTERNAL_COLLECTIONS = Object.freeze(["auth_transactions"]);
@@ -63,6 +64,7 @@ export const COLLECTION_SCHEMA = Object.freeze({
   habi_role_invitations: null,
   habi_role_requests: null,
   habi_experience_drafts: "ExperienceDraft",
+  monthly_reflections: "MonthlyReflection",
   sessions: "Session",
   memberships: "Membership",
   players: "Player",
@@ -208,6 +210,23 @@ export const INDEXES = Object.freeze({
     {
       key: { tenantId: 1, id: 1 },
       name: "player_tenant_id_unique",
+      unique: true,
+    },
+  ],
+  monthly_reflections: [
+    {
+      key: { tenantId: 1, id: 1 },
+      name: "monthly_reflection_tenant_id_unique",
+      unique: true,
+    },
+    {
+      key: { tenantId: 1, playerId: 1, period: -1 },
+      name: "monthly_reflection_player_period_unique",
+      unique: true,
+    },
+    {
+      key: { tenantId: 1, recordId: 1 },
+      name: "monthly_reflection_record_unique",
       unique: true,
     },
   ],

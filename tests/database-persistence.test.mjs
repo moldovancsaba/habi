@@ -14,6 +14,10 @@ import {
   readExperienceDraft,
   saveExperienceDraft,
 } from "../src/lib/workflows/experience-drafts.mjs";
+import {
+  createMonthlyReflection,
+  listMonthlyReflections,
+} from "../src/lib/workflows/monthly-reflections.mjs";
 import { validateContractDocument } from "../src/lib/database/contract-validation.mjs";
 import {
   consumeLoginTransaction,
@@ -76,15 +80,16 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           "012-player-display-names",
           "013-role-requests",
           "014-experience-drafts",
+          "015-monthly-reflections",
         ],
-        current: "014-experience-drafts",
+        current: "015-monthly-reflections",
       },
     );
     assert.deepEqual(
       await runMigrations(db, new Date("2026-10-25T00:00:01.000Z")),
       {
         applied: [],
-        current: "014-experience-drafts",
+        current: "015-monthly-reflections",
       },
     );
     const draftIndexes = (
@@ -92,6 +97,16 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
     ).map(({ name }) => name);
     assert.ok(draftIndexes.includes("habi_experience_draft_id_unique"));
     assert.ok(draftIndexes.includes("habi_experience_draft_owner_key_unique"));
+    const reflectionIndexes = (
+      await db.collection("monthly_reflections").indexes()
+    ).map(({ name }) => name);
+    assert.ok(
+      reflectionIndexes.includes("monthly_reflection_tenant_id_unique"),
+    );
+    assert.ok(
+      reflectionIndexes.includes("monthly_reflection_player_period_unique"),
+    );
+    assert.ok(reflectionIndexes.includes("monthly_reflection_record_unique"));
     const migrationRecord = await db
       .collection("_habi_migrations")
       .findOne({ _id: "001-initial-schema" });
@@ -480,6 +495,115 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
         draftKey: "guided-topic-conversation",
       });
       assert.deepEqual(topicClear.body, { cleared: true });
+    },
+  );
+
+  await t.test(
+    "monthly reflection finalization atomically stores its domain record and timeline entry",
+    async () => {
+      const principal = {
+        actorId: "seed-a-player-actor",
+        tenantId: "seed-tenant-a",
+        role: "player",
+        playerId: "seed-player-001",
+        retentionPolicyId: "synthetic-retention-v1",
+      };
+      const answers = Array.from({ length: 16 }, (_, questionIndex) => ({
+        questionIndex,
+        value: questionIndex === 0 ? 5 : questionIndex === 1 ? "skip" : 3,
+      }));
+      const draftPath =
+        "https://habi.example.test/api/v1/players/seed-player-001/drafts/monthly-reflection";
+      await saveExperienceDraft({
+        request: new Request(draftPath, {
+          method: "PUT",
+          headers: { "Idempotency-Key": "monthly-draft-save-1" },
+          body: JSON.stringify({
+            expectedRevision: 0,
+            contentVersion: "monthly-reflection-v1",
+            payload: {
+              step: 16,
+              answers: answers.map(({ value }) => value),
+              nextFocus: "Pihenés",
+              note: "Jó volt visszatekinteni.",
+            },
+          }),
+        }),
+        client,
+        db,
+        principal,
+        playerId: principal.playerId,
+        draftKey: "monthly-reflection",
+      });
+
+      const path =
+        "https://habi.example.test/api/v1/players/seed-player-001/monthly-reflections";
+      const body = {
+        period: "2026-10",
+        contentVersion: "monthly-reflection-v1",
+        answers,
+        nextFocus: "Pihenés",
+        note: "Jó volt visszatekinteni.",
+        expectedDraftRevision: 1,
+        occurredAt: "2026-10-27T10:00:00.000Z",
+        timeZone: "Europe/Budapest",
+      };
+      const request = () =>
+        new Request(path, {
+          method: "POST",
+          headers: { "Idempotency-Key": "monthly-submit-1" },
+          body: JSON.stringify(body),
+        });
+      const saved = await createMonthlyReflection({
+        request: request(),
+        client,
+        db,
+        principal,
+        playerId: principal.playerId,
+      });
+      assert.equal(saved.status, 201);
+      assert.equal(saved.body.answers[0].value, 5);
+      assert.equal(saved.body.period, "2026-10");
+
+      const replay = await createMonthlyReflection({
+        request: request(),
+        client,
+        db,
+        principal,
+        playerId: principal.playerId,
+      });
+      assert.equal(replay.body.id, saved.body.id);
+      assert.equal(
+        await db.collection("monthly_reflections").countDocuments({
+          tenantId: principal.tenantId,
+          playerId: principal.playerId,
+        }),
+        1,
+      );
+      const timelineRecord = await db.collection("records").findOne({
+        tenantId: principal.tenantId,
+        id: saved.body.recordId,
+      });
+      assert.match(timelineRecord.text, /Havi visszatekintés/);
+      assert.match(timelineRecord.text, /Szinte mindig/);
+      assert.equal(timelineRecord.sharingClass, "player_direct");
+      assert.equal(
+        await db.collection("habi_experience_drafts").countDocuments({
+          tenantId: principal.tenantId,
+          playerId: principal.playerId,
+          draftKey: "monthly-reflection",
+        }),
+        0,
+      );
+      const listed = await listMonthlyReflections({
+        db,
+        principal,
+        playerId: principal.playerId,
+      });
+      assert.deepEqual(
+        listed.items.map(({ id }) => id),
+        [saved.body.id],
+      );
     },
   );
 

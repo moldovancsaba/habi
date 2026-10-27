@@ -2,6 +2,14 @@
 
 A termék címe: [habigoal.com](https://habigoal.com). A felület magyar nyelvű. A gyökéroldal a játékos/szülő/edző munkaterület; az admin belépési pont közvetlenül [habigoal.com/admin](https://habigoal.com/admin).
 
+## Havi visszatekintés
+
+A játékosi áttekintésen a havi visszatekintést egyenként töltheted ki. Minden kérdésnél választhatsz az öt rögzített válasz közül, jelezheted, hogy nem volt ilyen helyzet, vagy kihagyhatod a kérdést. A válaszokat lezárás előtt áttekintheted, és megadhatsz egy következő havi fókuszt, illetve saját megjegyzést.
+
+A válaszok menet közben felhős piszkozatként mentődnek, így az oldal újratöltése után folytathatod. A lezárás egyetlen mentési műveletben rögzíti a havi válaszokat, hozzáadja a teljes visszatekintést az előzményekhez, majd eltávolítja a piszkozatot. Ha a mentés eredménye nem egyértelmű, ugyanazt a beküldést biztonságosan meg lehet ismételni.
+
+A visszatekintés a timeline-on a mentés időpontjával jelenik meg. A rendszer nem ad pontszámot, diagnózist vagy automatikus következtetést a válaszokból. A havi lezáráshoz az aktív Production adatbázisban a `015-monthly-reflections` migrációnak alkalmazva kell lennie.
+
 ## Adminisztrátorok
 
 A Habi adminisztráció külön jogosultság, nem negyedik termékszerep. A `/admin` felületet csak a DoneIsBetter Habi alkalmazás aktuális `admin` permissionje nyithatja meg. A megvalósított meghívási folyamatban az admin szerepkört választ, a meghívott pedig a saját DoneIsBetter SSO-belépése után claimeli a lejáró, egyszer használatos linket. A szerepkör a pontos, ellenőrzött SSO issuer+subject identityhez kötődik; e-mail-cím alapján nincs automatikus párosítás.

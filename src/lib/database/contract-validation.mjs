@@ -612,6 +612,17 @@ function mongoSchema(schema, seenRefs, collection, propertyName = null) {
         for (const item of Array.isArray(bsonType) ? bsonType : [bsonType])
           typeSet.add(item);
     }
+    // JSON Schema permits enum-only anyOf branches (for example the string
+    // choices beside integer answers). Preserve their BSON type in the Mongo
+    // validator rather than silently validating only the first typed branch.
+    for (const value of variant.enum ?? []) {
+      const bsonType = mongoType(
+        value === null ? "null" : Array.isArray(value) ? "array" : typeof value,
+      );
+      if (bsonType)
+        for (const item of Array.isArray(bsonType) ? bsonType : [bsonType])
+          typeSet.add(item);
+    }
   }
   if (variants?.some((item) => item.type === "null")) typeSet.add("null");
   if (

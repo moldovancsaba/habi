@@ -71,6 +71,17 @@ test("monthly reflection drafts preserve progress and explicit skipped values", 
       "monthly-reflection-v1",
       {
         ...payload,
+        answers: [5, ...payload.answers.slice(1)],
+      },
+    ),
+    true,
+  );
+  assert.equal(
+    isValidExperienceDraftPayload(
+      "monthly-reflection",
+      "monthly-reflection-v1",
+      {
+        ...payload,
         extra: "not permitted",
       },
     ),

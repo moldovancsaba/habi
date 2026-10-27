@@ -103,7 +103,7 @@ export function isValidExperienceDraftPayload(
         answer === null ||
         answer === "skip" ||
         answer === "not-applicable" ||
-        (Number.isInteger(answer) && answer >= 1 && answer <= 4),
+        (Number.isInteger(answer) && answer >= 1 && answer <= 5),
     ) &&
     typeof payload.nextFocus === "string" &&
     payload.nextFocus.length <= 500 &&

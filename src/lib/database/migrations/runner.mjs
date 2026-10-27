@@ -13,6 +13,7 @@ import { migration as roleInvitations } from "./011-role-invitations.mjs";
 import { migration as playerDisplayNames } from "./012-player-display-names.mjs";
 import { migration as roleRequests } from "./013-role-requests.mjs";
 import { migration as experienceDrafts } from "./014-experience-drafts.mjs";
+import { migration as monthlyReflections } from "./015-monthly-reflections.mjs";
 
 const MIGRATIONS = [
   initialSchema,
@@ -29,6 +30,7 @@ const MIGRATIONS = [
   playerDisplayNames,
   roleRequests,
   experienceDrafts,
+  monthlyReflections,
 ];
 
 /** @param {string[] | null} migrationIds */

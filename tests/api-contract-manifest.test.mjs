@@ -19,8 +19,8 @@ test("API contract and response schemas are pinned to their canonical versions",
   const apiManifest = JSON.parse(apiManifestBytes.toString("utf8"));
   const responseManifest = JSON.parse(responseManifestBytes.toString("utf8"));
 
-  assert.equal(api.info.version, "2.4.18");
-  assert.equal(apiManifest.apiVersion, "2.4.18");
+  assert.equal(api.info.version, "2.4.19");
+  assert.equal(apiManifest.apiVersion, "2.4.19");
   assert.equal(responseManifest.apiVersion, "2.4.14");
   assert.equal(
     createHash("sha256").update(apiBytes).digest("hex"),
@@ -51,6 +51,8 @@ test("API contract and response schemas are pinned to their canonical versions",
   assert.ok(api.paths["/v1/players/{playerId}/drafts/{draftKey}"].get);
   assert.ok(api.paths["/v1/players/{playerId}/drafts/{draftKey}"].put);
   assert.ok(api.paths["/v1/players/{playerId}/drafts/{draftKey}"].delete);
+  assert.ok(api.paths["/v1/players/{playerId}/monthly-reflections"].get);
+  assert.ok(api.paths["/v1/players/{playerId}/monthly-reflections"].post);
   assert.ok(
     api.paths["/v1/players/{playerId}/drafts/{draftKey}"].put.parameters
       .find((parameter) => parameter.name === "draftKey")

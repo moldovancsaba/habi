@@ -25,6 +25,8 @@ const SSO_BROWSER_OPERATIONS = new Set([
   "identity.claim",
   "identity.activate-role",
   "identity.role-requests",
+  "monthly-reflection.create",
+  "monthly-reflection.list",
 ]);
 
 function isNextControlFlow(error) {

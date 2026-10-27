@@ -310,6 +310,23 @@ export default function HabiWorkspace() {
     occurredAt: string;
     timeZone: string;
   } | null>(null);
+  const monthlyReflectionCommand = useRef<{
+    fingerprint: string;
+    idempotencyKey: string;
+    body: {
+      period: string;
+      contentVersion: string;
+      answers: {
+        questionIndex: number;
+        value: number | "skip" | "not-applicable";
+      }[];
+      nextFocus: string | null;
+      note: string | null;
+      expectedDraftRevision: number;
+      occurredAt: string;
+      timeZone: string;
+    };
+  } | null>(null);
   const [noticeKind, setNoticeKind] = useState<"info" | "success" | "error">(
     "info",
   );
@@ -926,10 +943,14 @@ export default function HabiWorkspace() {
     if (
       !recordCursor ||
       !selectedPlayerId ||
+      busy ||
       loadingOlderRecords ||
       app.state !== "ready"
     )
       return;
+
+    setBusy(true);
+    setNotice("");
     setLoadingOlderRecords(true);
     try {
       const response = await fetch(
@@ -1845,38 +1866,96 @@ export default function HabiWorkspace() {
 
   async function saveMonthlyReflection(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (monthlyReflectionStep !== monthlyReflectionContent.questions.length)
+    if (
+      app.state !== "ready" ||
+      app.me.activeRole !== "player" ||
+      !selectedPlayerId ||
+      monthlyReflectionStep !== monthlyReflectionContent.questions.length ||
+      monthlyAnswers.some((answer) => answer === null)
+    )
       return;
-    const month = new Date().toLocaleDateString("hu-HU", {
+
+    const answers = monthlyAnswers.map((value, questionIndex) => ({
+      questionIndex,
+      value: value as number | "skip" | "not-applicable",
+    }));
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const dateParts = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
       year: "numeric",
-      month: "long",
+      month: "2-digit",
+    }).formatToParts(new Date());
+    const period = `${dateParts.find((part) => part.type === "year")?.value}-${dateParts.find((part) => part.type === "month")?.value}`;
+    const fingerprint = JSON.stringify({
+      playerId: selectedPlayerId,
+      period,
+      answers,
+      nextFocus: monthlyNextStep.trim() || null,
+      note: monthlyNote.trim() || null,
     });
-    const answers = monthlyReflectionContent.questions.map(
-      (question, index) => {
-        const value = monthlyAnswers[index];
-        const label =
-          typeof value === "number"
-            ? monthlyReflectionContent.choices[value - 1]
-            : value === "not-applicable"
-              ? monthlyReflectionContent.notApplicable
-              : monthlyReflectionContent.skipped;
-        return `${index + 1}. ${question.domain} · ${question.text}\nVálasz: ${label}`;
-      },
-    );
-    const text = [
-      `Havi visszatekintés v${monthlyReflectionContent.version} · ${month}`,
-      ...answers,
-      `Amire a következő hónapban figyelek: ${monthlyNextStep.trim() || "Most nem választottam."}`,
-      `Saját megjegyzés: ${monthlyNote.trim() || "Nem adtam hozzá."}`,
-    ].join("\n");
-    if (await savePlayerDiary(text)) {
-      await clearExperienceDraft("monthly-reflection");
+    let command = monthlyReflectionCommand.current;
+    if (!command || command.fingerprint !== fingerprint) {
+      const draftSaved = await saveExperienceDraft("monthly-reflection", {
+        step: monthlyReflectionStep,
+        answers: monthlyAnswers,
+        nextFocus: monthlyNextStep,
+        note: monthlyNote,
+      });
+      if (!draftSaved) {
+        setBusy(false);
+        return;
+      }
+      const occurredAt = new Date().toISOString();
+      command = {
+        fingerprint,
+        idempotencyKey: crypto.randomUUID(),
+        body: {
+          period,
+          contentVersion: `monthly-reflection-v${monthlyReflectionContent.version}`,
+          answers,
+          nextFocus: monthlyNextStep.trim() || null,
+          note: monthlyNote.trim() || null,
+          expectedDraftRevision: draftRevisions.current["monthly-reflection"],
+          occurredAt,
+          timeZone,
+        },
+      };
+      monthlyReflectionCommand.current = command;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/monthly-reflections`,
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "x-habi-csrf": app.me.csrfToken,
+            "Idempotency-Key": command.idempotencyKey,
+          },
+          body: JSON.stringify(command.body),
+        },
+      );
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.code ?? "SAVE_FAILED");
+      draftRevisions.current["monthly-reflection"] = 0;
+      monthlyReflectionCommand.current = null;
       setMonthlyAnswers(
         Array(monthlyReflectionContent.questions.length).fill(null),
       );
       setMonthlyReflectionStep(0);
       setMonthlyNextStep("");
       setMonthlyNote("");
+      setNotice(
+        "A havi visszatekintésed elmentve az előzmények közé.",
+        "success",
+      );
+      await load();
+    } catch (error) {
+      setNotice(messageFor(error));
+    } finally {
+      setBusy(false);
     }
   }
 

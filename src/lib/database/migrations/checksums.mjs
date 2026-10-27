@@ -75,4 +75,9 @@ export const migrationChecksums = Object.freeze({
     checksum:
       "cc7175d04d2ee93beb2ee9800d84a13fe71bf8e35274079ab19bbfea980aa09d",
   }),
+  "015-monthly-reflections": Object.freeze({
+    file: "015-monthly-reflections.mjs",
+    checksum:
+      "8083d311e1051ee088ebd0b515b7653718577b7f9de699fdfe5f4b2441a139b6",
+  }),
 });
