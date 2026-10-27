@@ -81,15 +81,16 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           "013-role-requests",
           "014-experience-drafts",
           "015-monthly-reflections",
+          "016-sso-owner-session-display-name",
         ],
-        current: "015-monthly-reflections",
+        current: "016-sso-owner-session-display-name",
       },
     );
     assert.deepEqual(
       await runMigrations(db, new Date("2026-10-25T00:00:01.000Z")),
       {
         applied: [],
-        current: "015-monthly-reflections",
+        current: "016-sso-owner-session-display-name",
       },
     );
     const draftIndexes = (
@@ -267,6 +268,28 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           await callbackDb.collection("_habi_migrations").distinct("_id"),
           ["010-sso-browser-owner-sessions", "011-role-invitations"],
         );
+        const oldValidator = await callbackDb
+          .listCollections({ name: "habi_sso_owner_sessions" })
+          .next();
+        delete oldValidator.options.validator.$jsonSchema.properties
+          .displayName;
+        await callbackDb.command({
+          collMod: "habi_sso_owner_sessions",
+          validator: oldValidator.options.validator,
+          validationLevel: "strict",
+          validationAction: "error",
+        });
+        assert.deepEqual(
+          await runMigrations(
+            callbackDb,
+            new Date("2026-10-26T00:00:00.500Z"),
+            ["016-sso-owner-session-display-name"],
+          ),
+          {
+            applied: ["016-sso-owner-session-display-name"],
+            current: "016-sso-owner-session-display-name",
+          },
+        );
         const now = new Date("2026-10-26T00:00:00.000Z");
         await callbackDb.collection("habi_sso_owner_sessions").insertOne({
           _id: "a".repeat(48),
@@ -280,14 +303,19 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           lastSeenAt: now.toISOString(),
           expiresAt: new Date(now.getTime() + 60_000),
           revokedAt: null,
+          displayName: "Verified User",
         });
         assert.deepEqual(
           await runMigrations(
             callbackDb,
             new Date("2026-10-26T00:00:01.000Z"),
-            ["010-sso-browser-owner-sessions", "011-role-invitations"],
+            [
+              "010-sso-browser-owner-sessions",
+              "011-role-invitations",
+              "016-sso-owner-session-display-name",
+            ],
           ),
-          { applied: [], current: "011-role-invitations" },
+          { applied: [], current: "016-sso-owner-session-display-name" },
         );
       } finally {
         await callbackDb.dropDatabase();

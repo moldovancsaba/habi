@@ -14,6 +14,7 @@ import { migration as playerDisplayNames } from "./012-player-display-names.mjs"
 import { migration as roleRequests } from "./013-role-requests.mjs";
 import { migration as experienceDrafts } from "./014-experience-drafts.mjs";
 import { migration as monthlyReflections } from "./015-monthly-reflections.mjs";
+import { migration as ssoOwnerSessionDisplayName } from "./016-sso-owner-session-display-name.mjs";
 
 const MIGRATIONS = [
   initialSchema,
@@ -31,6 +32,7 @@ const MIGRATIONS = [
   roleRequests,
   experienceDrafts,
   monthlyReflections,
+  ssoOwnerSessionDisplayName,
 ];
 
 /** @param {string[] | null} migrationIds */

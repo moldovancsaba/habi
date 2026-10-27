@@ -80,4 +80,9 @@ export const migrationChecksums = Object.freeze({
     checksum:
       "8083d311e1051ee088ebd0b515b7653718577b7f9de699fdfe5f4b2441a139b6",
   }),
+  "016-sso-owner-session-display-name": Object.freeze({
+    file: "016-sso-owner-session-display-name.mjs",
+    checksum:
+      "f796d75ae986196a1b9fc1477d44f05836b85d6061bc09897743b3034760ca24",
+  }),
 });
