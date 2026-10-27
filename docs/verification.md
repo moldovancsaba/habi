@@ -887,4 +887,15 @@ This is a functional migration slice, not complete legacy parity. Durable record
 - Production deployment for commit `6693cdfa3378ab9efb58768b6d9be4cf64f42336` — READY as `dpl_5F7hsaczwaNNMXvUi42audNCrj4T` in Vercel project `narimato/habi`, aliases include `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`.
 - Live unauthenticated checks: `/`, `/admin`, `/legacy` (redirects to `/?view=legacy`), `/api/health`, and `/api/ready` — HTTP 200. The signed-out `GET /api/v1/players/seed-player-001/drafts/guided-topic-conversation` returns HTTP 401 as required. The home HTML references the deployed JavaScript bundle containing `guided-topic-conversation`. No authenticated Production interaction was performed.
 - Production admin state was not accessible in the current browser session; `/admin` redirected to DoneIsBetter sign-in. Migration `014-experience-drafts` therefore remains unconfirmed in Production and must be verified in `/admin` → **Adatbázis frissítése** before relying on persistent topic drafts. No Production records were changed.
-- Remaining HABI2 scope: free-text topic/category routing, conversations driven by daily check-in context, HABI2 summary/export and remaining return paths. No prior user data was imported.
+- At the time of this release, remaining HABI2 scope was free-text topic/category routing, conversations driven by daily check-in context, summary/export, and remaining return paths. The following section records the separately implemented summary/export slice. No prior user data was imported.
+
+## HABI2 conversation summary and text export · 2026-10-27
+
+- A completed authored topic conversation now shows a readable summary and can be downloaded as a Hungarian UTF-8 text file before or after saving. The saved diary entry includes each authored Habi response, question, selected answer, and final outcome, so the conversation remains part of the player timeline.
+- The export is deterministic and includes only the current authored exchange; it does not add dates, inference, or unrelated diary history. There is not yet a re-export action from a previously saved timeline card.
+- `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` — PASS, exit 0; 148 passed, 0 failed, 0 skipped. The focused topic test checks summary content against each authored turn and the final outcome.
+- `npm run lint` — PASS, exit 0; Biome checked 197 files. `npm run typecheck` — PASS, exit 0. `npm run build` — PASS, exit 0. `git diff --check` — PASS, exit 0.
+- Environment: local Habi checkout and isolated localhost MongoDB replica set; synthetic identities and authored fixture answers only. No Production records or user SSO sessions were used.
+- The broader synthetic HTTP/worker acceptance remains blocked at the PDF ClamAV step because the running LaunchAgent is configured for Production, not the localhost test service; it was left untouched. This conversation export does not use that worker.
+- No API or persistence schema change and no Production data migration are introduced by this export. Production deployment is pending this change.
+- Commit/owner: not yet committed or pushed as of this verification record. Production release is pending.

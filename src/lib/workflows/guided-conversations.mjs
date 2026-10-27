@@ -70,3 +70,21 @@ export function advanceGuidedConversation(payload, optionId) {
 export function isValidGuidedConversationDraft(payload) {
   return Boolean(resolveGuidedConversation(payload));
 }
+
+export function createGuidedConversationSummary(payload) {
+  const state = resolveGuidedConversation(payload);
+  if (!state?.outcome) return null;
+  return [
+    "Habi · vezetett beszélgetés",
+    `Téma: ${state.category.label}`,
+    "",
+    ...state.turns.flatMap(({ node, option }) => [
+      node.response,
+      node.question,
+      `Válasz: ${option.label}`,
+      "",
+    ]),
+    "Habi válasza",
+    state.outcome.text,
+  ].join("\n");
+}

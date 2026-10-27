@@ -16,6 +16,7 @@ import monthlyReflectionContent from "../lib/content/monthly-reflection-v1.json"
 import guidedConversationContent from "../lib/content/guided-conversations-v2.json";
 import {
   advanceGuidedConversation,
+  createGuidedConversationSummary,
   resolveGuidedConversation,
   startGuidedConversation,
 } from "../lib/workflows/guided-conversations.mjs";
@@ -366,6 +367,8 @@ export default function HabiWorkspace() {
   const [guidedTreeDraft, setGuidedTreeDraft] =
     useState<GuidedTreeDraft | null>(null);
   const [guidedTreePaused, setGuidedTreePaused] = useState(false);
+  const [completedGuidedTreeSummary, setCompletedGuidedTreeSummary] =
+    useState("");
   const [painStep, setPainStep] = useState<number | null>(null);
   const [painAnswers, setPainAnswers] = useState<number[]>([]);
   const [painPlaceDetail, setPainPlaceDetail] = useState("");
@@ -1937,6 +1940,7 @@ export default function HabiWorkspace() {
   async function startGuidedTopic(categoryId: string) {
     const payload = startGuidedConversation(categoryId);
     if (!payload || busy) return;
+    setCompletedGuidedTreeSummary("");
     setBusy(true);
     const saved = await saveExperienceDraft(
       "guided-topic-conversation",
@@ -1976,13 +1980,28 @@ export default function HabiWorkspace() {
     }
   }
 
+  function downloadGuidedTopicSummary(summary: string) {
+    if (!summary) return;
+    const url = URL.createObjectURL(
+      new Blob([summary], { type: "text/plain;charset=utf-8" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "Habi-vezetett-beszelgetes.txt";
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+  }
+
   async function saveGuidedTopic() {
     if (!guidedTreeDraft || busy) return;
     const state = resolveGuidedConversation(guidedTreeDraft);
     if (!state?.outcome) return;
+    const summary = createGuidedConversationSummary(guidedTreeDraft);
+    if (!summary) return;
     const transcript = [
       `${guidedConversationContent.labels.title}: ${state.category.label}`,
       ...state.turns.flatMap(({ node, option }) => [
+        node.response,
         `${node.question}\n${option.label}`,
       ]),
       `Habi válasza\n${state.outcome.text}`,
@@ -1993,6 +2012,7 @@ export default function HabiWorkspace() {
       )
     ) {
       await clearExperienceDraft("guided-topic-conversation");
+      setCompletedGuidedTreeSummary(summary);
       setGuidedTreeDraft(null);
       setGuidedTreePaused(false);
     }
@@ -3989,6 +4009,14 @@ export default function HabiWorkspace() {
                               <>
                                 <h4>Habi válasza</h4>
                                 <p>{state.outcome.text}</p>
+                                <details className={styles.dataCard}>
+                                  <summary>Beszélgetés összefoglalója</summary>
+                                  <pre className={styles.summaryText}>
+                                    {createGuidedConversationSummary(
+                                      guidedTreeDraft,
+                                    )}
+                                  </pre>
+                                </details>
                                 <div className={styles.actions}>
                                   <button
                                     className={styles.primary}
@@ -3997,6 +4025,19 @@ export default function HabiWorkspace() {
                                     onClick={() => void saveGuidedTopic()}
                                   >
                                     Beszélgetés mentése a naplóba
+                                  </button>
+                                  <button
+                                    className={styles.secondary}
+                                    type="button"
+                                    onClick={() =>
+                                      downloadGuidedTopicSummary(
+                                        createGuidedConversationSummary(
+                                          guidedTreeDraft,
+                                        ) ?? "",
+                                      )
+                                    }
+                                  >
+                                    Beszélgetés letöltése
                                   </button>
                                   <button
                                     className={styles.secondary}
@@ -4028,6 +4069,22 @@ export default function HabiWorkspace() {
                         {draftNotice ||
                           "A válaszaid piszkozatként mentve vannak."}
                       </p>
+                    )}
+                    {completedGuidedTreeSummary && (
+                      <article className={styles.dataCard} role="status">
+                        <p>A beszélgetés bekerült a naplódba.</p>
+                        <button
+                          className={styles.secondary}
+                          type="button"
+                          onClick={() =>
+                            downloadGuidedTopicSummary(
+                              completedGuidedTreeSummary,
+                            )
+                          }
+                        >
+                          Beszélgetés letöltése
+                        </button>
+                      </article>
                     )}
                   </div>
                   <div className={styles.formGroup}>

@@ -48,6 +48,10 @@
 
 The canonical origin and registered callback are `https://habigoal.com` and `https://habigoal.com/api/oauth/callback`. `www.habigoal.com` redirects to the apex. This keeps the login transaction cookie on the callback host. Real browser callback verification remains required.
 
+## Pending release: HABI2 conversation summary/export · 2026-10-27
+
+The local implementation renders a Hungarian transcript summary for a completed authored topic conversation, downloads it as UTF-8 text, and stores the same authored turns in the player journal when saved. Local lint, typecheck, the isolated-MongoDB test suite (148 passed), production build, and diff check pass; see [verification](verification.md). This slice is not yet committed, pushed, or deployed. It introduces no API contract, persistence schema, or migration change. Do not describe the download as available on the live site until its Production deployment is verified.
+
 ## Runtime log levels
 
 API boundary diagnostics contain only a fixed operation label, request ID, status, and public error code. Expected request denials and other handled 4xx errors are logged at informational level; 5xx responses, thrown server errors, and fail-closed dependency/configuration failures are logged at error level. Do not treat a signed-out `/api/app` 401 as a service outage. Investigate error-level events using the request ID and deployment ID; never log request bodies, credentials, or exception messages.

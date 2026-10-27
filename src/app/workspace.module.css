@@ -567,6 +567,12 @@
   margin: 4px 0 10px;
   font-size: 1.2rem;
 }
+.summaryText {
+  margin: 16px 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font: inherit;
+}
 .dataCard p {
   line-height: 1.55;
 }
