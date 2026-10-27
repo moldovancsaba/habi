@@ -101,7 +101,13 @@ test("pinned timeline validator accepts the canonical DTO and rejects extra fiel
 test("timeline loader uses same-origin transport, validates, and adapts the DTO", async () => {
   let captured;
   const result = await loadTimelinePage(
-    { playerId: "player-1", kind: "observation", limit: 20 },
+    {
+      playerId: "player-1",
+      kind: "observation",
+      limit: 20,
+      from: "2026-10-25T00:00:00.000Z",
+      to: "2026-10-25T23:59:59.999Z",
+    },
     {
       fetchImpl: async (path, options) => {
         captured = { path, options };
@@ -114,6 +120,8 @@ test("timeline loader uses same-origin transport, validates, and adapts the DTO"
   assert.equal(parsed.searchParams.get("playerId"), "player-1");
   assert.equal(parsed.searchParams.get("kind"), "observation");
   assert.equal(parsed.searchParams.get("limit"), "20");
+  assert.equal(parsed.searchParams.get("from"), "2026-10-25T00:00:00.000Z");
+  assert.equal(parsed.searchParams.get("to"), "2026-10-25T23:59:59.999Z");
   assert.equal(captured.options.credentials, "same-origin");
   assert.equal(captured.options.cache, "no-store");
   assert.deepEqual(result.events[0], {

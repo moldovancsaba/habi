@@ -1,5 +1,13 @@
 # Habi — ellenőrzési napló
 
+## Idővonal nap szerinti szűrése · 2026-10-27
+
+- Az **Előzmények** nézet napválasztója az eszköz helyi naptári napjának kezdetétől a következő helyi nap kezdetéig szűri az idővonalat, beleértve a nyári időszámítás napjait is. A check-in eredménylista, a naplórekordok és a metróvonal ugyanazt a napablakot használják; a **Teljes idővonal** törli a szűrést. A lapozási kurzor aláírt, és nem használható másik napablakkal.
+- A `GET /api/v1/timeline` és a játékosi check-in eredménylista opcionális `from`/`to` időhatárokat fogad. A timeline a kérést a snapshot idejénél nem engedi későbbre olvasni. A dátummező nem kér és nem tárol külön időzóna-beállítást.
+- `npm test` — PASS, 119 pass / 0 fail / 1 skipped (izolált Atlas replica-set integration URI nélkül); `npm run lint` — PASS, 188 fájl; `npm run typecheck` — PASS; `npm run build` — PASS; `git diff --check` — PASS.
+- `set -a; source .env.test.example; set +a; npm run test:workflow:local` — BLOCKED, exit 1 az edzői PDF vírusvizsgálatánál: a szintetikus feltöltés 60 másodperc után is `pending` állapotban maradt, így a ClamAV worker végponttól végpontig nem volt elérhető ebben a környezetben. A szintetikus tesztadatbázis migrációja és seedelése lefutott; Production adatot nem érintett.
+- Deployment és bejelentkezett böngészős ellenőrzés még hátravan. Nincs adatbázis-migráció; visszaállítás a kód visszavonásával vagy előző Production deploymentre rollbackkel történik. A megőrzött eseményadatokat ez a változás nem módosítja.
+
 ## Mobil munkaterület-fejléc és műveleti visszajelzés · 2026-10-26
 
 - A fejléctördelés keskeny nézetben most külön sorba rendezi a szerepkör-váltót; szélesebb nézetben a cím, a szerepkör és a kilépés gomb külön rácsoszlopot kap. Így a fejléc elemei nem fedik egymást.

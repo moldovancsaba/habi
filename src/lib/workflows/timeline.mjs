@@ -12,7 +12,7 @@ function encode(value, key) {
   const payload = Buffer.from(JSON.stringify(value)).toString("base64url");
   return `${payload}.${sign(payload, key)}`;
 }
-function decode(token, key, principal, playerId, kind, now) {
+function decode(token, key, principal, playerId, kind, from, to, now) {
   const [payload, supplied, extra] = token.split(".");
   if (!payload || !supplied || extra !== undefined)
     throw new HabiApiError("INVALID_INPUT");
@@ -31,6 +31,8 @@ function decode(token, key, principal, playerId, kind, now) {
     value.playerId !== playerId ||
     value.accessRevision !== principal.accessRevision ||
     value.kind !== kind ||
+    value.from !== from ||
+    value.to !== to ||
     !Number.isFinite(Date.parse(value.expiresAt)) ||
     Date.parse(value.expiresAt) <= now.getTime() ||
     !Number.isFinite(Date.parse(value.snapshotAt)) ||
@@ -60,6 +62,8 @@ export async function readTimeline({
   principal,
   playerId = principal.playerId,
   kind = /** @type {string | null} */ (null),
+  from = /** @type {string | null} */ (null),
+  to = /** @type {string | null} */ (null),
   cursor = /** @type {string | null} */ (null),
   limit = 20,
   cursorHmacKey,
@@ -72,13 +76,28 @@ export async function readTimeline({
     !Number.isInteger(limit) ||
     limit < 1 ||
     limit > 50 ||
-    (kind && !/^[A-Za-z0-9_.-]{1,50}$/.test(kind))
+    (kind && !/^[A-Za-z0-9_.-]{1,50}$/.test(kind)) ||
+    (from !== null && !Number.isFinite(Date.parse(from))) ||
+    (to !== null && !Number.isFinite(Date.parse(to))) ||
+    (from && to && Date.parse(from) > Date.parse(to))
   )
     throw new HabiApiError("INVALID_INPUT");
+  if (from) from = new Date(from).toISOString();
+  if (to) to = new Date(to).toISOString();
   const position = cursor
-    ? decode(cursor, cursorHmacKey, principal, playerId, kind, now)
+    ? decode(cursor, cursorHmacKey, principal, playerId, kind, from, to, now)
     : null;
   const snapshotAt = position?.snapshotAt ?? now.toISOString();
+  const boundedTime = (field) => {
+    const upperBound =
+      to && Date.parse(to) < Date.parse(snapshotAt) ? to : snapshotAt;
+    return {
+      [field]: {
+        $lte: upperBound,
+        ...(from ? { $gte: from } : {}),
+      },
+    };
+  };
   const [
     records,
     results,
@@ -96,7 +115,7 @@ export async function readTimeline({
       .find({
         tenantId: principal.tenantId,
         playerId,
-        submittedAt: { $lte: snapshotAt },
+        ...boundedTime("submittedAt"),
       })
       .sort({ submittedAt: -1 })
       .limit(200)
@@ -106,7 +125,7 @@ export async function readTimeline({
       .find({
         tenantId: principal.tenantId,
         playerId,
-        completedAt: { $lte: snapshotAt },
+        ...boundedTime("completedAt"),
       })
       .sort({ completedAt: -1 })
       .limit(100)
@@ -116,7 +135,7 @@ export async function readTimeline({
       .find({
         tenantId: principal.tenantId,
         playerId,
-        submittedAt: { $lte: snapshotAt },
+        ...boundedTime("submittedAt"),
       })
       .sort({ submittedAt: -1 })
       .limit(200)
@@ -126,7 +145,7 @@ export async function readTimeline({
       .find({
         tenantId: principal.tenantId,
         playerId,
-        createdAt: { $lte: snapshotAt },
+        ...boundedTime("createdAt"),
       })
       .sort({ createdAt: -1 })
       .limit(100)
@@ -136,7 +155,7 @@ export async function readTimeline({
       .find({
         tenantId: principal.tenantId,
         playerId,
-        createdAt: { $lte: snapshotAt },
+        ...boundedTime("createdAt"),
       })
       .sort({ createdAt: -1 })
       .limit(200)
@@ -146,9 +165,9 @@ export async function readTimeline({
       .find({
         tenantId: principal.tenantId,
         playerId,
-        createdAt: { $lte: snapshotAt },
+        ...boundedTime("updatedAt"),
       })
-      .sort({ createdAt: -1 })
+      .sort({ updatedAt: -1 })
       .limit(100)
       .toArray(),
     db
@@ -168,7 +187,7 @@ export async function readTimeline({
       .find({
         tenantId: principal.tenantId,
         playerId,
-        createdAt: { $lte: snapshotAt },
+        ...boundedTime("createdAt"),
       })
       .toArray(),
   ]);
@@ -323,7 +342,11 @@ export async function readTimeline({
   }
   const filtered = nodes
     .filter(
-      (node) => node.submittedAt <= snapshotAt && (!kind || node.kind === kind),
+      (node) =>
+        node.submittedAt <= snapshotAt &&
+        (!from || node.submittedAt >= from) &&
+        (!to || node.submittedAt <= to) &&
+        (!kind || node.kind === kind),
     )
     .sort(
       (a, b) =>
@@ -359,6 +382,8 @@ export async function readTimeline({
               playerId,
               accessRevision: principal.accessRevision,
               kind,
+              from,
+              to,
               snapshotAt,
               at: page.at(-1).submittedAt,
               id: page.at(-1).id,

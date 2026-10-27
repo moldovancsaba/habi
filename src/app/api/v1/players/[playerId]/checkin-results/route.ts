@@ -13,13 +13,21 @@ export async function GET(
     async ({ db, principal }) => {
       const url = new URL(request.url);
       for (const key of url.searchParams.keys()) {
-        if (key !== "limit") throw new HabiApiError("INVALID_INPUT");
+        if (!["limit", "from", "to"].includes(key))
+          throw new HabiApiError("INVALID_INPUT");
       }
       const rawLimit = url.searchParams.get("limit");
       const limit = rawLimit === null ? 20 : Number(rawLimit);
       if (!Number.isInteger(limit)) throw new HabiApiError("INVALID_INPUT");
       return Response.json(
-        await listCheckinResults({ db, principal, playerId, limit }),
+        await listCheckinResults({
+          db,
+          principal,
+          playerId,
+          limit,
+          from: url.searchParams.get("from"),
+          to: url.searchParams.get("to"),
+        }),
       );
     },
   );

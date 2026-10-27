@@ -478,6 +478,8 @@ export async function listCheckinResults({
   principal,
   playerId,
   limit = 20,
+  from = /** @type {string | null} */ (null),
+  to = /** @type {string | null} */ (null),
 }) {
   requirePathId(playerId);
   if (
@@ -489,6 +491,15 @@ export async function listCheckinResults({
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
     throw new HabiApiError("INVALID_INPUT");
   }
+  if (
+    (from !== null && !Number.isFinite(Date.parse(from))) ||
+    (to !== null && !Number.isFinite(Date.parse(to))) ||
+    (from && to && Date.parse(from) > Date.parse(to))
+  ) {
+    throw new HabiApiError("INVALID_INPUT");
+  }
+  if (from) from = new Date(from).toISOString();
+  if (to) to = new Date(to).toISOString();
   const snapshotAt = new Date().toISOString();
   const player = await db.collection("players").findOne({
     tenantId: principal.tenantId,
@@ -500,7 +511,10 @@ export async function listCheckinResults({
     .find({
       tenantId: principal.tenantId,
       playerId,
-      completedAt: { $lte: snapshotAt },
+      completedAt: {
+        $lte: to && Date.parse(to) < Date.parse(snapshotAt) ? to : snapshotAt,
+        ...(from ? { $gte: from } : {}),
+      },
     })
     .sort({ completedAt: -1, id: -1 })
     .limit(limit + 1)

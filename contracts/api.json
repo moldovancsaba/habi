@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.4.14",
+    "version": "2.4.15",
     "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
@@ -8630,7 +8630,7 @@
     "/v1/timeline": {
       "get": {
         "operationId": "get_v1_timeline",
-        "description": "read; cloud-only; tenant and resource authorization required. Returns only the explicit timeline read DTO; storage-only tenant and retention fields are never serialized.",
+        "description": "read; cloud-only; tenant and resource authorization required. Returns only the explicit timeline read DTO; storage-only tenant and retention fields are never serialized. Optional from/to query bounds filter timeline events by submission time; a continuation cursor is bound to the same window.",
         "security": [
           {
             "sessionCookie": []
@@ -8736,7 +8736,8 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 50
+              "maxLength": 50,
+              "pattern": "^[A-Za-z0-9_.-]{1,50}$"
             }
           },
           {
@@ -8758,6 +8759,24 @@
               "minimum": 1,
               "maximum": 50,
               "default": 20
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
             }
           }
         ]
@@ -10564,11 +10583,11 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "Request submitted"
-          },
           "200": {
             "description": "Existing pending request returned"
+          },
+          "201": {
+            "description": "Request submitted"
           },
           "401": {
             "description": "Verified SSO session required"

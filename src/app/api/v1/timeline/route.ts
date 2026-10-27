@@ -13,6 +13,8 @@ export async function GET(request: Request): Promise<Response> {
         principal,
         playerId: url.searchParams.get("playerId") ?? principal.playerId,
         kind: url.searchParams.get("kind"),
+        from: url.searchParams.get("from"),
+        to: url.searchParams.get("to"),
         cursor: url.searchParams.get("cursor"),
         limit: rawLimit === null ? 20 : Number(rawLimit),
         cursorHmacKey,

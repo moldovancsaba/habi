@@ -12,7 +12,14 @@ function buildTimelinePath(query = {}) {
   if (!query || typeof query !== "object" || Array.isArray(query)) {
     throw new Error("TIMELINE_QUERY_INVALID");
   }
-  const allowed = new Set(["playerId", "kind", "cursor", "limit"]);
+  const allowed = new Set([
+    "playerId",
+    "kind",
+    "cursor",
+    "limit",
+    "from",
+    "to",
+  ]);
   if (Object.keys(query).some((key) => !allowed.has(key))) {
     throw new Error("TIMELINE_QUERY_INVALID");
   }
@@ -52,6 +59,17 @@ function buildTimelinePath(query = {}) {
       throw new Error("TIMELINE_QUERY_INVALID");
     }
     params.set("limit", String(query.limit));
+  }
+  for (const bound of ["from", "to"]) {
+    if (query[bound] !== undefined) {
+      if (
+        typeof query[bound] !== "string" ||
+        !Number.isFinite(Date.parse(query[bound]))
+      ) {
+        throw new Error("TIMELINE_QUERY_INVALID");
+      }
+      params.set(bound, query[bound]);
+    }
   }
   const suffix = params.toString();
   return suffix ? `/v1/timeline?${suffix}` : "/v1/timeline";

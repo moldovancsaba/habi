@@ -4,6 +4,7 @@ import { HabiApiError } from "../src/lib/api/error-response.mjs";
 import {
   completeCheckin,
   createCheckinSession,
+  listCheckinResults,
   readCheckinSession,
   saveCheckinAnswer,
 } from "../src/lib/workflows/checkin.mjs";
@@ -14,8 +15,15 @@ function matches(document, filter) {
     if (expected && typeof expected === "object" && "$gt" in expected) {
       return Date.parse(actual) > Date.parse(expected.$gt);
     }
-    if (expected && typeof expected === "object" && "$lte" in expected) {
-      return Date.parse(actual) <= Date.parse(expected.$lte);
+    if (
+      expected &&
+      typeof expected === "object" &&
+      ("$lte" in expected || "$gte" in expected)
+    ) {
+      return (
+        (!expected.$lte || Date.parse(actual) <= Date.parse(expected.$lte)) &&
+        (!expected.$gte || Date.parse(actual) >= Date.parse(expected.$gte))
+      );
     }
     return actual === expected;
   });
@@ -201,6 +209,50 @@ test("player check-in persists answers and immutable feedback; parent reads the 
     [{ metric: "energy", answerCode: 2 }],
   );
   assert.equal(Object.hasOwn(parentView, "tenantId"), false);
+});
+
+test("check-in history accepts an authorized date window", async () => {
+  const { db, state } = testDatabase();
+  state.checkin_results = [
+    {
+      tenantId: player.tenantId,
+      playerId: player.playerId,
+      id: "before",
+      completedAt: "2026-10-24T23:59:59.000Z",
+    },
+    {
+      tenantId: player.tenantId,
+      playerId: player.playerId,
+      id: "inside",
+      completedAt: "2026-10-25T10:00:00.000Z",
+    },
+    {
+      tenantId: player.tenantId,
+      playerId: player.playerId,
+      id: "after",
+      completedAt: "2026-10-26T00:00:00.000Z",
+    },
+  ];
+  const page = await listCheckinResults({
+    db,
+    principal: parent,
+    playerId: player.playerId,
+    from: "2026-10-25T00:00:00.000Z",
+    to: "2026-10-25T23:59:59.999Z",
+  });
+  assert.deepEqual(
+    page.items.map((item) => item.id),
+    ["inside"],
+  );
+  await assert.rejects(
+    listCheckinResults({
+      db,
+      principal: parent,
+      playerId: player.playerId,
+      from: "not-a-date",
+    }),
+    (error) => error instanceof HabiApiError && error.code === "INVALID_INPUT",
+  );
 });
 
 test("check-in answer writes require the player role, expected revision, and unique metric", async () => {

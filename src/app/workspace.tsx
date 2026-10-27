@@ -201,6 +201,23 @@ function validClock(value: string) {
   return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
 }
 
+function localDayBounds(day: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+  const [year, month, date] = day.split("-").map(Number);
+  const start = new Date(year, month - 1, date);
+  if (
+    start.getFullYear() !== year ||
+    start.getMonth() !== month - 1 ||
+    start.getDate() !== date
+  )
+    return null;
+  const end = new Date(year, month - 1, date + 1);
+  return {
+    from: start.toISOString(),
+    to: new Date(end.getTime() - 1).toISOString(),
+  };
+}
+
 function messageFor(error: unknown) {
   const code = error instanceof Error ? error.message : "";
   if (code === "AUTHENTICATION_REQUIRED")
@@ -222,6 +239,7 @@ export default function HabiWorkspace() {
   const [recordCursor, setRecordCursor] = useState<string | null>(null);
   const [loadingOlderRecords, setLoadingOlderRecords] = useState(false);
   const [timeline, setTimeline] = useState<TimelineResponse | null>(null);
+  const [timelineDayFilter, setTimelineDayFilter] = useState("");
   const [players, setPlayers] = useState<PlayerProfile[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -609,10 +627,24 @@ export default function HabiWorkspace() {
     setRecordCursor(null);
     const player = players.find((item) => item.id === selectedPlayerId);
     if (!player) return;
+    const dayBounds = localDayBounds(timelineDayFilter);
+    const checkinQuery = new URLSearchParams({
+      limit: "100",
+      ...(dayBounds ?? {}),
+    });
+    const recordQuery = new URLSearchParams({
+      limit: "50",
+      ...(dayBounds ?? {}),
+    });
+    const timelineQuery = new URLSearchParams({
+      playerId: selectedPlayerId,
+      limit: "50",
+      ...(dayBounds ?? {}),
+    });
     const controller = new AbortController();
     void Promise.all([
       fetch(
-        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/checkin-results`,
+        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/checkin-results?${checkinQuery}`,
         {
           cache: "no-store",
           credentials: "same-origin",
@@ -620,21 +652,18 @@ export default function HabiWorkspace() {
         },
       ),
       fetch(
-        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/records?limit=50`,
+        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/records?${recordQuery}`,
         {
           cache: "no-store",
           credentials: "same-origin",
           signal: controller.signal,
         },
       ),
-      fetch(
-        `/api/v1/timeline?playerId=${encodeURIComponent(selectedPlayerId)}&limit=50`,
-        {
-          cache: "no-store",
-          credentials: "same-origin",
-          signal: controller.signal,
-        },
-      ),
+      fetch(`/api/v1/timeline?${timelineQuery}`, {
+        cache: "no-store",
+        credentials: "same-origin",
+        signal: controller.signal,
+      }),
     ])
       .then(async ([checkinResponse, recordResponse, timelineResponse]) => {
         const [checkins, records, timelinePage] = await Promise.all([
@@ -664,7 +693,7 @@ export default function HabiWorkspace() {
         setTimeline(null);
       });
     return () => controller.abort();
-  }, [app, players, selectedPlayerId, setNotice]);
+  }, [app, players, selectedPlayerId, setNotice, timelineDayFilter]);
 
   async function loadOlderRecords() {
     if (
@@ -1036,14 +1065,17 @@ export default function HabiWorkspace() {
     )
       return;
     const controller = new AbortController();
-    void fetch(
-      `/api/v1/timeline?playerId=${encodeURIComponent(playerId)}&limit=50`,
-      {
-        cache: "no-store",
-        credentials: "same-origin",
-        signal: controller.signal,
-      },
-    )
+    const dayBounds = localDayBounds(timelineDayFilter);
+    const timelineQuery = new URLSearchParams({
+      playerId,
+      limit: "50",
+      ...(dayBounds ?? {}),
+    });
+    void fetch(`/api/v1/timeline?${timelineQuery}`, {
+      cache: "no-store",
+      credentials: "same-origin",
+      signal: controller.signal,
+    })
       .then(async (response) => {
         const body = await response.json().catch(() => null);
         if (!response.ok) throw new Error(body?.code ?? "TIMELINE_LOAD_FAILED");
@@ -1051,7 +1083,7 @@ export default function HabiWorkspace() {
       })
       .catch(() => undefined);
     return () => controller.abort();
-  }, [playerId, questionJob?.jobId, questionJob?.status]);
+  }, [playerId, questionJob?.jobId, questionJob?.status, timelineDayFilter]);
 
   async function switchMembership(membershipId: string) {
     if (!active || membershipId === active.activeMembershipId || busy) return;
@@ -1094,6 +1126,7 @@ export default function HabiWorkspace() {
         playerId,
         limit: "50",
         cursor: timeline.nextCursor,
+        ...(localDayBounds(timelineDayFilter) ?? {}),
       });
       const response = await fetch(`/api/v1/timeline?${query}`, {
         cache: "no-store",
@@ -3341,6 +3374,31 @@ export default function HabiWorkspace() {
               <section className={styles.panel}>
                 <p className={styles.eyebrow}>ELŐZMÉNYEK</p>
                 <h2>A napló eseményei</h2>
+                <div className={styles.timelineFilter}>
+                  <div>
+                    <label className={styles.label} htmlFor="timeline-day">
+                      Egy nap eseményei
+                    </label>
+                    <input
+                      id="timeline-day"
+                      type="date"
+                      value={timelineDayFilter}
+                      onChange={(event) => {
+                        setTimelineDayFilter(event.target.value);
+                        setLoadingOlder(false);
+                      }}
+                    />
+                  </div>
+                  {timelineDayFilter ? (
+                    <button
+                      type="button"
+                      className={styles.secondary}
+                      onClick={() => setTimelineDayFilter("")}
+                    >
+                      Teljes idővonal
+                    </button>
+                  ) : null}
+                </div>
                 <div className="story-legend">
                   {(["player", "parent", "coach"] as const).map((role) => (
                     <span className={`role-badge actor-${role}`} key={role}>
