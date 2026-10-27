@@ -17,6 +17,8 @@ import guidedConversationContent from "../lib/content/guided-conversations-v2.js
 import {
   advanceGuidedConversation,
   createGuidedConversationSummary,
+  isGuidedConversationSafetyInput,
+  rankGuidedCategories,
   resolveGuidedConversation,
   startGuidedConversation,
 } from "../lib/workflows/guided-conversations.mjs";
@@ -160,7 +162,11 @@ type ExperienceDraftKey =
   | "monthly-reflection"
   | "guided-conversation"
   | "guided-topic-conversation";
-type GuidedTreeDraft = { categoryId: string; turns: string[] };
+type GuidedTreeDraft = {
+  categoryId: string;
+  turns: string[];
+  opening?: string;
+};
 type ExperienceDraftPayload = Record<
   string,
   string | number | null | Array<string | number | null>
@@ -367,6 +373,10 @@ export default function HabiWorkspace() {
   const [guidedTreeDraft, setGuidedTreeDraft] =
     useState<GuidedTreeDraft | null>(null);
   const [guidedTreePaused, setGuidedTreePaused] = useState(false);
+  const [guidedTopicInput, setGuidedTopicInput] = useState("");
+  const [guidedTopicSuggestions, setGuidedTopicSuggestions] = useState<
+    string[] | null
+  >(null);
   const [completedGuidedTreeSummary, setCompletedGuidedTreeSummary] =
     useState("");
   const [painStep, setPainStep] = useState<number | null>(null);
@@ -400,6 +410,8 @@ export default function HabiWorkspace() {
     setGuidedPaused(false);
     setGuidedTreeDraft(null);
     setGuidedTreePaused(false);
+    setGuidedTopicInput("");
+    setGuidedTopicSuggestions(null);
     draftRevisions.current = {
       "daily-reflection": 0,
       "weekly-reflection": 0,
@@ -485,14 +497,20 @@ export default function HabiWorkspace() {
           }
           if (
             draftKey === "guided-topic-conversation" &&
-            draft.contentVersion === "guided-chat-v2" &&
+            ["guided-chat-v2", "guided-chat-v3"].includes(
+              draft.contentVersion,
+            ) &&
             typeof draft.payload.categoryId === "string" &&
             Array.isArray(draft.payload.turns)
           ) {
             setGuidedTreeDraft({
               categoryId: draft.payload.categoryId,
               turns: draft.payload.turns,
+              ...(typeof draft.payload.opening === "string"
+                ? { opening: draft.payload.opening }
+                : {}),
             });
+            setGuidedTopicInput(draft.payload.opening ?? "");
             setGuidedTreePaused(true);
           }
         }
@@ -505,7 +523,11 @@ export default function HabiWorkspace() {
                 : draftKey === "guided-conversation"
                   ? "guided-situation-v1"
                   : draftKey === "guided-topic-conversation"
-                    ? "guided-chat-v2"
+                    ? ["guided-chat-v2", "guided-chat-v3"].includes(
+                        draft.contentVersion,
+                      )
+                      ? draft.contentVersion
+                      : "guided-chat-v3"
                     : `${draftKey}-v1`),
         );
         setDraftNotice(
@@ -1679,7 +1701,7 @@ export default function HabiWorkspace() {
               : draftKey === "guided-conversation"
                 ? "guided-situation-v1"
                 : draftKey === "guided-topic-conversation"
-                  ? `guided-chat-v${guidedConversationContent.version}`
+                  ? "guided-chat-v3"
                   : `${draftKey}-v1`;
           const response = await fetch(
             `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/drafts/${draftKey}`,
@@ -1937,8 +1959,20 @@ export default function HabiWorkspace() {
     }
   }
 
+  function suggestGuidedTopics() {
+    const opening = guidedTopicInput.trim().slice(0, 1000);
+    if (!opening) return;
+    if (isGuidedConversationSafetyInput(opening)) {
+      void startGuidedTopic("support");
+      return;
+    }
+    const categories = rankGuidedCategories(opening);
+    setGuidedTopicSuggestions(categories);
+  }
+
   async function startGuidedTopic(categoryId: string) {
-    const payload = startGuidedConversation(categoryId);
+    const opening = guidedTopicInput.trim().slice(0, 1000);
+    const payload = startGuidedConversation(categoryId, opening);
     if (!payload || busy) return;
     setCompletedGuidedTreeSummary("");
     setBusy(true);
@@ -1977,6 +2011,8 @@ export default function HabiWorkspace() {
     if (cleared) {
       setGuidedTreeDraft(null);
       setGuidedTreePaused(false);
+      setGuidedTopicInput("");
+      setGuidedTopicSuggestions(null);
     }
   }
 
@@ -2000,6 +2036,9 @@ export default function HabiWorkspace() {
     if (!summary) return;
     const transcript = [
       `${guidedConversationContent.labels.title}: ${state.category.label}`,
+      ...(guidedTreeDraft.opening
+        ? [`Te mondtad\n${guidedTreeDraft.opening}`]
+        : []),
       ...state.turns.flatMap(({ node, option }) => [
         node.response,
         `${node.question}\n${option.label}`,
@@ -2015,6 +2054,8 @@ export default function HabiWorkspace() {
       setCompletedGuidedTreeSummary(summary);
       setGuidedTreeDraft(null);
       setGuidedTreePaused(false);
+      setGuidedTopicInput("");
+      setGuidedTopicSuggestions(null);
     }
   }
 
@@ -3912,21 +3953,66 @@ export default function HabiWorkspace() {
                       később.
                     </p>
                     {!guidedTreeDraft ? (
-                      <div className={styles.knowledgeList}>
-                        {guidedConversationContent.categories.map(
-                          (category) => (
-                            <button
-                              className={styles.secondary}
-                              key={category.id}
-                              type="button"
-                              disabled={busy || !experienceDraftsReady}
-                              onClick={() => void startGuidedTopic(category.id)}
-                            >
-                              {category.label}
-                            </button>
-                          ),
+                      <>
+                        <label
+                          className={styles.label}
+                          htmlFor="guided-topic-input"
+                        >
+                          Vagy írd le röviden, mi foglalkoztat
+                        </label>
+                        <textarea
+                          id="guided-topic-input"
+                          value={guidedTopicInput}
+                          maxLength={1000}
+                          rows={3}
+                          onChange={(event) => {
+                            setGuidedTopicInput(event.target.value);
+                            setGuidedTopicSuggestions(null);
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className={styles.secondary}
+                          disabled={busy || !guidedTopicInput.trim()}
+                          onClick={suggestGuidedTopics}
+                        >
+                          Témák mutatása
+                        </button>
+                        {guidedTopicSuggestions && (
+                          <p className={styles.muted} role="status">
+                            Válaszd ki, melyik téma áll a legközelebb ahhoz,
+                            amit leírtál. A témák sorrendje szövegegyezésen
+                            alapul; Habi nem állapítja meg, mit érzel.
+                          </p>
                         )}
-                      </div>
+                        <div className={styles.knowledgeList}>
+                          {guidedConversationContent.categories
+                            .filter(
+                              (category) =>
+                                !guidedTopicSuggestions ||
+                                guidedTopicSuggestions.includes(category.id),
+                            )
+                            .sort((a, b) =>
+                              guidedTopicSuggestions
+                                ? guidedTopicSuggestions.indexOf(a.id) -
+                                  guidedTopicSuggestions.indexOf(b.id)
+                                : 0,
+                            )
+                            .map((category) => (
+                              <button
+                                className={styles.secondary}
+                                key={category.id}
+                                type="button"
+                                disabled={busy || !experienceDraftsReady}
+                                onClick={() =>
+                                  void startGuidedTopic(category.id)
+                                }
+                              >
+                                {category.label}
+                              </button>
+                            ))}
+                        </div>
+                      </>
                     ) : guidedTreePaused ? (
                       <article className={styles.dataCard}>
                         <p className={styles.eyebrow}>
@@ -3972,6 +4058,12 @@ export default function HabiWorkspace() {
                             <p className={styles.eyebrow}>
                               {state.category.label}
                             </p>
+                            {guidedTreeDraft.opening && (
+                              <p>
+                                <strong>Te mondtad:</strong>{" "}
+                                {guidedTreeDraft.opening}
+                              </p>
+                            )}
                             {state.turns.map(({ node, option }) => (
                               <div key={`${node.question}-${option.id}`}>
                                 <p>

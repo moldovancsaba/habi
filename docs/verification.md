@@ -906,4 +906,12 @@ This is a functional migration slice, not complete legacy parity. Durable record
 - Only records already returned by the authorized timeline and linked-record APIs are eligible. Other diary or observation records do not show this download action.
 - `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` — PASS, exit 0; 149 passed, 0 failed, 0 skipped. `node --test tests/guided-conversations.test.mjs` — PASS, 5 tests, 0 skipped. `npm run lint` — PASS with no warnings/errors; `npm run typecheck` — PASS; `npm run build` — PASS; `git diff --check` — PASS.
 - Environment: local checkout and disposable localhost replica set with synthetic identities only. No Production records were changed or authenticated Production flows exercised.
-- The timeline re-export change is not yet committed or deployed. No API, persistence schema, or migration change is introduced.
+- Commit `c79dac4eb77c211474017db14829c146dfe33c26` is live as Production deployment `dpl_7tWzzKxTFMo2BeQkCnr9YewF1Ewa` (READY). Live unauthenticated checks: `/` HTTP 200, `/legacy` HTTP 307 to `/?view=legacy`, `/api/health` HTTP 200, `/api/ready` HTTP 200. No authenticated Production timeline interaction was performed.
+
+## Free-text start and preserved keyword routing for HABI2 conversations · 2026-10-27
+
+- The player may enter a short opening message, then choose from topics ordered by the preserved HABI2 keyword groups. Matching is deterministic and local; it does not infer a feeling or send the message to AI. A legacy safety keyword routes directly into the authored support conversation. The selected topic and opening message are saved together in the revision-fenced player draft and included in the final diary transcript/export.
+- Draft content version `guided-chat-v3` adds an optional opening message while continuing to read prior `guided-chat-v2` drafts. The API route and database collection are unchanged; no migration is added.
+- `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` — PASS, exit 0; 151 passed, 0 failed, 0 skipped, including the isolated-replica-set save/read test for the v3 payload. `npm run lint` — PASS, no warnings/errors. `npm run typecheck` — PASS. `npm run build` — PASS. `git diff --check` — PASS.
+- Environment: local Habi checkout, disposable localhost MongoDB replica set, synthetic player identities and fixture text. No Production data or authenticated session was used.
+- This feature is not yet committed, pushed, or deployed. Local synthetic HTTP/worker acceptance is still blocked at ClamAV scan: the Production LaunchAgent cannot consume localhost test jobs. That worker was left untouched.

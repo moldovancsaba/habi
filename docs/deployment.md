@@ -52,9 +52,13 @@ The canonical origin and registered callback are `https://habigoal.com` and `htt
 
 Commit `59ce12eae72b8d431fe4ceb4bdf471b6ed2cf8f8` is live as deployment `dpl_HQdC3FwYciiimS2nmxGTqMzsv9Vo` (READY), with aliases `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`. The feature renders a Hungarian transcript summary for a completed authored topic conversation, downloads it as UTF-8 text, and stores the same authored turns in the player journal when saved. Live unauthenticated checks for `/`, `/api/health`, and `/api/ready` returned HTTP 200; `/legacy` returned HTTP 307 to `/?view=legacy`. Local verification is in [verification](verification.md). No API contract, persistence schema, or migration change was introduced.
 
-## Pending release: timeline re-export of a saved guided conversation · 2026-10-27
+## Timeline re-export of a saved guided conversation · Production release 2026-10-27
 
-The local timeline now offers a download action for an already-saved guided conversation diary record, preserving the stored transcript verbatim. This change has passed the full local test suite (149 passed), lint, typecheck, production build, and diff check; see [verification](verification.md). It is not yet committed, pushed, or deployed. It introduces no API, persistence-schema, or migration change.
+Commit `c79dac4eb77c211474017db14829c146dfe33c26` is live as deployment `dpl_7tWzzKxTFMo2BeQkCnr9YewF1Ewa` (READY), with aliases `habigoal.com`, `www.habigoal.com`, and `habi.doneisbetter.com`. The player can download the exact saved diary text from an expanded timeline card. No API, persistence-schema, or migration change was introduced. Live endpoint checks and local tests are listed in [verification](verification.md).
+
+## Pending release: free-text guided conversation start · 2026-10-27
+
+The local HABI2 flow accepts an opening message, ranks topics with preserved local keyword matching, keeps that message in the resumable conversation and saved transcript, and sends recognized safety phrases to the authored support branch. It accepts both v2 and v3 drafts and writes v3. The full local suite (151 passed), lint, typecheck, production build, and diff check pass; see [verification](verification.md). This slice is not yet committed, pushed, or deployed. No new API endpoint or database migration is required.
 
 ## Runtime log levels
 

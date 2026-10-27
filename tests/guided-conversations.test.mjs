@@ -4,7 +4,9 @@ import {
   advanceGuidedConversation,
   createSavedConversationExport,
   createGuidedConversationSummary,
+  isGuidedConversationSafetyInput,
   isValidGuidedConversationDraft,
+  rankGuidedCategories,
   resolveGuidedConversation,
   startGuidedConversation,
 } from "../src/lib/workflows/guided-conversations.mjs";
@@ -78,6 +80,54 @@ test("every category is mapped to a valid authored tree", () => {
   ]) {
     assert.ok(startGuidedConversation(categoryId));
   }
+});
+
+test("free-text prompts rank topics deterministically and preserve safety routing", () => {
+  const first = rankGuidedCategories("Félek a következő versenytől");
+  assert.deepEqual(first, rankGuidedCategories("Félek a következő versenytől"));
+  assert.ok(first.indexOf("competition") < first.indexOf("dreams"));
+  assert.ok(first.indexOf("pressure") < first.indexOf("dreams"));
+  assert.equal(isGuidedConversationSafetyInput("Bántani magam"), true);
+  assert.equal(
+    isGuidedConversationSafetyInput("Nem érzem jól magam az edzésen"),
+    false,
+  );
+  assert.deepEqual(rankGuidedCategories("egy teljesen más mondat"), [
+    "dreams",
+    "competition",
+    "sport",
+    "pressure",
+    "focus",
+    "habits",
+    "support",
+  ]);
+});
+
+test("free-text opening survives each turn and becomes part of the summary", () => {
+  let draft = startGuidedConversation("dreams", "Szeretnék fejlődni");
+  assert.equal(draft?.opening, "Szeretnék fejlődni");
+  draft = advanceGuidedConversation(draft, "first");
+  assert.equal(draft?.opening, "Szeretnék fejlődni");
+  assert.ok(
+    createGuidedConversationSummary({
+      categoryId: "dreams",
+      opening: "Szeretnék fejlődni",
+      turns: [
+        "emotion:first",
+        "frequency:sometimes",
+        "support:nobody",
+        "next:small",
+      ],
+    })?.includes("Te mondtad: Szeretnék fejlődni"),
+  );
+  assert.equal(
+    isValidGuidedConversationDraft({
+      categoryId: "dreams",
+      opening: " ",
+      turns: [],
+    }),
+    false,
+  );
 });
 
 test("completed topic exports preserve the exact authored exchange", () => {

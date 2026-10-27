@@ -438,9 +438,10 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           headers: { "Idempotency-Key": "guided-topic-save-1" },
           body: JSON.stringify({
             expectedRevision: 0,
-            contentVersion: "guided-chat-v2",
+            contentVersion: "guided-chat-v3",
             payload: {
               categoryId: "dreams",
+              opening: "Szeretnék fejlődni",
               turns: ["emotion:first", "frequency:sometimes"],
             },
           }),
@@ -454,6 +455,7 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
       assert.equal(topicDraft.status, 201);
       assert.deepEqual(topicDraft.body.draft.payload, {
         categoryId: "dreams",
+        opening: "Szeretnék fejlődni",
         turns: ["emotion:first", "frequency:sometimes"],
       });
       assert.deepEqual(

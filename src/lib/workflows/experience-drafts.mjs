@@ -77,10 +77,15 @@ export function isValidExperienceDraftPayload(
     );
   if (draftKey === "guided-topic-conversation")
     return (
-      contentVersion === "guided-chat-v2" &&
-      Object.keys(payload).length === 2 &&
+      ["guided-chat-v2", "guided-chat-v3"].includes(contentVersion) &&
+      Object.keys(payload).length >= 2 &&
+      Object.keys(payload).length <= 3 &&
       Object.keys(payload).every((key) =>
-        ["categoryId", "turns"].includes(key),
+        [
+          "categoryId",
+          "turns",
+          ...(contentVersion === "guided-chat-v3" ? ["opening"] : []),
+        ].includes(key),
       ) &&
       isValidGuidedConversationDraft(payload)
     );

@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "dreams",
+      "keywords": [
+        ["álom", "álmaim", "dream", "dreams"],
+        ["jövő", "future"],
+        ["szeretnék", "akarok", "want", "desire"],
+        ["cél", "goal", "ambition"],
+        ["legjobb", "best", "siker", "success"]
+      ]
+    },
+    {
+      "id": "competition",
+      "keywords": [
+        ["verseny", "competition", "compete"],
+        ["nyerni", "win", "winning"],
+        ["vereség", "lose", "losing"],
+        ["eredmény", "result"],
+        ["meccs", "match", "tournament"]
+      ]
+    },
+    {
+      "id": "sport",
+      "keywords": [
+        ["sport", "athlete", "sportoló"],
+        ["foci", "soccer", "football", "focista", "focis"],
+        ["csapat", "team"],
+        ["edzés", "training", "practice"],
+        ["kosárlabda", "basketball", "úszás", "swimming", "tenisz", "tennis"]
+      ]
+    },
+    {
+      "id": "pressure",
+      "keywords": [
+        ["félek", "félelem", "fear", "afraid", "scared"],
+        ["aggódom", "worry", "worried"],
+        ["szorong", "anxious", "anxiety"],
+        ["stressz", "stress", "pressure"],
+        ["szomorú", "sad", "miserable", "hopeless"]
+      ]
+    },
+    {
+      "id": "focus",
+      "keywords": [
+        ["figyelem", "figyelni", "focus"],
+        ["koncentr", "concentrate"],
+        ["kapkod", "rushing"],
+        ["elkalandoz", "distracted"],
+        ["utasítás", "instructions", "confused"]
+      ]
+    },
+    {
+      "id": "habits",
+      "keywords": [
+        ["alvás", "aludni", "sleep"],
+        ["fáradt", "tired", "exhausted"],
+        ["szokás", "habit", "routine"],
+        ["pihen", "rest"],
+        ["energia", "energy", "motiváció", "motivation"]
+      ]
+    },
+    {
+      "id": "support",
+      "keywords": [
+        ["segíts", "help", "support"],
+        ["egyedül", "lonely", "alone"],
+        ["barát", "friend", "parent", "szülő"],
+        ["kiközös", "bully", "bánt", "hurt"],
+        ["beszél", "talk", "kapcsolat", "relationship"]
+      ]
+    }
+  ],
+  "safetyKeywords": [
+    "nem vagyok biztonságban",
+    "nem érzem magam biztonságban",
+    "bántanak",
+    "megüt",
+    "bántom magam",
+    "bántani magam",
+    "ártani magamnak",
+    "nem akarok élni",
+    "meg akarok halni",
+    "hurt myself",
+    "kill myself",
+    "not safe",
+    "being hurt",
+    "being bullied"
+  ]
+}

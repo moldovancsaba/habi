@@ -120,6 +120,30 @@ test("guided topic drafts accept only reachable choices from an authored branch"
     ),
     true,
   );
+  assert.equal(
+    isValidExperienceDraftPayload(
+      "guided-topic-conversation",
+      "guided-chat-v3",
+      {
+        categoryId: "dreams",
+        opening: "Szeretnék fejlődni",
+        turns: ["emotion:first"],
+      },
+    ),
+    true,
+  );
+  assert.equal(
+    isValidExperienceDraftPayload(
+      "guided-topic-conversation",
+      "guided-chat-v3",
+      {
+        categoryId: "dreams",
+        opening: "x".repeat(1001),
+        turns: [],
+      },
+    ),
+    false,
+  );
   for (const payload of [
     { categoryId: "unknown", turns: [] },
     { categoryId: "dreams", turns: ["emotion:bad-choice"] },

@@ -1,11 +1,69 @@
 import content from "../content/guided-conversations-v2.json" with {
   type: "json",
 };
+import routing from "../content/guided-chat-routing-v1.json" with {
+  type: "json",
+};
+
+const MAX_OPENING = 1000;
+
+function normalizeInput(text) {
+  return String(text)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function matchesTerm(input, term) {
+  const phrase = normalizeInput(term);
+  const words = input.split(" ");
+  return phrase.includes(" ")
+    ? ` ${input} `.includes(` ${phrase} `)
+    : words.some(
+        (word) =>
+          word === phrase || (phrase.length >= 5 && word.startsWith(phrase)),
+      );
+}
+
+export function rankGuidedCategories(input) {
+  const normalized = normalizeInput(input);
+  const matches = routing.categories
+    .map((category, index) => ({
+      id: category.id,
+      index,
+      score: category.keywords.reduce(
+        (score, group) =>
+          score + (group.some((term) => matchesTerm(normalized, term)) ? 1 : 0),
+        0,
+      ),
+    }))
+    .filter((category) => category.score > 0)
+    .sort((a, b) => b.score - a.score || a.index - b.index);
+  const matchedIds = matches.map((category) => category.id);
+  return [
+    ...matchedIds,
+    ...routing.categories
+      .map((category) => category.id)
+      .filter((id) => !matchedIds.includes(id)),
+  ];
+}
+
+export function isGuidedConversationSafetyInput(input) {
+  const normalized = normalizeInput(input);
+  return routing.safetyKeywords.some((term) => matchesTerm(normalized, term));
+}
 
 export function resolveGuidedConversation(payload) {
   if (
     !payload ||
     typeof payload.categoryId !== "string" ||
+    (payload.opening !== undefined &&
+      (typeof payload.opening !== "string" ||
+        payload.opening.length < 1 ||
+        payload.opening.length > MAX_OPENING ||
+        !payload.opening.trim())) ||
     !Array.isArray(payload.turns) ||
     payload.turns.length > 5 ||
     !payload.turns.every((turn) => typeof turn === "string")
@@ -48,8 +106,13 @@ export function resolveGuidedConversation(payload) {
   };
 }
 
-export function startGuidedConversation(categoryId) {
-  const payload = { categoryId, turns: [] };
+export function startGuidedConversation(categoryId, opening = "") {
+  if (typeof opening !== "string" || opening.length > MAX_OPENING) return null;
+  const payload = {
+    categoryId,
+    ...(opening.trim() ? { opening: opening.trim() } : {}),
+    turns: [],
+  };
   return resolveGuidedConversation(payload) ? payload : null;
 }
 
@@ -62,6 +125,7 @@ export function advanceGuidedConversation(payload, optionId) {
   if (!option) return null;
   const next = {
     categoryId: payload.categoryId,
+    ...(payload.opening ? { opening: payload.opening } : {}),
     turns: [...payload.turns, `${resolved.currentNodeId}:${option.id}`],
   };
   return resolveGuidedConversation(next) ? next : null;
@@ -77,6 +141,7 @@ export function createGuidedConversationSummary(payload) {
   return [
     "Habi · vezetett beszélgetés",
     `Téma: ${state.category.label}`,
+    ...(payload.opening ? [`Te mondtad: ${payload.opening}`] : []),
     "",
     ...state.turns.flatMap(({ node, option }) => [
       node.response,
