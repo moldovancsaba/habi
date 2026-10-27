@@ -368,7 +368,8 @@ export async function resolveCoachContext(
     (s) =>
       s.id === context.id &&
       s.revision === context.revision &&
-      s.kind === collection,
+      (s.kind === collection ||
+        (context.kind === "record" && s.kind === "follow_ups")),
   );
   if (!found) throw new HabiApiError("NOT_FOUND");
   return found;

@@ -566,13 +566,16 @@ export default function MetroTimeline({
                             : event.kind.startsWith("plan.") &&
                                 event.kind !== "plan.follow_up"
                               ? "plan"
-                              : record?.answerCodes
-                                ? "checkin_result"
-                                : record?.text
-                                  ? "record"
-                                  : "page",
+                              : event.kind === "plan.follow_up"
+                                ? "record"
+                                : record?.answerCodes
+                                  ? "checkin_result"
+                                  : record?.text
+                                    ? "record"
+                                    : "page",
                       id:
                         event.kind === "thread.message" ||
+                        event.kind === "plan.follow_up" ||
                         event.kind.startsWith("interpretation.") ||
                         (event.kind.startsWith("plan.") &&
                           event.kind !== "plan.follow_up")
