@@ -1,11 +1,12 @@
 # Habi — ellenőrzési napló
 
-## Saját cél letölthető összefoglalója · 2026-10-27
+## Saját cél exportja és tényszerű állapotjelzés-összegzés · 2026-10-27
 
 - A játékos a saját céljánál szövegfájlt tölthet le. Alapból csak a cél szövege, állapota és létrehozási ideje kerül bele; külön jelöléssel a célhoz pontosan kapcsolt módosítások, állapotváltások és visszatekintések is hozzáadhatók. A fájl a böngészőben készül, az export nem ír vissza a szerverre.
+- A játékosi grafikon minden mérőszámnál tényszerű összegzést mutat: a meglévő válaszok darabszámát válaszonként és az utolsó választ annak időpontjával. Nem állít javulást/romlást, nem számol átlagot vagy pontszámot, és nem pótolja a hiányzó napokat.
 - A jelenlegi naplómodell nem kapcsol gyakorlási rekordot célhoz. Az ilyen rekordokat az export nem társítja önkényesen. Nincs adatmodell- vagy adatbázis-migráció.
-- `node --test tests/goal-export.test.mjs` — PASS, 2/2; `npm run lint` — PASS, 194 fájl; `npm run typecheck` — PASS; `npm test` — PASS, 126 pass / 0 fail / 1 Atlas-only skip; `npm run build` — PASS; `git diff --check` — PASS. Környezet: helyi Habi build, szintetikus unit tesztek.
-- Ez a kód a `13011f9` Production deployment után készült, így annak tartalmában még nincs benne. A kiadás és az élő UI ellenőrzése a push utáni deploymenthez rögzítendő. Visszaállítás az alkalmazáskód korábbi commitra állításával lehetséges; felhasználói adatot nem módosít.
+- `node --test tests/goal-export.test.mjs` — PASS, 4/4; `npm run lint` — PASS, 194 fájl; `npm run typecheck` — PASS; `npm test` — PASS, 128 pass / 0 fail / 1 Atlas-only skip; `npm run build` — PASS; `git diff --check` — PASS. Környezet: helyi Habi build, szintetikus unit tesztek.
+- A cél-exportot a `63a1939` Production deployment (`dpl_7scA22esJeQM7sNYxv12Vd6N81jp`) szolgálja ki. A tényszerű összegzés kódja a következő `main` Production builddel kerül ki; a push utáni deployment-azonosítót és route-ellenőrzést később rögzítjük. Visszaállítás alkalmazáskód rollbackkel; felhasználói adatot egyik funkció sem módosít.
 
 ## Idővonal nap szerinti szűrése · 2026-10-27
 

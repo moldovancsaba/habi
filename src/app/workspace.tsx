@@ -13,7 +13,10 @@ import CoachReportWorkspace from "./coach-report-workspace";
 import practices from "../lib/content/practices-v1.json";
 import journeyContent from "../lib/content/journeys-v1.json";
 import monthlyReflectionContent from "../lib/content/monthly-reflection-v1.json";
-import { createGoalExport } from "../lib/workflows/goal-export.mjs";
+import {
+  createGoalExport,
+  summarizeRecordedAnswers,
+} from "../lib/workflows/goal-export.mjs";
 
 type Role = "player" | "parent" | "coach";
 type OwnRole = {
@@ -3842,6 +3845,10 @@ export default function HabiWorkspace() {
                                 Number.isInteger(point.value) &&
                                 point.value !== undefined,
                             );
+                          const recordedSummary = summarizeRecordedAnswers(
+                            points,
+                            options,
+                          );
                           return (
                             <article className={styles.dataCard} key={metric}>
                               <h4>{label}</h4>
@@ -3896,6 +3903,9 @@ export default function HabiWorkspace() {
                                         return `${new Date(point.date).toLocaleDateString("hu-HU", { month: "short", day: "numeric" })}: ${answer}`;
                                       })
                                       .join(" · ")}
+                                  </p>
+                                  <p className={styles.muted}>
+                                    {recordedSummary}
                                   </p>
                                 </>
                               ) : (

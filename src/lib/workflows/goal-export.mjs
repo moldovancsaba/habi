@@ -16,11 +16,18 @@ export function createGoalExport({
   records,
   includeHistory = false,
 }) {
+  const localizedStatus =
+    {
+      active: "aktív",
+      paused: "félretett",
+      closed: "lezárt",
+      habit: "szokásként folytatott",
+    }[status] ?? status;
   const lines = [
     "HABI · A saját vállalásom",
     "",
     goalText,
-    `Állapot: ${status}`,
+    `Állapot: ${localizedStatus}`,
     `Rögzítve: ${formatDate(goal?.occurredAt)}`,
   ];
 
@@ -55,4 +62,31 @@ export function createGoalExport({
   }
 
   return `${lines.join("\n").trim()}\n`;
+}
+
+export function summarizeRecordedAnswers(points, options) {
+  const valid = (points ?? [])
+    .filter(
+      (point) =>
+        Number.isInteger(point.value) &&
+        point.value >= 0 &&
+        point.value < options.length,
+    )
+    .slice()
+    .sort((a, b) => String(a.date ?? "").localeCompare(String(b.date ?? "")));
+  if (valid.length === 0) return "Ebben az időszakban nincs rögzített válasz.";
+
+  const counts = new Map();
+  for (const point of valid) {
+    const label = options[point.value];
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+  const distribution = options
+    .map((label) => [label, counts.get(label) ?? 0])
+    .filter(([, count]) => count > 0)
+    .map(([label, count]) => `${label}: ${count}`)
+    .join(" · ");
+  const latest = valid.at(-1);
+  const latestLabel = options[latest.value];
+  return `${valid.length} rögzített válasz (${distribution}). Legutóbbi válasz: ${latestLabel} · ${formatDate(latest.date)}.`;
 }

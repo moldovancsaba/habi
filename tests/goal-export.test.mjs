@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createGoalExport } from "../src/lib/workflows/goal-export.mjs";
+import {
+  createGoalExport,
+  summarizeRecordedAnswers,
+} from "../src/lib/workflows/goal-export.mjs";
 
 const goal = {
   id: "goal-1",
@@ -30,7 +33,7 @@ test("goal export contains the goal and state without extra history by default",
   });
   assert.match(output, /HABI · A saját vállalásom/);
   assert.match(output, /Edzés előtt bemelegítek\./);
-  assert.match(output, /Állapot: active/);
+  assert.match(output, /Állapot: aktív/);
   assert.doesNotMatch(output, /A bemelegítés segített/);
 });
 
@@ -47,4 +50,26 @@ test("goal export includes only matching goal history when selected", () => {
   );
   assert.match(output, /A bemelegítés segített\./);
   assert.doesNotMatch(output, /Másik cél jegyzete/);
+});
+
+test("trend summary counts recorded answers and identifies the latest only", () => {
+  const summary = summarizeRecordedAnswers(
+    [
+      { date: "2026-10-26T08:00:00.000Z", value: 1 },
+      { date: "2026-10-27T08:00:00.000Z", value: 0 },
+      { date: "2026-10-28T08:00:00.000Z", value: 1 },
+    ],
+    ["Sok", "Megfelelő"],
+  );
+  assert.match(summary, /3 rögzített válasz/);
+  assert.match(summary, /Sok: 1 · Megfelelő: 2/);
+  assert.match(summary, /Legutóbbi válasz: Megfelelő/);
+  assert.doesNotMatch(summary, /javult|romlott|átlag|trend/i);
+});
+
+test("trend summary explicitly handles no valid recorded answers", () => {
+  assert.equal(
+    summarizeRecordedAnswers([{ date: "x", value: 9 }], ["Sok", "Kevés"]),
+    "Ebben az időszakban nincs rögzített válasz.",
+  );
 });
