@@ -101,6 +101,30 @@ test("guided situation drafts persist only supported authored choices", () => {
     ),
     true,
   );
+  assert.equal(
+    isValidExperienceDraftPayload(
+      "guided-conversation",
+      "guided-situation-v2",
+      {
+        situationId: "too-fast",
+        answers: [1],
+        sourceCheckinId: "checkin-123",
+      },
+    ),
+    true,
+  );
+  assert.equal(
+    isValidExperienceDraftPayload(
+      "guided-conversation",
+      "guided-situation-v2",
+      {
+        situationId: "too-fast",
+        answers: [1],
+        sourceCheckinId: "not a valid id",
+      },
+    ),
+    false,
+  );
   for (const payload of [
     { situationId: "unknown", answers: [] },
     { situationId: "after-mistake", answers: [3] },

@@ -445,6 +445,89 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
       });
       assert.deepEqual(guidedClear.body, { cleared: true });
 
+      const sourceCheckin = {
+        id: "seed-checkin-focus-1",
+        tenantId: principal.tenantId,
+        schemaVersion: 2,
+        revision: 1,
+        createdAt: "2026-10-27T08:00:00.000Z",
+        updatedAt: "2026-10-27T08:00:00.000Z",
+        retentionPolicyId: principal.retentionPolicyId,
+        playerId: principal.playerId,
+        sessionId: "seed-checkin-session-1",
+        sessionRevision: 1,
+        instrumentVersion: "habi-daily-v1",
+        feedbackVersion: "habi-feedback-v1",
+        completedAt: "2026-10-27T08:00:00.000Z",
+        timeZone: "Europe/Budapest",
+        sourceRefs: [],
+        answerCodes: [{ metric: "focus", code: 2 }],
+        interpretation: "A válasz rögzítve.",
+        suggestion: "Nincs automatikus következtetés.",
+        personalText: null,
+      };
+      validateContractDocument("checkin_results", sourceCheckin);
+      await db.collection("checkin_results").insertOne(sourceCheckin);
+      const linkedGuided = await saveExperienceDraft({
+        request: new Request(guidedPath, {
+          method: "PUT",
+          headers: { "Idempotency-Key": "guided-draft-linked-save-1" },
+          body: JSON.stringify({
+            expectedRevision: 0,
+            contentVersion: "guided-situation-v2",
+            payload: {
+              situationId: "too-fast",
+              answers: [],
+              sourceCheckinId: sourceCheckin.id,
+            },
+          }),
+        }),
+        client,
+        db,
+        principal,
+        playerId: principal.playerId,
+        draftKey: "guided-conversation",
+      });
+      assert.equal(
+        linkedGuided.body.draft.payload.sourceCheckinId,
+        sourceCheckin.id,
+      );
+      await assert.rejects(
+        saveExperienceDraft({
+          request: new Request(guidedPath, {
+            method: "PUT",
+            headers: { "Idempotency-Key": "guided-draft-unlinked-save-1" },
+            body: JSON.stringify({
+              expectedRevision: 1,
+              contentVersion: "guided-situation-v2",
+              payload: {
+                situationId: "afraid-to-try",
+                answers: [],
+                sourceCheckinId: sourceCheckin.id,
+              },
+            }),
+          }),
+          client,
+          db,
+          principal,
+          playerId: principal.playerId,
+          draftKey: "guided-conversation",
+        }),
+        { code: "NOT_FOUND" },
+      );
+      await deleteExperienceDraft({
+        request: new Request(guidedPath, {
+          method: "DELETE",
+          headers: { "Idempotency-Key": "guided-draft-linked-delete-1" },
+          body: JSON.stringify({ expectedRevision: 1 }),
+        }),
+        client,
+        db,
+        principal,
+        playerId: principal.playerId,
+        draftKey: "guided-conversation",
+      });
+
       const topicPath =
         "https://habi.example.test/api/v1/players/seed-player-001/drafts/guided-topic-conversation";
       const topicDraft = await saveExperienceDraft({

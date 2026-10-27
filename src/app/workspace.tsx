@@ -37,6 +37,7 @@ import {
   ownGoalText as goalTextForRecord,
 } from "../lib/workflows/goal-lineage.mjs";
 import { createCheckinConversationOpening } from "../lib/workflows/checkin-conversation-opening.mjs";
+import { getDailySituationOptions } from "../lib/workflows/daily-situation-context.mjs";
 import { createTrustedAdultMessage } from "../lib/workflows/trusted-adult-message.mjs";
 
 type Role = "player" | "parent" | "coach";
@@ -407,6 +408,7 @@ export default function HabiWorkspace() {
   });
   const [guidedSituationId, setGuidedSituationId] = useState("");
   const [guidedAnswers, setGuidedAnswers] = useState<number[]>([]);
+  const [guidedSourceCheckinId, setGuidedSourceCheckinId] = useState("");
   const [guidedPaused, setGuidedPaused] = useState(false);
   const [guidedTreeDraft, setGuidedTreeDraft] =
     useState<GuidedTreeDraft | null>(null);
@@ -446,6 +448,7 @@ export default function HabiWorkspace() {
     setDraftsLoadedFor("");
     setGuidedSituationId("");
     setGuidedAnswers([]);
+    setGuidedSourceCheckinId("");
     setGuidedPaused(false);
     setGuidedTreeDraft(null);
     setGuidedTreePaused(false);
@@ -526,12 +529,15 @@ export default function HabiWorkspace() {
           }
           if (
             draftKey === "guided-conversation" &&
-            draft.contentVersion === "guided-situation-v1" &&
+            ["guided-situation-v1", "guided-situation-v2"].includes(
+              draft.contentVersion,
+            ) &&
             typeof draft.payload.situationId === "string" &&
             Array.isArray(draft.payload.answers)
           ) {
             setGuidedSituationId(draft.payload.situationId);
             setGuidedAnswers(draft.payload.answers);
+            setGuidedSourceCheckinId(draft.payload.sourceCheckinId ?? "");
             setGuidedPaused(true);
           }
           if (
@@ -560,7 +566,11 @@ export default function HabiWorkspace() {
               (draftKey === "monthly-reflection"
                 ? `monthly-reflection-v${monthlyReflectionContent.version}`
                 : draftKey === "guided-conversation"
-                  ? "guided-situation-v1"
+                  ? ["guided-situation-v1", "guided-situation-v2"].includes(
+                      draft.contentVersion,
+                    )
+                    ? draft.contentVersion
+                    : "guided-situation-v2"
                   : draftKey === "guided-topic-conversation"
                     ? ["guided-chat-v2", "guided-chat-v3"].includes(
                         draft.contentVersion,
@@ -1084,6 +1094,10 @@ export default function HabiWorkspace() {
   const latestCheckinConversationOpening = latestPlayerCheckin
     ? createCheckinConversationOpening(latestPlayerCheckin, metrics)
     : "";
+  const latestDailySituationOptions = getDailySituationOptions(
+    latestPlayerCheckin,
+    metrics,
+  );
   const latestPlayerTask = latestPlayerCheckin
     ? ownPlayerData?.records.find((record) =>
         record.text?.startsWith(
@@ -1796,7 +1810,9 @@ export default function HabiWorkspace() {
             draftKey === "monthly-reflection"
               ? `monthly-reflection-v${monthlyReflectionContent.version}`
               : draftKey === "guided-conversation"
-                ? "guided-situation-v1"
+                ? typeof payload.sourceCheckinId === "string"
+                  ? "guided-situation-v2"
+                  : "guided-situation-v1"
                 : draftKey === "guided-topic-conversation"
                   ? "guided-chat-v3"
                   : `${draftKey}-v1`;
@@ -2077,7 +2093,7 @@ export default function HabiWorkspace() {
     setPainStep(painStep === 2 ? 3 : painStep + 1);
   }
 
-  async function startGuidedSituation(id: string) {
+  async function startGuidedSituation(id: string, sourceCheckinId = "") {
     if (!id) {
       setBusy(true);
       const cleared = await clearExperienceDraft("guided-conversation");
@@ -2085,6 +2101,7 @@ export default function HabiWorkspace() {
       if (!cleared) return;
       setGuidedSituationId("");
       setGuidedAnswers([]);
+      setGuidedSourceCheckinId("");
       setGuidedPaused(false);
       return;
     }
@@ -2093,11 +2110,13 @@ export default function HabiWorkspace() {
     const saved = await saveExperienceDraft("guided-conversation", {
       situationId: id,
       answers: [],
+      ...(sourceCheckinId ? { sourceCheckinId } : {}),
     });
     setBusy(false);
     if (!saved) return;
     setGuidedSituationId(id);
     setGuidedAnswers([]);
+    setGuidedSourceCheckinId(sourceCheckinId);
     setGuidedPaused(false);
   }
 
@@ -2115,6 +2134,9 @@ export default function HabiWorkspace() {
     const saved = await saveExperienceDraft("guided-conversation", {
       situationId: guidedSituationId,
       answers,
+      ...(guidedSourceCheckinId
+        ? { sourceCheckinId: guidedSourceCheckinId }
+        : {}),
     });
     setBusy(false);
     if (saved) {
@@ -2235,6 +2257,27 @@ export default function HabiWorkspace() {
     ];
     const dialogue = [
       `Helyzet: ${situation.opening}`,
+      ...(guidedSourceCheckinId
+        ? [
+            `Kapcsolódó állapotjelzés: ${guidedSourceCheckinId}`,
+            (() => {
+              const checkin = ownPlayerData?.checkins.find(
+                (item) => item.id === guidedSourceCheckinId,
+              );
+              const sourceMetric =
+                guidedSituationId === "too-fast" ? "focus" : "mood";
+              const source = checkin?.answerCodes?.find(
+                (item) => item.metric === sourceMetric,
+              );
+              const definition = source
+                ? metrics.find(([key]) => key === source.metric)
+                : null;
+              return source && definition
+                ? `Kapcsolódó kérdés és válasz: ${definition[1]} — ${definition[2][source.code] ?? "Nincs válasz"}`
+                : "A kapcsolódó válasz részlete jelenleg nem érhető el.";
+            })(),
+          ]
+        : []),
       `${situation.question}\n${situation.options[guidedAnswers[0] ?? 0]}`,
       `${journeyContent.chat.question}\n${journeyContent.chat.options[guidedAnswers[1] ?? 0]}`,
       `${journeyContent.chat.lastQuestion}\n${finalChoices[guidedAnswers[2] ?? 0]}`,
@@ -2248,6 +2291,7 @@ export default function HabiWorkspace() {
       await clearExperienceDraft("guided-conversation");
       setGuidedSituationId("");
       setGuidedAnswers([]);
+      setGuidedSourceCheckinId("");
       setGuidedPaused(false);
     }
   }
@@ -3173,6 +3217,38 @@ export default function HabiWorkspace() {
                     >
                       Beszélgetek a válaszaimról
                     </button>
+                    {latestDailySituationOptions.length > 0 && (
+                      <div className={styles.formGroup}>
+                        <p className={styles.muted}>
+                          Választhatsz egy előre megírt beszélgetést a
+                          kapcsolódó válaszhoz. Habi nem von le következtetést.
+                        </p>
+                        {latestDailySituationOptions.map(
+                          (option: {
+                            situationId: string;
+                            title: string;
+                            checkinId: string;
+                            metric: string;
+                          }) => (
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              key={option.metric}
+                              disabled={busy || !experienceDraftsReady}
+                              onClick={() => {
+                                setTab("player-tools");
+                                void startGuidedSituation(
+                                  option.situationId,
+                                  option.checkinId,
+                                );
+                              }}
+                            >
+                              {option.title}
+                            </button>
+                          ),
+                        )}
+                      </div>
+                    )}
                   </details>
                 ) : null}
                 {reminderType && (
@@ -4748,6 +4824,37 @@ export default function HabiWorkspace() {
                         return (
                           <article className={styles.dataCard}>
                             <h4>{situation.opening}</h4>
+                            {guidedSourceCheckinId &&
+                              (() => {
+                                const sourceCheckin =
+                                  ownPlayerData?.checkins.find(
+                                    (item) => item.id === guidedSourceCheckinId,
+                                  );
+                                const sourceMetric =
+                                  guidedSituationId === "too-fast"
+                                    ? "focus"
+                                    : "mood";
+                                const sourceAnswer =
+                                  sourceCheckin?.answerCodes?.find(
+                                    (item) => item.metric === sourceMetric,
+                                  );
+                                const sourceDefinition = sourceAnswer
+                                  ? metrics.find(
+                                      ([key]) => key === sourceAnswer.metric,
+                                    )
+                                  : null;
+                                return (
+                                  <p className={styles.muted}>
+                                    Kapcsolódó állapotjelzés
+                                    {sourceCheckin?.completedAt
+                                      ? ` · ${new Date(sourceCheckin.completedAt).toLocaleString("hu-HU")}`
+                                      : ""}
+                                    {sourceAnswer && sourceDefinition
+                                      ? ` · ${sourceDefinition[1]} — ${sourceDefinition[2][sourceAnswer.code] ?? "Nincs válasz"}`
+                                      : " · A válasz részlete jelenleg nem érhető el."}
+                                  </p>
+                                );
+                              })()}
                             {guidedAnswers.map((answer, index) => {
                               const priorChoices = [
                                 situation.options,

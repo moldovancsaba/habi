@@ -40,7 +40,7 @@ function collection(items = []) {
   };
 }
 
-test("timeline keeps the question and its no-evidence outcome as linked events", async () => {
+test("timeline keeps the question and its no-evidence outcome for the parent and player", async () => {
   const askedAt = "2026-10-26T10:15:00.000Z";
   const answeredAt = "2026-10-26T10:16:30.000Z";
   const question = "Miért volt ma nehéz az edzés?";
@@ -82,6 +82,17 @@ test("timeline keeps the question and its no-evidence outcome as linked events",
             updatedAt: answeredAt,
             answer: { status: "no_evidence", validity: "current" },
           },
+          {
+            tenantId: "habi",
+            playerId: "player-1",
+            id: "interpretation-stale",
+            revision: 1,
+            turnId: "turn-stale",
+            threadId: "thread-1",
+            createdAt: answeredAt,
+            updatedAt: answeredAt,
+            answer: { status: "ready", validity: "stale" },
+          },
         ],
         threads: [
           {
@@ -95,30 +106,32 @@ test("timeline keeps the question and its no-evidence outcome as linked events",
       return collection(entries[name] ?? []);
     },
   };
-  const result = await readTimeline({
-    db,
-    principal: {
-      tenantId: "habi",
-      playerId: "player-1",
-      role: "parent",
-      actorId: "parent-1",
-      accessRevision: 1,
-    },
-    cursorHmacKey: "0123456789abcdef0123456789abcdef",
-    now: new Date("2026-10-26T10:20:00.000Z"),
-  });
-  assert.equal(result.nodes.length, 2);
-  const answer = result.nodes.find(
-    (node) => node.kind === "interpretation.no_evidence",
-  );
-  const prompt = result.nodes.find((node) => node.kind === "thread.message");
-  assert.equal(prompt.summary, question);
-  assert.equal(
-    answer.summary,
-    "A Habi nem talált ellenőrizhető, forrásolt választ. Nem vont le következtetést.",
-  );
-  assert.equal(answer.relatedId, prompt.id);
-  assert.equal(answer.submittedAt, answeredAt);
+  for (const role of ["parent", "player"]) {
+    const result = await readTimeline({
+      db,
+      principal: {
+        tenantId: "habi",
+        playerId: "player-1",
+        role,
+        actorId: role === "parent" ? "parent-1" : "player-1",
+        accessRevision: 1,
+      },
+      cursorHmacKey: "0123456789abcdef0123456789abcdef",
+      now: new Date("2026-10-26T10:20:00.000Z"),
+    });
+    assert.equal(result.nodes.length, 2);
+    const answer = result.nodes.find(
+      (node) => node.kind === "interpretation.no_evidence",
+    );
+    const prompt = result.nodes.find((node) => node.kind === "thread.message");
+    assert.equal(prompt.summary, question);
+    assert.equal(
+      answer.summary,
+      "A Habi nem talált ellenőrizhető, forrásolt választ. Nem vont le következtetést.",
+    );
+    assert.equal(answer.relatedId, prompt.id);
+    assert.equal(answer.submittedAt, answeredAt);
+  }
 });
 
 test("timeline can be filtered to a time window and its cursor is bound to that window", async () => {

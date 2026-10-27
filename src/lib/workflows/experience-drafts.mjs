@@ -61,8 +61,9 @@ export function isValidExperienceDraftPayload(
     );
   if (draftKey === "guided-conversation")
     return (
-      contentVersion === "guided-situation-v1" &&
-      Object.keys(payload).length === 2 &&
+      ["guided-situation-v1", "guided-situation-v2"].includes(contentVersion) &&
+      Object.keys(payload).length ===
+        (contentVersion === "guided-situation-v2" ? 3 : 2) &&
       [
         "after-mistake",
         "too-fast",
@@ -73,7 +74,10 @@ export function isValidExperienceDraftPayload(
       payload.answers.length <= 3 &&
       payload.answers.every(
         (answer) => Number.isInteger(answer) && answer >= 0 && answer <= 2,
-      )
+      ) &&
+      (contentVersion === "guided-situation-v1" ||
+        (typeof payload.sourceCheckinId === "string" &&
+          /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(payload.sourceCheckinId)))
     );
   if (draftKey === "guided-topic-conversation")
     return (
@@ -188,6 +192,32 @@ export async function saveExperienceDraft({
     now: () => now,
     async execute({ db: transactionDb, session }) {
       await ensurePlayerMembership(transactionDb, principal, playerId, session);
+      if (
+        draftKey === "guided-conversation" &&
+        body.contentVersion === "guided-situation-v2"
+      ) {
+        const sourceCheckin = await transactionDb
+          .collection("checkin_results")
+          .findOne(
+            {
+              tenantId: principal.tenantId,
+              playerId,
+              id: body.payload.sourceCheckinId,
+            },
+            { session },
+          );
+        const sourceMetric =
+          body.payload.situationId === "too-fast"
+            ? "focus"
+            : body.payload.situationId === "afraid-to-try"
+              ? "mood"
+              : null;
+        const sourceAnswer = sourceCheckin?.answerCodes?.find(
+          (answer) => answer.metric === sourceMetric,
+        );
+        if (!sourceAnswer || ![2, 3].includes(sourceAnswer.code))
+          throw new HabiApiError("NOT_FOUND");
+      }
       const collection = transactionDb.collection("habi_experience_drafts");
       const scope = {
         tenantId: principal.tenantId,

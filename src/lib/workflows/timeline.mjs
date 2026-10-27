@@ -319,7 +319,7 @@ export async function readTimeline({
     const noEvidence = item.answer?.status === "no_evidence";
     if (
       principal.role !== "coach" &&
-      !(principal.role === "parent" && noEvidence) &&
+      !(["parent", "player"].includes(principal.role) && noEvidence) &&
       !(item.answer?.status === "ready" && item.answer?.validity === "current")
     )
       continue;
