@@ -146,7 +146,8 @@ type RoleRequest = {
 type ExperienceDraftKey =
   | "daily-reflection"
   | "weekly-reflection"
-  | "monthly-reflection";
+  | "monthly-reflection"
+  | "guided-conversation";
 type ExperienceDraftPayload = Record<
   string,
   string | number | null | Array<string | number | null>
@@ -322,6 +323,7 @@ export default function HabiWorkspace() {
     "daily-reflection": 0,
     "weekly-reflection": 0,
     "monthly-reflection": 0,
+    "guided-conversation": 0,
   });
   const draftWriteQueues = useRef<
     Partial<Record<ExperienceDraftKey, Promise<boolean>>>
@@ -345,6 +347,7 @@ export default function HabiWorkspace() {
   });
   const [guidedSituationId, setGuidedSituationId] = useState("");
   const [guidedAnswers, setGuidedAnswers] = useState<number[]>([]);
+  const [guidedPaused, setGuidedPaused] = useState(false);
   const [painStep, setPainStep] = useState<number | null>(null);
   const [painAnswers, setPainAnswers] = useState<number[]>([]);
   const [painPlaceDetail, setPainPlaceDetail] = useState("");
@@ -371,14 +374,23 @@ export default function HabiWorkspace() {
     const owner = `${app.me.actorId}:${selectedPlayerId}`;
     const controller = new AbortController();
     setDraftsLoadedFor("");
+    setGuidedSituationId("");
+    setGuidedAnswers([]);
+    setGuidedPaused(false);
     draftRevisions.current = {
       "daily-reflection": 0,
       "weekly-reflection": 0,
       "monthly-reflection": 0,
+      "guided-conversation": 0,
     };
     void Promise.all(
       (
-        ["daily-reflection", "weekly-reflection", "monthly-reflection"] as const
+        [
+          "daily-reflection",
+          "weekly-reflection",
+          "monthly-reflection",
+          "guided-conversation",
+        ] as const
       ).map(async (draftKey) => {
         const response = await fetch(
           `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/drafts/${draftKey}`,
@@ -436,6 +448,16 @@ export default function HabiWorkspace() {
             setMonthlyNextStep(draft.payload.nextFocus ?? "");
             setMonthlyNote(draft.payload.note ?? "");
           }
+          if (
+            draftKey === "guided-conversation" &&
+            draft.contentVersion === "guided-situation-v1" &&
+            typeof draft.payload.situationId === "string" &&
+            Array.isArray(draft.payload.answers)
+          ) {
+            setGuidedSituationId(draft.payload.situationId);
+            setGuidedAnswers(draft.payload.answers);
+            setGuidedPaused(true);
+          }
         }
         const incompatibleDraft = results.some(
           ({ draftKey, draft }) =>
@@ -443,7 +465,9 @@ export default function HabiWorkspace() {
             draft.contentVersion !==
               (draftKey === "monthly-reflection"
                 ? `monthly-reflection-v${monthlyReflectionContent.version}`
-                : `${draftKey}-v1`),
+                : draftKey === "guided-conversation"
+                  ? "guided-situation-v1"
+                  : `${draftKey}-v1`),
         );
         setDraftNotice(
           incompatibleDraft
@@ -1593,7 +1617,9 @@ export default function HabiWorkspace() {
           const contentVersion =
             draftKey === "monthly-reflection"
               ? `monthly-reflection-v${monthlyReflectionContent.version}`
-              : `${draftKey}-v1`;
+              : draftKey === "guided-conversation"
+                ? "guided-situation-v1"
+                : `${draftKey}-v1`;
           const response = await fetch(
             `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/drafts/${draftKey}`,
             {
@@ -1601,6 +1627,7 @@ export default function HabiWorkspace() {
               credentials: "same-origin",
               headers: {
                 "Content-Type": "application/json",
+                "x-habi-csrf": app.me.csrfToken,
                 "Idempotency-Key": crypto.randomUUID(),
               },
               body: JSON.stringify({
@@ -1639,6 +1666,7 @@ export default function HabiWorkspace() {
           credentials: "same-origin",
           headers: {
             "Content-Type": "application/json",
+            "x-habi-csrf": app.state === "ready" ? app.me.csrfToken : "",
             "Idempotency-Key": crypto.randomUUID(),
           },
           body: JSON.stringify({
@@ -1802,14 +1830,50 @@ export default function HabiWorkspace() {
     setPainStep(painStep === 2 ? 3 : painStep + 1);
   }
 
-  function startGuidedSituation(id: string) {
+  async function startGuidedSituation(id: string) {
+    if (!id) {
+      setBusy(true);
+      const cleared = await clearExperienceDraft("guided-conversation");
+      setBusy(false);
+      if (!cleared) return;
+      setGuidedSituationId("");
+      setGuidedAnswers([]);
+      setGuidedPaused(false);
+      return;
+    }
+    setBusy(true);
+    setNotice("");
+    const saved = await saveExperienceDraft("guided-conversation", {
+      situationId: id,
+      answers: [],
+    });
+    setBusy(false);
+    if (!saved) return;
     setGuidedSituationId(id);
     setGuidedAnswers([]);
+    setGuidedPaused(false);
   }
 
-  function answerGuidedSituation(answer: number) {
-    if (!Number.isInteger(answer) || guidedAnswers.length >= 3) return;
-    setGuidedAnswers((current) => [...current, answer]);
+  async function answerGuidedSituation(answer: number) {
+    if (
+      !Number.isInteger(answer) ||
+      answer < 0 ||
+      answer > 2 ||
+      guidedAnswers.length >= 3 ||
+      busy
+    )
+      return;
+    const answers = [...guidedAnswers, answer];
+    setBusy(true);
+    const saved = await saveExperienceDraft("guided-conversation", {
+      situationId: guidedSituationId,
+      answers,
+    });
+    setBusy(false);
+    if (saved) {
+      setGuidedAnswers(answers);
+      setGuidedPaused(false);
+    }
   }
 
   async function saveGuidedConversation() {
@@ -1834,8 +1898,10 @@ export default function HabiWorkspace() {
         `Vezetett beszélgetés · ${situation.opening}\n${dialogue}`,
       )
     ) {
+      await clearExperienceDraft("guided-conversation");
       setGuidedSituationId("");
       setGuidedAnswers([]);
+      setGuidedPaused(false);
     }
   }
 
@@ -3697,6 +3763,19 @@ export default function HabiWorkspace() {
                     a naplódhoz kapcsolódik.
                   </p>
                   <div className={styles.formGroup}>
+                    <h3>Vezetett beszélgetés</h3>
+                    <p className={styles.muted}>
+                      Válassz egy helyzetet, és haladj a saját tempódban. A
+                      válaszaid minden lépésnél elmentődnek, így később innen
+                      folytathatod.
+                    </p>
+                    {guidedSituationId && experienceDraftsReady && (
+                      <p className={styles.actionFeedback} role="status">
+                        {draftNotice || "A beszélgetés piszkozatként mentve."}
+                      </p>
+                    )}
+                  </div>
+                  <div className={styles.formGroup}>
                     <h3>Állapotjelzéseid alakulása</h3>
                     <p className={styles.muted}>
                       Csak a ténylegesen rögzített válaszokat mutatjuk. A
@@ -3964,13 +4043,35 @@ export default function HabiWorkspace() {
                       készít diagnózist; a beszélgetés végén te döntöd el, mit
                       próbálsz ki.
                     </p>
-                    {!guidedSituationId ? (
+                    {!guidedSituationId || guidedPaused ? (
                       <div className={styles.knowledgeList}>
+                        {guidedSituationId && guidedPaused && (
+                          <article className={styles.dataCard}>
+                            <h4>
+                              {journeyContent.situations.find(
+                                (item) => item.id === guidedSituationId,
+                              )?.opening ?? "A félretett beszélgetésed"}
+                            </h4>
+                            <p className={styles.muted}>
+                              {guidedAnswers.length} válaszod már megvan.
+                              Folytathatod innen, vagy másik helyzetet
+                              választhatsz.
+                            </p>
+                            <button
+                              className={styles.primary}
+                              type="button"
+                              onClick={() => setGuidedPaused(false)}
+                            >
+                              Folytatom
+                            </button>
+                          </article>
+                        )}
                         {journeyContent.situations.map((situation) => (
                           <button
                             className={styles.secondary}
                             key={situation.id}
                             type="button"
+                            disabled={busy || !experienceDraftsReady}
                             onClick={() => startGuidedSituation(situation.id)}
                           >
                             {situation.opening}
@@ -4023,6 +4124,14 @@ export default function HabiWorkspace() {
                                 </p>
                               );
                             })}
+                            <button
+                              className={styles.textButton}
+                              type="button"
+                              disabled={busy}
+                              onClick={() => setGuidedPaused(true)}
+                            >
+                              Később folytatom
+                            </button>
                             {choices && prompt ? (
                               <>
                                 <h4>{prompt}</h4>
@@ -4032,6 +4141,7 @@ export default function HabiWorkspace() {
                                       className={styles.secondary}
                                       key={choice}
                                       type="button"
+                                      disabled={busy}
                                       onClick={() =>
                                         answerGuidedSituation(index)
                                       }
@@ -4055,7 +4165,7 @@ export default function HabiWorkspace() {
                                   <button
                                     className={styles.primary}
                                     type="button"
-                                    disabled={busy}
+                                    disabled={busy || !experienceDraftsReady}
                                     onClick={() =>
                                       void saveGuidedConversation()
                                     }
@@ -4065,7 +4175,10 @@ export default function HabiWorkspace() {
                                   <button
                                     className={styles.secondary}
                                     type="button"
-                                    onClick={() => startGuidedSituation("")}
+                                    disabled={busy}
+                                    onClick={() =>
+                                      void startGuidedSituation("")
+                                    }
                                   >
                                     Beszélgetés elvetése
                                   </button>

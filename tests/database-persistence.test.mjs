@@ -385,6 +385,50 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
         }),
         { draft: null },
       );
+
+      const guidedPath =
+        "https://habi.example.test/api/v1/players/seed-player-001/drafts/guided-conversation";
+      const guided = await saveExperienceDraft({
+        request: new Request(guidedPath, {
+          method: "PUT",
+          headers: { "Idempotency-Key": "guided-draft-save-1" },
+          body: JSON.stringify({
+            expectedRevision: 0,
+            contentVersion: "guided-situation-v1",
+            payload: { situationId: "after-mistake", answers: [1, 2] },
+          }),
+        }),
+        client,
+        db,
+        principal,
+        playerId: principal.playerId,
+        draftKey: "guided-conversation",
+      });
+      assert.equal(guided.status, 201);
+      assert.equal(guided.body.draft.payload.situationId, "after-mistake");
+      assert.deepEqual(guided.body.draft.payload.answers, [1, 2]);
+      assert.deepEqual(
+        await readExperienceDraft({
+          db,
+          principal,
+          playerId: principal.playerId,
+          draftKey: "guided-conversation",
+        }).then(({ draft }) => draft.payload),
+        { situationId: "after-mistake", answers: [1, 2] },
+      );
+      const guidedClear = await deleteExperienceDraft({
+        request: new Request(guidedPath, {
+          method: "DELETE",
+          headers: { "Idempotency-Key": "guided-draft-delete-1" },
+          body: JSON.stringify({ expectedRevision: 1 }),
+        }),
+        client,
+        db,
+        principal,
+        playerId: principal.playerId,
+        draftKey: "guided-conversation",
+      });
+      assert.deepEqual(guidedClear.body, { cleared: true });
     },
   );
 

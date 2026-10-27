@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://habi.invalid/contracts/domain-schemas-v2.4.3.json",
-  "title": "Habi persistence contracts v2.4.3; schemas do not assert deployment",
+  "$id": "https://habi.invalid/contracts/domain-schemas-v2.4.4.json",
+  "title": "Habi persistence contracts v2.4.4; schemas do not assert deployment",
   "$defs": {
     "Ref": {
       "type": "object",
@@ -3043,7 +3043,7 @@
         "retentionPolicyId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$" },
         "playerId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$" },
         "actorId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$" },
-        "draftKey": { "type": "string", "enum": ["daily-reflection", "weekly-reflection", "monthly-reflection"] },
+        "draftKey": { "type": "string", "enum": ["daily-reflection", "weekly-reflection", "monthly-reflection", "guided-conversation"] },
         "contentVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
         "payload": {
           "type": "object",

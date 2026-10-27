@@ -78,6 +78,36 @@ test("monthly reflection drafts preserve progress and explicit skipped values", 
   );
 });
 
+test("guided situation drafts persist only supported authored choices", () => {
+  assert.equal(
+    isValidExperienceDraftPayload(
+      "guided-conversation",
+      "guided-situation-v1",
+      {
+        situationId: "after-mistake",
+        answers: [1, 2],
+      },
+    ),
+    true,
+  );
+  for (const payload of [
+    { situationId: "unknown", answers: [] },
+    { situationId: "after-mistake", answers: [3] },
+    { situationId: "after-mistake", answers: [0, 1, 2, 0] },
+    { situationId: "after-mistake", answers: ["skip"] },
+    { situationId: "after-mistake", answers: [], extra: true },
+  ]) {
+    assert.equal(
+      isValidExperienceDraftPayload(
+        "guided-conversation",
+        "guided-situation-v1",
+        payload,
+      ),
+      false,
+    );
+  }
+});
+
 test("draft persistence contract rejects missing ownership or unsupported fields", () => {
   const draft = {
     id: "2da44926-27ac-4eb7-a5f8-900112d2a2b7",

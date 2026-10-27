@@ -8,6 +8,7 @@ const DRAFT_KEYS = new Set([
   "daily-reflection",
   "weekly-reflection",
   "monthly-reflection",
+  "guided-conversation",
 ]);
 const MAX_TEXT = 1000;
 
@@ -54,6 +55,22 @@ export function isValidExperienceDraftPayload(
       ["helped", "hard", "next"].every(
         (key) =>
           typeof payload[key] === "string" && payload[key].length <= MAX_TEXT,
+      )
+    );
+  if (draftKey === "guided-conversation")
+    return (
+      contentVersion === "guided-situation-v1" &&
+      Object.keys(payload).length === 2 &&
+      [
+        "after-mistake",
+        "too-fast",
+        "too-many-instructions",
+        "afraid-to-try",
+      ].includes(payload.situationId) &&
+      Array.isArray(payload.answers) &&
+      payload.answers.length <= 3 &&
+      payload.answers.every(
+        (answer) => Number.isInteger(answer) && answer >= 0 && answer <= 2,
       )
     );
   return (
