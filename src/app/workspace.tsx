@@ -31,6 +31,11 @@ import {
   latestGoalReviewDate,
   nextGoalReviewDate,
 } from "../lib/workflows/goal-review.mjs";
+import {
+  isOwnGoalRecord,
+  ownGoalLineageStatus,
+  ownGoalText as goalTextForRecord,
+} from "../lib/workflows/goal-lineage.mjs";
 import { createCheckinConversationOpening } from "../lib/workflows/checkin-conversation-opening.mjs";
 import { createTrustedAdultMessage } from "../lib/workflows/trusted-adult-message.mjs";
 
@@ -299,6 +304,12 @@ export default function HabiWorkspace() {
   const questionFeedbackRef = useRef<HTMLParagraphElement>(null);
   const questionResultRef = useRef<HTMLElement>(null);
   const [notice, setNoticeText] = useState("");
+  const goalReplacementCommand = useRef<{
+    fingerprint: string;
+    idempotencyKey: string;
+    occurredAt: string;
+    timeZone: string;
+  } | null>(null);
   const [noticeKind, setNoticeKind] = useState<"info" | "success" | "error">(
     "info",
   );
@@ -334,6 +345,8 @@ export default function HabiWorkspace() {
   const [goalReviewDays, setGoalReviewDays] = useState("7");
   const [editingGoalId, setEditingGoalId] = useState("");
   const [editingGoalText, setEditingGoalText] = useState("");
+  const [replacingGoalId, setReplacingGoalId] = useState("");
+  const [replacementGoalText, setReplacementGoalText] = useState("");
   const [reviewingGoalId, setReviewingGoalId] = useState("");
   const [exportingGoalId, setExportingGoalId] = useState("");
   const [includeGoalHistory, setIncludeGoalHistory] = useState(false);
@@ -1075,31 +1088,14 @@ export default function HabiWorkspace() {
       latestEdit?.text
         ?.slice(`Saját cél módosítva · ${goal.id} ·`.length)
         .trim() ??
-      goal.text?.slice("Saját cél:".length).trim() ??
+      goalTextForRecord(goal) ??
       ""
     );
   }
   function ownGoalStatus(goal: RecordItem) {
-    const events = (ownPlayerData?.records ?? [])
-      .filter((record) =>
-        record.text?.startsWith(`Saját cél állapot · ${goal.id} ·`),
-      )
-      .sort((a, b) =>
-        String(b.occurredAt ?? "").localeCompare(String(a.occurredAt ?? "")),
-      );
-    const state = events[0]?.text?.split(" · ").at(-1);
-    if (state) return state;
-    const legacyText = goal.text?.slice("Saját cél:".length).trim();
-    return (ownPlayerData?.records ?? []).some(
-      (record) => record.text === `Cél lezárva: ${legacyText}`,
-    )
-      ? "closed"
-      : "active";
+    return ownGoalLineageStatus(goal, ownGoals, ownPlayerData?.records ?? []);
   }
-  const ownGoals = (ownPlayerData?.records ?? []).filter(
-    (record) =>
-      record.kind === "diary" && record.text?.startsWith("Saját cél:"),
-  );
+  const ownGoals = (ownPlayerData?.records ?? []).filter(isOwnGoalRecord);
   const dueOwnGoals = ownGoals.filter((goal) => {
     const status = ownGoalStatus(goal);
     const reviewDate = latestGoalReviewDate(
@@ -1540,7 +1536,18 @@ export default function HabiWorkspace() {
     }
   }
 
-  async function savePlayerDiary(text: string) {
+  async function savePlayerDiary(
+    text: string,
+    command: {
+      idempotencyKey: string;
+      occurredAt: string;
+      timeZone: string;
+    } = {
+      idempotencyKey: crypto.randomUUID(),
+      occurredAt: new Date().toISOString(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    },
+  ) {
     if (active?.activeRole !== "player" || !playerId || busy) return;
     setBusy(true);
     setNotice("");
@@ -1553,13 +1560,13 @@ export default function HabiWorkspace() {
           headers: {
             "Content-Type": "application/json",
             "x-habi-csrf": active.csrfToken,
-            "Idempotency-Key": crypto.randomUUID(),
+            "Idempotency-Key": command.idempotencyKey,
           },
           body: JSON.stringify({
             kind: "diary",
             text,
-            occurredAt: new Date().toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            occurredAt: command.occurredAt,
+            timeZone: command.timeZone,
             sourceKind: "self",
             sessionId: null,
             metric: null,
@@ -1630,6 +1637,37 @@ export default function HabiWorkspace() {
     await savePlayerDiary(
       `Saját cél újranézés · ${saved.id} · ${reviewDate ?? "kikapcsolva"}`,
     );
+  }
+
+  async function replaceOwnGoal(goalId: string, text: string) {
+    const nextText = text.trim();
+    if (!goalId || !nextText || nextText.length > 500) return;
+    const fingerprint = `${goalId}\u0000${nextText}`;
+    if (goalReplacementCommand.current?.fingerprint !== fingerprint) {
+      goalReplacementCommand.current = {
+        fingerprint,
+        idempotencyKey: crypto.randomUUID(),
+        occurredAt: new Date().toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      };
+    }
+    const saved = await savePlayerDiary(
+      `Saját célcsere · ${goalId} · ${nextText}`,
+      goalReplacementCommand.current,
+    );
+    if (!saved) return;
+    goalReplacementCommand.current = null;
+    setReplacingGoalId("");
+    setReplacementGoalText("");
+    const reviewDate = nextGoalReviewDate(localToday, Number(goalReviewDays));
+    await savePlayerDiary(
+      `Saját cél újranézés · ${saved.id} · ${reviewDate ?? "kikapcsolva"}`,
+    );
+  }
+
+  async function saveOwnGoalReplacement(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await replaceOwnGoal(replacingGoalId, replacementGoalText);
   }
 
   async function setOwnGoalState(
@@ -4862,18 +4900,26 @@ export default function HabiWorkspace() {
                           ownPlayerData?.records ?? [],
                           record.id,
                         );
+                        const superseded = status === "superseded";
                         const closed =
-                          status === "closed" || status === "habit";
+                          status === "closed" ||
+                          status === "habit" ||
+                          superseded;
+                        const activeGoal = ownGoals.find(
+                          (candidate) => ownGoalStatus(candidate) === "active",
+                        );
                         return (
                           <article className={styles.taskCard} key={record.id}>
                             <p className={styles.eyebrow}>
                               {status === "paused"
                                 ? "FÉLRETETT SAJÁT CÉL"
-                                : status === "habit"
-                                  ? "SZOKÁSKÉNT FOLYTATOTT CÉL"
-                                  : closed
-                                    ? "LEZÁRT SAJÁT CÉL"
-                                    : "AKTÍV SAJÁT CÉL"}
+                                : superseded
+                                  ? "LECSERÉLT SAJÁT CÉL"
+                                  : status === "habit"
+                                    ? "SZOKÁSKÉNT FOLYTATOTT CÉL"
+                                    : closed
+                                      ? "LEZÁRT SAJÁT CÉL"
+                                      : "AKTÍV SAJÁT CÉL"}
                             </p>
                             <h3>{goal}</h3>
                             {reviewDate && status === "active" ? (
@@ -4943,8 +4989,83 @@ export default function HabiWorkspace() {
                                   )
                                 : "—"}
                             </time>
+                            {superseded && activeGoal ? (
+                              <button
+                                className={styles.secondary}
+                                type="button"
+                                disabled={busy}
+                                onClick={() =>
+                                  void replaceOwnGoal(
+                                    activeGoal.id,
+                                    ownGoalText(record),
+                                  )
+                                }
+                              >
+                                Ezt a korábbi célt állítom vissza
+                              </button>
+                            ) : null}
                             {!closed && (
                               <>
+                                <div className={styles.actions}>
+                                  <button
+                                    className={styles.secondary}
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => {
+                                      setReplacingGoalId(
+                                        replacingGoalId === record.id
+                                          ? ""
+                                          : record.id,
+                                      );
+                                      setReplacementGoalText("");
+                                    }}
+                                  >
+                                    Cél cseréje
+                                  </button>
+                                </div>
+                                {replacingGoalId === record.id && (
+                                  <form
+                                    onSubmit={saveOwnGoalReplacement}
+                                    className={styles.formGroup}
+                                  >
+                                    <label
+                                      className={styles.label}
+                                      htmlFor={`replace-goal-${record.id}`}
+                                    >
+                                      Mi legyen az új cél?
+                                    </label>
+                                    <textarea
+                                      id={`replace-goal-${record.id}`}
+                                      rows={2}
+                                      maxLength={500}
+                                      value={replacementGoalText}
+                                      onChange={(event) =>
+                                        setReplacementGoalText(
+                                          event.target.value,
+                                        )
+                                      }
+                                      required
+                                    />
+                                    <div className={styles.actions}>
+                                      <button
+                                        className={styles.primary}
+                                        type="submit"
+                                        disabled={
+                                          busy || !replacementGoalText.trim()
+                                        }
+                                      >
+                                        Célcsere mentése
+                                      </button>
+                                      <button
+                                        className={styles.textButton}
+                                        type="button"
+                                        onClick={() => setReplacingGoalId("")}
+                                      >
+                                        Mégse
+                                      </button>
+                                    </div>
+                                  </form>
+                                )}
                                 <div className={styles.actions}>
                                   <button
                                     className={styles.secondary}

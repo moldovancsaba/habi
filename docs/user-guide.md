@@ -46,7 +46,7 @@ A `/legacy` útvonal a bejelentkezett szerepkör natív Habi-funkcióit nyitja m
 
 A **Beszélgetés előkészítése** résznél megadhatod, kivel és miről szeretnél beszélni, majd az **Előnézet és átnézés** gombbal ellenőrizheted a szöveget. Visszaléphetsz javítani, a saját naplódba mentheted vagy letöltheted. A letöltött szöveget te oszthatod meg; a Habi nem küldi el senkinek.
 
-A saját cél létrehozásakor válaszd ki, hogy egy, két vagy négy hét múlva nézz rá újra, vagy kapcsold ki a jelzést. A visszatekintés mentésekor újra beállíthatod a ciklust. Az esedékes jelzés az alkalmazás áttekintésén jelenik meg, amikor megnyitod a Habi-t; a Habi nem küld push-, e-mail- vagy WhatsApp-értesítést. A célcserét és annak visszavonását a Habi még nem kezeli külön műveletként.
+A saját cél létrehozásakor válaszd ki, hogy egy, két vagy négy hét múlva nézz rá újra, vagy kapcsold ki a jelzést. A visszatekintés mentésekor újra beállíthatod a ciklust. Az esedékes jelzés az alkalmazás áttekintésén jelenik meg, amikor megnyitod a Habi-t; a Habi nem küld push-, e-mail- vagy WhatsApp-értesítést. A **Cél cseréje** gombbal új célt adhatsz meg: az előző cél megmarad a naplóban, lecsereként jelölve. A korábbi cél kártyáján az **Ezt a korábbi célt állítom vissza** új célverziót hoz létre, ezért a csere és visszaállítás is látható marad az előzményekben.
 
 ## Feladatok, visszajelzések és kérdőíveredmények
 

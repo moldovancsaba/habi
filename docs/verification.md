@@ -1,5 +1,12 @@
 # Habi — ellenőrzési napló
 
+## Saját cél cseréje és visszaállítása · 2026-10-27
+
+- A célcsere egyetlen, az aktív játékosi SSO-munkamenetben végrehajtott, idempotens naplóírás: az új célrekord a korábbi cél azonosítójára hivatkozik. Nem történik külön „régi cél lezárása” és „új cél létrehozása” kérés, tehát ezek között nincs részleges sikerállapot.
+- A korábbi cél megmarad az idővonalon és a célok listájában, „Lecserélt saját cél” állapottal. A visszaállítási művelet az aktuális célt lecseréli a kiválasztott korábbi szöveget tartalmazó új verzióra; semelyik naplórekord nem törlődik vagy íródik felül.
+- `node --test tests/goal-lineage.test.mjs` — PASS, 3/3; `npm test` — PASS, 146 pass / 0 fail / 1 Atlas-only skip; `npm run lint` — PASS, 208 fájl; `npm run typecheck` — PASS. Környezet: helyi szintetikus tesztek. A Production health/readiness 200, de ez nem hitelesített UI-írási bizonyíték.
+- Hiba esetén az idempotens kérés újrapróbálható ugyanazzal a kulccsal; az alkalmazás újrapróbáláskor mindig a mentés eredményét kéri le. Rollback: az alkalmazáskód visszaállítása. A naplóban létrehozott célverziók megmaradnak; azokat nem töröljük automatikusan.
+
 ## Saját célok újranézési ciklusa · 2026-10-27
 
 - A cél létrehozásakor választható 7, 14 vagy 28 napos újranézés, illetve a jelzés kikapcsolása. Visszatekintés mentésekor a ciklus újra beállítható. Az esedékes cél a játékos áttekintésén jelenik meg, amikor a Habi meg van nyitva; nincs push, e-mail vagy külső értesítés. Az új dátum célazonosítóhoz kötött naplóesemény, a régi cél- és naplóbejegyzéseket nem módosítja.
