@@ -1,5 +1,12 @@
 # Habi — ellenőrzési napló
 
+## Saját cél letölthető összefoglalója · 2026-10-27
+
+- A játékos a saját céljánál szövegfájlt tölthet le. Alapból csak a cél szövege, állapota és létrehozási ideje kerül bele; külön jelöléssel a célhoz pontosan kapcsolt módosítások, állapotváltások és visszatekintések is hozzáadhatók. A fájl a böngészőben készül, az export nem ír vissza a szerverre.
+- A jelenlegi naplómodell nem kapcsol gyakorlási rekordot célhoz. Az ilyen rekordokat az export nem társítja önkényesen. Nincs adatmodell- vagy adatbázis-migráció.
+- `node --test tests/goal-export.test.mjs` — PASS, 2/2; `npm run lint` — PASS, 194 fájl; `npm run typecheck` — PASS; `npm test` — PASS, 126 pass / 0 fail / 1 Atlas-only skip; `npm run build` — PASS; `git diff --check` — PASS. Környezet: helyi Habi build, szintetikus unit tesztek.
+- Ez a kód a `13011f9` Production deployment után készült, így annak tartalmában még nincs benne. A kiadás és az élő UI ellenőrzése a push utáni deploymenthez rögzítendő. Visszaállítás az alkalmazáskód korábbi commitra állításával lehetséges; felhasználói adatot nem módosít.
+
 ## Idővonal nap szerinti szűrése · 2026-10-27
 
 - Az **Előzmények** nézet napválasztója az eszköz helyi naptári napjának kezdetétől a következő helyi nap kezdetéig szűri az idővonalat, beleértve a nyári időszámítás napjait is. A check-in eredménylista, a naplórekordok és a metróvonal ugyanazt a napablakot használják; a **Teljes idővonal** törli a szűrést. A lapozási kurzor aláírt, és nem használható másik napablakkal.

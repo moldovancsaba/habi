@@ -13,6 +13,7 @@ import CoachReportWorkspace from "./coach-report-workspace";
 import practices from "../lib/content/practices-v1.json";
 import journeyContent from "../lib/content/journeys-v1.json";
 import monthlyReflectionContent from "../lib/content/monthly-reflection-v1.json";
+import { createGoalExport } from "../lib/workflows/goal-export.mjs";
 
 type Role = "player" | "parent" | "coach";
 type OwnRole = {
@@ -308,6 +309,8 @@ export default function HabiWorkspace() {
   const [editingGoalId, setEditingGoalId] = useState("");
   const [editingGoalText, setEditingGoalText] = useState("");
   const [reviewingGoalId, setReviewingGoalId] = useState("");
+  const [exportingGoalId, setExportingGoalId] = useState("");
+  const [includeGoalHistory, setIncludeGoalHistory] = useState(false);
   const [goalReviewNote, setGoalReviewNote] = useState("");
   const [routineDraft, setRoutineDraft] = useState("");
   const [practiceFeedback, setPracticeFeedback] = useState("");
@@ -1566,6 +1569,26 @@ export default function HabiWorkspace() {
       setReviewingGoalId("");
       setGoalReviewNote("");
     }
+  }
+
+  function downloadOwnGoal(goal: RecordItem) {
+    const text = createGoalExport({
+      goal,
+      goalText: ownGoalText(goal),
+      status: ownGoalStatus(goal),
+      records: ownPlayerData?.records ?? [],
+      includeHistory: includeGoalHistory,
+    });
+    const url = URL.createObjectURL(
+      new Blob([text], { type: "text/plain;charset=utf-8" }),
+    );
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "HABI-sajat-vallalasom.txt";
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setExportingGoalId("");
+    setIncludeGoalHistory(false);
   }
 
   async function saveRoutine(event: FormEvent<HTMLFormElement>) {
@@ -4287,6 +4310,56 @@ export default function HabiWorkspace() {
                                     : "AKTÍV SAJÁT CÉL"}
                             </p>
                             <h3>{goal}</h3>
+                            <button
+                              className={styles.secondary}
+                              type="button"
+                              onClick={() => {
+                                setExportingGoalId(
+                                  exportingGoalId === record.id
+                                    ? ""
+                                    : record.id,
+                                );
+                                setIncludeGoalHistory(false);
+                              }}
+                            >
+                              Összefoglaló letöltése
+                            </button>
+                            {exportingGoalId === record.id && (
+                              <div className={styles.formGroup}>
+                                <label className={styles.label}>
+                                  <input
+                                    type="checkbox"
+                                    checked={includeGoalHistory}
+                                    onChange={(event) =>
+                                      setIncludeGoalHistory(
+                                        event.target.checked,
+                                      )
+                                    }
+                                  />
+                                  A cél módosításait, állapotait és
+                                  visszatekintéseit is hozzáadom
+                                </label>
+                                <p className={styles.muted}>
+                                  A fájl csak a saját eszközödre töltődik le.
+                                </p>
+                                <div className={styles.actions}>
+                                  <button
+                                    className={styles.primary}
+                                    type="button"
+                                    onClick={() => downloadOwnGoal(record)}
+                                  >
+                                    Letöltés
+                                  </button>
+                                  <button
+                                    className={styles.textButton}
+                                    type="button"
+                                    onClick={() => setExportingGoalId("")}
+                                  >
+                                    Mégse
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                             <time dateTime={record.occurredAt}>
                               Rögzítve:{" "}
                               {record.occurredAt
