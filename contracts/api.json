@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.4.20",
+    "version": "2.4.21",
     "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
@@ -4294,14 +4294,13 @@
         }
       },
       "get": {
-        "operationId": "get_v1_players_playerId_checkin_sessions",
-        "description": "Whitelistelt, jogosultság szerint szűrt DTO; cursor a filter, snapshot és accessRevision kötésével. MongoDB dokumentum közvetlenül nem adható vissza.",
+        "operationId": "get_v1_players__playerId__checkin_sessions",
+        "description": "Csak a saját player szerepkör olvashatja a folytatható napi jelzéseket.",
         "security": [
           {
             "sessionCookie": []
           }
         ],
-        "x-domain-action": "read",
         "parameters": [
           {
             "name": "playerId",
@@ -4311,90 +4310,15 @@
               "type": "string",
               "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
             }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 2000
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100,
-              "default": 50
-            }
-          },
-          {
-            "name": "from",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "to",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Jogosult DTO-lap; Cache-Control: private, no-store",
+            "description": "Jogosultság-ellenőrzött eredmény; private, no-store",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "items": {
-                      "type": "array",
-                      "maxItems": 100,
-                      "items": {
-                        "$ref": "./schemas.json#/$defs/CheckinSessionReadDTO"
-                      }
-                    },
-                    "nextCursor": {
-                      "anyOf": [
-                        {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 2000
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "snapshotAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "accessRevision": {
-                      "type": "integer",
-                      "minimum": 1
-                    }
-                  },
-                  "required": [
-                    "items",
-                    "nextCursor",
-                    "snapshotAt",
-                    "accessRevision"
-                  ],
-                  "additionalProperties": false
+                  "type": "object"
                 }
               }
             }
@@ -6836,6 +6760,147 @@
             }
           }
         }
+      },
+      "post": {
+        "operationId": "post_v1_players__playerId__threads",
+        "description": "Szülő vagy edző új közös beszélgetést indít az első üzenettel egy tranzakcióban. Nem indít AI-feladatot.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "x-habi-csrf",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Jogosultság-ellenőrzött eredmény; private, no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Érvénytelen lapozás vagy szűrő",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Hitelesítés szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Művelet tiltva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nem található vagy nem látható",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Elavult hozzáférési revízió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "A cursor lejárt; első lap újratöltése szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Korlát túllépve",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Függőség nem érhető el",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./schemas.json#/$defs/MessageInput"
+              }
+            }
+          }
+        }
       }
     },
     "/v1/players/{playerId}/uploads": {
@@ -7295,6 +7360,117 @@
             }
           }
         }
+      },
+      "get": {
+        "operationId": "get_v1_publications",
+        "description": "Coach a kiválasztott játékos pontos megosztásait olvassa.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Jogosultság-ellenőrzött eredmény; private, no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Érvénytelen lapozás vagy szűrő",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Hitelesítés szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Művelet tiltva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nem található vagy nem látható",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Elavult hozzáférési revízió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "A cursor lejárt; első lap újratöltése szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Korlát túllépve",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Függőség nem érhető el",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/publications/{id}": {
@@ -7384,27 +7560,57 @@
     },
     "/v1/publications/{id}/withdraw": {
       "post": {
-        "operationId": "post_v1_publications_id_withdraw",
-        "description": "publish; cloud-only; tenant and resource authorization required.",
+        "operationId": "post_v1_publications__id__withdraw",
+        "description": "Coach pontos megosztást von vissza. Az eredeti forrás megmarad.",
         "security": [
           {
             "sessionCookie": []
           }
         ],
-        "x-domain-action": "publish",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "x-habi-csrf",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Committed authorized response",
+            "description": "Jogosultság-ellenőrzött eredmény; private, no-store",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/Publication"
+                  "type": "object"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid input",
+            "description": "Érvénytelen lapozás vagy szűrő",
             "content": {
               "application/json": {
                 "schema": {
@@ -7414,7 +7620,7 @@
             }
           },
           "401": {
-            "description": "Authentication required",
+            "description": "Hitelesítés szükséges",
             "content": {
               "application/json": {
                 "schema": {
@@ -7424,7 +7630,7 @@
             }
           },
           "403": {
-            "description": "Operation denied",
+            "description": "Művelet tiltva",
             "content": {
               "application/json": {
                 "schema": {
@@ -7434,7 +7640,7 @@
             }
           },
           "404": {
-            "description": "Not found or not visible",
+            "description": "Nem található vagy nem látható",
             "content": {
               "application/json": {
                 "schema": {
@@ -7444,7 +7650,17 @@
             }
           },
           "409": {
-            "description": "Revision, idempotency or lease conflict",
+            "description": "Elavult hozzáférési revízió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "A cursor lejárt; első lap újratöltése szükséges",
             "content": {
               "application/json": {
                 "schema": {
@@ -7454,7 +7670,7 @@
             }
           },
           "429": {
-            "description": "Rate/budget limit",
+            "description": "Korlát túllépve",
             "content": {
               "application/json": {
                 "schema": {
@@ -7464,7 +7680,7 @@
             }
           },
           "503": {
-            "description": "Dependency unavailable; no save success",
+            "description": "Függőség nem érhető el",
             "content": {
               "application/json": {
                 "schema": {
@@ -7474,35 +7690,6 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
-            }
-          },
-          {
-            "name": "If-Match",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "minimum": 1
-            }
-          }
-        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -10711,7 +10898,9 @@
                 "weekly-reflection",
                 "monthly-reflection",
                 "guided-conversation",
-                "guided-topic-conversation"
+                "guided-topic-conversation",
+                "player-workspace",
+                "support-loop"
               ]
             }
           }
@@ -10799,7 +10988,9 @@
                 "weekly-reflection",
                 "monthly-reflection",
                 "guided-conversation",
-                "guided-topic-conversation"
+                "guided-topic-conversation",
+                "player-workspace",
+                "support-loop"
               ]
             }
           },
@@ -10936,7 +11127,9 @@
                 "weekly-reflection",
                 "monthly-reflection",
                 "guided-conversation",
-                "guided-topic-conversation"
+                "guided-topic-conversation",
+                "player-workspace",
+                "support-loop"
               ]
             }
           },
@@ -11220,6 +11413,776 @@
           },
           "503": {
             "description": "Dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/players/{playerId}/coach-assessments": {
+      "post": {
+        "operationId": "post_v1_players__playerId__coach_assessments",
+        "description": "Coach a verziózott eredeti kérdéssorból kérdőívet, interjút vagy riportértéket ment belső megfigyelésként. Az eredeti kérdés, válasz és forrásverzió változatlan, pontszámot nem képez.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "x-habi-csrf",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Jogosultság-ellenőrzött eredmény; private, no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Érvénytelen lapozás vagy szűrő",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Hitelesítés szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Művelet tiltva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nem található vagy nem látható",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Elavult hozzáférési revízió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "A cursor lejárt; első lap újratöltése szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Korlát túllépve",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Függőség nem érhető el",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./schemas.json#/$defs/CoachAssessmentInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/players/{playerId}/sources/{id}": {
+      "get": {
+        "operationId": "get_v1_players__playerId__sources__id",
+        "description": "Szülő vagy coach pontos, újraellenőrzött forrásrevíziót olvas szűrt mezőkkel.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Jogosultság-ellenőrzött eredmény; private, no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Érvénytelen lapozás vagy szűrő",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Hitelesítés szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Művelet tiltva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nem található vagy nem látható",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Elavult hozzáférési revízió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "A cursor lejárt; első lap újratöltése szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Korlát túllépve",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Függőség nem érhető el",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/knowledge": {
+      "get": {
+        "operationId": "get_v1_knowledge",
+        "description": "Tenanton belüli, csak coach számára olvasható szakmai minták.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Jogosultság-ellenőrzött eredmény; private, no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Érvénytelen lapozás vagy szűrő",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Hitelesítés szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Művelet tiltva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nem található vagy nem látható",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Elavult hozzáférési revízió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "A cursor lejárt; első lap újratöltése szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Korlát túllépve",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Függőség nem érhető el",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_v1_knowledge",
+        "description": "Coach személytelen mintát rögzít ellenőrzésre. Automatikus publikálás vagy AI-betanítás nem történik.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "x-habi-csrf",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Jogosultság-ellenőrzött eredmény; private, no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Érvénytelen lapozás vagy szűrő",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Hitelesítés szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Művelet tiltva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nem található vagy nem látható",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Elavult hozzáférési revízió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "A cursor lejárt; első lap újratöltése szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Korlát túllépve",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Függőség nem érhető el",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./schemas.json#/$defs/KnowledgeCreateInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/knowledge/{id}/review": {
+      "post": {
+        "operationId": "post_v1_knowledge__id__review",
+        "description": "Coach forrás-, személytelenségi és jogellenőrzést rögzít; jóváhagyás vagy visszavonás revízióellenőrzéssel.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "x-habi-csrf",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Jogosultság-ellenőrzött eredmény; private, no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Érvénytelen lapozás vagy szűrő",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Hitelesítés szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Művelet tiltva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nem található vagy nem látható",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Elavult hozzáférési revízió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "A cursor lejárt; első lap újratöltése szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Korlát túllépve",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Függőség nem érhető el",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./schemas.json#/$defs/KnowledgeReviewInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/players/{playerId}/participants": {
+      "get": {
+        "operationId": "get_v1_players__playerId__participants",
+        "description": "A játékoshoz kapcsolt aktív szereplők, kizárólag a terv felelősének kiválasztásához.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Jogosultság-ellenőrzött eredmény; private, no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Érvénytelen lapozás vagy szűrő",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Hitelesítés szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Művelet tiltva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nem található vagy nem látható",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Elavult hozzáférési revízió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "A cursor lejárt; első lap újratöltése szükséges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Korlát túllépve",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Függőség nem érhető el",
             "content": {
               "application/json": {
                 "schema": {

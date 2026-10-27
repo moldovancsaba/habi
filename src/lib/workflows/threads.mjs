@@ -58,6 +58,75 @@ function idempotencyKey(request) {
   return key;
 }
 
+export async function createThread({
+  request,
+  client,
+  db,
+  principal,
+  playerId,
+  now = new Date(),
+}) {
+  if (!["parent", "coach"].includes(principal.role))
+    throw new HabiApiError("ACCESS_DENIED");
+  if (principal.role !== "coach" && principal.playerId !== playerId)
+    throw new HabiApiError("NOT_FOUND");
+  const input = await inputOf(request, "MessageInput");
+  if (input.replyTo !== null || !input.text.trim())
+    throw new HabiApiError("INVALID_INPUT");
+  const command = await runIdempotentCommand({
+    client,
+    db,
+    tenantId: principal.tenantId,
+    retentionPolicyId: principal.retentionPolicyId,
+    actorOrClientId: principal.actorId,
+    method: request.method,
+    path: new URL(request.url).pathname,
+    key: idempotencyKey(request),
+    body: input,
+    now: () => now,
+    async execute({ db: tx, session }) {
+      const player = await tx
+        .collection("players")
+        .findOne({ tenantId: principal.tenantId, id: playerId }, { session });
+      if (!player) throw new HabiApiError("NOT_FOUND");
+      const common = {
+        tenantId: principal.tenantId,
+        playerId,
+        schemaVersion: 2,
+        revision: 1,
+        retentionPolicyId: principal.retentionPolicyId,
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+      };
+      const thread = {
+        ...common,
+        id: randomUUID(),
+        status: "open",
+        openedAt: now.toISOString(),
+        closedAt: null,
+      };
+      const message = {
+        ...common,
+        id: randomUUID(),
+        threadId: thread.id,
+        replyTo: null,
+        recordedBy: { actorId: principal.actorId, role: principal.role },
+        text: input.text.trim(),
+        submittedAt: now.toISOString(),
+      };
+      validateContractDocument("threads", thread);
+      validateContractDocument("messages", message);
+      await tx.collection("threads").insertOne(thread, { session });
+      await tx.collection("messages").insertOne(message, { session });
+      return { status: 201, resultRef: { id: thread.id, revision: 1 } };
+    },
+  });
+  return {
+    status: command.status,
+    body: await getThread({ db, principal, id: command.resultRef.id }),
+  };
+}
+
 export async function getThread({ db, principal, id }) {
   const thread = await db
     .collection("threads")

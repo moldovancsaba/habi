@@ -10,8 +10,21 @@ import {
 import styles from "./workspace.module.css";
 import MetroTimeline, { ActorBadge, type TimelinePage } from "./metro-timeline";
 import CoachReportWorkspace from "./coach-report-workspace";
+import RoutineHistory from "./routine-history";
+import PlayerSupportLoop from "./player-support-loop";
+import { useContinuityDraft } from "./use-continuity-draft";
+import DailyCheckin from "./daily-checkin";
+import SharedConversations from "./shared-conversations";
+import CoachAssessments from "./coach-assessments";
+import CoachRecords from "./coach-records";
+import InterpretationReviews from "./interpretation-reviews";
+import KnowledgeWorkspace from "./knowledge-workspace";
+import { productRequest, commandMessage } from "./product-request";
 import CheckinTrends, { MetricGraphic } from "./checkin-graphics";
-import practices from "../lib/content/practices-v1.json";
+import { mergePartialCheckins } from "../lib/workflows/checkin-chart.mjs";
+import { filterTimelinePage } from "../lib/workflows/timeline-filters.mjs";
+import supportLoopContent from "../lib/content/support-loop-v1.json";
+import practices from "../lib/content/practices-v2.json";
 import journeyContent from "../lib/content/journeys-v1.json";
 import monthlyReflectionContent from "../lib/content/monthly-reflection-v1.json";
 import guidedConversationContent from "../lib/content/guided-conversations-v2.json";
@@ -67,6 +80,12 @@ type PlayerProfile = {
 type RecordItem = {
   id: string;
   kind?: string;
+  sessionId?: string | null;
+  metric?: string | null;
+  answerCode?: number | null;
+  submittedAt?: string;
+  sessionRef?: { id: string };
+  source?: { kind: string };
   text?: string | null;
   occurredAt?: string;
   completedAt?: string;
@@ -90,19 +109,6 @@ type WorkspaceView =
   | "player-tools"
   | "assessments"
   | "knowledge";
-type ThreadSummary = {
-  id: string;
-  revision: number;
-  status: string;
-  latestActivityAt: string;
-};
-type ThreadMessage = {
-  id: string;
-  revision: number;
-  text: string;
-  submittedAt: string;
-  recordedBy: { role: Role; displayName?: string | null };
-};
 type PlanSummary = {
   id: string;
   revision: number;
@@ -207,26 +213,6 @@ const metrics = [
   ],
 ] as const;
 
-const metricGlyphs: Record<string, string> = {
-  energy:
-    "M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4m0-12.8L17 7M7 17l-1.4 1.4M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z",
-  sleep: "M19 15.5A8 8 0 0 1 8.5 5 8 8 0 1 0 19 15.5Z",
-  focus:
-    "M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Zm9.5-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z",
-  mood: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM8.5 14s1.2 2 3.5 2 3.5-2 3.5-2M9 9h.01M15 9h.01",
-  load: "M3 12h3l2-6 4 12 2-6h7",
-};
-
-function MetricIcon({ metric }: { metric: string }) {
-  return (
-    <span className={`metric-icon metric-${metric}`} aria-hidden="true">
-      <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-        <path d={metricGlyphs[metric] ?? metricGlyphs.focus} />
-      </svg>
-    </span>
-  );
-}
-
 function roleLabel(role: Role) {
   return role === "player" ? "Játékos" : role === "parent" ? "Szülő" : "Edző";
 }
@@ -276,14 +262,20 @@ export default function HabiWorkspace() {
   const [signInFailure, setSignInFailure] = useState<string | null>(null);
   const [data, setData] = useState<PlayerData[]>([]);
   const [recordCursor, setRecordCursor] = useState<string | null>(null);
+  const [checkinCursor, setCheckinCursor] = useState<string | null>(null);
+  const [loadingCheckins, setLoadingCheckins] = useState(false);
   const [loadingOlderRecords, setLoadingOlderRecords] = useState(false);
   const [timeline, setTimeline] = useState<TimelineResponse | null>(null);
   const [timelineDayFilter, setTimelineDayFilter] = useState("");
+  const [timelineKind, setTimelineKind] = useState("all");
+  const [timelineRole, setTimelineRole] = useState("all");
+  const [timelinePeriod, setTimelinePeriod] = useState(0);
   const [players, setPlayers] = useState<PlayerProfile[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
-  const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [checkinIndex, setCheckinIndex] = useState<number | null>(null);
   const [observation, setObservation] = useState("");
+  const [observationSource, setObservationSource] = useState("observation");
+  const [observationAt, setObservationAt] = useState("");
+  const [observationSetting, setObservationSetting] = useState("training");
   const [question, setQuestion] = useState("");
   const [submittedQuestion, setSubmittedQuestion] = useState("");
   const [observationFeedback, setObservationFeedback] = useState<{
@@ -341,16 +333,47 @@ export default function HabiWorkspace() {
   const [roleEntryError, setRoleEntryError] = useState("");
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [tab, setTab] = useState<WorkspaceView>("overview");
-  const [threads, setThreads] = useState<ThreadSummary[]>([]);
-  const [selectedThreadId, setSelectedThreadId] = useState("");
-  const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
-  const [threadDraft, setThreadDraft] = useState("");
+  function navigateTab(next: WorkspaceView) {
+    if (next === tab) return;
+    if (
+      !window.dispatchEvent(
+        new Event("habi:before-navigate", { cancelable: true }),
+      )
+    )
+      return;
+    if (
+      observation.trim() &&
+      tab === "journal" &&
+      !window.confirm(
+        "A be nem küldött naplóbejegyzésed megmarad ebben a munkamenetben. Másik nézetre lépsz?",
+      )
+    )
+      return;
+    if (next !== "timeline") setTimelineDayFilter("");
+    setTab(next);
+  }
+
   const [plans, setPlans] = useState<PlanSummary[]>([]);
   const [followUps, setFollowUps] = useState<FollowUpSummary[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [materials, setMaterials] = useState<MaterialSummary[]>([]);
   const [planDraft, setPlanDraft] = useState("");
+  const [planOwnerId, setPlanOwnerId] = useState("");
+  const [participants, setParticipants] = useState<
+    Array<{ actorId: string; role: string; label: string }>
+  >([]);
+  const [planWhy, setPlanWhy] = useState("");
+  const [planDue, setPlanDue] = useState("");
+  const [planStop, setPlanStop] = useState("");
+  const [evidenceId, setEvidenceId] = useState("");
   const [materialTitle, setMaterialTitle] = useState("");
+  const [materialSupersedes, setMaterialSupersedes] = useState<{
+    id: string;
+    revision: number;
+  } | null>(null);
+  const [materialPublications, setMaterialPublications] = useState<
+    Record<string, { id: string; revision: number }>
+  >({});
   const [materialText, setMaterialText] = useState("");
   const [followupText, setFollowupText] = useState("");
   const [followupOutcome, setFollowupOutcome] = useState<
@@ -358,6 +381,7 @@ export default function HabiWorkspace() {
   >("unknown");
   const [practiceSearch, setPracticeSearch] = useState("");
   const [playerGoalDraft, setPlayerGoalDraft] = useState("");
+  const [goalWhen, setGoalWhen] = useState("");
   const [goalReviewDays, setGoalReviewDays] = useState("7");
   const [editingGoalId, setEditingGoalId] = useState("");
   const [editingGoalText, setEditingGoalText] = useState("");
@@ -368,7 +392,10 @@ export default function HabiWorkspace() {
   const [includeGoalHistory, setIncludeGoalHistory] = useState(false);
   const [goalReviewNote, setGoalReviewNote] = useState("");
   const [routineDraft, setRoutineDraft] = useState("");
+  const [routineWhen, setRoutineWhen] = useState("");
   const [practiceFeedback, setPracticeFeedback] = useState("");
+  const [practiceGoalId, setPracticeGoalId] = useState("");
+  const [examplePreference, setExamplePreference] = useState("neutral");
   const [monthlyAnswers, setMonthlyAnswers] = useState<
     Array<number | "skip" | "not-applicable" | null>
   >(Array(monthlyReflectionContent.questions.length).fill(null));
@@ -690,25 +717,15 @@ export default function HabiWorkspace() {
       if (!response.ok) throw new Error(body?.code ?? "LOAD_FAILED");
       return body;
     };
-    if (tab === "conversations") {
+    if (tab === "reports") {
       void fetchList(
-        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/threads`,
+        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/participants`,
       )
-        .then((body) => {
-          const items = Array.isArray(body.items) ? body.items : [];
-          setThreads(items);
-          setSelectedThreadId((current) =>
-            items.some((item: ThreadSummary) => item.id === current)
-              ? current
-              : (items[0]?.id ?? ""),
-          );
-        })
-        .catch((error: unknown) => {
+        .then((body) => setParticipants(body.items))
+        .catch((error) => {
           if (!(error instanceof Error && error.name === "AbortError"))
             setNotice(messageFor(error));
         });
-    }
-    if (tab === "reports") {
       void fetchList(
         `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/plans`,
       )
@@ -717,18 +734,44 @@ export default function HabiWorkspace() {
           if (!(error instanceof Error && error.name === "AbortError"))
             setNotice(messageFor(error));
         });
-      if (app.state === "ready" && app.me.activeRole === "coach") {
+      void fetchList(
+        `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/materials?limit=100`,
+      )
+        .then((body) =>
+          setMaterials(Array.isArray(body.items) ? body.items : []),
+        )
+        .catch((error) => {
+          if (!(error instanceof Error && error.name === "AbortError"))
+            setNotice(messageFor(error));
+        });
+      if (app.state === "ready" && app.me.activeRole === "coach")
         void fetchList(
-          `/api/v1/players/${encodeURIComponent(selectedPlayerId)}/materials`,
+          `/api/v1/publications?playerId=${encodeURIComponent(selectedPlayerId)}`,
         )
           .then((body) =>
-            setMaterials(Array.isArray(body.items) ? body.items : []),
+            setMaterialPublications(
+              Object.fromEntries(
+                body.items
+                  .filter(
+                    (item: { status: string }) => item.status === "active",
+                  )
+                  .map(
+                    (item: {
+                      resourceRef: { id: string };
+                      id: string;
+                      revision: number;
+                    }) => [
+                      item.resourceRef.id,
+                      { id: item.id, revision: item.revision },
+                    ],
+                  ),
+              ),
+            ),
           )
-          .catch((error: unknown) => {
+          .catch((error) => {
             if (!(error instanceof Error && error.name === "AbortError"))
               setNotice(messageFor(error));
           });
-      }
     }
     if (tab === "tasks-feedback" || tab === "reports") {
       setTasksLoading(true);
@@ -754,34 +797,6 @@ export default function HabiWorkspace() {
     }
     return () => controller.abort();
   }, [app, selectedPlayerId, setNotice, tab]);
-
-  useEffect(() => {
-    if (tab !== "conversations" || !selectedThreadId) {
-      setThreadMessages([]);
-      return;
-    }
-    const controller = new AbortController();
-    void fetch(
-      `/api/v1/threads/${encodeURIComponent(selectedThreadId)}/messages`,
-      {
-        cache: "no-store",
-        credentials: "same-origin",
-        signal: controller.signal,
-      },
-    )
-      .then(async (response) => {
-        const body = await response.json().catch(() => null);
-        if (!response.ok) throw new Error(body?.code ?? "LOAD_FAILED");
-        setThreadMessages(
-          Array.isArray(body.items) ? [...body.items].reverse() : [],
-        );
-      })
-      .catch((error: unknown) => {
-        if (!(error instanceof Error && error.name === "AbortError"))
-          setNotice(messageFor(error));
-      });
-    return () => controller.abort();
-  }, [selectedThreadId, setNotice, tab]);
 
   async function logOutFromHabi() {
     await fetch("/auth/logout", {
@@ -812,7 +827,6 @@ export default function HabiWorkspace() {
   }
 
   const load = useCallback(async () => {
-    setApp({ state: "loading" });
     try {
       const response = await fetch("/api/v1/me", {
         cache: "no-store",
@@ -859,7 +873,12 @@ export default function HabiWorkspace() {
           : (roster[0]?.id ?? ""),
       );
       setData([]);
-      setApp({ state: "ready", me });
+      setApp((current) =>
+        current.state === "ready" &&
+        JSON.stringify(current.me) === JSON.stringify(me)
+          ? current
+          : { state: "ready", me },
+      );
     } catch (error) {
       setNotice(messageFor(error));
       setApp({ state: "signed-out" });
@@ -871,11 +890,13 @@ export default function HabiWorkspace() {
       setData([]);
       setTimeline(null);
       setRecordCursor(null);
+      setCheckinCursor(null);
       return;
     }
     setData([]);
     setTimeline(null);
     setRecordCursor(null);
+    setCheckinCursor(null);
     const player = players.find((item) => item.id === selectedPlayerId);
     if (!player) return;
     const dayBounds = localDayBounds(timelineDayFilter);
@@ -929,6 +950,7 @@ export default function HabiWorkspace() {
           throw new Error(timelinePage?.code ?? "LOAD_FAILED");
         setTimeline(timelinePage as TimelineResponse);
         setRecordCursor(records.nextCursor ?? null);
+        setCheckinCursor(checkins.nextCursor ?? null);
         setData([
           {
             ...player,
@@ -996,6 +1018,53 @@ export default function HabiWorkspace() {
 
   const active = app.state === "ready" ? app.me : null;
   const playerId = selectedPlayerId;
+  const continuity = useContinuityDraft(
+    active?.activeRole === "player" ? playerId : null,
+    active?.activeRole === "player" ? active.actorId : null,
+    active?.csrfToken ?? "",
+    "player-workspace",
+    {
+      goal: JSON.stringify({ text: playerGoalDraft, when: goalWhen }),
+      routine: JSON.stringify({ text: routineDraft, when: routineWhen }),
+      practice: practiceFeedback,
+      prepPerson: trustedAdultPrep.person,
+      prepSituation: trustedAdultPrep.topic,
+      prepHelp: trustedAdultPrep.ask,
+      example: examplePreference,
+      practiceGoalId,
+    },
+    (values) => {
+      try {
+        const goal = JSON.parse(values.goal ?? "{}");
+        setPlayerGoalDraft(typeof goal.text === "string" ? goal.text : "");
+        setGoalWhen(typeof goal.when === "string" ? goal.when : "");
+      } catch {
+        setPlayerGoalDraft(values.goal ?? "");
+        setGoalWhen("");
+      }
+      try {
+        const routine = JSON.parse(values.routine ?? "{}");
+        setRoutineDraft(typeof routine.text === "string" ? routine.text : "");
+        setRoutineWhen(typeof routine.when === "string" ? routine.when : "");
+      } catch {
+        setRoutineDraft(values.routine ?? "");
+        setRoutineWhen("");
+      }
+      setPracticeFeedback(values.practice ?? "");
+      setTrustedAdultPrep({
+        person: values.prepPerson ?? "",
+        topic: values.prepSituation ?? "",
+        ask: values.prepHelp ?? "",
+      });
+      setExamplePreference(
+        ["sport", "everyday", "neutral"].includes(values.example)
+          ? values.example
+          : "neutral",
+      );
+      setPracticeGoalId(values.practiceGoalId ?? "");
+    },
+  );
+
   const selectedPlayer =
     players.find((player) => player.id === playerId) ?? null;
   const experienceDraftsReady = Boolean(
@@ -1128,7 +1197,15 @@ export default function HabiWorkspace() {
       Boolean(reviewDate && isGoalReviewDue(reviewDate, localToday))
     );
   });
-  const questionSource = data[0]?.checkins[0] ?? null;
+  const evidenceOptions = [
+    ...(data[0]?.checkins ?? []),
+    ...(data[0]?.records ?? []),
+  ].filter((item) => item.revision);
+  const questionSource =
+    evidenceOptions.find((item) => item.id === evidenceId) ??
+    data[0]?.checkins[0] ??
+    data[0]?.records[0] ??
+    null;
   const historyItems: HistoryItem[] = data
     .flatMap((person) => [
       ...person.checkins.map((item) => ({
@@ -1160,6 +1237,7 @@ export default function HabiWorkspace() {
         ? [
             { id: "overview", label: "Áttekintés" },
             { id: "journal", label: "Napló" },
+            { id: "checkin", label: "Állapotjelzés" },
             { id: "conversations", label: "Beszélgetések" },
             { id: "timeline", label: "Idővonal" },
             { id: "reports", label: "Tervek" },
@@ -1339,6 +1417,12 @@ export default function HabiWorkspace() {
   }, [playerId, questionJob?.jobId, questionJob?.status, timelineDayFilter]);
 
   async function switchMembership(membershipId: string) {
+    if (
+      !window.dispatchEvent(
+        new Event("habi:before-navigate", { cancelable: true }),
+      )
+    )
+      return;
     if (!active || membershipId === active.activeMembershipId || busy) return;
     const membership = active.memberships.find(
       (item) => item.id === membershipId,
@@ -1409,101 +1493,6 @@ export default function HabiWorkspace() {
     }
   }
 
-  async function submitCheckin(finalAnswers = answers) {
-    if (!active || !playerId || Object.keys(finalAnswers).length === 0) {
-      setNotice("Legalább egy választ adj meg az állapotjelzés mentéséhez.");
-      setCheckinIndex(null);
-      return;
-    }
-    setBusy(true);
-    setNotice("");
-    try {
-      const start = await fetch(
-        `/api/v1/players/${encodeURIComponent(playerId)}/checkin-sessions`,
-        {
-          method: "POST",
-          credentials: "same-origin",
-          headers: {
-            "Content-Type": "application/json",
-            "x-habi-csrf": active.csrfToken,
-            "Idempotency-Key": crypto.randomUUID(),
-          },
-          body: JSON.stringify({
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            instrumentVersion: "checkin-hu-1",
-          }),
-        },
-      );
-      const session = await start.json();
-      if (!start.ok) throw new Error(session.code ?? "SAVE_FAILED");
-      let revision = 1;
-      for (const [metric] of metrics) {
-        if (finalAnswers[metric] === undefined) continue;
-        const saved = await fetch(
-          `/api/v1/checkin-sessions/${encodeURIComponent(session.id)}/answers`,
-          {
-            method: "POST",
-            credentials: "same-origin",
-            headers: {
-              "Content-Type": "application/json",
-              "x-habi-csrf": active.csrfToken,
-              "Idempotency-Key": crypto.randomUUID(),
-            },
-            body: JSON.stringify({
-              expectedRevision: revision,
-              metric,
-              answerCode: finalAnswers[metric],
-            }),
-          },
-        );
-        const result = await saved.json();
-        if (!saved.ok) throw new Error(result.code ?? "SAVE_FAILED");
-        // The answer DTO revision belongs to the record. The session revision
-        // advances once on each successful answer write.
-        revision += 1;
-      }
-      const complete = await fetch(
-        `/api/v1/checkin-sessions/${encodeURIComponent(session.id)}/complete`,
-        {
-          method: "POST",
-          credentials: "same-origin",
-          headers: {
-            "Content-Type": "application/json",
-            "x-habi-csrf": active.csrfToken,
-            "Idempotency-Key": crypto.randomUUID(),
-          },
-          body: JSON.stringify({ expectedRevision: revision }),
-        },
-      );
-      const result = await complete.json();
-      if (!complete.ok) throw new Error(result.code ?? "SAVE_FAILED");
-      setAnswers({});
-      setCheckinIndex(null);
-      setNotice("A mai állapotjelzésed elmentve.", "success");
-      await load();
-    } catch (error) {
-      setNotice(messageFor(error));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function answerCurrent(answer: number | null) {
-    if (checkinIndex === null) return;
-    const [metric] = metrics[checkinIndex] ?? [];
-    if (!metric) return;
-    const nextAnswers = { ...answers };
-    if (answer === null) delete nextAnswers[metric];
-    else nextAnswers[metric] = answer;
-    setAnswers(nextAnswers);
-    setNotice("");
-    if (checkinIndex + 1 < metrics.length) {
-      setCheckinIndex(checkinIndex + 1);
-      return;
-    }
-    void submitCheckin(nextAnswers);
-  }
-
   async function submitObservation() {
     if (!active || !playerId || !observation.trim()) return;
     setBusy(true);
@@ -1523,19 +1512,17 @@ export default function HabiWorkspace() {
           body: JSON.stringify({
             kind: active.activeRole === "coach" ? "observation" : "diary",
             text: observation.trim(),
-            occurredAt: new Date().toISOString(),
+            occurredAt: observationAt
+              ? new Date(observationAt).toISOString()
+              : new Date().toISOString(),
             timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             sourceKind:
-              active.activeRole === "player"
-                ? "self"
-                : active.activeRole === "parent"
-                  ? "proxy"
-                  : "observation",
+              active.activeRole === "player" ? "self" : observationSource,
             sessionId: null,
             metric: null,
             answerCode: null,
             context: {
-              setting: active.activeRole === "parent" ? "home" : "training",
+              setting: observationSetting,
               activity: null,
               durationMinutes: null,
             },
@@ -1651,9 +1638,22 @@ export default function HabiWorkspace() {
     event.preventDefault();
     const goal = playerGoalDraft.trim();
     if (!goal || goal.length > 500) return;
-    const saved = await savePlayerDiary(`Saját cél: ${goal}`);
+    const goalText = `${goal}${goalWhen.trim() ? `\nMikor fér bele: ${goalWhen.trim()}` : ""}`;
+    const currentGoal = ownGoals.find(
+      (item) => ownGoalStatus(item) === "active",
+    );
+    if (currentGoal) {
+      setReplacingGoalId(currentGoal.id);
+      setReplacementGoalText(goalText);
+      setNotice(
+        "Már van aktív saját célod. Megtarthatod, vagy a célcserénél választhatod ezt az új célt.",
+      );
+      return;
+    }
+    const saved = await savePlayerDiary(`Saját cél: ${goalText}`);
     if (!saved?.id) return;
     setPlayerGoalDraft("");
+    setGoalWhen("");
     const reviewDate = nextGoalReviewDate(localToday, Number(goalReviewDays));
     await savePlayerDiary(
       `Saját cél újranézés · ${saved.id} · ${reviewDate ?? "kikapcsolva"}`,
@@ -1750,18 +1750,14 @@ export default function HabiWorkspace() {
     event.preventDefault();
     const routine = routineDraft.trim();
     if (!routine || routine.length > 300) return;
-    if (await savePlayerDiary(`Saját rutin: ${routine}`)) setRoutineDraft("");
-  }
-
-  async function logRoutine(routine: string) {
-    const today = new Date().toLocaleDateString("hu-HU");
-    const alreadyLogged = ownPlayerData?.records.some(
-      (record) =>
-        record.text === `Rutin elvégezve: ${routine}` &&
-        record.occurredAt &&
-        new Date(record.occurredAt).toLocaleDateString("hu-HU") === today,
-    );
-    if (!alreadyLogged) await savePlayerDiary(`Rutin elvégezve: ${routine}`);
+    if (
+      await savePlayerDiary(
+        `Saját rutin: ${routine}${routineWhen.trim() ? `\nMikor: ${routineWhen.trim()}` : ""}`,
+      )
+    ) {
+      setRoutineDraft("");
+      setRoutineWhen("");
+    }
   }
 
   async function savePracticeFeedback(
@@ -1769,7 +1765,8 @@ export default function HabiWorkspace() {
     rating: string,
   ) {
     const feedback = practiceFeedback.trim();
-    const text = `Gyakorlat: ${practice.title}\nVisszajelzés: ${rating}${feedback ? `\nSaját megjegyzés: ${feedback}` : ""}`;
+    const linkedGoal = ownGoals.find((goal) => goal.id === practiceGoalId);
+    const text = `Gyakorlat: ${practice.title}\nTartalomverzió: practices-v${practices.version}${linkedGoal ? `\nKapcsolódó saját cél · ${linkedGoal.id}` : ""}\nVisszajelzés: ${rating}${feedback ? `\nSaját megjegyzés: ${feedback}` : ""}`;
     if (await savePlayerDiary(text)) setPracticeFeedback("");
   }
 
@@ -2282,44 +2279,6 @@ export default function HabiWorkspace() {
     }
   }
 
-  async function sendThreadMessage() {
-    if (!active || !selectedThreadId || !threadDraft.trim() || busy) return;
-    setBusy(true);
-    setNotice("");
-    try {
-      const response = await fetch(
-        `/api/v1/threads/${encodeURIComponent(selectedThreadId)}/messages`,
-        {
-          method: "POST",
-          credentials: "same-origin",
-          headers: {
-            "Content-Type": "application/json",
-            "x-habi-csrf": active.csrfToken,
-            "Idempotency-Key": crypto.randomUUID(),
-          },
-          body: JSON.stringify({ text: threadDraft.trim(), replyTo: null }),
-        },
-      );
-      const result = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(result?.code ?? "MESSAGE_FAILED");
-      setThreadDraft("");
-      const refreshed = await fetch(
-        `/api/v1/threads/${encodeURIComponent(selectedThreadId)}/messages`,
-        { cache: "no-store", credentials: "same-origin" },
-      );
-      const body = await refreshed.json().catch(() => null);
-      if (!refreshed.ok) throw new Error(body?.code ?? "LOAD_FAILED");
-      setThreadMessages(
-        Array.isArray(body.items) ? [...body.items].reverse() : [],
-      );
-      setNotice("Az üzenet bekerült a beszélgetésbe.", "success");
-    } catch (error) {
-      setNotice(messageFor(error));
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function createSharedPlan() {
     if (
       active?.activeRole !== "coach" ||
@@ -2357,10 +2316,15 @@ export default function HabiWorkspace() {
               {
                 id: crypto.randomUUID(),
                 what: planDraft.trim(),
-                why: "A játékossal egyeztetett, kipróbálható következő lépés.",
-                ownerActorId: active.actorId,
-                dueAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+                why:
+                  planWhy.trim() ||
+                  "A játékossal egyeztetett, kipróbálható következő lépés.",
+                ownerActorId: planOwnerId || active.actorId,
+                dueAt: planDue
+                  ? new Date(planDue).toISOString()
+                  : new Date(Date.now() + 7 * 86400000).toISOString(),
                 stopCondition:
+                  planStop.trim() ||
                   "A játékos vagy az edző jelzi, ha a lépés nem megfelelő vagy módosítani kell.",
               },
             ],
@@ -2413,7 +2377,7 @@ export default function HabiWorkspace() {
             title: materialTitle.trim(),
             text: materialText.trim(),
             sourceRefs: [{ id: source.id, revision: source.revision }],
-            supersedesRef: null,
+            supersedesRef: materialSupersedes,
           }),
         },
       );
@@ -2422,6 +2386,7 @@ export default function HabiWorkspace() {
       setMaterials((items) => [body, ...items]);
       setMaterialTitle("");
       setMaterialText("");
+      setMaterialSupersedes(null);
       setNotice(
         "Az edzői anyag piszkozatként mentve. Megosztás előtt ellenőrizd a szöveget és a forrást.",
         "success",
@@ -2452,6 +2417,10 @@ export default function HabiWorkspace() {
       });
       const body = await response.json().catch(() => null);
       if (!response.ok) throw new Error(body?.code ?? "PUBLISH_FAILED");
+      setMaterialPublications((current) => ({
+        ...current,
+        [material.id]: { id: body.id, revision: body.revision },
+      }));
       setMaterials((items) =>
         items.map((item) =>
           item.id === material.id ? { ...item, status: "published" } : item,
@@ -3009,7 +2978,7 @@ export default function HabiWorkspace() {
                   aria-current={tab === view.id ? "page" : undefined}
                   className={tab === view.id ? styles.navActive : ""}
                   onClick={() => {
-                    setTab(view.id);
+                    navigateTab(view.id);
                     setNotice("");
                   }}
                 >
@@ -3078,6 +3047,27 @@ export default function HabiWorkspace() {
                       id="active-player"
                       value={playerId}
                       onChange={(event) => {
+                        if (
+                          !window.dispatchEvent(
+                            new Event("habi:before-navigate", {
+                              cancelable: true,
+                            }),
+                          )
+                        )
+                          return;
+                        if (
+                          observation.trim() &&
+                          !window.confirm(
+                            "A be nem küldött jegyzetet elveted a játékosváltással?",
+                          )
+                        )
+                          return;
+                        setObservation("");
+                        setPlanDraft("");
+                        setPlanOwnerId("");
+                        setMaterialTitle("");
+                        setMaterialText("");
+                        setMaterialSupersedes(null);
                         setSelectedPlayerId(event.target.value);
                         setData([]);
                         setTimeline(null);
@@ -3139,7 +3129,7 @@ export default function HabiWorkspace() {
                 <button
                   type="button"
                   className={styles.primary}
-                  onClick={() => setTab("checkin")}
+                  onClick={() => navigateTab("checkin")}
                 >
                   {data[0]?.checkins.length
                     ? "Új állapotjelzés"
@@ -3148,7 +3138,7 @@ export default function HabiWorkspace() {
                 <button
                   type="button"
                   className={styles.secondary}
-                  onClick={() => setTab("timeline")}
+                  onClick={() => navigateTab("timeline")}
                 >
                   Megnyitom az idővonalat
                 </button>
@@ -3165,7 +3155,7 @@ export default function HabiWorkspace() {
                         type="button"
                         key={goal.id}
                         onClick={() => {
-                          setTab("player-tools");
+                          navigateTab("player-tools");
                           setReviewingGoalId(goal.id);
                         }}
                       >
@@ -3208,7 +3198,7 @@ export default function HabiWorkspace() {
                       onClick={() => {
                         setGuidedTopicInput(latestCheckinConversationOpening);
                         setGuidedTopicSuggestions(null);
-                        setTab("player-tools");
+                        navigateTab("player-tools");
                       }}
                     >
                       Beszélgetek a válaszaimról
@@ -3232,7 +3222,7 @@ export default function HabiWorkspace() {
                               key={option.metric}
                               disabled={busy || !experienceDraftsReady}
                               onClick={() => {
-                                setTab("player-tools");
+                                navigateTab("player-tools");
                                 void startGuidedSituation(
                                   option.situationId,
                                   option.checkinId,
@@ -3259,7 +3249,7 @@ export default function HabiWorkspace() {
                         className={styles.primary}
                         type="button"
                         onClick={() =>
-                          setTab(
+                          navigateTab(
                             reminderType === "morning"
                               ? "checkin"
                               : "player-tools",
@@ -3383,7 +3373,7 @@ export default function HabiWorkspace() {
                   <button
                     type="button"
                     className={styles.secondary}
-                    onClick={() => setTab("timeline")}
+                    onClick={() => navigateTab("timeline")}
                   >
                     A történet megnyitása
                   </button>
@@ -3391,7 +3381,7 @@ export default function HabiWorkspace() {
                     type="button"
                     className={styles.secondary}
                     onClick={() =>
-                      setTab(
+                      navigateTab(
                         active.activeRole === "coach"
                           ? "reports"
                           : "conversations",
@@ -3420,111 +3410,30 @@ export default function HabiWorkspace() {
                 <button
                   type="button"
                   className={styles.secondary}
-                  onClick={() => setTab("timeline")}
+                  onClick={() => navigateTab("timeline")}
                 >
                   A teljes idővonal megnyitása
                 </button>
               </section>
             )}
-            {tab === "checkin" && active.activeRole === "player" && (
-              <section
-                className={`${styles.panel} workspace-section`}
-                data-area="timeline"
-              >
-                {checkinIndex === null ? (
-                  <>
-                    <p className={styles.eyebrow}>A TE NAPLÓD</p>
-                    <h2>Egy rövid megálló magadra.</h2>
-                    <p className={styles.muted}>
-                      Öt rövid kérdés. Bármelyiket kihagyhatod, és a válaszaidat
-                      később visszanézheted.
-                    </p>
-                    <button
-                      type="button"
-                      className={styles.primary}
-                      onClick={() => {
-                        setAnswers({});
-                        setCheckinIndex(0);
-                        setNotice("");
-                      }}
-                    >
-                      Elkezdtem <span aria-hidden="true">→</span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p className={styles.eyebrow}>
-                      NAPI ÁLLAPOTJELZÉS · {checkinIndex + 1}/{metrics.length}
-                    </p>
-                    <progress
-                      className={styles.progress}
-                      max={metrics.length}
-                      value={checkinIndex + 1}
-                      aria-label="Állapotjelzés előrehaladása"
-                    />
-                    <div className={styles.currentQuestionRow}>
-                      <MetricIcon
-                        metric={metrics[checkinIndex]?.[0] ?? "focus"}
-                      />
-                      <h2 className={styles.currentQuestion}>
-                        {metrics[checkinIndex]?.[1]}
-                      </h2>
-                    </div>
-                    <fieldset className={styles.questionChoices}>
-                      <legend className={styles.srOnly}>
-                        Válaszlehetőségek
-                      </legend>
-                      {metrics[checkinIndex]?.[2].map((choice, index) => (
-                        <button
-                          key={choice}
-                          type="button"
-                          className={styles.questionChoice}
-                          aria-pressed={
-                            answers[metrics[checkinIndex][0]] === index
-                          }
-                          disabled={busy}
-                          onClick={() => answerCurrent(index)}
-                        >
-                          {choice}
-                        </button>
-                      ))}
-                    </fieldset>
-                    {busy && (
-                      <p className={styles.muted} role="status">
-                        Állapotjelzés mentése…
-                      </p>
+            {tab === "checkin" &&
+              active.activeRole === "player" &&
+              playerId && (
+                <>
+                  <DailyCheckin
+                    key={`${active.actorId}-${playerId}`}
+                    playerId={playerId}
+                    csrfToken={active.csrfToken}
+                    onSaved={() => void load()}
+                  />
+                  <CheckinTrends
+                    checkins={mergePartialCheckins(
+                      ownPlayerData?.checkins ?? [],
+                      ownPlayerData?.records ?? [],
                     )}
-                    {notice && (
-                      <p className={styles.notice} role="status">
-                        {notice}
-                      </p>
-                    )}
-                    <div className={styles.questionActions}>
-                      <button
-                        type="button"
-                        className={styles.textButton}
-                        disabled={busy}
-                        onClick={() => answerCurrent(null)}
-                      >
-                        Most kihagyom
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.textButton}
-                        disabled={busy}
-                        onClick={() => {
-                          setNotice("");
-                          if (checkinIndex === 0) setCheckinIndex(null);
-                          else setCheckinIndex(checkinIndex - 1);
-                        }}
-                      >
-                        Vissza
-                      </button>
-                    </div>
-                  </>
-                )}
-              </section>
-            )}
+                  />
+                </>
+              )}
             {tab === "checkin" &&
               active.activeRole !== "player" &&
               selectedPlayer && (
@@ -3535,7 +3444,12 @@ export default function HabiWorkspace() {
                     A válaszok a játékos tapasztalatai. Ne kezeld őket külső
                     értékelésként.
                   </p>
-                  <CheckinTrends checkins={data[0]?.checkins ?? []} />
+                  <CheckinTrends
+                    checkins={mergePartialCheckins(
+                      data[0]?.checkins ?? [],
+                      data[0]?.records ?? [],
+                    )}
+                  />
                   {data[0]?.checkins.length ? (
                     data[0].checkins.map((item) => (
                       <article className={styles.dataCard} key={item.id}>
@@ -3591,6 +3505,47 @@ export default function HabiWorkspace() {
                           ? "Rögzíts egy saját bejegyzést"
                           : "Rögzíts egy észrevételt"}
                       </h2>
+                      {active.activeRole !== "player" && (
+                        <>
+                          <label htmlFor="observation-source">
+                            Az információ forrása
+                          </label>
+                          <select
+                            id="observation-source"
+                            value={observationSource}
+                            onChange={(e) =>
+                              setObservationSource(e.target.value)
+                            }
+                          >
+                            <option value="observation">
+                              Saját megfigyelésem
+                            </option>
+                            <option value="proxy">A játékos elmondása</option>
+                          </select>
+                        </>
+                      )}
+                      <label htmlFor="observation-at">
+                        Mikor történt? (üresen hagyva: most)
+                      </label>
+                      <input
+                        id="observation-at"
+                        type="datetime-local"
+                        value={observationAt}
+                        onChange={(e) => setObservationAt(e.target.value)}
+                      />
+                      <label htmlFor="observation-setting">Helyzet</label>
+                      <select
+                        id="observation-setting"
+                        value={observationSetting}
+                        onChange={(e) => setObservationSetting(e.target.value)}
+                      >
+                        <option value="training">Edzés</option>
+                        <option value="competition">
+                          Verseny vagy mérkőzés
+                        </option>
+                        <option value="home">Otthon</option>
+                        <option value="other">Más helyzet</option>
+                      </select>
                       <label className={styles.label} htmlFor="observation">
                         {active.activeRole === "player"
                           ? "Mit szeretnél megőrizni a naplódban?"
@@ -3783,89 +3738,58 @@ export default function HabiWorkspace() {
                     )}
                 </>
               )}
-            {tab === "conversations" &&
-              active.activeRole !== "parent" &&
-              selectedPlayer && (
-                <section className={styles.panel}>
-                  <p className={styles.eyebrow}>KÖZÖS BESZÉLGETÉSEK</p>
-                  <h2>Beszéljétek meg a helyzeteket</h2>
-                  {threads.length ? (
-                    <>
-                      <label
-                        className={styles.label}
-                        htmlFor="conversation-select"
-                      >
-                        Beszélgetés
-                      </label>
-                      <select
-                        id="conversation-select"
-                        value={selectedThreadId}
-                        onChange={(event) =>
-                          setSelectedThreadId(event.target.value)
-                        }
-                      >
-                        {threads.map((thread) => (
-                          <option key={thread.id} value={thread.id}>
-                            {new Date(
-                              thread.latestActivityAt,
-                            ).toLocaleDateString("hu-HU")}{" "}
-                            · {thread.status === "open" ? "Nyitott" : "Lezárt"}
-                          </option>
-                        ))}
-                      </select>
-                      <ol className={styles.messageList} aria-live="polite">
-                        {threadMessages.map((message) => (
-                          <li key={message.id}>
-                            <span
-                              className={`role-badge actor-${message.recordedBy.role}`}
-                            >
-                              {roleLabel(message.recordedBy.role)}
-                            </span>
-                            <p>{message.text}</p>
-                            <time dateTime={message.submittedAt}>
-                              {new Date(message.submittedAt).toLocaleString(
-                                "hu-HU",
-                              )}
-                            </time>
-                          </li>
-                        ))}
-                      </ol>
-                      {threads.find((thread) => thread.id === selectedThreadId)
-                        ?.status === "open" && (
-                        <>
-                          <label
-                            className={styles.label}
-                            htmlFor="thread-message"
-                          >
-                            Üzenet
-                          </label>
-                          <textarea
-                            id="thread-message"
-                            rows={3}
-                            maxLength={4000}
-                            value={threadDraft}
-                            onChange={(event) =>
-                              setThreadDraft(event.target.value)
-                            }
-                          />
-                          <button
-                            className={styles.primary}
-                            type="button"
-                            disabled={busy || !threadDraft.trim()}
-                            onClick={() => void sendThreadMessage()}
-                          >
-                            Üzenet küldése
-                          </button>
-                        </>
+            {tab === "journal" && selectedPlayer && (
+              <section className={styles.panel}>
+                <h2>A napló korábbi bejegyzései</h2>
+                {data[0]?.records
+                  .filter(
+                    (record) =>
+                      record.kind !== "checkin_answer" &&
+                      (active.activeRole !== "coach" ||
+                        record.recordedBy?.role !== "coach"),
+                  )
+                  .map((record) => (
+                    <article className={styles.dataCard} key={record.id}>
+                      <p className={styles.eyebrow}>
+                        {roleLabel(
+                          record.recordedBy?.role ?? active.activeRole,
+                        )}{" "}
+                        ·{" "}
+                        {record.source?.kind === "proxy"
+                          ? "A játékos elmondása; más rögzítette"
+                          : record.source?.kind === "self"
+                            ? "Saját beszámoló"
+                            : "Saját megfigyelés"}
+                      </p>
+                      <p style={{ whiteSpace: "pre-wrap" }}>{record.text}</p>
+                      {record.occurredAt && (
+                        <time dateTime={record.occurredAt}>
+                          {new Date(record.occurredAt).toLocaleString("hu-HU")}
+                        </time>
                       )}
-                    </>
-                  ) : (
-                    <p className={styles.emptyState}>
-                      Még nincs közös beszélgetés. Szülői kérdésből vagy edzői
-                      válaszból indulhat új beszélgetés.
-                    </p>
-                  )}
-                </section>
+                    </article>
+                  ))}
+                {recordCursor && (
+                  <button
+                    className={styles.secondary}
+                    type="button"
+                    disabled={loadingOlderRecords}
+                    onClick={() => void loadOlderRecords()}
+                  >
+                    Korábbi naplóbejegyzések betöltése
+                  </button>
+                )}
+              </section>
+            )}
+            {tab === "conversations" &&
+              selectedPlayer &&
+              active.activeRole !== "player" && (
+                <SharedConversations
+                  key={`${active.actorId}-${selectedPlayer.id}`}
+                  playerId={selectedPlayer.id}
+                  csrfToken={active.csrfToken}
+                  role={active.activeRole}
+                />
               )}
             {tab === "reports" && selectedPlayer && (
               <section className={styles.panel}>
@@ -3887,6 +3811,63 @@ export default function HabiWorkspace() {
                       value={planDraft}
                       onChange={(event) => setPlanDraft(event.target.value)}
                       placeholder="Egy konkrét, a játékossal egyeztetett teendő"
+                    />
+                    <label htmlFor="plan-source">Kapcsolódó forrás</label>
+                    <select
+                      id="plan-source"
+                      value={questionSource?.id ?? ""}
+                      onChange={(e) => setEvidenceId(e.target.value)}
+                    >
+                      {evidenceOptions.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.text?.split("\n")[0].slice(0, 100) ??
+                            `Állapotjelzés · ${new Date(item.completedAt ?? "").toLocaleString("hu-HU")}`}
+                        </option>
+                      ))}
+                    </select>
+                    <label htmlFor="plan-owner">
+                      Ki vállalja a következő lépést?
+                    </label>
+                    <select
+                      id="plan-owner"
+                      value={planOwnerId || active.actorId}
+                      onChange={(e) => setPlanOwnerId(e.target.value)}
+                    >
+                      {participants.map((participant) => (
+                        <option
+                          key={participant.actorId}
+                          value={participant.actorId}
+                        >
+                          {participant.label}
+                        </option>
+                      ))}
+                    </select>
+                    <label htmlFor="plan-why">
+                      Miért ezt a lépést választjuk?
+                    </label>
+                    <textarea
+                      id="plan-why"
+                      value={planWhy}
+                      maxLength={1000}
+                      onChange={(e) => setPlanWhy(e.target.value)}
+                    />
+                    <label htmlFor="plan-due">
+                      Mikor beszéljük meg a tapasztalatot?
+                    </label>
+                    <input
+                      id="plan-due"
+                      type="datetime-local"
+                      value={planDue}
+                      onChange={(e) => setPlanDue(e.target.value)}
+                    />
+                    <label htmlFor="plan-stop">
+                      Mikor álljunk meg vagy módosítsuk?
+                    </label>
+                    <textarea
+                      id="plan-stop"
+                      value={planStop}
+                      maxLength={1000}
+                      onChange={(e) => setPlanStop(e.target.value)}
                     />
                     <button
                       className={styles.primary}
@@ -3998,6 +3979,48 @@ export default function HabiWorkspace() {
                             </button>
                           </div>
                         )}
+                      {active.activeRole === "coach" &&
+                        ["active", "paused"].includes(plan.status) && (
+                          <div className={styles.actions}>
+                            {(plan.status === "active"
+                              ? [
+                                  ["paused", "Terv félretétele"],
+                                  ["completed", "Terv lezárása"],
+                                  ["withdrawn", "Terv visszavonása"],
+                                ]
+                              : [
+                                  ["active", "Terv folytatása"],
+                                  ["completed", "Terv lezárása"],
+                                ]
+                            ).map(([status, label]) => (
+                              <button
+                                className={styles.secondary}
+                                type="button"
+                                key={status}
+                                disabled={busy}
+                                onClick={() => {
+                                  setBusy(true);
+                                  void productRequest(
+                                    `/api/v1/plans/${encodeURIComponent(plan.id)}/state`,
+                                    active.csrfToken,
+                                    { expectedRevision: plan.revision, status },
+                                  )
+                                    .then((updated) =>
+                                      setPlans((items) =>
+                                        items.map((p) =>
+                                          p.id === updated.id ? updated : p,
+                                        ),
+                                      ),
+                                    )
+                                    .catch((e) => setNotice(commandMessage(e)))
+                                    .finally(() => setBusy(false));
+                                }}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       <p className={styles.muted}>
                         Forrásolt terv · {plan.sourceRefs.length} kapcsolt
                         forrás · {plan.acceptances.length} válasz
@@ -4051,31 +4074,82 @@ export default function HabiWorkspace() {
                         menthető.
                       </p>
                     )}
-                    {materials.map((material) => (
-                      <article className={styles.dataCard} key={material.id}>
-                        <p className={styles.eyebrow}>
-                          EDZŐI ANYAG ·{" "}
-                          {material.status === "published"
-                            ? "MEGOSZTVA"
-                            : "PISZKOZAT"}{" "}
-                          · {material.version}. VERZIÓ
-                        </p>
-                        <h3>{material.title}</h3>
-                        <p>{material.text}</p>
-                        {material.status !== "published" && (
-                          <button
-                            className={styles.primary}
-                            type="button"
-                            disabled={busy}
-                            onClick={() => void publishCoachMaterial(material)}
-                          >
-                            Megosztom a szülőkkel
-                          </button>
-                        )}
-                      </article>
-                    ))}
                   </div>
                 )}
+                {materials.map((material) => (
+                  <article className={styles.dataCard} key={material.id}>
+                    <p className={styles.eyebrow}>
+                      EDZŐI ANYAG ·{" "}
+                      {active.activeRole !== "coach" ||
+                      materialPublications[material.id]
+                        ? "MEGOSZTVA"
+                        : "PISZKOZAT"}{" "}
+                      · {material.version}. VERZIÓ
+                    </p>
+                    <h3>{material.title}</h3>
+                    <p style={{ whiteSpace: "pre-wrap" }}>{material.text}</p>
+                    {active.activeRole === "coach" && (
+                      <div className={styles.actions}>
+                        <button
+                          className={styles.secondary}
+                          type="button"
+                          disabled={busy}
+                          onClick={() => {
+                            setMaterialSupersedes({
+                              id: material.id,
+                              revision: material.revision,
+                            });
+                            setMaterialTitle(material.title);
+                            setMaterialText(material.text);
+                          }}
+                        >
+                          Új változat készítése
+                        </button>
+                        {materialPublications[material.id] && (
+                          <button
+                            className={styles.secondary}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => {
+                              const publication =
+                                materialPublications[material.id];
+                              setBusy(true);
+                              void productRequest(
+                                `/api/v1/publications/${encodeURIComponent(publication.id)}/withdraw`,
+                                active.csrfToken,
+                                { expectedRevision: publication.revision },
+                              )
+                                .then(() =>
+                                  setMaterialPublications((current) =>
+                                    Object.fromEntries(
+                                      Object.entries(current).filter(
+                                        ([id]) => id !== material.id,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .catch((e) => setNotice(commandMessage(e)))
+                                .finally(() => setBusy(false));
+                            }}
+                          >
+                            Megosztás visszavonása
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {active.activeRole === "coach" &&
+                      !materialPublications[material.id] && (
+                        <button
+                          className={styles.primary}
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void publishCoachMaterial(material)}
+                        >
+                          Megosztom a szülőkkel
+                        </button>
+                      )}
+                  </article>
+                ))}
               </section>
             )}
             {tab === "assessments" &&
@@ -4091,6 +4165,17 @@ export default function HabiWorkspace() {
                       nem következteti ki.
                     </p>
                   </section>
+                  <CoachAssessments
+                    key={selectedPlayer.id}
+                    playerId={selectedPlayer.id}
+                    csrfToken={active.csrfToken}
+                    onSaved={() => void load()}
+                  />
+                  <InterpretationReviews
+                    key={`review-${selectedPlayer.id}`}
+                    playerId={selectedPlayer.id}
+                    csrfToken={active.csrfToken}
+                  />
                   <CoachReportWorkspace
                     playerId={selectedPlayer.id}
                     playerName={
@@ -4100,6 +4185,21 @@ export default function HabiWorkspace() {
                   />
                 </>
               )}
+            {(tab === "journal" ||
+              tab === "assessments" ||
+              tab === "reports") &&
+              active.activeRole === "coach" &&
+              selectedPlayer && (
+                <CoachRecords
+                  key={`records-${selectedPlayer.id}`}
+                  records={data[0]?.records ?? []}
+                  playerId={selectedPlayer.id}
+                  csrfToken={active.csrfToken}
+                />
+              )}
+            {tab === "knowledge" && active.activeRole === "coach" && (
+              <KnowledgeWorkspace csrfToken={active.csrfToken} />
+            )}
             {tab === "knowledge" && active.activeRole === "coach" && (
               <section className={styles.panel}>
                 <p className={styles.eyebrow}>TUDÁSTÁR</p>
@@ -4132,7 +4232,11 @@ export default function HabiWorkspace() {
                         .includes(practiceSearch.toLocaleLowerCase("hu-HU")),
                     )
                     .map((practice) => (
-                      <details className={styles.dataCard} key={practice.id}>
+                      <details
+                        id={`practice-${practice.id}`}
+                        className={styles.dataCard}
+                        key={practice.id}
+                      >
                         <summary>
                           <strong className={styles.knowledgeCardTitle}>
                             {practice.title}
@@ -4151,10 +4255,124 @@ export default function HabiWorkspace() {
                 </div>
               </section>
             )}
+            {checkinCursor && (tab === "checkin" || tab === "player-tools") && (
+              <button
+                className={styles.secondary}
+                type="button"
+                disabled={loadingCheckins}
+                onClick={() => {
+                  setLoadingCheckins(true);
+                  const query = new URLSearchParams({
+                    limit: "100",
+                    cursor: checkinCursor,
+                    ...(localDayBounds(timelineDayFilter) ?? {}),
+                  });
+                  void productRequest(
+                    `/api/v1/players/${encodeURIComponent(playerId)}/checkin-results?${query}`,
+                    active.csrfToken,
+                    undefined,
+                    "GET",
+                  )
+                    .then((body) => {
+                      setData((items) =>
+                        items.map((item) =>
+                          item.id === playerId
+                            ? {
+                                ...item,
+                                checkins: [...item.checkins, ...body.items],
+                              }
+                            : item,
+                        ),
+                      );
+                      setCheckinCursor(body.nextCursor);
+                    })
+                    .catch((e) => setNotice(commandMessage(e)))
+                    .finally(() => setLoadingCheckins(false));
+                }}
+              >
+                Korábbi állapotjelzések betöltése
+              </button>
+            )}
             {tab === "timeline" && (
               <section className={styles.panel}>
                 <p className={styles.eyebrow}>ELŐZMÉNYEK</p>
                 <h2>A napló eseményei</h2>
+                <fieldset className={styles.timelineFilter}>
+                  <legend>Betöltött események szűrése</legend>
+                  <label htmlFor="history-kind">
+                    Típus
+                    <select
+                      id="history-kind"
+                      value={timelineKind}
+                      onChange={(e) => setTimelineKind(e.target.value)}
+                    >
+                      <option value="all">Minden típus</option>
+                      {[
+                        ...new Set(
+                          timeline?.nodes.map((node) => node.kind) ?? [],
+                        ),
+                      ].map((kind) => (
+                        <option key={kind} value={kind}>
+                          {(
+                            {
+                              record: "Bejegyzés",
+                              checkin: "Állapotjelzés",
+                              "checkin.completed": "Lezárt állapotjelzés",
+                              checkin_answer: "Beküldött napi válasz",
+                              diary: "Naplóbejegyzés",
+                              observation: "Megfigyelés",
+                              "thread.message": "Hozzászólás",
+                              "interpretation.ready": "Forrásolt magyarázat",
+                              "interpretation.no_evidence":
+                                "Forrás nélküli kérdéseredmény",
+                              "plan.follow_up": "Terv utánkövetése",
+                              "plan.proposed": "Tervjavaslat",
+                              "plan.active": "Aktív terv",
+                              "plan.paused": "Félretett terv",
+                              "plan.completed": "Lezárt terv",
+                              "plan.withdrawn": "Visszavont terv",
+                              "plan.declined": "Elutasított terv",
+                              message: "Hozzászólás",
+                              interpretation: "Forrásolt magyarázat",
+                              plan: "Közös terv",
+                              follow_up: "Utánkövetés",
+                              report: "Riport",
+                            } as Record<string, string>
+                          )[kind] ?? "Kapcsolódó esemény"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label htmlFor="history-role">
+                    Forrás
+                    <select
+                      id="history-role"
+                      value={timelineRole}
+                      onChange={(e) => setTimelineRole(e.target.value)}
+                    >
+                      <option value="all">Minden szereplő</option>
+                      <option value="player">Játékos</option>
+                      <option value="parent">Szülő</option>
+                      <option value="coach">Edző</option>
+                    </select>
+                  </label>
+                  <label htmlFor="history-period">
+                    Időszak
+                    <select
+                      id="history-period"
+                      value={timelinePeriod}
+                      onChange={(e) =>
+                        setTimelinePeriod(Number(e.target.value))
+                      }
+                    >
+                      <option value={0}>Minden betöltött esemény</option>
+                      <option value={7}>7 nap</option>
+                      <option value={14}>14 nap</option>
+                      <option value={28}>28 nap</option>
+                      <option value={42}>42 nap</option>
+                    </select>
+                  </label>
+                </fieldset>
                 <div className={styles.timelineFilter}>
                   <div>
                     <label className={styles.label} htmlFor="timeline-day">
@@ -4242,7 +4460,12 @@ export default function HabiWorkspace() {
                   ))}
                 </div>
                 <MetroTimeline
-                  page={timeline}
+                  page={filterTimelinePage(timeline, {
+                    kind: timelineKind,
+                    role: timelineRole,
+                    days: timelinePeriod,
+                    now: clientNow ?? Date.now(),
+                  })}
                   records={historyItems}
                   playerName={
                     selectedPlayer?.displayName ??
@@ -4256,12 +4479,66 @@ export default function HabiWorkspace() {
                 />
               </section>
             )}
+            {tab === "overview" &&
+              active.activeRole === "player" &&
+              (playerGoalDraft.trim() ||
+                routineDraft.trim() ||
+                practiceFeedback.trim() ||
+                Object.values(trustedAdultPrep).some((value) => value.trim()) ||
+                guidedTreeDraft ||
+                guidedSituationId ||
+                monthlyAnswers.some((value) => value !== null) ||
+                Object.values(reflectionAnswers.daily).some((value) =>
+                  value.trim(),
+                ) ||
+                Object.values(reflectionAnswers.weekly).some((value) =>
+                  value.trim(),
+                )) && (
+                <aside className={styles.formGroup}>
+                  <h3>Folytathatod, amit elkezdtél</h3>
+                  <p>
+                    A saját célod, gyakorlatod vagy beszélgetésed piszkozata
+                    megmaradt.
+                  </p>
+                  <button
+                    className={styles.secondary}
+                    type="button"
+                    onClick={() => navigateTab("player-tools")}
+                  >
+                    Folytatom a saját munkámat
+                  </button>
+                </aside>
+              )}
+            {tab === "overview" &&
+              active.activeRole === "player" &&
+              playerId && (
+                <PlayerSupportLoop
+                  compact
+                  playerId={playerId}
+                  actorId={active.actorId}
+                  csrfToken={active.csrfToken}
+                  records={ownPlayerData?.records ?? []}
+                  save={savePlayerDiary}
+                  onOpen={() => navigateTab("player-tools")}
+                />
+              )}
             {tab === "player-tools" &&
               active.activeRole === "player" &&
               selectedPlayer && (
                 <section className={styles.panel}>
                   <p className={styles.eyebrow}>SAJÁT SPORTOLÓI MUNKA</p>
                   <h2>Gyakorlatok és saját célok</h2>
+                  <PlayerSupportLoop
+                    playerId={playerId}
+                    actorId={active.actorId}
+                    csrfToken={active.csrfToken}
+                    records={ownPlayerData?.records ?? []}
+                    save={savePlayerDiary}
+                  />
+                  {continuity.status && (
+                    <p role="status">{continuity.status}</p>
+                  )}
+
                   <p className={styles.muted}>
                     Válassz egy rövid, nem klinikai gyakorlatot, rögzítsd a
                     tapasztalatodat, vagy tűzz ki egy saját célt. Minden mentés
@@ -4423,6 +4700,66 @@ export default function HabiWorkspace() {
                               <>
                                 <h4>Habi válasza</h4>
                                 <p>{state.outcome.text}</p>
+                                {state.outcome.id !== "immediate-adult" && (
+                                  <div className={styles.actions}>
+                                    <button
+                                      className={styles.secondary}
+                                      type="button"
+                                      onClick={() => {
+                                        setPlayerGoalDraft(
+                                          state.outcome?.text.slice(0, 500) ??
+                                            "",
+                                        );
+                                        document
+                                          .getElementById("own-goal")
+                                          ?.scrollIntoView({ block: "center" });
+                                      }}
+                                    >
+                                      Ezt próbálnám ki saját célként
+                                    </button>
+                                    <button
+                                      className={styles.secondary}
+                                      type="button"
+                                      onClick={() => {
+                                        setTrustedAdultPrep({
+                                          person: "",
+                                          topic:
+                                            guidedTreeDraft.opening ??
+                                            state.category.label,
+                                          ask: "Szeretném, ha meghallgatnál, és együtt átgondolnánk.",
+                                        });
+                                        setTrustedAdultPreview(false);
+                                        document
+                                          .getElementById("preparation-form")
+                                          ?.scrollIntoView({ block: "center" });
+                                      }}
+                                    >
+                                      Beszélgetés előkészítése
+                                    </button>
+                                    {state.outcome.practice && (
+                                      <button
+                                        className={styles.secondary}
+                                        type="button"
+                                        onClick={() => {
+                                          const target =
+                                            document.getElementById(
+                                              `practice-${state.outcome?.practice}`,
+                                            );
+                                          if (
+                                            target instanceof HTMLDetailsElement
+                                          ) {
+                                            target.open = true;
+                                            target.scrollIntoView({
+                                              block: "center",
+                                            });
+                                          }
+                                        }}
+                                      >
+                                        Kapcsolódó gyakorlat megnyitása
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
                                 <details className={styles.dataCard}>
                                   <summary>Beszélgetés összefoglalója</summary>
                                   <pre className={styles.summaryText}>
@@ -4514,7 +4851,12 @@ export default function HabiWorkspace() {
                       </p>
                     )}
                   </div>
-                  <CheckinTrends checkins={ownPlayerData?.checkins ?? []} />
+                  <CheckinTrends
+                    checkins={mergePartialCheckins(
+                      ownPlayerData?.checkins ?? [],
+                      ownPlayerData?.records ?? [],
+                    )}
+                  />
                   <div className={styles.formGroup}>
                     <h3>Fájdalmat érzel?</h3>
                     <p className={styles.muted}>
@@ -4850,6 +5192,7 @@ export default function HabiWorkspace() {
                     )}
                   </div>
                   <form
+                    id="preparation-form"
                     className={styles.formGroup}
                     onSubmit={saveTrustedAdultPrep}
                   >
@@ -4859,6 +5202,47 @@ export default function HabiWorkspace() {
                       választott, megbízható felnőttnek. Előbb átnézheted és
                       javíthatod. Habi nem küldi el senkinek.
                     </p>
+                    {!trustedAdultPreview && (
+                      <details>
+                        <summary>Segítség az elinduláshoz</summary>
+                        <p>Kivel beszélnél?</p>
+                        {supportLoopContent.people.map(([key, label]) => (
+                          <button
+                            type="button"
+                            className={styles.secondary}
+                            key={key}
+                            disabled={!continuity.loaded}
+                            onClick={() =>
+                              setTrustedAdultPrep({
+                                ...trustedAdultPrep,
+                                person: label,
+                              })
+                            }
+                          >
+                            {label}
+                          </button>
+                        ))}
+                        <p>Mi esne jól tőle?</p>
+                        {supportLoopContent.needs.map(([key, label]) => (
+                          <button
+                            type="button"
+                            className={styles.secondary}
+                            key={key}
+                            disabled={!continuity.loaded}
+                            onClick={() =>
+                              setTrustedAdultPrep({
+                                ...trustedAdultPrep,
+                                ask: supportLoopContent.needSentences[
+                                  key as keyof typeof supportLoopContent.needSentences
+                                ],
+                              })
+                            }
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </details>
+                    )}
                     {!trustedAdultPreview ? (
                       <>
                         {(
@@ -4877,6 +5261,7 @@ export default function HabiWorkspace() {
                             </label>
                             <textarea
                               id={`trusted-adult-${key}`}
+                              disabled={!continuity.loaded}
                               rows={2}
                               maxLength={1000}
                               value={trustedAdultPrep[key]}
@@ -4944,11 +5329,22 @@ export default function HabiWorkspace() {
                     )}
                   </form>
                   <form className={styles.formGroup} onSubmit={saveOwnGoal}>
+                    <label htmlFor="goal-when">
+                      Mikor férne bele? (nem kötelező)
+                    </label>
+                    <input
+                      id="goal-when"
+                      disabled={!continuity.loaded}
+                      value={goalWhen}
+                      maxLength={200}
+                      onChange={(e) => setGoalWhen(e.target.value)}
+                    />
                     <label className={styles.label} htmlFor="own-goal">
                       Saját cél
                     </label>
                     <textarea
                       id="own-goal"
+                      disabled={!continuity.loaded}
                       rows={2}
                       maxLength={500}
                       value={playerGoalDraft}
@@ -5314,11 +5710,22 @@ export default function HabiWorkspace() {
                       Rögzíthetsz egy egyszerű, általad választott rutint, és
                       naponta feljegyezheted, ha kipróbáltad.
                     </p>
+                    <label htmlFor="routine-when">
+                      Mikor szeretnéd kipróbálni? (nem kötelező)
+                    </label>
+                    <input
+                      id="routine-when"
+                      disabled={!continuity.loaded}
+                      value={routineWhen}
+                      maxLength={200}
+                      onChange={(e) => setRoutineWhen(e.target.value)}
+                    />
                     <label className={styles.label} htmlFor="own-routine">
                       Mit szeretnél rendszeresen kipróbálni?
                     </label>
                     <input
                       id="own-routine"
+                      disabled={!continuity.loaded}
                       maxLength={300}
                       value={routineDraft}
                       onChange={(event) => setRoutineDraft(event.target.value)}
@@ -5330,44 +5737,29 @@ export default function HabiWorkspace() {
                     >
                       Rutin mentése
                     </button>
-                    <div className={styles.knowledgeList}>
-                      {ownPlayerData?.records
-                        .filter((record) =>
-                          record.text?.startsWith("Saját rutin:"),
-                        )
-                        .map((record) => {
-                          const routine =
-                            record.text?.slice("Saját rutin:".length).trim() ??
-                            "";
-                          const today = new Date().toLocaleDateString("hu-HU");
-                          const doneToday = ownPlayerData.records.some(
-                            (item) =>
-                              item.text === `Rutin elvégezve: ${routine}` &&
-                              item.occurredAt &&
-                              new Date(item.occurredAt).toLocaleDateString(
-                                "hu-HU",
-                              ) === today,
-                          );
-                          return (
-                            <article
-                              className={styles.dataCard}
-                              key={record.id}
-                            >
-                              <h4>{routine}</h4>
-                              <button
-                                className={styles.secondary}
-                                type="button"
-                                disabled={busy || doneToday}
-                                onClick={() => void logRoutine(routine)}
-                              >
-                                {doneToday
-                                  ? "Ma már feljegyezted"
-                                  : "Ma kipróbáltam"}
-                              </button>
-                            </article>
-                          );
-                        })}
-                    </div>
+                    <RoutineHistory
+                      records={ownPlayerData?.records ?? []}
+                      save={savePlayerDiary}
+                      routines={[
+                        ...(ownPlayerData?.records ?? [])
+                          .filter((record) =>
+                            record.text?.startsWith("Saját rutin:"),
+                          )
+                          .map((record) => ({
+                            id: record.id,
+                            text:
+                              record.text
+                                ?.slice("Saját rutin:".length)
+                                .trim() ?? "",
+                          })),
+                        ...ownGoals
+                          .filter((goal) => ownGoalStatus(goal) === "habit")
+                          .map((goal) => ({
+                            id: goal.id,
+                            text: ownGoalText(goal),
+                          })),
+                      ]}
+                    />
                   </form>
                   <form className={styles.formGroup} onSubmit={saveReflection}>
                     <h3>Napi és heti visszatekintés</h3>
@@ -5715,11 +6107,46 @@ export default function HabiWorkspace() {
                       Ezek általános ötletek; bármelyiket kihagyhatod, és
                       bármikor kérhetsz segítséget egy megbízható felnőttől.
                     </p>
+                    <fieldset>
+                      <legend>A hozzám illő példák</legend>
+                      {[
+                        ["sport", "Sportolás közben"],
+                        ["everyday", "A hétköznapokban"],
+                        ["neutral", "Egyszerű példa"],
+                      ].map(([key, label]) => (
+                        <button
+                          className={styles.secondary}
+                          key={key}
+                          type="button"
+                          aria-pressed={examplePreference === key}
+                          onClick={() => setExamplePreference(key)}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </fieldset>
+                    <label htmlFor="practice-goal">
+                      Kapcsolódó saját cél (nem kötelező)
+                    </label>
+                    <select
+                      id="practice-goal"
+                      disabled={!continuity.loaded}
+                      value={practiceGoalId}
+                      onChange={(e) => setPracticeGoalId(e.target.value)}
+                    >
+                      <option value="">Most nem kapcsolom célhoz</option>
+                      {ownGoals.map((goal) => (
+                        <option key={goal.id} value={goal.id}>
+                          {ownGoalText(goal)}
+                        </option>
+                      ))}
+                    </select>
                     <label className={styles.label} htmlFor="practice-feedback">
                       Saját megjegyzés a gyakorlathoz (nem kötelező)
                     </label>
                     <textarea
                       id="practice-feedback"
+                      disabled={!continuity.loaded}
                       rows={2}
                       maxLength={1000}
                       value={practiceFeedback}
@@ -5736,7 +6163,11 @@ export default function HabiWorkspace() {
                           how: string;
                         }>
                       ).map((practice) => (
-                        <details className={styles.dataCard} key={practice.id}>
+                        <details
+                          id={`practice-${practice.id}`}
+                          className={styles.dataCard}
+                          key={practice.id}
+                        >
                           <summary>
                             <strong>{practice.title}</strong>
                             <span className={styles.practiceDescription}>
@@ -5744,6 +6175,24 @@ export default function HabiWorkspace() {
                             </span>
                           </summary>
                           <p>{practice.how}</p>
+                          {Object.values(journeyContent.topics)
+                            .filter((topic) => topic.practice === practice.id)
+                            .map((topic) => (
+                              <details key={topic.title}>
+                                <summary>{topic.title}</summary>
+                                <p>{topic.text}</p>
+                                <p>
+                                  {
+                                    topic[
+                                      examplePreference as
+                                        | "sport"
+                                        | "everyday"
+                                        | "neutral"
+                                    ]
+                                  }
+                                </p>
+                              </details>
+                            ))}
                           <div className={styles.actions}>
                             {(
                               [

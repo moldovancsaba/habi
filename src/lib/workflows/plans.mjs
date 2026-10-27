@@ -329,6 +329,8 @@ export function transitionPlan(args) {
         return { status: "withdrawn" };
       if (input.status === "paused" && plan.status === "active")
         return { status: "paused" };
+      if (input.status === "active" && plan.status === "paused")
+        return { status: "active" };
       if (
         input.status === "completed" &&
         ["active", "paused"].includes(plan.status)

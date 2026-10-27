@@ -117,3 +117,27 @@
     flex-basis: 100px;
   }
 }
+
+.dayTarget {
+  cursor: pointer;
+  width: 44px;
+  height: 232px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+.dayTarget:focus {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.distribution {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(80px, 2fr) 30px;
+  gap: 12px;
+  align-items: center;
+  margin-block: 10px;
+}
+.distribution meter {
+  width: 100%;
+}

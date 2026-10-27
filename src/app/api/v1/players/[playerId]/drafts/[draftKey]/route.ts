@@ -1,4 +1,20 @@
 import { runAuthorizedHabiRoute } from "../../../../../../../lib/api/runtime-route";
+import { runMigrations } from "../../../../../../../lib/database/migrations/runner.mjs";
+
+async function ensureContinuitySchema(
+  db: Parameters<typeof runMigrations>[0],
+  role: string,
+  draftKey: string,
+) {
+  if (
+    role === "player" &&
+    ["player-workspace", "support-loop"].includes(draftKey)
+  )
+    await runMigrations(db, new Date(), [
+      "014-experience-drafts",
+      "017-player-continuity-drafts",
+    ]);
+}
 import {
   deleteExperienceDraft,
   readExperienceDraft,
@@ -17,6 +33,7 @@ export async function GET(
     request,
     "experienceDraft.read",
     async ({ db, principal }) => {
+      await ensureContinuitySchema(db, principal.role, draftKey);
       const result = await readExperienceDraft({
         db,
         principal,
@@ -37,6 +54,7 @@ export async function PUT(
     request,
     "experienceDraft.save",
     async ({ db, client, principal }) => {
+      await ensureContinuitySchema(db, principal.role, draftKey);
       const result = await saveExperienceDraft({
         request,
         client,
@@ -59,6 +77,7 @@ export async function DELETE(
     request,
     "experienceDraft.delete",
     async ({ db, client, principal }) => {
+      await ensureContinuitySchema(db, principal.role, draftKey);
       const result = await deleteExperienceDraft({
         request,
         client,

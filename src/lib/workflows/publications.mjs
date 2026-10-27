@@ -16,6 +16,127 @@ function publicationDto(item) {
   };
 }
 
+export async function listPublications({ db, principal, playerId }) {
+  if (principal.role !== "coach") throw new HabiApiError("ACCESS_DENIED");
+  return {
+    items: (
+      await db
+        .collection("publications")
+        .find({ tenantId: principal.tenantId, playerId })
+        .sort({ publishedAt: -1 })
+        .limit(200)
+        .toArray()
+    ).map(publicationDto),
+  };
+}
+
+export async function withdrawPublication({
+  request,
+  client,
+  db,
+  principal,
+  id,
+  now = new Date(),
+}) {
+  if (principal.role !== "coach") throw new HabiApiError("ACCESS_DENIED");
+  let input;
+  try {
+    input = await request.json();
+  } catch {
+    throw new HabiApiError("INVALID_INPUT");
+  }
+  if (
+    !Number.isInteger(input?.expectedRevision) ||
+    Object.keys(input).length !== 1
+  )
+    throw new HabiApiError("INVALID_INPUT");
+  const key = request.headers.get("idempotency-key");
+  if (!key || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(key))
+    throw new HabiApiError("INVALID_INPUT");
+  const result = await runIdempotentCommand({
+    client,
+    db,
+    tenantId: principal.tenantId,
+    retentionPolicyId: principal.retentionPolicyId,
+    actorOrClientId: principal.actorId,
+    method: request.method,
+    path: new URL(request.url).pathname,
+    key,
+    body: input,
+    now: () => now,
+    async execute({ db: tx, session }) {
+      const item = await tx
+        .collection("publications")
+        .findOne({ tenantId: principal.tenantId, id }, { session });
+      if (!item) throw new HabiApiError("NOT_FOUND");
+      if (item.revision !== input.expectedRevision || item.status !== "active")
+        throw new HabiApiError("REVISION_CONFLICT");
+      const change = await tx.collection("publications").updateOne(
+        {
+          tenantId: principal.tenantId,
+          id,
+          revision: item.revision,
+          status: "active",
+        },
+        {
+          $set: { status: "withdrawn", updatedAt: now.toISOString() },
+          $inc: { revision: 1 },
+        },
+        { session },
+      );
+      if (change.modifiedCount !== 1)
+        throw new HabiApiError("REVISION_CONFLICT");
+      // A withdrawn source also withdraws derived answers, including answers
+      // that cite another derived answer. Keep the original claims as history.
+      let refs = [item.resourceRef];
+      const invalidated = new Set();
+      while (refs.length) {
+        const answers = await tx
+          .collection("interpretations")
+          .find(
+            {
+              tenantId: principal.tenantId,
+              playerId: item.playerId,
+              "answer.manifest.sourceRefs": { $elemMatch: { $or: refs } },
+            },
+            { session },
+          )
+          .toArray();
+        refs = [];
+        for (const answer of answers) {
+          if (invalidated.has(answer.id)) continue;
+          invalidated.add(answer.id);
+          refs.push({ id: answer.id, revision: answer.revision });
+          await tx.collection("interpretations").updateOne(
+            {
+              tenantId: principal.tenantId,
+              id: answer.id,
+              revision: answer.revision,
+            },
+            {
+              $set: {
+                "answer.validity": "withdrawn",
+                updatedAt: now.toISOString(),
+              },
+              $inc: { revision: 1 },
+            },
+            { session },
+          );
+        }
+      }
+      return { status: 200, resultRef: { id, revision: item.revision + 1 } };
+    },
+  });
+  return {
+    status: result.status,
+    body: publicationDto(
+      await db
+        .collection("publications")
+        .findOne({ tenantId: principal.tenantId, id }),
+    ),
+  };
+}
+
 export async function publishCoachResource({
   request,
   client,

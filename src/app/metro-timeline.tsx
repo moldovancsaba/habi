@@ -33,6 +33,7 @@ export type TimelineRecord = {
   occurredAt?: string;
   completedAt?: string;
   revision?: number;
+  source?: { kind: string };
   answerCodes?: Array<{ metric: string; code: number }>;
 };
 
@@ -584,6 +585,15 @@ export default function MetroTimeline({
                     <div className="event-details">
                       {event.summary ? <p>{event.summary}</p> : null}
                       {record?.text ? <p>{record.text}</p> : null}
+                      {record?.source && (
+                        <p className="event-meta">
+                          {record.source.kind === "proxy"
+                            ? "A játékos elmondása · más rögzítette"
+                            : record.source.kind === "self"
+                              ? "A játékos saját beszámolója"
+                              : "A rögzítő saját megfigyelése"}
+                        </p>
+                      )}
                       {record && createSavedConversationExport(record) ? (
                         <button
                           type="button"

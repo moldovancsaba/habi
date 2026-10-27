@@ -76,6 +76,14 @@ export function buildCheckinChart(checkins, metric, period, now) {
       y: code === null ? null : 32 + code * 64,
     };
   });
+  return {
+    points,
+    path: metroRoutePath(points),
+    width: Math.max(600, 192 + (entries.length - 1) * 90),
+  };
+}
+
+export function metroRoutePath(points) {
   let previous = null;
   let path = "";
   for (const point of points) {
@@ -94,9 +102,58 @@ export function buildCheckinChart(checkins, metric, period, now) {
     }
     previous = point;
   }
-  return {
-    points,
-    path: path.trim(),
-    width: Math.max(600, 192 + (entries.length - 1) * 90),
-  };
+  return path.trim();
+}
+
+/** @param {Array<{id:string,completedAt?:string,answerCodes?:Array<{metric:string,code:number}>}>} checkins */
+export function projectDailyCheckins(checkins) {
+  const days = new Map();
+  for (const entry of [...checkins]
+    .filter((e) => Number.isFinite(Date.parse(e.completedAt ?? "")))
+    .sort(
+      (a, b) =>
+        Date.parse(a.completedAt ?? "") - Date.parse(b.completedAt ?? "") ||
+        a.id.localeCompare(b.id),
+    )) {
+    const day = calendarDay(entry.completedAt);
+    const full =
+      new Set(
+        entry.answerCodes
+          ?.filter((a) => metricGraphicLevel(a.metric, a.code) !== null)
+          .map((a) => a.metric),
+      ).size === 5;
+    const current = days.get(day);
+    if (!current || full || !current.full) days.set(day, { entry, full });
+  }
+  return [...days.values()].map(({ entry }) => entry);
+}
+
+/**
+ * @param {Array<{id:string,completedAt?:string,sessionRef?:{id:string},answerCodes?:Array<{metric:string,code:number}>}>} results
+ * @param {Array<{id:string,kind?:string,sessionId?:string|null,metric?:string|null,answerCode?:number|null,submittedAt?:string,occurredAt?:string}>} records
+ */
+export function mergePartialCheckins(results, records) {
+  const completed = new Set(
+    results.map((item) => item.sessionRef?.id).filter(Boolean),
+  );
+  const sessions = new Map();
+  for (const record of records) {
+    if (
+      record.kind !== "checkin_answer" ||
+      !record.sessionId ||
+      completed.has(record.sessionId) ||
+      metricGraphicLevel(record.metric, record.answerCode) === null
+    )
+      continue;
+    const entry = sessions.get(record.sessionId) ?? {
+      id: record.sessionId,
+      completedAt: "",
+      answerCodes: [],
+    };
+    const at = record.submittedAt ?? record.occurredAt ?? "";
+    if (at > entry.completedAt) entry.completedAt = at;
+    entry.answerCodes.push({ metric: record.metric, code: record.answerCode });
+    sessions.set(record.sessionId, entry);
+  }
+  return [...results, ...sessions.values()];
 }

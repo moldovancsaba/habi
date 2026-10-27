@@ -70,7 +70,10 @@ export async function createRecord({
     (body.kind === "observation" || body.sourceKind !== "self")
   )
     throw new HabiApiError("ACCESS_DENIED");
-  if (principal.role === "parent" && body.sourceKind !== "proxy")
+  if (
+    principal.role === "parent" &&
+    !["proxy", "observation"].includes(body.sourceKind)
+  )
     throw new HabiApiError("ACCESS_DENIED");
   if (principal.role === "coach" && body.kind !== "observation")
     throw new HabiApiError("ACCESS_DENIED");

@@ -85,4 +85,9 @@ export const migrationChecksums = Object.freeze({
     checksum:
       "f796d75ae986196a1b9fc1477d44f05836b85d6061bc09897743b3034760ca24",
   }),
+  "017-player-continuity-drafts": Object.freeze({
+    file: "017-player-continuity-drafts.mjs",
+    checksum:
+      "8cebd6aab2233137f4cc02800d8d2aa7ab2d7c4253dd42c0f1f858ee941072ae",
+  }),
 });

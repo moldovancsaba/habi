@@ -30,6 +30,10 @@ function command(name, { role = "coach", checkin = null, busy = false } = {}) {
     playerId: "player-1",
     question: "Mire figyeljünk?",
     planDraft: "Gyakorlás",
+    planOwnerId: "",
+    planWhy: "",
+    planDue: "",
+    planStop: "",
     questionSource: checkin,
     busy,
     crypto: { randomUUID },
@@ -108,4 +112,62 @@ test("coach plan without a source and a busy question do not submit", async () =
   });
   await question.run();
   assert.equal(question.requests.length, 0);
+});
+
+test("shared product commands fence revisions and reuse an uncertain write key only until success", async () => {
+  const requests = [];
+  let fail = true;
+  const context = {
+    exports: {},
+    crypto: { randomUUID },
+    fetch: async (_path, options) => {
+      requests.push(options);
+      if (fail) {
+        fail = false;
+        throw new Error("connection interrupted");
+      }
+      return { ok: true, json: async () => ({ saved: true }) };
+    },
+  };
+  const compiled = ts.transpileModule(
+    await readFile(
+      new URL("../src/app/product-request.ts", import.meta.url),
+      "utf8",
+    ),
+    {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2022,
+      },
+    },
+  ).outputText;
+  runInNewContext(compiled, context);
+  const write = () =>
+    context.exports.productRequest(
+      "/api/v1/plans/test/pause",
+      "csrf",
+      { expectedRevision: 4 },
+      "POST",
+    );
+  await assert.rejects(write, /connection interrupted/);
+  await write();
+  await write();
+  assert.equal(requests[0].headers["If-Match"], "4");
+  assert.equal(requests[0].headers["x-habi-csrf"], "csrf");
+  assert.equal(
+    requests[0].headers["Idempotency-Key"],
+    requests[1].headers["Idempotency-Key"],
+  );
+  assert.notEqual(
+    requests[1].headers["Idempotency-Key"],
+    requests[2].headers["Idempotency-Key"],
+  );
+  await context.exports.productRequest(
+    "/api/v1/plans/test",
+    "csrf",
+    undefined,
+    "GET",
+  );
+  assert.equal(requests[3].headers["Idempotency-Key"], undefined);
+  assert.equal(requests[3].headers["x-habi-csrf"], undefined);
 });

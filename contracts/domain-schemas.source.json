@@ -3076,7 +3076,9 @@
             "weekly-reflection",
             "monthly-reflection",
             "guided-conversation",
-            "guided-topic-conversation"
+            "guided-topic-conversation",
+            "player-workspace",
+            "support-loop"
           ]
         },
         "contentVersion": {
@@ -4848,7 +4850,8 @@
           "enum": [
             "paused",
             "completed",
-            "withdrawn"
+            "withdrawn",
+            "active"
           ]
         }
       },

@@ -3061,7 +3061,9 @@
             "weekly-reflection",
             "monthly-reflection",
             "guided-conversation",
-            "guided-topic-conversation"
+            "guided-topic-conversation",
+            "player-workspace",
+            "support-loop"
           ]
         },
         "contentVersion": {
@@ -4873,7 +4875,8 @@
           "enum": [
             "paused",
             "completed",
-            "withdrawn"
+            "withdrawn",
+            "active"
           ]
         }
       },
@@ -8152,6 +8155,150 @@
       },
       "required": [
         "items"
+      ],
+      "additionalProperties": false
+    },
+    "CoachAssessmentInput": {
+      "type": "object",
+      "properties": {
+        "topicId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "mode": {
+          "enum": [
+            "questionnaire",
+            "interview",
+            "cognitive"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "context": {
+          "type": "string",
+          "maxLength": 700
+        },
+        "example": {
+          "type": "string",
+          "maxLength": 700
+        },
+        "reflection": {
+          "type": "string",
+          "maxLength": 700
+        },
+        "scenarioId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "scale": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "reference": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "answers": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "topicId",
+        "mode",
+        "date"
+      ],
+      "additionalProperties": false
+    },
+    "KnowledgeCreateInput": {
+      "type": "object",
+      "properties": {
+        "situation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "response": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "exclusions": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "situation",
+        "response",
+        "exclusions",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "KnowledgeReviewInput": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "decision": {
+          "enum": [
+            "approved",
+            "withdrawn"
+          ]
+        },
+        "evidenceChecked": {
+          "type": "boolean"
+        },
+        "privacyChecked": {
+          "type": "boolean"
+        },
+        "rightsChecked": {
+          "type": "boolean"
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1500
+        }
+      },
+      "required": [
+        "expectedRevision",
+        "decision",
+        "evidenceChecked",
+        "privacyChecked",
+        "rightsChecked",
+        "rationale"
       ],
       "additionalProperties": false
     }

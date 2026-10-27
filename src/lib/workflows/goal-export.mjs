@@ -38,7 +38,9 @@ export function createGoalExport({
         return (
           text.startsWith(`Saját cél módosítva · ${goal?.id} ·`) ||
           text.startsWith(`Saját cél állapot · ${goal?.id} ·`) ||
-          text.startsWith(`Saját cél visszatekintés · ${goal?.id} ·`)
+          text.startsWith(`Saját cél visszatekintés · ${goal?.id} ·`) ||
+          (text.startsWith("Gyakorlat:") &&
+            text.split("\n").includes(`Kapcsolódó saját cél · ${goal?.id}`))
         );
       })
       .sort((a, b) =>

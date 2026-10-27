@@ -27,7 +27,13 @@ function sourceVisible(principal, ref, record, publications) {
     return (
       record.answer?.status === "ready" && record.answer?.validity === "current"
     );
-  return ["checkin_results", "assessment_results"].includes(record.collection);
+  return [
+    "checkin_results",
+    "assessment_results",
+    "monthly_reflections",
+    "plans",
+    "follow_ups",
+  ].includes(record.collection);
 }
 
 const COACH_CONTEXT_SOURCES = [
@@ -326,19 +332,21 @@ function interpretationDto(item, review, principal) {
             ? "pending"
             : "not_required";
   const answerState =
-    reviewState === "approved"
-      ? "ready"
-      : item.answer?.status === "needs_clarification"
-        ? "needs_clarification"
-        : item.answer?.status === "no_evidence"
-          ? "no_evidence"
-          : reviewState === "pending"
-            ? "awaiting_review"
-            : (item.answer?.status ?? "blocked");
+    item.answer?.validity !== "current" && principal.role !== "coach"
+      ? "blocked"
+      : reviewState === "approved"
+        ? "ready"
+        : item.answer?.status === "needs_clarification"
+          ? "needs_clarification"
+          : item.answer?.status === "no_evidence"
+            ? "no_evidence"
+            : reviewState === "pending"
+              ? "awaiting_review"
+              : (item.answer?.status ?? "blocked");
   const canSeeAnswer =
     principal.role === "coach" ||
-    reviewState === "approved" ||
-    reviewState === "not_required";
+    (item.answer?.validity === "current" &&
+      (reviewState === "approved" || reviewState === "not_required"));
   return {
     id: item.id,
     revision: item.revision,
@@ -493,6 +501,14 @@ export async function reviewInterpretation({
         input.sourceRevisionSet,
         session,
       );
+      if (input.decision === "approved")
+        await verifySourceSet(
+          tx,
+          { ...principal, role: "parent", playerId: item.playerId },
+          item.playerId,
+          input.sourceRevisionSet,
+          session,
+        );
       const claimIds = item.answer.claims.map((claim) => claim.id).sort();
       const reviewedIds = input.claimReviews
         .map((review) => review.claimId)

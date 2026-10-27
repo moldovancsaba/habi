@@ -10,10 +10,10 @@ export async function GET(
   return runAuthorizedHabiRoute(
     request,
     "checkin.results.list",
-    async ({ db, principal }) => {
+    async ({ db, principal, cursorHmacKey }) => {
       const url = new URL(request.url);
       for (const key of url.searchParams.keys()) {
-        if (!["limit", "from", "to"].includes(key))
+        if (!["limit", "from", "to", "cursor"].includes(key))
           throw new HabiApiError("INVALID_INPUT");
       }
       const rawLimit = url.searchParams.get("limit");
@@ -27,6 +27,8 @@ export async function GET(
           limit,
           from: url.searchParams.get("from"),
           to: url.searchParams.get("to"),
+          cursor: url.searchParams.get("cursor"),
+          cursorHmacKey,
         }),
       );
     },

@@ -1,0 +1,74 @@
+{
+  "version": 2,
+  "source": "538c76518484ec269e2ddd3418fbb945e7ff5a67:server/content-seed.json#support_practices+journey_content_v1.practices+support_loop_v1.practice",
+  "items": [
+    {
+      "id": "focus",
+      "title": "Egy figyelmi kapaszkodó",
+      "what": "Válassz egy dolgot, amire a következő feladatnál figyelsz.",
+      "how": "Nevezd meg az első kis feladatot. Válassz hozzá egy rövid szót, például „körülnézek”. Ha elkalandozol, térj vissza ehhez. Egy próbálkozás is elég.",
+      "topic": "focus"
+    },
+    {
+      "id": "sleep",
+      "title": "Nyugodtabb este",
+      "what": "Készíts helyet a pihenésnek.",
+      "how": "Válassz egy esti időpontot a lelassulásra. Készítsd össze a holnapi dolgaidat, majd válassz egy csendes elfoglaltságot. Figyeld meg, melyik része esett jól."
+    },
+    {
+      "id": "restart",
+      "title": "Újrakezdés egy hiba után",
+      "what": "Keress egy kapaszkodót a következő próbálkozáshoz.",
+      "how": "Állj meg egy pillanatra. Ha jólesik, fújd ki nyugodtan a levegőt; ha nem, nézz egy ismerős tárgyra. Nézz körül, majd fejezd be: „Most először arra figyelek, hogy…”",
+      "topic": "restart"
+    },
+    {
+      "id": "pressure",
+      "title": "Ami most rajtam múlik",
+      "what": "Válassz egy kezelhető lépést az elvárások közül.",
+      "how": "Nevezz meg egy dolgot, ami aggaszt. Válaszd külön attól, amit most meg tudsz tenni. Válassz egy apró teendőt. Ha továbbra is soknak érzed, elmondhatod egy felnőttnek, akiben megbízol.",
+      "topic": "pressure"
+    },
+    {
+      "id": "pause",
+      "title": "Egy rövid megálló",
+      "what": "Adj magadnak egy kis időt, mielőtt folytatod.",
+      "how": "Állj meg kényelmesen, vagy ülj le. Vedd észre, mi van körülötted. Ha jólesik, figyeld a saját ritmusú légzésedet. Ezután választhatsz egy következő lépést, még egy kis szünetet vagy beszélgetést.",
+      "topic": "pause"
+    },
+    {
+      "id": "rehearsal",
+      "title": "Fejben kipróbálom",
+      "what": "Gondolj egy ismerős helyzetre, és válassz benne egyetlen kezelhető első lépést.",
+      "how": "Ha jólesik, képzeld el röviden az ismerős helyzetet: hol vagy, mi az első kis dolgod, és milyen segítő mondatot mondanál magadnak. Nem kell sikeres befejezést elképzelned. Ha a képzelődés nem kényelmes, írd le a lépést, mondd ki, vagy válassz inkább beszélgetést. Bármikor abbahagyhatod."
+    },
+    {
+      "id": "instructions",
+      "title": "Két kis részben",
+      "what": "Kérd kisebb részekben azt, amit követned kell.",
+      "how": "Mondd: „Elmondanád az első egy-két részt?” Ismételd el a saját szavaiddal. Ha még nem világos, kérj egy példát vagy bemutatást. Először csak az első részt próbáld ki.",
+      "topic": "instructions"
+    },
+    {
+      "id": "options",
+      "title": "Két lehetőség közül",
+      "what": "Nézz meg két egyszerű módot a folytatásra.",
+      "how": "Mondd el egy mondatban, mi változott. Nevezz meg két lehetséges következő lépést. Válaszd azt, ami most kényelmesebb és megtehető. Utána észreveheted, mi segített benne.",
+      "topic": "options"
+    },
+    {
+      "id": "selfTalk",
+      "title": "Segítő mondatom",
+      "what": "Válassz egy mondatot, ami a következő próbánál melléd áll.",
+      "how": "Vedd észre, ha bántóan szólsz magadhoz. Kérdezd meg: „Mit mondanék egy barátomnak?” Válassz egy konkrét mondatot, például: „Még gyakorlom. Most az első kis részre figyelek.”",
+      "topic": "selfTalk"
+    },
+    {
+      "id": "communication",
+      "title": "Elmondom, mi segítene",
+      "what": "Fogalmazz meg egy rövid kérést valakinek, akiben megbízol.",
+      "how": "Mondd el, mi történt, és mire lenne szükséged. Például: „Sok minden jár a fejemben. Először meghallgatnál?” Egy társadtól is kérhetsz egy konkrét, segítő jelzést. Ha nem figyelnek rád, kereshetsz másik megbízható felnőttet.",
+      "topic": "communication"
+    }
+  ]
+}

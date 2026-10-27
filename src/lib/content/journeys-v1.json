@@ -209,6 +209,14 @@
       "sport": "Sportolás után adj időt a lelassulásnak.",
       "everyday": "Készítsd össze a holnapi dolgaidat, majd válassz nyugodt elfoglaltságot.",
       "practice": "sleep"
+    },
+    "rehearsal": {
+      "title": "Előre kipróbálhatom fejben",
+      "text": "Néha könnyebb elkezdeni valamit, ha előbb egy kis részét átgondolod. Nem kell tökéletes képet készítened.",
+      "neutral": "Válassz egy ismerős helyzetből egy könnyű első lépést.",
+      "sport": "Képzeld el egy már ismert mozdulatod előtti nyugodt kezdést.",
+      "everyday": "Gondold át, hogyan kérnél szót vagy segítséget egy iskolai feladatnál.",
+      "practice": "rehearsal"
     }
   },
   "practices": {
@@ -348,6 +356,93 @@
         "Választhatunk egy mondatot, ami nem bánt, hanem segít a következő kis próbánál."
       ],
       "action": "Egy ismerős feladatban kipróbálok egy kényelmes, apró változtatást."
+    },
+    {
+      "id": "disagreement",
+      "opening": "Nem értettünk egyet, és most nehéz kapcsolódnom.",
+      "topic": "communication",
+      "practice": "communication",
+      "intro": "Egy nézeteltérés után is elmondhatod, mi esne jól. Nem kell mindent egyedül helyrehoznod.",
+      "question": "Mi volt neked a legnehezebb?",
+      "options": [
+        "A bántó szavak.",
+        "Nem értettük egymást.",
+        "Nem mertem elmondani, mit szeretnék."
+      ],
+      "replies": [
+        "Megnézhetjük, milyen segítség lenne neked jó.",
+        "A saját szavaiddal is elmondhatod, mire van szükséged.",
+        "Kérhetsz időt vagy támogatást a következő lépéshez."
+      ],
+      "action": "Megfogalmazok egy rövid, nyugodt kérést."
+    },
+    {
+      "id": "outside-pressure",
+      "opening": "Úgy érzem, túl sokat várnak tőlem.",
+      "topic": "pressure",
+      "practice": "pressure",
+      "intro": "A sok elvárás megterhelő lehet. Megnézhetjük, mi fér bele neked, és milyen segítségre lenne szükséged.",
+      "question": "Mi nyom most leginkább?",
+      "options": [
+        "Mások elvárása.",
+        "A saját elvárásom.",
+        "Túl sok minden jut egyszerre."
+      ],
+      "replies": [
+        "Megnézhetjük, milyen segítség lenne neked jó.",
+        "A saját szavaiddal is elmondhatod, mire van szükséged.",
+        "Kérhetsz időt vagy támogatást a következő lépéshez."
+      ],
+      "action": "Kiválasztok egy kezelhető lépést, és jelzem, mi sok nekem."
+    },
+    {
+      "id": "less-joy",
+      "opening": "Most kevesebb örömöm van a sportban.",
+      "topic": "pressure",
+      "practice": "pause",
+      "intro": "Nem kell magadra erőltetned a lelkesedést. Megnézhetjük, mi hiányzik, és mi könnyítene a napodon.",
+      "question": "Mi hiányzik most leginkább?",
+      "options": ["A játék öröme.", "Több pihenés.", "Hogy meghallgassanak."],
+      "replies": [
+        "Megnézhetjük, milyen segítség lenne neked jó.",
+        "A saját szavaiddal is elmondhatod, mire van szükséged.",
+        "Kérhetsz időt vagy támogatást a következő lépéshez."
+      ],
+      "action": "Megnevezek egy dolgot, ami könnyebbé tenne egy alkalmat."
+    },
+    {
+      "id": "asking-clarity",
+      "opening": "Nem világos, mit kérnek tőlem.",
+      "topic": "instructions",
+      "practice": "instructions",
+      "intro": "Nyugodtan kérhetsz ismétlést vagy egy példát. Ettől nem vagy kevésbé ügyes.",
+      "question": "Melyik lenne most a leghasznosabb?",
+      "options": ["Egy bemutatás.", "Kisebb részek.", "Több idő a kérdezésre."],
+      "replies": [
+        "Megnézhetjük, milyen segítség lenne neked jó.",
+        "A saját szavaiddal is elmondhatod, mire van szükséged.",
+        "Kérhetsz időt vagy támogatást a következő lépéshez."
+      ],
+      "action": "Kérek egy példát, majd a saját szavaimmal visszamondom az első részt."
+    },
+    {
+      "id": "feeling-left-out",
+      "opening": "Úgy érzem, kimaradok a többiek közül.",
+      "topic": "communication",
+      "practice": "communication",
+      "intro": "Fontos, hogy legyen helyed a többiek között. Ha valaki bánt, ne maradj egyedül ezzel: szólhatsz egy megbízható felnőttnek.",
+      "question": "Mi segítene most leginkább?",
+      "options": [
+        "Ha valaki meghallgatna.",
+        "Ha elmondhatnám, mi történt.",
+        "Ha egy felnőtt segítene."
+      ],
+      "replies": [
+        "Megnézhetjük, milyen segítség lenne neked jó.",
+        "A saját szavaiddal is elmondhatod, mire van szükséged.",
+        "Kérhetsz időt vagy támogatást a következő lépéshez."
+      ],
+      "action": "Elmondom egy megbízható felnőttnek, mikor érzem magam kívülállónak."
     }
   ],
   "chat": {

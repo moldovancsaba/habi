@@ -11,6 +11,8 @@ const DRAFT_KEYS = new Set([
   "monthly-reflection",
   "guided-conversation",
   "guided-topic-conversation",
+  "player-workspace",
+  "support-loop",
 ]);
 const MAX_TEXT = 1000;
 
@@ -41,6 +43,28 @@ export function isValidExperienceDraftPayload(
 ) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload))
     return false;
+  if (["player-workspace", "support-loop"].includes(draftKey)) {
+    const keys =
+      draftKey === "player-workspace"
+        ? [
+            "goal",
+            "routine",
+            "practice",
+            "prepPerson",
+            "prepSituation",
+            "prepHelp",
+            "example",
+            "practiceGoalId",
+          ]
+        : ["event", "returnPlan", "review"];
+    return (
+      contentVersion === `${draftKey}-v1` &&
+      Object.keys(payload).every((key) => keys.includes(key)) &&
+      Object.values(payload).every(
+        (value) => typeof value === "string" && value.length <= 2000,
+      )
+    );
+  }
   if (draftKey === "daily-reflection")
     return (
       contentVersion === "daily-reflection-v1" &&
@@ -69,6 +93,11 @@ export function isValidExperienceDraftPayload(
         "too-fast",
         "too-many-instructions",
         "afraid-to-try",
+        "disagreement",
+        "outside-pressure",
+        "less-joy",
+        "asking-clarity",
+        "feeling-left-out",
       ].includes(payload.situationId) &&
       Array.isArray(payload.answers) &&
       payload.answers.length <= 3 &&

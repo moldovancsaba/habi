@@ -1,5 +1,21 @@
 import { runAuthorizedHabiRoute } from "../../../../../../lib/api/runtime-route";
-import { createCheckinSession } from "../../../../../../lib/workflows/checkin.mjs";
+import {
+  createCheckinSession,
+  listOpenCheckinSessions,
+} from "../../../../../../lib/workflows/checkin.mjs";
+
+export async function GET(
+  request: Request,
+  context: RouteContext<"/api/v1/players/[playerId]/checkin-sessions">,
+) {
+  const { playerId } = await context.params;
+  return runAuthorizedHabiRoute(
+    request,
+    "checkin.session.list",
+    async ({ db, principal }) =>
+      Response.json(await listOpenCheckinSessions({ db, principal, playerId })),
+  );
+}
 
 export async function POST(
   request: Request,

@@ -3,6 +3,7 @@ import { HabiApiError } from "../api/error-response.mjs";
 import { isValidApiInput } from "../api/input-validation.mjs";
 import { runIdempotentCommand } from "../database/idempotent-command.mjs";
 import { validateContractDocument } from "../database/contract-validation.mjs";
+import { decodePageCursor, encodePageCursor } from "./page-cursor.mjs";
 
 export const CHECKIN_METRICS = Object.freeze([
   "energy",
@@ -462,14 +463,43 @@ export async function readCheckinSession({ db, principal, id }) {
   return checkinSessionReadDto(session, answers.map(answerReadDto));
 }
 
+export async function listOpenCheckinSessions({ db, principal, playerId }) {
+  requirePlayerWrite(principal, playerId);
+  const sessions = await db
+    .collection("checkin_sessions")
+    .find({
+      tenantId: principal.tenantId,
+      playerId,
+      status: { $in: ["started", "partial"] },
+    })
+    .sort({ startedAt: -1, id: -1 })
+    .limit(20)
+    .toArray();
+  return {
+    items: await Promise.all(
+      sessions.map(async (session) =>
+        checkinSessionReadDto(
+          session,
+          (await loadAnswers(db, principal.tenantId, session.id)).map(
+            answerReadDto,
+          ),
+        ),
+      ),
+    ),
+  };
+}
+
 export async function readCheckinResult({ db, principal, id }) {
   requirePathId(id);
   const result = await db.collection("checkin_results").findOne({
     tenantId: principal.tenantId,
-    playerId: principal.playerId,
     id,
   });
-  if (!result) throw new HabiApiError("NOT_FOUND");
+  if (
+    !result ||
+    (principal.role !== "coach" && result.playerId !== principal.playerId)
+  )
+    throw new HabiApiError("NOT_FOUND");
   return checkinResultReadDto(result);
 }
 
@@ -480,6 +510,9 @@ export async function listCheckinResults({
   limit = 20,
   from = /** @type {string | null} */ (null),
   to = /** @type {string | null} */ (null),
+  cursor = /** @type {string | null} */ (null),
+  cursorHmacKey = "",
+  now = new Date(),
 }) {
   requirePathId(playerId);
   if (
@@ -500,7 +533,12 @@ export async function listCheckinResults({
   }
   if (from) from = new Date(from).toISOString();
   if (to) to = new Date(to).toISOString();
-  const snapshotAt = new Date().toISOString();
+  const resource = `checkin-results:${from ?? ""}:${to ?? ""}`;
+  const scope = { principal, resource, scopeId: playerId, now };
+  const position = cursor
+    ? decodePageCursor(cursor, scope, cursorHmacKey)
+    : null;
+  const snapshotAt = position?.snapshotAt ?? now.toISOString();
   const player = await db.collection("players").findOne({
     tenantId: principal.tenantId,
     id: playerId,
@@ -515,14 +553,34 @@ export async function listCheckinResults({
         $lte: to && Date.parse(to) < Date.parse(snapshotAt) ? to : snapshotAt,
         ...(from ? { $gte: from } : {}),
       },
+      ...(position
+        ? {
+            $or: [
+              { completedAt: { $lt: position.at } },
+              { completedAt: position.at, id: { $lt: position.id } },
+            ],
+          }
+        : {}),
     })
     .sort({ completedAt: -1, id: -1 })
     .limit(limit + 1)
     .toArray();
-  if (items.length > limit) throw new HabiApiError("INVALID_INPUT");
+  const page = items.slice(0, limit);
+  const nextCursor =
+    items.length > limit
+      ? encodePageCursor(
+          {
+            ...scope,
+            snapshotAt,
+            at: page.at(-1).completedAt,
+            id: page.at(-1).id,
+          },
+          cursorHmacKey,
+        )
+      : null;
   return {
-    items: items.map(checkinResultReadDto),
-    nextCursor: null,
+    items: page.map(checkinResultReadDto),
+    nextCursor,
     snapshotAt,
     accessRevision: principal.accessRevision,
   };
