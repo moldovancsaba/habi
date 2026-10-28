@@ -31,3 +31,22 @@ Migration 019 additively updates validators for natural replies, message underst
 - Live Hungarian evaluations of the existing small models failed: repeated or malformed Hungarian, coach/player confusion and invented explanations. A further short Hungarian system prompt still produced unsupported text. The user requested keeping the current models; no request for an upgrade was sent to another task.
 
 **Release gate remains open:** these changes are not deployed while live Hungarian conversation quality fails. Local fixtures and automated checks must not be represented as an end-to-end language-quality pass. Re-evaluate genuine multi-turn exchanges against the existing service before enabling this generation path in production. Include updates, corrections, response feedback, repeated questions, reload/new conversation, exclusion and private-role access.
+
+## Continued implementation: context fidelity and reproducible evaluation
+
+- Source selection now keeps author preferences separate from player reports, retains complete attributed records, and retains complete recent conversation turns. It never clips half a clause or sends an orphan assistant answer. Large records that cannot fit are omitted entirely. Previous questions can remain attributed message sources without becoming player facts.
+- Related source links now include only records actually included in the model request, plus the current message. Excluded, retired, unpinned and oversized omitted records are not presented as support. Numeric checks likewise cannot use dropped records as authorization.
+- Automatic model selection now uses the selected model's discovered context window when budgeting the request. It still follows the service ranking; no production override was introduced.
+- Fragmentary responses are retried and rejected instead of being saved as completed support. This is a structural check, not a semantic-quality guarantee.
+- `worker/evaluations/coach_hungarian.py` is a repeatable opt-in synthetic live evaluation covering a question, new wellbeing/meal information, a meal correction, shorter-response feedback and a repeated question. It always marks gateway traffic as test. It prints synthetic transcripts for human review and never labels successful API execution as language-quality approval.
+- New live evidence with the current models remains below the release requirement: the automatic model produced incomplete fragments; the explicit existing Qwen model produced malformed Hungarian and misrepresented the sleep report in its initial answer. The context and citation fixes do not establish useful support quality. The production model configuration remains unchanged.
+
+Run the synthetic evaluation from the repository root with the existing scoped worker environment loaded:
+
+```sh
+PYTHONPATH=worker worker/.venv/bin/python worker/evaluations/coach_hungarian.py
+```
+
+Use `--model` only for an existing permitted model. Review the transcript for role accuracy, current updates, corrections, unsupported conclusions, repetition and useful follow-up. The harness uses synthetic memory transitions; browser/API/database acceptance is separately required for persistence.
+
+Continuation verification: 64 worker tests passed and the synthetic browser/API/worker flow passed again, including correction specificity, original history, exclusion, reload, cross-chat preferences and role isolation. Near-duplicate checking now compares words and shared phrases to catch a recycled long answer with only a few nouns changed. The additional live Qwen evaluation repeated that pattern and failed on response feedback; this remains a failed language-quality evaluation, not a production approval. `--role player`, `--role parent` and `--role coach` select role-specific synthetic evaluation messages.

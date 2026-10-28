@@ -1,7 +1,7 @@
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
-from habi_worker.coach_dialogue import answer, conversation_request, usable_reply
+from habi_worker.coach_dialogue import answer, conversation_request, prepare_conversation, usable_reply
 from habi_worker.shared_ai import SharedAIError, SERVICE_MODELS
 
 class CoachDialogueTests(unittest.TestCase):
@@ -28,7 +28,7 @@ class CoachDialogueTests(unittest.TestCase):
             with self.assertRaises(SharedAIError):answer(self.config,self.context)
         self.assertEqual(api.call_count,2)
     def test_author_preferences_and_other_thread_updates_are_available_as_attributed_context(self):
-        self.context["messageHistory"]=[{"id":"old","at":"2026-10-28T08:00:00Z","text":"Rövid válaszokat szeretnék.","acts":["feedback"]}]
+        self.add_source("preference", "conversation_note", "Rövid válaszokat szeretnék.", "Felhasználói preference · author")
         system,history=conversation_request(self.context)
         self.assertIn("Rövid válaszokat",system)
         self.assertEqual(history[0]["content"],"Hogy van Csaba?")
@@ -49,6 +49,79 @@ class CoachDialogueTests(unittest.TestCase):
             self.assertEqual(api.call_args.args[0].shared_ai_model, "auto")
         finally:
             SERVICE_MODELS.pop(self.config.shared_ai_origin, None)
+
+    def add_source(self, identifier, kind, text, title="Játékos beszámolója"):
+        ref = {"id": identifier, "revision": 1, "span": None}
+        self.context["sourceManifest"].append(ref)
+        self.context["sourceSnapshots"].append({**ref, "kind": kind, "text": text, "title": title,
+                                                "at": "2026-10-27T09:00:00Z", "role": "coach"})
+        return ref
+
+    def test_preferences_do_not_displace_player_evidence_and_only_supplied_sources_are_linked(self):
+        self.add_source("preference", "conversation_note", "Rövid válaszokat kérek.", "Felhasználói preference · author")
+        checkin = self.add_source("checkin", "checkin_results", "Hogyan aludtál? Keveset")
+        omitted = self.add_source("oversized", "record", "nincs fájdalma. " * 2000)
+        with patch("habi_worker.coach_dialogue.generate", return_value=({"text":"Evett már azóta?"}, "synthetic")) as api:
+            result = answer(self.config, self.context)
+        self.assertIn("Hogyan aludtál? Keveset", api.call_args.args[1])
+        self.assertIn("Rövid válaszokat kérek.", api.call_args.args[1])
+        self.assertIn(checkin, result["reply"]["sourceRefs"])
+        self.assertNotIn(omitted, result["reply"]["sourceRefs"])
+        self.assertNotIn("nincs fájdalma", api.call_args.args[1])
+
+    def test_budget_preserves_complete_records_and_complete_dialogue_pairs(self):
+        self.context["dialogue"] = [
+            {"question": "régi " * 400, "answer": "hosszú " * 400},
+            {"question": "Van fájdalma?", "answer": "Ezt még nem jelezted."},
+        ]
+        negative = "Nem fáj a lába, de ma nem edzett."
+        self.add_source("negative", "conversation_note", negative)
+        system, history, refs = prepare_conversation(self.context, 1800)
+        self.assertIn(negative, system)
+        self.assertEqual(history, [{"role":"user", "content":"Van fájdalma?"},
+                                   {"role":"assistant", "content":"Ezt még nem jelezted."}])
+        self.assertLessEqual(len(system) + len(self.context["question"]) + sum(len(m["content"]) for m in history), 1800)
+
+    def test_retired_or_unpinned_record_never_reaches_prompt_or_reply_links(self):
+        stale = self.add_source("stale", "retired_conversation_note", "A reggeli maradt ki.")
+        self.context["sourceSnapshots"].append({"id":"untrusted", "revision":1, "kind":"record", "text":"Nem hitelesített."})
+        system, _, refs = prepare_conversation(self.context)
+        self.assertNotIn("A reggeli", system)
+        self.assertNotIn("Nem hitelesített", system)
+        self.assertNotIn(stale, refs)
+
+    def test_previous_question_remains_attributed_message_not_a_player_fact(self):
+        old = self.add_source("coach-message-previous", "conversation_message", "Mi segített neki múltkor?", "Korábbi saját kérdés")
+        system, _, refs = prepare_conversation(self.context)
+        self.assertIn("Mi segített neki múltkor?", system)
+        self.assertIn('"kind":"conversation_message"', system)
+        self.assertIn(old, refs)
+
+    def test_omitted_evidence_cannot_authorize_a_numeric_claim(self):
+        self.add_source("oversized", "record", "42 perce evett. " * 2000)
+        with patch("habi_worker.coach_dialogue.generate", return_value=({"text":"42 perce evett."}, "synthetic")):
+            with self.assertRaises(SharedAIError):
+                answer(self.config, self.context)
+
+    def test_long_recycled_answer_with_swapped_nouns_is_not_a_new_reply(self):
+        self.context["dialogue"] = [{"question":"Mi változott?", "answer":
+            "Szívesen segítek. A reggelizés fontos, és ha valaki elfelejtik, akkor általában jobb érezni. Ha szeretnéd, szívesen javasolhatok egy gyakorlatot is, hogy segítsen neki a reggelizés és az érzések javításában."}]
+        recycled = "Szívesen segítek. A vacsora elveszítése is fontos, és ha valaki nem tudja megfelelően táplálni, általában jobb érezni. Ha szeretnéd, szívesen javasolhatok egy gyakorlatot is, hogy segítsen neki a táplálkozás és az érzések javításában."
+        self.assertFalse(usable_reply(recycled, self.context))
+        self.assertTrue(usable_reply("Értem a javítást. Most hogy érzi magát?", self.context))
+
+    def test_fragments_are_retried_and_cannot_be_marked_as_complete(self):
+        for fragment in ("Csaba", "Csaba, a vacsora", "A javulás azért", "Teszt Csaba."):
+            self.assertFalse(usable_reply(fragment, self.context))
+        with patch("habi_worker.coach_dialogue.generate", return_value=({"text":"Csaba, a vacsora"}, "synthetic")) as api:
+            with self.assertRaises(SharedAIError):
+                answer(self.config, self.context)
+        self.assertEqual(api.call_count, 2)
+
+    def test_oversized_current_message_is_never_silently_shortened(self):
+        self.context["question"] = "Nem fáj. " * 2000
+        with self.assertRaisesRegex(SharedAIError, "INPUT_TOO_LARGE"):
+            prepare_conversation(self.context, 2000)
 
     def test_provider_failure_is_not_disguised_as_a_completed_summary(self):
         with patch("habi_worker.coach_dialogue.generate",side_effect=SharedAIError("SHARED_AI_MAINTENANCE")):

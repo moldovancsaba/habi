@@ -114,6 +114,7 @@ def validate_service(config):
     model = next((m for m in catalog["models"] if m.get("id")==selected_model), {})
     profile = model.get("rankings", {}).get("text_chat", {}).get("profile", {})
     SERVICE_OUTPUT_LIMITS[(config.shared_ai_origin,config.shared_ai_model)] = min(max(int(profile.get("max_output_tokens",512)),128),2048)
+    SERVICE_CONTEXT_LIMITS[(config.shared_ai_origin, config.shared_ai_model)] = int(profile.get("num_ctx", 2048))
     if config.shared_ai_model != "auto":
         available = catalog["jobTypes"]["text_chat"].get("available_models", [])
         permitted = config.shared_ai_model in available

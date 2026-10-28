@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from habi_worker.shared_ai import _request, _Retryable, SharedAICancelled, SharedAIError, _json_answer, SERVICE_OUTPUT_LIMITS, generate, validate_service
+from habi_worker.shared_ai import _request, _Retryable, SharedAICancelled, SharedAIError, _json_answer, SERVICE_OUTPUT_LIMITS, SERVICE_CONTEXT_LIMITS, generate, validate_service
 
 
 class SharedAIHandler(BaseHTTPRequestHandler):
@@ -32,7 +32,7 @@ class SharedAIHandler(BaseHTTPRequestHandler):
         if self.path == "/v1/job-types":
             return self._send(200, {"job_types": {"text_chat": {"model":"granite4:1b-h","available_models": ["granite4:1b-h"]}}})
         if self.path == "/v1/models":
-            return self._send(200, {"data": [{"id": "granite4:1b-h", "rankings":{"text_chat":{"profile":{"max_output_tokens":self.output_limit}}}}]})
+            return self._send(200, {"data": [{"id": "granite4:1b-h", "rankings":{"text_chat":{"profile":{"max_output_tokens":self.output_limit, "num_ctx":4096}}}}]})
         if self.phases:
             return self._send(200,{"status":self.phases.pop(0)})
         content=self.outputs.pop(0) if self.outputs else '{"claims":[],"unknowns":[]}'
@@ -146,6 +146,7 @@ class SharedAIClientTests(unittest.TestCase):
     def test_discovery_confirms_permitted_job_and_catalog(self):
         self.assertEqual(validate_service(self.config), {"task": "text_chat", "model": "auto"})
         self.assertEqual([item[1] for item in SharedAIHandler.requests], ["/v1/job-types", "/v1/models"])
+        self.assertEqual(SERVICE_CONTEXT_LIMITS[(self.config.shared_ai_origin, "auto")], 4096)
         self.assertTrue(all(item[2] == "Bearer " + self.config.shared_ai_key for item in SharedAIHandler.requests))
 
     def test_superseded_job_stops_polling_and_releases_the_worker(self):
