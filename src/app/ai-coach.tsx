@@ -42,6 +42,12 @@ type Turn = {
     unknowns: string[];
     clarifyingQuestions: string[];
   };
+  guidance?: {
+    claim: Claim;
+    unknowns: string[];
+    questions: string[];
+    asOfDate: string;
+  } | null;
   progress?: AnswerProgress;
   answerMode?: string;
   pendingReview: boolean;
@@ -219,6 +225,7 @@ function CoachPanel({
   context: CoachContext;
   onClose: () => void;
 }) {
+  const composer = useRef<HTMLTextAreaElement>(null);
   const dialog = useRef<HTMLDialogElement>(null),
     end = useRef<HTMLDivElement>(null);
   const base = `/api/v1/players/${encodeURIComponent(playerId)}`;
@@ -702,26 +709,106 @@ function CoachPanel({
                             </button>
                           </>
                         )}
-                      {turn.answer?.claims.map((claim) => (
-                        <div key={claim.id}>
-                          <p>{claim.text}</p>
-                          {sourcesList(claim.evidenceRefs)}
-                        </div>
-                      ))}
-                      {turn.answer?.unknowns.map((text) => (
-                        <p className={styles.muted} key={text}>
-                          {text}
-                        </p>
-                      ))}
-                      {turn.answer?.clarifyingQuestions.map((text) => (
-                        <button
-                          type="button"
-                          key={text}
-                          onClick={() => setQuestion(text)}
-                        >
-                          {text}
-                        </button>
-                      ))}
+                      {turn.answer &&
+                        (() => {
+                          const guidance = turn.guidance;
+                          const lead =
+                            guidance?.claim ??
+                            turn.answer.claims.find(
+                              (c) => c.kind === "general",
+                            ) ??
+                            turn.answer.claims[0];
+                          const evidence = turn.answer.claims.filter(
+                            (c) => c.id !== lead?.id && c.kind !== "inference",
+                          );
+                          const unknowns = [
+                            ...new Set([
+                              ...(guidance?.unknowns ?? []),
+                              ...turn.answer.unknowns,
+                            ]),
+                          ];
+                          const questions =
+                            guidance?.questions ??
+                            turn.answer.clarifyingQuestions;
+                          const fact = (claim: Claim) => (
+                            <div key={claim.id}>
+                              {claim.kind === "inference" && (
+                                <strong>Személyes következtetés</strong>
+                              )}
+                              <p>{claim.text}</p>
+                              {claim.evidenceRefs.map((ref) => {
+                                const source = turn.sources.find(
+                                  (item) =>
+                                    item.id === ref.id &&
+                                    item.revision === ref.revision,
+                                );
+                                return source?.at ? (
+                                  <p className={styles.muted} key={ref.id}>
+                                    {source.title} ·{" "}
+                                    {new Date(source.at).toLocaleString(
+                                      "hu-HU",
+                                      { timeZone: "Europe/Budapest" },
+                                    )}{" "}
+                                    · {source.role}
+                                  </p>
+                                ) : null;
+                              })}
+                              {sourcesList(claim.evidenceRefs)}
+                            </div>
+                          );
+                          return (
+                            <>
+                              {lead && (
+                                <div className={styles.answerLead}>
+                                  <h3>A rövid válasz</h3>
+                                  {fact(lead)}
+                                </div>
+                              )}
+                              {unknowns.map((text) => (
+                                <p className={styles.muted} key={text}>
+                                  {text}
+                                </p>
+                              ))}
+                              {evidence.length > 0 && (
+                                <details className={styles.evidence}>
+                                  <summary>
+                                    Mi alapján? · {evidence.length} kapcsolódó
+                                    adat
+                                  </summary>
+                                  {evidence.map(fact)}
+                                </details>
+                              )}
+                              {turn.answer.claims
+                                .filter(
+                                  (c) =>
+                                    c.kind === "inference" && c.id !== lead?.id,
+                                )
+                                .map(fact)}
+                              {questions.length > 0 && (
+                                <div className={styles.followup}>
+                                  <strong>Hogy pontosabban segíthessek:</strong>
+                                  <ul>
+                                    {questions.map((text) => (
+                                      <li key={text}>{text}</li>
+                                    ))}
+                                  </ul>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      composer.current?.focus();
+                                      composer.current?.scrollIntoView({
+                                        block: "center",
+                                        behavior: "smooth",
+                                      });
+                                    }}
+                                  >
+                                    Válaszolok
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       {turn.pendingReview && (
                         <div className={styles.notice}>
                           <p>
@@ -777,6 +864,7 @@ function CoachPanel({
             >
               <label htmlFor="coach-question">Kérdezz a Habi AI-edzőtől</label>
               <textarea
+                ref={composer}
                 id="coach-question"
                 value={question}
                 maxLength={2000}

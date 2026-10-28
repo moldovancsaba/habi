@@ -100,6 +100,23 @@ class InterpretationEvidenceTests(unittest.TestCase):
         self.context.update(coachMode=True,viewerRole="coach",opening="Állapotjelzés",dialogue=[])
         self.context["sourceSnapshots"]=[{"id":"checkin-1","revision":1,"kind":"checkin_results","text":"Hogyan aludtál? Keveset","at":"2026-10-28T07:00:00Z","role":"player"}]
 
+    def test_attendance_guidance_answers_without_model_and_keeps_pinned_evidence(self):
+        self.coach_context()
+        ref = {"id": "habi-guidance-training-attendance", "revision": 1, "span": None}
+        self.context["sourceManifest"].append(ref)
+        self.context["sourceSnapshots"].append({**ref, "kind": "authored_content", "text": "Feltételes útmutatás."})
+        claim = {"id": "attendance-guidance-v1", "text": "Feltételes útmutatás.", "kind": "general", "evidenceRefs": [ref], "review": None}
+        self.context["guidance"] = {"claim": claim, "unknowns": ["A mai közérzet nem ismert."], "questions": ["Hogy vagy ma?"], "asOfDate": "2026-10-28", "hasCurrentCheckin": False}
+        with patch("habi_worker.service_runtime._request_json") as local, patch("habi_worker.service_runtime.shared_ai_generate") as hosted:
+            result = _answer_for_context(self.config, self.context)
+        local.assert_not_called()
+        hosted.assert_not_called()
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["claims"][0], claim)
+        self.assertEqual(result["manifest"]["modelArtifact"], "habi-guidance@1")
+        self.assertEqual(result["clarifyingQuestions"], ["Hogy vagy ma?"])
+        self.assertTrue(any(c["kind"] == "direct" for c in result["claims"]))
+
     def test_compact_source_keys_restore_exact_pinned_citations(self):
         self.coach_context()
         result,prompt=self.answer([{"text":"A játékos kevés alvásról számolt be.","kind":"direct","sources":["S1"],"quote":"Hogyan aludtál? Keveset"}])

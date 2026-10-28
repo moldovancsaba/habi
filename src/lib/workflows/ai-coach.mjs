@@ -21,6 +21,12 @@ import assessments from "../content/coach-assessments-v1.json" with {
   type: "json",
 };
 
+import {
+  isTrainingAttendanceQuestion,
+  trainingGuidanceSource,
+  coachQuestionGuidance,
+} from "./coach-guidance.mjs";
+
 function metricFromQuestion(question) {
   const matches = [
     ["sleep", /alv|pihen/i],
@@ -33,6 +39,7 @@ function metricFromQuestion(question) {
 }
 function authoredSources() {
   return [
+    trainingGuidanceSource(),
     ...Object.keys(coachPages).map((page) =>
       contentSource({ kind: "page", page }),
     ),
@@ -202,6 +209,8 @@ export async function startCoachTurn({
     anchor,
     10,
   );
+  if (isTrainingAttendanceQuestion(question))
+    relevant.unshift(trainingGuidanceSource());
   const helpMetric = metricFromQuestion(question);
   if (helpMetric) {
     const help = contentSource({
@@ -579,6 +588,14 @@ export async function readCoachThread({
           : turn.status,
       sourceState: current ? "current" : "withdrawn",
       failureReason: job?.reasonCode ?? null,
+      guidance: current
+        ? coachQuestionGuidance({
+            question: turn.question,
+            role: principal.role,
+            sources: available,
+            now: new Date(),
+          })
+        : null,
       progress: coachJobProgress(
         job,
         turn,
@@ -590,7 +607,9 @@ export async function readCoachThread({
       answerMode:
         turn.answer?.manifest.modelArtifact === "habi-source-summary@1"
           ? "source_summary"
-          : "model",
+          : turn.answer?.manifest.modelArtifact === "habi-guidance@1"
+            ? "guidance"
+            : "model",
       pendingReview:
         !!turn.answer?.claims.some((c) => c.kind === "inference") &&
         !["approved", "rejected"].includes(turn.reviewState),
@@ -688,7 +707,18 @@ export async function coachWorkerContext({
     ? contentSource({ kind: "metric", id: focusMetric, metric: focusMetric })
         ?.title
     : null;
+  const guidance = turn.sourceRefs.some(
+    (r) => r.id === trainingGuidanceSource().id,
+  )
+    ? coachQuestionGuidance({
+        question: turn.question,
+        role: principal.role,
+        sources: snapshots,
+        now,
+      })
+    : null;
   return {
+    ...(guidance ? { guidance } : {}),
     coachMode: true,
     viewerRole: principal.role,
     jobId: job.id,

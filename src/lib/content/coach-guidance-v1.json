@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "checkedAt": "2026-10-28",
+  "training-attendance": {
+    "title": "Döntés a mai edzésről",
+    "player": "Ha ma a megszokott módon jól vagy és nincs új panaszod, az edződdel megbeszélt programot vedd alapul. Ha fáj valamid, beteg vagy vagy rosszul vagy, előbb egyeztess vele, és ne erőltesd az edzést. Egy korábbi jó közérzetről szóló jegyzet önmagában nem dönti el a mai részvételt.",
+    "other": "Előbb a kiválasztott játékos mai állapotát tisztázzátok. Ha ma panaszmentes, az edzővel megbeszélt program az irányadó; új fájdalom, rosszullét vagy betegség esetén előbb egyeztessetek. Egy korábbi jó közérzetről szóló jegyzet vagy egyetlen figyelemválasz nem dönti el a mai részvételt.",
+    "selfInOtherRole": "Ha a saját edzésedről kérdezel: a mai közérzeted és az edzővel megbeszélt program alapján dönts. Ha fáj valamid, beteg vagy vagy rosszul vagy, előbb egyeztess, és ne erőltesd az edzést. A kiválasztott játékos korábbi adatait nem tekintem automatikusan a te mai állapotodnak.",
+    "boundary": "Ez feltételes döntési segítség, nem egészségügyi alkalmasság, diagnózis vagy személyre szabott edzésterhelési előírás. A mai közérzetet, új panaszokat és a megbeszélt programot külön kell tisztázni. Egy rekord szövegében szereplő „ma” a rekord eredeti dátumához tartozik.",
+    "sources": [
+      {
+        "title": "Victorian Government · Exercise safety",
+        "url": "https://www.betterhealth.vic.gov.au/health/healthyliving/exercise-safety"
+      },
+      {
+        "title": "Newcastle Hospitals NHS · Exercise and your health",
+        "url": "https://www.newcastle-hospitals.nhs.uk/services/newcastle-occupational-health-service/information-for-staff/physiotherapy/self-help-leaflets/exercise-and-your-health-a-guide-to-getting-started/"
+      }
+    ]
+  }
+}

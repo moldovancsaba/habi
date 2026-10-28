@@ -661,4 +661,56 @@ test("contextual coach persists private dialogue, refreshes memory and validates
       assert.equal(detail.items[0].progress.phase, "failed");
     },
   );
+  await t.test(
+    "attendance guide is version-pinned, delivered to worker and leaves stored answers unchanged",
+    async () => {
+      const started = await startCoachTurn({
+        ...args,
+        request: request("/ai-coach", {
+          threadId: null,
+          question: "menjek ma edzésre?",
+          context,
+          expectedRevision: 0,
+        }),
+      });
+      const job = await claim();
+      assert.equal(job.jobId, started.jobId);
+      const ctx = await workerContext(job);
+      assert.ok(ctx.guidance);
+      assert.equal(ctx.guidance.claim.kind, "general");
+      assert.ok(
+        ctx.sourceManifest.some(
+          (ref) =>
+            ref.id === "habi-guidance-training-attendance" &&
+            ref.revision === 1,
+        ),
+      );
+      await verifyCoachSources(
+        db,
+        player,
+        player.playerId,
+        ctx.guidance.claim.evidenceRefs,
+      );
+      await complete(job, ctx);
+      const before = await db
+        .collection("habi_coach_turns")
+        .findOne({ id: started.turnId });
+      // Simulate a historical result that predates the guide; reading adds current
+      // authored help without changing the historical answer or its manifest.
+      await db.collection("habi_coach_turns").updateOne(
+        { id: started.turnId },
+        {
+          $pull: { sourceRefs: { id: "habi-guidance-training-attendance" } },
+        },
+      );
+      const read = await readCoachThread({ ...args, id: started.threadId });
+      assert.ok(read.items[0].guidance);
+      assert.match(read.items[0].guidance.claim.text, /Ha ma/);
+      const after = await db
+        .collection("habi_coach_turns")
+        .findOne({ id: started.turnId });
+      assert.deepEqual(after.answer, before.answer);
+      assert.deepEqual(after.answer.manifest, before.answer.manifest);
+    },
+  );
 });

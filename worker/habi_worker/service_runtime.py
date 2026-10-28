@@ -143,6 +143,20 @@ def _answer_for_context(config, context, cancelled=None, on_progress=None):
     if context.get("coachMode"):
         if hashlib.sha256(system_prompt.encode("utf-8")).hexdigest() != manifest["promptHash"]:
             raise WorkerDependencyError("WORKER_PROMPT_UNAVAILABLE")
+        if context.get("guidance"):
+            guidance = context["guidance"]
+            facts = [
+                claim for claim in source_summary(context, "GUIDANCE_EVIDENCE")["claims"]
+                if claim["kind"] == "direct"
+            ][:2]
+            return {
+                "status": "ready", "questionRevision": context["turnRevision"],
+                "claims": [guidance["claim"]] + facts,
+                "attributions": ["Verziózott Habi-útmutatás, a kérdéshez kapcsolódó adatokkal."],
+                "unknowns": guidance["unknowns"], "clarifyingQuestions": guidance["questions"],
+                "suggestedAction": None, "validity": "current",
+                "manifest": {**manifest, "modelArtifact": "habi-guidance@1"},
+            }
         snapshots = [{"key":"S"+str(i+1),"title":s.get("title",""),"kind":s.get("kind",""),"at":s.get("at",""),"role":s.get("role",""),"text":s.get("text","")} for i,s in enumerate(context["sourceSnapshots"])]
         dialogue_items = context.get("dialogue", [])[-4:]
         opening = context.get("opening", "")[:300]

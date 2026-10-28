@@ -287,3 +287,42 @@
   font-weight: 700;
   color: #2853a7;
 }
+
+.completedProgress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 12px 0;
+  font-size: 12px;
+  color: #5b6f8d;
+}
+.completedProgress strong {
+  color: #166647;
+}
+.answerLead {
+  margin: 18px 0;
+}
+.answerLead h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+.evidence {
+  border-top: 1px solid #d7e2f4;
+  padding: 14px 0;
+  margin: 16px 0;
+}
+.evidence summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 32px;
+}
+.followup {
+  padding: 14px;
+  border-radius: 14px;
+  background: #f2f7ff;
+  margin-top: 16px;
+}
+.followup li {
+  line-height: 1.65;
+  margin-block: 6px;
+}

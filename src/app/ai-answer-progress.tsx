@@ -57,6 +57,13 @@ export default function AiAnswerProgress({
     started = Date.parse(progress.submittedAt),
     elapsed = (finished ? last : now) - started,
     position = positions[progress.phase] ?? 0;
+  if (progress.phase === "completed")
+    return (
+      <div className={styles.completedProgress} role="status">
+        <strong>A válasz elkészült.</strong>
+        <span>Feldolgozási idő: {duration(elapsed)}</span>
+      </div>
+    );
   return (
     <section
       className={styles.progressPanel}

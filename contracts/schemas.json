@@ -9222,6 +9222,9 @@
         "deadline": {
           "type": "string",
           "maxLength": 40
+        },
+        "guidance": {
+          "$ref": "#/$defs/CoachGuidance"
         }
       },
       "required": [
@@ -9238,6 +9241,45 @@
         "dialogue",
         "opening",
         "deadline"
+      ],
+      "additionalProperties": false
+    },
+    "CoachGuidance": {
+      "type": "object",
+      "properties": {
+        "claim": {
+          "$ref": "#/$defs/Claim"
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "maxItems": 5
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 5
+        },
+        "asOfDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "hasCurrentCheckin": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "claim",
+        "unknowns",
+        "questions",
+        "asOfDate",
+        "hasCurrentCheckin"
       ],
       "additionalProperties": false
     }
