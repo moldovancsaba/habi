@@ -1,7 +1,19 @@
 "use client";
 import { AiCoachButton } from "./ai-coach";
+import styles from "./metro-timeline.module.css";
+import {
+  buildMetroGeometry,
+  metroLaneCounts,
+} from "../lib/client/metro-geometry.mjs";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import instrument from "../../contracts/instrument.json" with { type: "json" };
 import { createSavedConversationExport } from "../lib/workflows/guided-conversations.mjs";
 
@@ -49,13 +61,6 @@ type Branch = {
   open: boolean;
 };
 type Route = { id: string; role: HabiRole; d: string };
-type Marker = {
-  id: string;
-  x: number;
-  y: number;
-  role: HabiRole;
-  open: boolean;
-};
 type Station = {
   id: string;
   x: number;
@@ -67,7 +72,7 @@ type Geometry = {
   height: number;
   axis: number;
   routes: Route[];
-  markers: Marker[];
+  connectors: Route[];
   stations: Station[];
 };
 
@@ -103,44 +108,6 @@ const labels: Record<string, string> = {
   publication: "Megosztás",
   follow_up: "Utánkövetés",
 };
-
-function routePath(points: Array<[number, number]>, radius: number) {
-  const n = (value: number) => Number(value.toFixed(3));
-  const commands: string[] = [];
-  for (let i = 0; i < points.length; i += 1) {
-    const [x, y] = points[i];
-    if (i === 0) {
-      commands.push(`M${n(x)},${n(y)}`);
-      continue;
-    }
-    const previous = points[i - 1];
-    const next = points[i + 1];
-    if (next) {
-      const a = Math.abs(x - previous[0]) + Math.abs(y - previous[1]);
-      const b = Math.abs(next[0] - x) + Math.abs(next[1] - y);
-      const turn =
-        (x - previous[0]) * (next[1] - y) !== (y - previous[1]) * (next[0] - x);
-      const r = turn ? Math.max(0, Math.min(radius, a / 2, b / 2)) : 0;
-      if (r) {
-        const entry: [number, number] = [
-          x - Math.sign(x - previous[0]) * r,
-          y - Math.sign(y - previous[1]) * r,
-        ];
-        const exit: [number, number] = [
-          x + Math.sign(next[0] - x) * r,
-          y + Math.sign(next[1] - y) * r,
-        ];
-        commands.push(
-          entry[0] === previous[0] ? `V${n(entry[1])}` : `H${n(entry[0])}`,
-          `Q${n(x)},${n(y)} ${n(exit[0])},${n(exit[1])}`,
-        );
-        continue;
-      }
-    }
-    commands.push(x === previous[0] ? `V${n(y)}` : `H${n(x)}`);
-  }
-  return commands.join(" ");
-}
 
 function makeBranches(page: TimelinePage, events: TimelineNode[]) {
   const parents = new Map<string, string>();
@@ -283,13 +250,13 @@ export default function MetroTimeline({
   onLoadMore?: () => void;
   loadingMore?: boolean;
 }) {
-  const root = useRef<HTMLElement>(null);
+  const root = useRef<HTMLDivElement>(null);
   const [geometry, setGeometry] = useState<Geometry>({
     width: 0,
     height: 0,
     axis: 0,
     routes: [],
-    markers: [],
+    connectors: [],
     stations: [],
   });
   const [openIds, setOpenIds] = useState<Set<string>>(() => new Set());
@@ -317,7 +284,7 @@ export default function MetroTimeline({
         height: 0,
         axis: 0,
         routes: [],
-        markers: [],
+        connectors: [],
         stations: [],
       });
       return;
@@ -326,7 +293,9 @@ export default function MetroTimeline({
     const spine = host.querySelector<HTMLElement>(".story-spine");
     const rail = host.querySelector<HTMLElement>(".story-rail-end");
     if (!bounds.width || !bounds.height || !spine || !rail) return;
-    const css = getComputedStyle(host);
+    const list = host.querySelector<HTMLElement>(".story-list");
+    if (!list) return;
+    const css = getComputedStyle(list);
     const token = (name: string) =>
       Number.parseFloat(css.getPropertyValue(name)) || 0;
     const axis = spine.getBoundingClientRect().left - bounds.left;
@@ -336,112 +305,43 @@ export default function MetroTimeline({
     const pitch = token("--story-pitch");
     const nodeSize = token("--metro-station-size");
     const radius = token("--story-corner");
-    const centers = events.map((event) => {
+    const anchors = events.map((event) => {
       const row = host.querySelector<HTMLElement>(
         `[data-event-id="${CSS.escape(event.id)}"]`,
       );
       const card = row?.querySelector<HTMLElement>(".story-card");
-      return card
-        ? card.getBoundingClientRect().top -
-            bounds.top +
-            Math.min(clearance, 24)
-        : 0;
-    });
-    const sides = {
-      left: Math.max(
-        0,
-        ...graph.branches
-          .filter((branch) => branch.role !== "coach")
-          .map((branch) => branch.sideLane + 1),
-      ),
-      right: Math.max(
-        0,
-        ...graph.branches
-          .filter((branch) => branch.role === "coach")
-          .map((branch) => branch.sideLane + 1),
-      ),
-    };
-    const branchX = (branch: Branch) => {
-      if (!desktop)
-        return (
-          axis +
-          Math.min(
-            pitch,
-            (railX - axis - nodeSize) / (graph.branches.length + 1),
-          ) *
-            (branch.lane + 1)
-        );
-      const side = branch.role === "coach" ? "right" : "left";
-      const step = Math.min(
-        pitch,
-        (Math.abs(railX - axis) - nodeSize) / (sides[side] + 1),
+      const badge = row?.querySelector<HTMLElement>(
+        ".event-header .role-badge",
       );
-      return axis + (side === "right" ? 1 : -1) * step * (branch.sideLane + 1);
-    };
-    const routes: Route[] = [];
-    const markers: Marker[] = [];
-    const stations: Station[] = [];
-    if (centers.length)
-      routes.push({
-        id: "main",
-        role: "player",
-        d: `M${axis.toFixed(3)},${(centers[0] - clearance).toFixed(3)} V${((centers.at(-1) ?? 0) + clearance).toFixed(3)}`,
-      });
-    for (const branch of graph.branches) {
-      const x = branchX(branch);
-      const top = centers[branch.first] - clearance;
-      const bottom = centers[branch.last] + clearance;
-      const topOpen = branch.open;
-      const bottomOpen =
-        page.nextCursor !== null && branch.last === events.length - 1;
-      const points: Array<[number, number]> = topOpen
-        ? [
-            [x, top],
-            [x, bottom],
-          ]
-        : [
-            [axis, top],
-            [x, top],
-            [x, bottom],
-          ];
-      if (!bottomOpen) points.push([axis, bottom]);
-      routes.push({
-        id: branch.id,
-        role: branch.role,
-        d: routePath(points, radius),
-      });
-      markers.push({
-        id: `${branch.id}:top`,
-        x: topOpen ? x : axis,
-        y: top,
-        role: branch.role,
-        open: topOpen,
-      });
-      markers.push({
-        id: `${branch.id}:bottom`,
-        x: bottomOpen ? x : axis,
-        y: bottom,
-        role: branch.role,
-        open: bottomOpen,
-      });
-      for (const index of branch.indices) {
-        const event = events[index];
-        stations.push({
-          id: event.id,
-          x,
-          y: centers[index],
-          role: event.actorRole,
-        });
-      }
-    }
-    setGeometry({
-      width: bounds.width,
-      height: bounds.height,
-      axis,
-      routes,
-      markers,
-      stations,
+      if (!card || !badge) return null;
+      const cardBounds = card.getBoundingClientRect(),
+        badgeBounds = badge.getBoundingClientRect();
+      return {
+        y: badgeBounds.top + badgeBounds.height / 2 - bounds.top,
+        edgeX:
+          (desktop && row?.dataset.side === "left"
+            ? cardBounds.right
+            : cardBounds.left) - bounds.left,
+      };
     });
+    if (anchors.some((anchor) => !anchor)) return;
+    setGeometry(
+      buildMetroGeometry({
+        page,
+        events,
+        branches: graph.branches,
+        anchors,
+        width: bounds.width,
+        height: bounds.height,
+        axis,
+        railX,
+        desktop,
+        clearance,
+        pitch,
+        nodeSize,
+        radius,
+      }),
+    );
   }, [events, graph, page]);
 
   useEffect(() => {
@@ -457,9 +357,16 @@ export default function MetroTimeline({
         ? new ResizeObserver(schedule)
         : null;
     observer?.observe(host);
+    for (const card of host.querySelectorAll(".story-card"))
+      observer?.observe(card);
+    let alive = true;
+    void document.fonts?.ready.then(() => {
+      if (alive) schedule();
+    });
     window.addEventListener("resize", schedule);
     schedule();
     return () => {
+      alive = false;
       cancelAnimationFrame(frame);
       observer?.disconnect();
       window.removeEventListener("resize", schedule);
@@ -480,208 +387,222 @@ export default function MetroTimeline({
       </div>
     );
 
+  const lanes = metroLaneCounts(graph?.branches ?? []);
   return (
     <section
-      ref={root}
-      className={`story-network${compact ? " story-compact" : ""}`}
+      className={`story-viewport ${styles.viewport}`}
       aria-label={`${playerName} idővonala`}
     >
-      <span className="story-spine" aria-hidden="true" />
-      <span className="story-rail-end" aria-hidden="true" />
-      <svg
-        className="story-routes"
-        viewBox={`0 0 ${geometry.width} ${geometry.height}`}
-        aria-hidden="true"
-        focusable="false"
+      <div
+        ref={root}
+        className={`story-network${compact ? " story-compact" : ""}`}
+        style={
+          {
+            "--story-lanes": lanes.all,
+            "--story-side-lanes": Math.max(lanes.left, lanes.right),
+          } as CSSProperties
+        }
       >
-        <title>Összetartozó események és szerepkörök metróvonala</title>
-        <g>
-          {geometry.routes.map((route) => (
-            <path
-              key={route.id}
-              d={route.d}
-              className={
-                route.id === "main"
-                  ? "story-trunk"
-                  : `story-branch actor-${route.role}`
-              }
-            />
-          ))}
-          {geometry.markers.map((marker) => (
-            <circle
-              key={marker.id}
-              cx={marker.x}
-              cy={marker.y}
-              className={
-                marker.open
-                  ? `story-terminal actor-${marker.role}`
-                  : "story-junction"
-              }
-            />
-          ))}
-          {geometry.stations.map((station) => (
-            <circle
-              key={station.id}
-              cx={station.x}
-              cy={station.y}
-              className={`story-event-station actor-${station.role}`}
-            />
-          ))}
-        </g>
-      </svg>
-      <ol className="story-list">
-        {events.map((event) => {
-          const branch = graph?.byEvent.get(event.id);
-          const record = byResourceId.get(event.resourceRef.id);
-          const dateTime = new Date(event.submittedAt).toLocaleString("hu-HU", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          });
-          const title = labels[record?.kind ?? event.kind] ?? "Naplóesemény";
-          const summary =
-            event.summary?.trim() ||
-            record?.text?.trim() ||
-            (record?.answerCodes?.length ? "A napi válaszaid rögzítve." : "");
-          const isOpen = openIds.has(event.id);
-          return (
-            <li
-              key={event.id}
-              className={`story-row actor-${event.actorRole}`}
-              data-event-id={event.id}
-              data-side={branch?.role === "coach" ? "right" : "left"}
-            >
-              <h3 className="story-date">{dateTime}</h3>
-              <div className="story-card">
-                <article className="event-card">
-                  <AiCoachButton
-                    context={{
-                      kind:
-                        event.kind === "thread.message"
-                          ? "message"
-                          : event.kind.startsWith("interpretation.")
-                            ? "interpretation"
-                            : event.kind.startsWith("plan.") &&
-                                event.kind !== "plan.follow_up"
-                              ? "plan"
-                              : event.kind === "plan.follow_up"
-                                ? "record"
-                                : record?.answerCodes
-                                  ? "checkin_result"
-                                  : record?.text
+        <span className="story-spine" aria-hidden="true" />
+        <span className="story-rail-end" aria-hidden="true" />
+        <svg
+          className="story-routes"
+          viewBox={`0 0 ${geometry.width} ${geometry.height}`}
+          aria-hidden="true"
+          focusable="false"
+        >
+          <title>Összetartozó események és szerepkörök metróvonala</title>
+          <g>
+            {geometry.routes.map((route) => (
+              <path
+                key={route.id}
+                d={route.d}
+                className={
+                  route.id === "main"
+                    ? "story-trunk"
+                    : `story-branch actor-${route.role}`
+                }
+              />
+            ))}
+            {geometry.connectors.map((connector) => (
+              <path
+                key={`link-${connector.id}`}
+                data-connector-id={connector.id}
+                d={connector.d}
+                className={`story-card-connector actor-${connector.role}`}
+              />
+            ))}
+            {geometry.stations.map((station) => (
+              <circle
+                key={station.id}
+                data-station-id={station.id}
+                cx={station.x}
+                cy={station.y}
+                className={`story-event-station actor-${station.role}`}
+              />
+            ))}
+          </g>
+        </svg>
+        <ol className="story-list">
+          {events.map((event) => {
+            const branch = graph?.byEvent.get(event.id);
+            const record = byResourceId.get(event.resourceRef.id);
+            const dateTime = new Date(event.submittedAt).toLocaleString(
+              "hu-HU",
+              {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                timeZone: "Europe/Budapest",
+              },
+            );
+            const title = labels[record?.kind ?? event.kind] ?? "Naplóesemény";
+            const summary =
+              event.summary?.trim() ||
+              record?.text?.trim() ||
+              (record?.answerCodes?.length ? "A napi válaszaid rögzítve." : "");
+            const isOpen = openIds.has(event.id);
+            return (
+              <li
+                key={event.id}
+                className={`story-row actor-${event.actorRole}`}
+                data-event-id={event.id}
+                data-side={branch?.role === "coach" ? "right" : "left"}
+              >
+                <h3 className="story-date">{dateTime}</h3>
+                <div className="story-card">
+                  <article className="event-card">
+                    <div className="event-meta event-header">
+                      <ActorBadge role={event.actorRole} />
+                      <span>{playerName}</span>
+                      <span className="sr-only">
+                        · játékosazonosító {playerId}
+                      </span>
+                      <AiCoachButton
+                        context={{
+                          kind:
+                            event.kind === "thread.message"
+                              ? "message"
+                              : event.kind.startsWith("interpretation.")
+                                ? "interpretation"
+                                : event.kind.startsWith("plan.") &&
+                                    event.kind !== "plan.follow_up"
+                                  ? "plan"
+                                  : event.kind === "plan.follow_up"
                                     ? "record"
-                                    : "page",
-                      id:
-                        event.kind === "thread.message" ||
-                        event.kind === "plan.follow_up" ||
-                        event.kind.startsWith("interpretation.") ||
-                        (event.kind.startsWith("plan.") &&
-                          event.kind !== "plan.follow_up")
-                          ? event.resourceRef.id
-                          : (record?.id ?? "timeline"),
-                      revision:
-                        record?.revision ?? event.resourceRef.revision ?? 1,
-                    }}
-                  />
-                  <div className="event-meta">
-                    <ActorBadge role={event.actorRole} />
-                    <span>{playerName}</span>
-                    <span className="sr-only">
-                      · játékosazonosító {playerId}
-                    </span>
-                  </div>
-                  <details
-                    id={`timeline-detail-${event.id}`}
-                    open={isOpen}
-                    onToggle={(toggleEvent) => {
-                      const nowOpen = toggleEvent.currentTarget.open;
-                      setOpenIds((current) =>
-                        current.has(event.id) === nowOpen
-                          ? current
-                          : new Set(
-                              nowOpen
-                                ? [...current, event.id]
-                                : [...current].filter((id) => id !== event.id),
-                            ),
-                      );
-                    }}
-                  >
-                    <summary className="event-preview">
-                      <strong>{title}</strong>
-                      <span>{summary}</span>
-                    </summary>
-                    <div className="event-details">
-                      {event.summary ? <p>{event.summary}</p> : null}
-                      {record?.text ? <p>{record.text}</p> : null}
-                      {record?.source && (
-                        <p className="event-meta">
-                          {record.source.kind === "proxy"
-                            ? "A játékos elmondása · más rögzítette"
-                            : record.source.kind === "self"
-                              ? "A játékos saját beszámolója"
-                              : "A rögzítő saját megfigyelése"}
-                        </p>
-                      )}
-                      {record && createSavedConversationExport(record) ? (
-                        <button
-                          type="button"
-                          className="secondary"
-                          onClick={() =>
-                            downloadTextFile(
-                              createSavedConversationExport(record) ?? "",
-                              "Habi-vezetett-beszelgetes.txt",
-                            )
-                          }
-                        >
-                          Beszélgetés letöltése
-                        </button>
-                      ) : null}
-                      {record?.answerCodes?.length ? (
-                        <dl className="event-checkin-answers">
-                          {record.answerCodes.map((answer) => {
-                            const display = checkinAnswerLabel(
-                              answer.metric,
-                              answer.code,
-                            );
-                            return (
-                              <div key={answer.metric}>
-                                <dt>{display.question}</dt>
-                                <dd>{display.answer}</dd>
-                              </div>
-                            );
-                          })}
-                        </dl>
-                      ) : null}
-                      <p className="event-meta">
-                        Rögzítette: {roleLabels[event.actorRole]} · {dateTime}
-                      </p>
+                                    : record?.answerCodes
+                                      ? "checkin_result"
+                                      : record?.text
+                                        ? "record"
+                                        : "page",
+                          id:
+                            event.kind === "thread.message" ||
+                            event.kind === "plan.follow_up" ||
+                            event.kind.startsWith("interpretation.") ||
+                            (event.kind.startsWith("plan.") &&
+                              event.kind !== "plan.follow_up")
+                              ? event.resourceRef.id
+                              : (record?.id ?? "timeline"),
+                          revision:
+                            record?.revision ?? event.resourceRef.revision ?? 1,
+                        }}
+                      />
                     </div>
-                  </details>
-                </article>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-      {page?.nextCursor && onLoadMore ? (
-        <div className="story-more">
-          <button
-            type="button"
-            className="secondary"
-            onClick={onLoadMore}
-            disabled={loadingMore}
-          >
-            {loadingMore
-              ? "Korábbi események betöltése…"
-              : "Korábbi események betöltése"}
-          </button>
-          {loadingMore && (
-            <span role="status">A napló folytatását töltjük.</span>
-          )}
-        </div>
-      ) : null}
+                    <details
+                      id={`timeline-detail-${event.id}`}
+                      open={isOpen}
+                      onToggle={(toggleEvent) => {
+                        const nowOpen = toggleEvent.currentTarget.open;
+                        setOpenIds((current) =>
+                          current.has(event.id) === nowOpen
+                            ? current
+                            : new Set(
+                                nowOpen
+                                  ? [...current, event.id]
+                                  : [...current].filter(
+                                      (id) => id !== event.id,
+                                    ),
+                              ),
+                        );
+                      }}
+                    >
+                      <summary className="event-preview">
+                        <strong>{title}</strong>
+                        <span>{summary}</span>
+                      </summary>
+                      <div className="event-details">
+                        {event.summary ? <p>{event.summary}</p> : null}
+                        {record?.text ? <p>{record.text}</p> : null}
+                        {record?.source && (
+                          <p className="event-meta">
+                            {record.source.kind === "proxy"
+                              ? "A játékos elmondása · más rögzítette"
+                              : record.source.kind === "self"
+                                ? "A játékos saját beszámolója"
+                                : "A rögzítő saját megfigyelése"}
+                          </p>
+                        )}
+                        {record && createSavedConversationExport(record) ? (
+                          <button
+                            type="button"
+                            className="secondary"
+                            onClick={() =>
+                              downloadTextFile(
+                                createSavedConversationExport(record) ?? "",
+                                "Habi-vezetett-beszelgetes.txt",
+                              )
+                            }
+                          >
+                            Beszélgetés letöltése
+                          </button>
+                        ) : null}
+                        {record?.answerCodes?.length ? (
+                          <dl className="event-checkin-answers">
+                            {record.answerCodes.map((answer) => {
+                              const display = checkinAnswerLabel(
+                                answer.metric,
+                                answer.code,
+                              );
+                              return (
+                                <div key={answer.metric}>
+                                  <dt>{display.question}</dt>
+                                  <dd>{display.answer}</dd>
+                                </div>
+                              );
+                            })}
+                          </dl>
+                        ) : null}
+                        <p className="event-meta">
+                          Rögzítette: {roleLabels[event.actorRole]} · {dateTime}
+                        </p>
+                      </div>
+                    </details>
+                  </article>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+        {page?.nextCursor && onLoadMore ? (
+          <div className="story-more">
+            <button
+              type="button"
+              className="secondary"
+              onClick={onLoadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore
+                ? "Korábbi események betöltése…"
+                : "Korábbi események betöltése"}
+            </button>
+            {loadingMore && (
+              <span role="status">A napló folytatását töltjük.</span>
+            )}
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }

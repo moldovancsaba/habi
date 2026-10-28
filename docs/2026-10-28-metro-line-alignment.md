@@ -1,0 +1,11 @@
+# Metro timeline alignment — 2026-10-28
+
+The timeline rail had stations offset from their event cards and compressed branches that appeared to overlap the trunk. Measurements used card-top padding even though an AI button had been inserted above the actor badge. Lane spacing was divided by the total branch count, so long sequential histories compressed lanes despite reusing them.
+
+Stations now follow the actual actor badge centre and connect horizontally to the measured card edge. The AI button sits in the event header. There is one station per event; decorative branch-end circles no longer look like extra events. Branch positions use concurrent lane counts. Rounded routes preserve measured endpoints. A generic older-page cursor no longer implies that an unrelated process continues; explicit per-process continuation metadata is respected.
+
+The layout uses the available timeline container width: a central rail with cards on either side when wide, a left rail when narrow. Dense overlapping branches reserve enough gutter space and can scroll inside the timeline instead of squeezing station spacing or widening the whole page. The native layout overrides are isolated in metro-timeline.module.css; the accepted, pinned prototype stylesheet is unchanged.
+
+Resize observation covers each card and the root, including simultaneous expansion/collapse where the total height stays the same. Font readiness and viewport/container resizing trigger measurement. Event ordering has an ID tie-breaker; displayed dates use Europe/Budapest.
+
+Verification: geometry regression cases cover a 100-event sequential history, overlapping lanes, opposite-side desktop routes, measured expanded-card anchors, rounded paths and process-specific continuation. Synthetic authenticated browser checks cover 390/800/1440-pixel widths, keyboard expansion, simultaneous card changes, font reflow, a narrow container inside a wide window, older-event loading and role filters. Every station and connector is checked against the actual badge centre and card edge; there are no browser errors or document-level horizontal overflow. All application tests, lint, typecheck and production build pass. No API, database or worker change is required.

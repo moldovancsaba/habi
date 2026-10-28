@@ -1,0 +1,101 @@
+/* Native timeline layout overrides; the accepted prototype CSS remains pinned. */
+.viewport {
+  container: habi-story / inline-size;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.viewport :global(.story-network.story-network) {
+  --story-layout: compact;
+  --story-rail-width: max(
+    64px,
+    calc(28px + (var(--story-lanes, 1) + 1) * 18px)
+  );
+  --story-pitch: 18px;
+  min-width: calc(var(--story-rail-width) + 192px);
+}
+.viewport :global(.story-network.story-network .story-spine) {
+  left: 14px;
+}
+.viewport :global(.story-network.story-network .story-rail-end) {
+  left: var(--story-rail-width);
+}
+.viewport :global(.story-network.story-network .story-row) {
+  grid-template-columns: var(--story-rail-width) minmax(0, 1fr);
+  column-gap: 12px;
+}
+.viewport
+  :global(.story-network.story-network .story-row[data-side] .story-card),
+.viewport
+  :global(.story-network.story-network .story-row[data-side] .story-date) {
+  grid-column: 2;
+}
+.viewport :global(.story-card .event-header) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 16px;
+}
+.viewport :global(.event-header .role-badge) {
+  margin: 0;
+}
+.viewport :global(.event-header > button) {
+  margin: 0 0 0 auto;
+}
+.viewport :global(.story-routes .story-card-connector) {
+  stroke: var(--actor, var(--teal));
+  stroke-width: 1.8px;
+  opacity: 0.7;
+}
+@container habi-story (min-width: 960px) {
+  .viewport :global(.story-network.story-network:not(.story-compact)) {
+    --story-layout: desktop;
+    --story-rail-width: max(
+      192px,
+      calc(40px + (var(--story-side-lanes, 1) + 1) * 64px)
+    );
+    --story-pitch: 32px;
+    min-width: calc(var(--story-rail-width) + 512px);
+  }
+  .viewport
+    :global(.story-network.story-network:not(.story-compact) .story-spine) {
+    left: 50%;
+  }
+  .viewport
+    :global(.story-network.story-network:not(.story-compact) .story-rail-end) {
+    left: calc(50% + var(--story-rail-width) / 2);
+  }
+  .viewport
+    :global(.story-network.story-network:not(.story-compact) .story-row) {
+    grid-template-columns: minmax(0, 1fr) var(--story-rail-width) minmax(0, 1fr);
+    column-gap: 16px;
+  }
+  .viewport
+    :global(
+      .story-network.story-network:not(.story-compact)
+        .story-row[data-side="left"]
+        .story-card
+    ),
+  .viewport
+    :global(
+      .story-network.story-network:not(.story-compact)
+        .story-row[data-side="left"]
+        .story-date
+    ) {
+    grid-column: 1;
+  }
+  .viewport
+    :global(
+      .story-network.story-network:not(.story-compact)
+        .story-row[data-side="right"]
+        .story-card
+    ),
+  .viewport
+    :global(
+      .story-network.story-network:not(.story-compact)
+        .story-row[data-side="right"]
+        .story-date
+    ) {
+    grid-column: 3;
+  }
+}
