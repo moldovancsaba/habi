@@ -1,3 +1,4 @@
+import { coachMessageHistory } from "../src/lib/workflows/coach-messages.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { MongoClient } from "mongodb";
@@ -788,6 +789,212 @@ test("contextual coach persists private dialogue, refreshes memory and validates
       assert.deepEqual(beforeRead.answer, afterRead.answer);
       await assert.rejects(
         readCoachThread({ ...args, principal: parent, id: threadId }),
+        { message: "NOT_FOUND" },
+      );
+    },
+  );
+  await t.test(
+    "maintenance preserves messages without consuming the normal retry budget",
+    async () => {
+      const started = await startCoachTurn({
+        ...args,
+        request: request("/ai-coach", {
+          threadId: null,
+          question: "Mi változott?",
+          context,
+          expectedRevision: 0,
+        }),
+      });
+      await db
+        .collection("jobs")
+        .updateOne({ id: started.jobId }, { $set: { attempts: 3 } });
+      const lease = await claim();
+      assert.equal(lease.jobId, started.jobId);
+      await deferWorkerJob({
+        client,
+        db,
+        worker,
+        id: lease.jobId,
+        now: new Date(now.getTime() + 20000),
+        request: new Request("http://localhost/defer", {
+          method: "POST",
+          headers: { "Idempotency-Key": randomUUID() },
+          body: JSON.stringify({
+            fence: lease.fence,
+            leaseToken: lease.leaseToken,
+            reasonCode: "AI_SERVICE_MAINTENANCE",
+          }),
+        }),
+      });
+      const job = await db.collection("jobs").findOne({ id: started.jobId });
+      assert.equal(job.status, "queued");
+      assert.equal(job.attempts, 3);
+      const detail = await readCoachThread({ ...args, id: started.threadId });
+      assert.equal(detail.items[0].progress.phase, "maintenance");
+      assert.equal(detail.items[0].answer, null);
+    },
+  );
+  await t.test(
+    "updates become private history and active memory, corrections supersede notes and forgetting excludes them",
+    async () => {
+      let time = 7000;
+      const sendMessage = async (
+        question,
+        threadId = null,
+        expectedRevision = 0,
+      ) =>
+        startCoachTurn({
+          ...args,
+          now: new Date(now.getTime() + time++),
+          request: request("/ai-coach", {
+            threadId,
+            question,
+            context,
+            expectedRevision,
+          }),
+        });
+      const finishMessage = async (created, text) => {
+        const job = await claim();
+        assert.equal(job.jobId, created.jobId);
+        const ctx = await workerContext(job);
+        assert.equal(ctx.dialogueVersion, 2);
+        assert.ok(
+          ctx.sourceManifest.some(
+            (r) => r.id === `coach-message-${created.turnId}`,
+          ),
+        );
+        const result = {
+          status: "ready",
+          questionRevision: ctx.turnRevision,
+          claims: [],
+          reply: { text, sourceRefs: ctx.sourceManifest },
+          unknowns: [],
+          clarifyingQuestions: [],
+          attributions: [],
+          suggestedAction: null,
+          validity: "current",
+          manifest: {
+            ...ctx.promptManifest,
+            modelArtifact: "synthetic-dialogue-model",
+          },
+        };
+        await complete(job, ctx, "general", ctx.sourceManifest, result);
+        return ctx;
+      };
+      const update = await sendMessage(
+        "jobb a közérzete, kiderült, hogy elfelejtett reggelizni",
+      );
+      await finishMessage(update, "Köszönöm a pontosítást. Evett már azóta?");
+      let history = await coachMessageHistory(args);
+      assert.equal(
+        history.items.find((m) => m.id === update.turnId).understanding.notes
+          .length,
+        2,
+      );
+      let profile = await getCoachProfile(args);
+      assert.ok(
+        profile.profile.facts.some((f) => f.text === "jobb a közérzete"),
+      );
+      const reopened = await sendMessage("Mit tudunk most?");
+      const reopenedCtx = await finishMessage(
+        reopened,
+        "A legújabb közlésed szerint javult a közérzete.",
+      );
+      assert.ok(
+        reopenedCtx.messageHistory.some((m) =>
+          m.text.includes("elfelejtett reggelizni"),
+        ),
+      );
+      assert.ok(
+        reopenedCtx.sourceSnapshots.some(
+          (m) =>
+            m.kind === "conversation_note" && m.text.includes("reggelizni"),
+        ),
+      );
+      const correction = await sendMessage(
+        "Pontosítás: nem a reggeli maradt ki, hanem a vacsora.",
+      );
+      await finishMessage(
+        correction,
+        "Köszönöm, a vacsorára vonatkozó pontosítást veszem figyelembe.",
+      );
+      profile = await getCoachProfile(args);
+      assert.ok(
+        !profile.sources.some(
+          (f) =>
+            f.kind === "conversation_note" &&
+            f.text === "kiderült, hogy elfelejtett reggelizni",
+        ),
+      );
+      assert.ok(
+        profile.sources.some(
+          (f) =>
+            f.kind === "conversation_note" && f.text === "jobb a közérzete",
+        ),
+      );
+      history = await coachMessageHistory(args);
+      assert.ok(
+        history.items.some((m) => m.text.includes("elfelejtett reggelizni")),
+      );
+      const feedback = await sendMessage(
+        "Rövidebb válaszokat szeretnék, ezt már elmondtam.",
+      );
+      await finishMessage(feedback, "Rendben, rövidebben válaszolok.");
+      profile = await getCoachProfile(args);
+      assert.ok(
+        profile.sources.some(
+          (f) =>
+            f.kind === "conversation_note" &&
+            f.title.includes("author") &&
+            f.text.includes("Rövidebb"),
+        ),
+      );
+      const ref = {
+        id: `coach-message-${update.turnId}`,
+        revision: 1,
+        span: null,
+      };
+      await writeCoachEvent({
+        ...args,
+        request: request("/ai-profile", {
+          kind: "forget",
+          targetId: ref.id,
+          text: "",
+          value: "",
+          sourceRefs: [ref],
+        }),
+      });
+      history = await coachMessageHistory(args);
+      assert.equal(
+        history.items.find((m) => m.id === update.turnId).ignored,
+        true,
+      );
+      profile = await getCoachProfile(args);
+      assert.ok(
+        !profile.sources.some(
+          (s) =>
+            !s.kind.startsWith("ignored_") &&
+            (s.id === ref.id ||
+              s.id.startsWith(`coach-note-${update.turnId}-`)),
+        ),
+      );
+      const parentHistory = await coachMessageHistory({
+        ...args,
+        principal: parent,
+      });
+      assert.ok(!parentHistory.items.some((m) => m.id === update.turnId));
+      await assert.rejects(
+        writeCoachEvent({
+          ...args,
+          principal: parent,
+          request: request("/ai-profile", {
+            kind: "forget",
+            targetId: ref.id,
+            text: "",
+            value: "",
+            sourceRefs: [ref],
+          }),
+        }),
         { message: "NOT_FOUND" },
       );
     },

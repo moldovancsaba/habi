@@ -15,6 +15,8 @@ MAX_RESPONSE_BYTES = 1_048_576
 MAX_JOB_SECONDS = 300
 POLL_SECONDS = 3
 SERVICE_OUTPUT_LIMITS = {}
+SERVICE_MODELS = {}
+SERVICE_CONTEXT_LIMITS = {}
 
 
 class SharedAIError(WorkerDependencyError):
@@ -28,6 +30,8 @@ class SharedAICancelled(SharedAIError):
 def _request(config, method, path, payload=None, idempotency_key=None, timeout=15):
     body = None if payload is None else json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     headers = {"Accept": "application/json", "Authorization": "Bearer " + config.shared_ai_key}
+    if getattr(config, "shared_ai_request_purpose", None) == "test":
+        headers["X-Request-Purpose"] = "test"
     if body is not None:
         headers["Content-Type"] = "application/json"
     if idempotency_key:
@@ -44,7 +48,12 @@ def _request(config, method, path, payload=None, idempotency_key=None, timeout=1
         if error.code == 429:
             raise _retryable("SHARED_AI_CAPACITY", retry_after) from error
         if error.code in (502, 503, 504):
-            raise _retryable("SHARED_AI_UNAVAILABLE", retry_after) from error
+            try:
+                payload = json.loads(error.read(4096))
+                maintenance = payload.get("error", {}).get("code") == "model_storage_maintenance"
+            except (ValueError, TypeError, AttributeError):
+                maintenance = False
+            raise _retryable("SHARED_AI_MAINTENANCE" if maintenance else "SHARED_AI_UNAVAILABLE", retry_after) from error
         if error.code == 404:
             raise SharedAIError("SHARED_AI_JOB_EXPIRED") from error
         if error.code in (401, 403):
@@ -94,6 +103,13 @@ def validate_service(config):
         catalog = _authorized_capabilities(config)
     except _Retryable as error:
         raise SharedAIError(error.code) from error
+    permitted_models = catalog["jobTypes"]["text_chat"].get("available_models", [])
+    SERVICE_MODELS[config.shared_ai_origin] = set(permitted_models)
+    for item in catalog["models"]:
+        profile = item.get("rankings", {}).get("text_chat", {}).get("profile", {})
+        if item.get("id") in permitted_models:
+            SERVICE_OUTPUT_LIMITS[(config.shared_ai_origin, item["id"])] = min(max(int(profile.get("max_output_tokens", 512)), 128), 2048)
+            SERVICE_CONTEXT_LIMITS[(config.shared_ai_origin, item["id"])] = int(profile.get("num_ctx", 2048))
     selected_model = catalog["jobTypes"]["text_chat"].get("model") if config.shared_ai_model == "auto" else config.shared_ai_model
     model = next((m for m in catalog["models"] if m.get("id")==selected_model), {})
     profile = model.get("rankings", {}).get("text_chat", {}).get("profile", {})
@@ -103,6 +119,9 @@ def validate_service(config):
         permitted = config.shared_ai_model in available
         if not permitted:
             raise SharedAIError("SHARED_AI_MODEL_NOT_PERMITTED")
+    dialogue_model = getattr(config, "shared_ai_dialogue_model", "auto")
+    if dialogue_model != "auto" and dialogue_model not in permitted_models:
+        raise SharedAIError("SHARED_AI_MODEL_NOT_PERMITTED")
     return {"task": "text_chat", "model": config.shared_ai_model}
 
 
@@ -140,6 +159,10 @@ def _json_answer(content, response_kind="claims"):
             generated, _ = json.JSONDecoder().raw_decode(text[start:])
         except json.JSONDecodeError as error:
             raise SharedAIError("SHARED_AI_RESULT_INVALID") from error
+    if response_kind == "object":
+        if not isinstance(generated, dict):
+            raise SharedAIError("SHARED_AI_RESULT_INVALID")
+        return generated
     if response_kind == "plain_text":
         if not isinstance(generated, dict) or not isinstance(generated.get("text"), str) or not generated["text"].strip():
             raise SharedAIError("SHARED_AI_RESULT_INVALID")
@@ -149,7 +172,7 @@ def _json_answer(content, response_kind="claims"):
     return generated
 
 
-def generate(config, system_prompt, user_prompt, revision_key, should_cancel=None, on_progress=None, response_kind="claims"):
+def generate(config, system_prompt, user_prompt, revision_key, should_cancel=None, on_progress=None, response_kind="claims", history=None):
     """Run a bounded async request and retry malformed/truncated output once with more room."""
     deadline = time.monotonic() + MAX_JOB_SECONDS
     maximum=SERVICE_OUTPUT_LIMITS.get((config.shared_ai_origin,config.shared_ai_model),512)
@@ -159,11 +182,15 @@ def generate(config, system_prompt, user_prompt, revision_key, should_cancel=Non
         if on_progress:
             on_progress("repairing" if output_attempt else "provider_queued")
         repair = ("\nAdj teljes JSON objektumot egyetlen text mezővel. Ne használj Markdown-kódblokkot." if response_kind == "plain_text" else "\nAdj teljes, érvényes JSON objektumot, legfeljebb két rövid állítással. Ne használj Markdown-kódblokkot.") if output_attempt else ""
+        if response_kind == "conversation" and output_attempt:
+            repair = "\nPlease give one complete concise reply to this latest message."
         request_body = {
             "task": "text_chat", "model": config.shared_ai_model,
-            "input": {"messages": [{"role":"system", "content":system_prompt}, {"role":"user", "content":user_prompt + repair}],
+            "input": {"messages": [{"role":"system", "content":system_prompt}] + (history or []) + [{"role":"user", "content":user_prompt + repair}],
                       "response_format":{"type":"json_object"}, "max_tokens":token_limit, "reasoning_effort":"none"},
         }
+        if response_kind == "conversation":
+            request_body["input"].pop("response_format", None)
         encoded = json.dumps(request_body, ensure_ascii=False, separators=(",", ":"))
         if len(encoded) > MAX_REQUEST_CHARS:
             raise SharedAIError("SHARED_AI_INPUT_TOO_LARGE")
@@ -194,7 +221,16 @@ def generate(config, system_prompt, user_prompt, revision_key, should_cancel=Non
                 try:
                     if not isinstance(content, str) or not isinstance(actual_model, str) or not actual_model:
                         raise SharedAIError("SHARED_AI_RESULT_INVALID")
-                    generated = _json_answer(content, response_kind)
+                    if response_kind == "conversation":
+                        if choice.get("finish_reason") == "length" or not content.strip():
+                            raise SharedAIError("SHARED_AI_RESULT_INVALID")
+                        try:
+                            decoded = json.loads(content)
+                            generated = decoded if isinstance(decoded, dict) and isinstance(decoded.get("text"), str) else {"text": content.strip()}
+                        except ValueError:
+                            generated = {"text": content.strip()}
+                    else:
+                        generated = _json_answer(content, response_kind)
                 except SharedAIError:
                     # Log only structural metadata, never a prompt or response text.
                     print(json.dumps({"event":"habi.worker.output.retry", "attempt":output_attempt + 1, "finishReason":str(choice.get("finish_reason", "unknown"))[:30], "responseChars":len(content) if isinstance(content,str) else 0}), flush=True)

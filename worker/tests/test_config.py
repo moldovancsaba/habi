@@ -25,6 +25,17 @@ class WorkerConfigTests(unittest.TestCase):
         self.assertNotIn("synthetic-placeholder-shared-ai-secret", repr(config))
         self.assertEqual(config.shared_ai_model, "auto")
 
+    def test_dialogue_override_and_test_purpose_are_explicit(self):
+        self.assertEqual(load_config(self.env).shared_ai_dialogue_model, "auto")
+        self.assertIsNone(load_config(self.env).shared_ai_request_purpose)
+        self.env.update(HG_SHARED_AI_DIALOGUE_MODEL="qwen3:1.7b", HG_SHARED_AI_REQUEST_PURPOSE="test")
+        config = load_config(self.env)
+        self.assertEqual(config.shared_ai_dialogue_model, "qwen3:1.7b")
+        self.assertEqual(config.shared_ai_request_purpose, "test")
+        self.env["HG_SHARED_AI_REQUEST_PURPOSE"] = "production"
+        with self.assertRaisesRegex(ValueError, "PURPOSE"):
+            load_config(self.env)
+
     def test_requires_all_worker_values(self):
         del self.env["HG_MODEL_DIGEST"]
         with self.assertRaisesRegex(ValueError, "HG_MODEL_DIGEST"):

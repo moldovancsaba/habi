@@ -1,3 +1,8 @@
+import {
+  messageUnderstanding,
+  messageSourceId,
+  reportedDay,
+} from "./coach-messages.mjs";
 import { createHash } from "node:crypto";
 import { HabiApiError } from "../api/error-response.mjs";
 import practices from "../content/practices-v2.json" with { type: "json" };
@@ -179,6 +184,12 @@ const collections = [
   "coach_materials",
 ];
 const permitted = (principal, collection, doc, publications) => {
+  if (
+    collection === "messages" &&
+    principal.role === "parent" &&
+    doc.privateToCoach
+  )
+    return false;
   if (collection === "interpretations")
     return (
       ["ready", "no_evidence", "needs_clarification"].includes(
@@ -245,6 +256,8 @@ function readableText(collection, doc) {
     ),
   );
 }
+export const coachContextEligible = (source) =>
+  !source.kind.startsWith("retired_") && !source.kind.startsWith("ignored_");
 export async function collectCoachSources(db, principal, playerId, session) {
   await requireCoachPlayer(db, principal, playerId, session);
   const options = session ? { session } : undefined;
@@ -303,10 +316,38 @@ export async function collectCoachSources(db, principal, playerId, session) {
       });
     }
   }
-  // Learn only from the user's own saved words, never from an earlier AI answer.
+  const events = await db
+    .collection("habi_coach_profile_events")
+    .find(ownerScope(principal, playerId), options)
+    .sort({ createdAt: 1, id: 1 })
+    .toArray();
+  const ignored = new Set(
+    events.filter((e) => e.kind === "forget").map((e) => e.targetId),
+  );
+  const corrected = new Set(
+    events
+      .filter((e) => e.kind === "correction")
+      .flatMap((e) => e.sourceRefs.map((r) => r.id)),
+  );
   for await (const turn of db
     .collection("habi_coach_turns")
     .find(ownerScope(principal, playerId), options)) {
+    const rawId = messageSourceId(turn.id);
+    sources.push({
+      id: rawId,
+      revision: 1,
+      span: null,
+      kind: ignored.has(rawId)
+        ? "ignored_conversation_message"
+        : "conversation_message",
+      title: ignored.has(rawId)
+        ? "Kizárt üzenet · csak az előzményekben"
+        : "Saját beszélgetési üzenet · nem ellenőrzött állítás",
+      text: turn.question,
+      at: turn.createdAt,
+      role: principal.role,
+    });
+    // Keep old source identities readable, without promoting them to new facts.
     if (
       /szeretem|szeretnék|nekem|az a célom|azt vettem észre|bevált/i.test(
         turn.question,
@@ -316,18 +357,42 @@ export async function collectCoachSources(db, principal, playerId, session) {
         id: `coach-question-${turn.id}`,
         revision: 1,
         span: null,
-        kind: "conversation_note",
-        title: "Saját beszélgetési megjegyzés · megerősítésre vár",
+        kind: ignored.has(rawId)
+          ? "ignored_conversation_message"
+          : "conversation_message",
+        title: "Korábbi saját üzenet",
         text: turn.question,
         at: turn.createdAt,
         role: principal.role,
       });
+    if (turn.status === "queued") continue;
+    const understanding = messageUnderstanding(
+      turn.question,
+      turn.role,
+      turn.answer?.messageUnderstanding,
+    );
+    understanding.notes.forEach((note, index) => {
+      const id = `coach-note-${turn.id}-${index}`;
+      const day = reportedDay(turn.createdAt, note.timeText);
+      sources.push({
+        id,
+        revision: 1,
+        span: null,
+        kind:
+          ignored.has(rawId) || ignored.has(id)
+            ? "ignored_conversation_note"
+            : corrected.has(id)
+              ? "retired_conversation_note"
+              : note.kind === "hypothesis"
+                ? "conversation_hypothesis"
+                : "conversation_note",
+        title: `${corrected.has(id) ? "Korábbi, pontosított közlés · " : ""}Felhasználói ${note.kind} · ${understanding.subject} · ${day ?? "eseményidő nincs megadva"}`,
+        text: note.quote,
+        at: turn.createdAt,
+        role: principal.role,
+      });
+    });
   }
-  const events = await db
-    .collection("habi_coach_profile_events")
-    .find(ownerScope(principal, playerId), options)
-    .sort({ createdAt: 1, id: 1 })
-    .toArray();
   for (const e of events)
     if (e.kind === "memory" || (e.kind === "correction" && e.text.trim()))
       sources.push({
@@ -394,6 +459,9 @@ export function selectRelevantSources(sources, question, anchor, limit = 18) {
     ),
   ];
   const recentFacts = [
+    ...sources
+      .filter((s) => ["conversation_note", "personal_memory"].includes(s.kind))
+      .slice(-5),
     ...sources.filter((s) => s.kind === "checkin_results").slice(-1),
     ...sources
       .filter((s) =>
@@ -466,7 +534,9 @@ export function buildCoachProfile(sources, events, now = new Date()) {
       });
   };
   for (const s of sources) {
-    if (
+    if (s.kind === "conversation_note" && s.title?.startsWith("Felhasználói"))
+      add(`fact-${s.id}`, "known", s.text, [sourceRef(s)], s.at);
+    else if (
       s.kind === "conversation_note" &&
       !confirmedCandidates.has(`fact-${s.id}`)
     )
@@ -492,7 +562,12 @@ export function buildCoachProfile(sources, events, now = new Date()) {
         s.at,
       );
   }
-  for (const s of sources.slice(-8))
+  for (const s of sources
+    .filter(
+      (s) =>
+        !["conversation_message", "conversation_hypothesis"].includes(s.kind),
+    )
+    .slice(-8))
     add(
       `recent-${s.id}`,
       "recent",
@@ -617,6 +692,22 @@ export function buildCoachProfile(sources, events, now = new Date()) {
     const feedback = events
       .filter((e) => e.kind === "feedback" && e.targetId === id)
       .at(-1);
+    const latestPracticeFeedback = sources
+      .filter(
+        (source) =>
+          source.kind === "conversation_note" &&
+          source.title.includes("feedback") &&
+          source.text
+            .toLocaleLowerCase("hu-HU")
+            .includes(practice.title.toLocaleLowerCase("hu-HU")),
+      )
+      .at(-1);
+    if (
+      latestPracticeFeedback &&
+      /nem segített|nem vált be/i.test(latestPracticeFeedback.text) &&
+      (!feedback || latestPracticeFeedback.at >= feedback.createdAt)
+    )
+      continue;
     recommendations.push({
       id,
       practiceId: practice.id,
@@ -664,6 +755,7 @@ export async function getCoachProfile({
     principal,
     playerId,
   );
+  const activeSources = sources.filter(coachContextEligible);
   const scope = ownerScope(principal, playerId),
     id = `profile-${hash(scope).slice(0, 40)}`;
   const fingerprint = hash({
@@ -684,10 +776,10 @@ export async function getCoachProfile({
     updatedAt: now.toISOString(),
     retentionPolicyId: principal.retentionPolicyId,
     fingerprint,
-    ...buildCoachProfile(sources, events, now),
-    sourceCount: sources.length,
-    coverageFrom: sources[0]?.at ?? null,
-    coverageTo: sources.at(-1)?.at ?? null,
+    ...buildCoachProfile(activeSources, events, now),
+    sourceCount: activeSources.length,
+    coverageFrom: activeSources[0]?.at ?? null,
+    coverageTo: activeSources.at(-1)?.at ?? null,
   };
   validateContractDocument("habi_coach_profiles", profile);
   if (prior) {

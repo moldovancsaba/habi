@@ -1,3 +1,4 @@
+import { runMigrations } from "../database/migrations/runner.mjs";
 import { createHash, createHmac, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { GridFSBucket } from "mongodb";
@@ -285,6 +286,10 @@ export async function getWorkerJobContext({
     return context;
   }
   if (job.kind === "coachConversation") {
+    await runMigrations(db, now, [
+      "018-contextual-ai-coach",
+      "019-coach-message-understanding",
+    ]);
     const principal = await requesterScope(db, job);
     if (!principal) throw new HabiApiError("NOT_FOUND");
     const manifest = await promptManifest();
@@ -482,8 +487,11 @@ export async function deferWorkerJob({
         "AUTH_REVOKED",
         "SOURCE_INVALIDATED",
       ]);
+      const maintenance = input.reasonCode === "AI_SERVICE_MAINTENANCE";
       const isTerminal =
-        terminal || terminalReasons.has(input.reasonCode) || job.attempts >= 4;
+        terminal ||
+        terminalReasons.has(input.reasonCode) ||
+        (!maintenance && job.attempts >= 4);
       const retryIndex = Math.min(
         Math.max(0, job.attempts - 1),
         RETRY_DELAYS.length - 1,
@@ -491,7 +499,8 @@ export async function deferWorkerJob({
       const nextAttemptAt = isTerminal
         ? now.toISOString()
         : new Date(
-            now.getTime() + RETRY_DELAYS[retryIndex] * 1000,
+            now.getTime() +
+              (maintenance ? 30000 : RETRY_DELAYS[retryIndex] * 1000),
           ).toISOString();
       const status = isTerminal ? "failed" : "queued";
       const result = await tx.collection("jobs").updateOne(
@@ -505,6 +514,7 @@ export async function deferWorkerJob({
           $set: {
             status,
             reasonCode: input.reasonCode,
+            ...(maintenance ? { attempts: Math.max(0, job.attempts - 1) } : {}),
             nextAttemptAt,
             workerClientId: null,
             leaseTokenHash: null,

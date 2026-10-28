@@ -86,15 +86,16 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           "016-sso-owner-session-display-name",
           "017-player-continuity-drafts",
           "018-contextual-ai-coach",
+          "019-coach-message-understanding",
         ],
-        current: "018-contextual-ai-coach",
+        current: "019-coach-message-understanding",
       },
     );
     assert.deepEqual(
       await runMigrations(db, new Date("2026-10-25T00:00:01.000Z")),
       {
         applied: [],
-        current: "018-contextual-ai-coach",
+        current: "019-coach-message-understanding",
       },
     );
     const draftIndexes = (

@@ -3,7 +3,10 @@ import { runMigrations } from "../../../../../../../lib/database/migrations/runn
 import { reviewCoachTurn } from "../../../../../../../lib/workflows/ai-coach.mjs";
 const route: typeof runAuthorizedHabiRoute = (request, operation, action) =>
   runAuthorizedHabiRoute(request, operation, async (args) => {
-    await runMigrations(args.db, new Date(), ["018-contextual-ai-coach"]);
+    await runMigrations(args.db, new Date(), [
+      "018-contextual-ai-coach",
+      "019-coach-message-understanding",
+    ]);
     return action(args);
   });
 

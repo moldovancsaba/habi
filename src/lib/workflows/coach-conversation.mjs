@@ -31,7 +31,11 @@ export function coachConversation({
       sources.some(
         (source) =>
           key(source) === key(ref) &&
-          !["authored_content", "derived_profile"].includes(source.kind),
+          ![
+            "authored_content",
+            "derived_profile",
+            "conversation_message",
+          ].includes(source.kind),
       ) && !seenRefs.has(key(ref)),
   );
 
@@ -83,7 +87,9 @@ export function coachConversation({
     const source = sources.find((s) => key(s) === key(ref));
     return (
       source &&
-      !["authored_content", "derived_profile"].includes(source.kind) &&
+      !["authored_content", "derived_profile", "conversation_message"].includes(
+        source.kind,
+      ) &&
       !priorRefs.has(key(ref))
     );
   });

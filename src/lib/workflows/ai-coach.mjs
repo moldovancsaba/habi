@@ -1,3 +1,5 @@
+import { coachContextEligible } from "./coach-memory.mjs";
+import { messageUnderstanding, messageSourceId } from "./coach-messages.mjs";
 import { coachConversation } from "./coach-conversation.mjs";
 import { randomUUID } from "node:crypto";
 import { HabiApiError } from "../api/error-response.mjs";
@@ -180,6 +182,7 @@ export async function startCoachTurn({
     .map((f) => f.text)
     .join(" ");
   const selectedSources = sources.filter((source) => {
+    if (!coachContextEligible(source)) return false;
     if (
       context.eventKind &&
       context.eventKind !== "all" &&
@@ -210,6 +213,16 @@ export async function startCoachTurn({
     anchor,
     10,
   );
+  for (const preference of sources
+    .filter(
+      (source) =>
+        source.kind === "conversation_note" &&
+        /Felhasználói (feedback|preference) · author/.test(source.title),
+    )
+    .slice(-3)) {
+    if (!relevant.some((source) => source.id === preference.id))
+      relevant.push(preference);
+  }
   if (isTrainingAttendanceQuestion(question))
     relevant.unshift(trainingGuidanceSource());
   const helpMetric = metricFromQuestion(question);
@@ -254,6 +267,17 @@ export async function startCoachTurn({
         role: principal.role,
       }
     : null;
+  const currentMessage = {
+    id: messageSourceId(turnId),
+    revision: 1,
+    span: null,
+    kind: "conversation_message",
+    title: "Mostani saját üzenet",
+    text: question,
+    at: now.toISOString(),
+    role: principal.role,
+  };
+  relevant.unshift(currentMessage);
   const refs = relevant
     .map(sourceRef)
     .concat(profileSnapshot ? [sourceRef(profileSnapshot)] : []);
@@ -283,7 +307,9 @@ export async function startCoachTurn({
         tx,
         principal,
         playerId,
-        refs.filter((r) => r.id !== profileSnapshot?.id),
+        refs.filter(
+          (r) => r.id !== profileSnapshot?.id && r.id !== currentMessage.id,
+        ),
         session,
       );
       await verifyCoachSources(
@@ -490,6 +516,8 @@ export function coachJobProgress(job, turn, now = new Date(), queuedAhead = 0) {
     Date.parse(job?.leaseUntil ?? "") < now.getTime()
   )
     phase = "reconnecting";
+  if (job?.reasonCode === "AI_SERVICE_MAINTENANCE" && status === "queued")
+    phase = "maintenance";
   return {
     phase,
     submittedAt: turn.createdAt,
@@ -624,14 +652,18 @@ export async function readCoachThread({
             ),
           }
         : null;
-    const guidance = current
-      ? coachQuestionGuidance({
-          question: turn.question,
-          role: principal.role,
-          sources: available,
-        })
-      : null;
-    const conversation = current ? prepareConversation(turn, guidance) : null;
+    const guidance =
+      current && !turn.answer?.reply
+        ? coachQuestionGuidance({
+            question: turn.question,
+            role: principal.role,
+            sources: available,
+          })
+        : null;
+    const conversation =
+      current && !turn.answer?.reply
+        ? prepareConversation(turn, guidance)
+        : null;
     if (current && turn.status === "answered")
       conversationHistory.push({ ...turn, conversation });
     items.push({
@@ -708,6 +740,26 @@ export async function coachWorkerContext({
     .collection("habi_coach_threads")
     .findOne({ ...scope, id: turn.threadId });
   if (!thread) throw new HabiApiError("NOT_FOUND");
+  const historyEvents = await db
+    .collection("habi_coach_profile_events")
+    .find(scope)
+    .toArray();
+  const ignored = new Set(
+    historyEvents.filter((e) => e.kind === "forget").map((e) => e.targetId),
+  );
+  const excludedRef = (id) =>
+    ignored.has(id) ||
+    (id.startsWith("coach-note-") &&
+      ignored.has(
+        messageSourceId(id.slice("coach-note-".length, id.lastIndexOf("-"))),
+      )) ||
+    (id.startsWith("coach-question-") &&
+      ignored.has(messageSourceId(id.slice("coach-question-".length))));
+  if (
+    turn.sourceRefs.some((r) => excludedRef(r.id)) ||
+    turn.profileSources.some((r) => excludedRef(r.id))
+  )
+    throw new HabiApiError("NOT_FOUND");
   const snapshots = await verifyCoachSources(
     db,
     principal,
@@ -724,7 +776,6 @@ export async function coachWorkerContext({
         { createdAt: { $lt: turn.createdAt } },
         { createdAt: turn.createdAt, id: { $lt: turn.id } },
       ],
-      status: "answered",
     })
     .sort({ createdAt: -1, id: -1 })
     .limit(8)
@@ -732,8 +783,14 @@ export async function coachWorkerContext({
   const dialogue = [];
   const verifiedPrevious = [];
   for (const old of previous.reverse()) {
+    if (excludedRef(messageSourceId(old.id))) continue;
+    const answerAllowed = ![...old.sourceRefs, ...old.profileSources].some(
+      (r) => excludedRef(r.id),
+    );
     try {
-      await verifyCoachSources(db, principal, job.playerId, old.sourceRefs);
+      await verifyCoachSources(db, principal, job.playerId, [
+        { id: messageSourceId(old.id), revision: 1, span: null },
+      ]);
     } catch {
       continue;
     }
@@ -762,9 +819,12 @@ export async function coachWorkerContext({
       ) ?? [];
     dialogue.push({
       question: old.question,
-      answer: (conversation?.suppressRepeatedAnswer
-        ? conversation.lead
-        : claims.map((c) => c.text).join("\n")
+      answer: (!answerAllowed
+        ? ""
+        : (old.answer?.reply?.text ??
+          (conversation?.suppressRepeatedAnswer
+            ? conversation.lead
+            : claims.map((c) => c.text).join("\n")))
       ).slice(0, 1400),
       questions: conversation?.questions.length
         ? conversation.questions
@@ -795,11 +855,38 @@ export async function coachWorkerContext({
     sourceRefs: turn.sourceRefs,
     questions: guidance?.questions ?? [],
   });
+  const allMessages = await db
+    .collection("habi_coach_turns")
+    .find({
+      ...scope,
+      id: { $ne: turn.id },
+      createdAt: { $lte: turn.createdAt },
+    })
+    .sort({ createdAt: -1, id: -1 })
+    .limit(30)
+    .toArray();
+  const messageHistory = allMessages
+    .filter((t) => !ignored.has(messageSourceId(t.id)))
+    .slice(0, 12)
+    .reverse()
+    .map((t) => ({
+      id: t.id,
+      text: t.question,
+      at: t.createdAt,
+      acts: messageUnderstanding(
+        t.question,
+        t.role,
+        t.answer?.messageUnderstanding,
+      ).acts,
+    }));
   const player = await db
     .collection("players")
     .findOne({ tenantId: principal.tenantId, id: job.playerId });
   return {
     playerName: (player?.displayName ?? "A játékos").slice(0, 200),
+    dialogueVersion: 2,
+    messageUnderstanding: messageUnderstanding(turn.question, principal.role),
+    messageHistory,
     ...(conversation ? { conversation } : {}),
     ...(guidance ? { guidance } : {}),
     coachMode: true,
@@ -843,13 +930,15 @@ export async function completeCoachTurn({
   now,
 }) {
   const scope = ownerScope(principal, job.playerId);
-  await verifyCoachSources(
+  const authorisedSources = await verifyCoachSources(
     tx,
     principal,
     job.playerId,
     job.sourceRefs,
     session,
   );
+  if (authorisedSources.some((source) => source.kind.startsWith("ignored_")))
+    throw new HabiApiError("REVISION_CONFLICT");
   const turn = await tx
     .collection("habi_coach_turns")
     .findOne({ ...scope, id: job.turnId, status: "queued" }, { session });
@@ -862,6 +951,74 @@ export async function completeCoachTurn({
   )
     throw new HabiApiError("REVISION_CONFLICT");
   const answer = body.result;
+  if (answer.reply || answer.messageUnderstanding)
+    answer.messageUnderstanding = messageUnderstanding(
+      turn.question,
+      principal.role,
+      answer.messageUnderstanding,
+    );
+  if (
+    answer.reply?.sourceRefs.some(
+      (ref) =>
+        !turn.sourceRefs.some(
+          (r) =>
+            r.id === ref.id &&
+            r.revision === ref.revision &&
+            r.span === ref.span,
+        ),
+    )
+  )
+    throw new HabiApiError("INVALID_INPUT");
+  for (const note of answer.messageUnderstanding?.notes ?? []) {
+    if (note.kind === "correction" && !note.corrects.length) {
+      const words = note.quote
+        .normalize("NFD")
+        .replace(/\p{M}/gu, "")
+        .toLowerCase()
+        .split(/[^\p{L}]+/u)
+        .filter((w) => w.length >= 5)
+        .map((w) => w.slice(0, 5));
+      const matches = authorisedSources.filter(
+        (source) =>
+          source.kind === "conversation_note" &&
+          words.some((w) =>
+            source.text
+              .normalize("NFD")
+              .replace(/\p{M}/gu, "")
+              .toLowerCase()
+              .includes(w),
+          ),
+      );
+      if (matches.length === 1)
+        note.corrects = [
+          { id: matches[0].id, revision: matches[0].revision, span: null },
+        ];
+    }
+    const allowed = note.corrects.filter(
+      (r) =>
+        r.id.startsWith("coach-note-") &&
+        turn.sourceRefs.some(
+          (old) => old.id === r.id && old.revision === r.revision,
+        ),
+    );
+    note.corrects = allowed;
+    if (note.kind !== "correction") continue;
+    for (const ref of allowed) {
+      const event = {
+        ...common(principal, job.playerId, now),
+        id: randomUUID(),
+        kind: "correction",
+        targetId: `fact-${ref.id}`,
+        text: note.quote,
+        value: "incorrect",
+        sourceRefs: [ref],
+      };
+      validateContractDocument("habi_coach_profile_events", event);
+      await tx
+        .collection("habi_coach_profile_events")
+        .insertOne(event, { session });
+    }
+  }
   for (const claim of answer.claims)
     if (
       !claim.evidenceRefs.length ||
@@ -953,6 +1110,14 @@ export async function writeCoachEvent({
       )
         throw new HabiApiError("NOT_FOUND");
 
+      if (
+        input.kind === "forget" &&
+        (!input.targetId.startsWith("coach-message-") ||
+          input.sourceRefs.length !== 1 ||
+          input.sourceRefs[0].id !== input.targetId ||
+          input.value !== "")
+      )
+        throw new HabiApiError("INVALID_INPUT");
       const target =
         input.kind === "correction"
           ? profile.facts.find((f) => f.id === input.targetId)

@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from habi_worker.coach_summary import source_summary
-from habi_worker import plain_checkin
+from habi_worker import plain_checkin, coach_dialogue
 from habi_worker.local_runtime import WorkerDependencyError, _request_json
 from habi_worker.shared_ai import SharedAIError, SharedAICancelled, generate as shared_ai_generate, validate_service as validate_shared_ai_service
 
@@ -144,6 +144,8 @@ def _answer_for_context(config, context, cancelled=None, on_progress=None):
     if context.get("coachMode"):
         if hashlib.sha256(system_prompt.encode("utf-8")).hexdigest() != manifest["promptHash"]:
             raise WorkerDependencyError("WORKER_PROMPT_UNAVAILABLE")
+        if context.get("dialogueVersion") == 2 and config.mode == "hosted":
+            return coach_dialogue.answer(config, context, cancelled, on_progress)
         conversation = context.get("conversation")
         if conversation and conversation.get("suppressRepeatedAnswer"):
             return {
@@ -364,7 +366,7 @@ def _process_one(config, claim_key):
                 _log("habi.worker.fail_request_failed", jobId=job["jobId"], reason=fail_error.code)
         else:
             try:
-                _defer(config, job, "DEPENDENCY_UNAVAILABLE")
+                _defer(config, job, "AI_SERVICE_MAINTENANCE" if reason == "SHARED_AI_MAINTENANCE" else "DEPENDENCY_UNAVAILABLE")
                 _log("habi.worker.job.deferred", jobId=job["jobId"], reason=reason, retryable=True)
             except WorkerApiError as defer_error:
                 _log("habi.worker.defer_failed", jobId=job["jobId"], reason=defer_error.code)

@@ -19,6 +19,8 @@ import { migration as playerContinuityDrafts } from "./017-player-continuity-dra
 
 import { migration as contextualAiCoach } from "./018-contextual-ai-coach.mjs";
 
+import { migration as coachMessageUnderstanding } from "./019-coach-message-understanding.mjs";
+
 const MIGRATIONS = [
   initialSchema,
   authTransactions,
@@ -38,6 +40,7 @@ const MIGRATIONS = [
   ssoOwnerSessionDisplayName,
   playerContinuityDrafts,
   contextualAiCoach,
+  coachMessageUnderstanding,
 ];
 
 /** @param {string[] | null} migrationIds */

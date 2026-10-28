@@ -437,6 +437,12 @@
             "review_required",
             "withdrawn"
           ]
+        },
+        "reply": {
+          "$ref": "#/$defs/CoachNaturalReply"
+        },
+        "messageUnderstanding": {
+          "$ref": "#/$defs/CoachMessageUnderstanding"
         }
       },
       "required": [
@@ -462,9 +468,6 @@
           },
           "then": {
             "properties": {
-              "claims": {
-                "minItems": 1
-              },
               "manifest": {
                 "properties": {
                   "sourceRefs": {
@@ -472,7 +475,21 @@
                   }
                 }
               }
-            }
+            },
+            "anyOf": [
+              {
+                "properties": {
+                  "claims": {
+                    "minItems": 1
+                  }
+                }
+              },
+              {
+                "required": [
+                  "reply"
+                ]
+              }
+            ]
           }
         },
         {
@@ -4586,7 +4603,8 @@
             "INVALID_INPUT",
             "UNSUPPORTED_REPORT",
             "AUTH_REVOKED",
-            "SOURCE_INVALIDATED"
+            "SOURCE_INVALIDATED",
+            "AI_SERVICE_MAINTENANCE"
           ]
         }
       },
@@ -8358,7 +8376,8 @@
           "enum": [
             "correction",
             "memory",
-            "feedback"
+            "feedback",
+            "forget"
           ]
         },
         "targetId": {
@@ -8452,7 +8471,8 @@
           "enum": [
             "correction",
             "memory",
-            "feedback"
+            "feedback",
+            "forget"
           ]
         },
         "targetId": {
@@ -8518,6 +8538,114 @@
         "decision",
         "expectedRevision",
         "rationale"
+      ],
+      "additionalProperties": false
+    },
+    "CoachMessageUnderstanding": {
+      "type": "object",
+      "properties": {
+        "acts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "question",
+              "update",
+              "preference",
+              "goal",
+              "correction",
+              "feedback",
+              "hypothesis",
+              "other"
+            ]
+          },
+          "maxItems": 8
+        },
+        "subject": {
+          "type": "string",
+          "enum": [
+            "player",
+            "author",
+            "unknown"
+          ]
+        },
+        "notes": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "properties": {
+              "quote": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "update",
+                  "preference",
+                  "goal",
+                  "correction",
+                  "feedback",
+                  "hypothesis"
+                ]
+              },
+              "timeText": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "corrects": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/SourceRef"
+                },
+                "maxItems": 5
+              }
+            },
+            "required": [
+              "quote",
+              "kind",
+              "timeText",
+              "corrects"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "acts",
+        "subject",
+        "notes"
+      ],
+      "additionalProperties": false
+    },
+    "CoachNaturalReply": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "text",
+        "sourceRefs"
       ],
       "additionalProperties": false
     }

@@ -36,8 +36,10 @@ type Turn = {
   id: string;
   revision: number;
   question: string;
+  createdAt: string;
   status: string;
   answer: null | {
+    reply?: { text: string; sourceRefs: Ref[] };
     claims: Claim[];
     unknowns: string[];
     clarifyingQuestions: string[];
@@ -68,6 +70,32 @@ type Turn = {
     at: string;
     role: string;
   }[];
+};
+type MessageHistory = {
+  items: {
+    id: string;
+    threadId: string;
+    text: string;
+    at: string;
+    role: string;
+    ignored: boolean;
+    understanding: {
+      acts: string[];
+      subject: string;
+      notes: { quote: string; kind: string; timeText: string | null }[];
+    };
+  }[];
+  nextCursor: string | null;
+};
+const actLabels: Record<string, string> = {
+  question: "Kérdés",
+  update: "Új beszámoló",
+  correction: "Pontosítás",
+  preference: "Preferencia",
+  goal: "Cél",
+  feedback: "Visszajelzés",
+  hypothesis: "Feltételezés",
+  other: "Üzenet",
 };
 type Fact = {
   id: string;
@@ -241,6 +269,10 @@ function CoachPanel({
     [turns, setTurns] = useState<Turn[]>([]),
     [older, setOlder] = useState<string | null>(null),
     [olderThreads, setOlderThreads] = useState<string | null>(null);
+  const [history, setHistory] = useState<MessageHistory>({
+    items: [],
+    nextCursor: null,
+  });
   const [profile, setProfile] = useState<Profile | null>(null),
     [reviews, setReviews] = useState<Turn[]>([]),
     [question, setQuestion] = useState(""),
@@ -296,6 +328,7 @@ function CoachPanel({
   async function refreshProfile() {
     const body = await request("/ai-profile");
     setProfile(body.profile);
+    if (body.history) setHistory(body.history);
   }
   async function refreshReviews() {
     if (role === "coach") setReviews((await request("/ai-reviews")).items);
@@ -373,7 +406,10 @@ function CoachPanel({
         setOlder(body.nextCursor);
       }
       const body = await request("/ai-profile");
-      if (current) setProfile(body.profile);
+      if (current) {
+        setProfile(body.profile);
+        if (body.history) setHistory(body.history);
+      }
     })()
       .catch((error) => {
         if (current) setNotice(commandMessage(error));
@@ -551,6 +587,7 @@ function CoachPanel({
           {[
             ["chat", "Beszélgetés"],
             ["profile", "Amit Habi tud"],
+            ["history", "Üzenetelőzmények"],
             ["recommendations", "Javaslatok"],
             ...(role === "coach" ? [["reviews", "Ellenőrzés"]] : []),
           ].map(([id, label]) => (
@@ -561,7 +598,11 @@ function CoachPanel({
               onClick={() => {
                 setTab(id);
                 if (id === "reviews") void run(refreshReviews);
-                if (id === "profile" || id === "recommendations")
+                if (
+                  id === "profile" ||
+                  id === "recommendations" ||
+                  id === "history"
+                )
                   void run(refreshProfile);
               }}
             >
@@ -665,8 +706,14 @@ function CoachPanel({
             {turns.map((turn) => (
               <section key={turn.id} className={styles.turn}>
                 <article className={styles.user}>
-                  <strong>Kérdésed</strong>
+                  <strong>Üzeneted</strong>
                   <p>{turn.question}</p>
+                  <small className={styles.muted}>
+                    Mentve az előzményekhez ·{" "}
+                    {new Date(turn.createdAt).toLocaleString("hu-HU", {
+                      timeZone: "Europe/Budapest",
+                    })}
+                  </small>
                 </article>
                 <article className={styles.assistant}>
                   <strong>Habi AI-edző</strong>
@@ -724,7 +771,20 @@ function CoachPanel({
                             </button>
                           </>
                         )}
-                      {turn.answer &&
+                      {turn.answer?.reply ? (
+                        <>
+                          <p className={styles.prewrap}>
+                            {turn.answer.reply.text}
+                          </p>
+                          {turn.answer.reply.sourceRefs.length > 0 && (
+                            <details className={styles.evidence}>
+                              <summary>Kapcsolódó előzmények</summary>
+                              {sourcesList(turn.answer.reply.sourceRefs)}
+                            </details>
+                          )}
+                        </>
+                      ) : (
+                        turn.answer &&
                         (() => {
                           const guidance = turn.guidance;
                           const continuation = turn.conversation;
@@ -839,7 +899,8 @@ function CoachPanel({
                               )}
                             </>
                           );
-                        })()}
+                        })()
+                      )}
                       {turn.pendingReview && (
                         <div className={styles.notice}>
                           <p>
@@ -893,15 +954,16 @@ function CoachPanel({
                 void run(() => send(question));
               }}
             >
-              <label htmlFor="coach-question">Kérdezz a Habi AI-edzőtől</label>
+              <label htmlFor="coach-question">Írj a Habi AI-edzőnek</label>
               <textarea
                 ref={composer}
                 id="coach-question"
+                disabled={busy}
                 value={question}
                 maxLength={2000}
                 rows={3}
                 onChange={(e) => setQuestion(e.target.value)}
-                placeholder="Mit jelent ez? Mi változott?"
+                placeholder="Kérdezz, mondd el, mi változott, vagy jelezd, mi segített."
               />
               <div className={styles.suggestions}>
                 {[
@@ -923,14 +985,107 @@ function CoachPanel({
                 type="submit"
                 disabled={busy || !question.trim()}
               >
-                Kérdés elküldése
+                Üzenet elküldése
               </button>
             </form>
           </>
         )}
+        {tab === "history" && (
+          <>
+            <h3>Üzenetek és visszajelzések</h3>
+            <p>
+              A saját, ehhez a játékoshoz és szerepkörhöz tartozó üzeneteid. A
+              beszámoló a közlő állítása; a kérdés és a feltételezés nem
+              bizonyított tény. Az eredeti szöveg megmarad, a javítás külön
+              előzmény.
+            </p>
+            {!history.items.length && <p>Még nincs mentett üzenet.</p>}
+            {history.items.map((item) => (
+              <article className={styles.card} key={item.id}>
+                <p className={styles.eyebrow}>
+                  {item.understanding.acts
+                    .map((act) => actLabels[act] ?? act)
+                    .join(" · ")}
+                </p>
+                <p className={styles.prewrap}>{item.text}</p>
+                <p className={styles.muted}>
+                  {new Date(item.at).toLocaleString("hu-HU", {
+                    timeZone: "Europe/Budapest",
+                  })}{" "}
+                  ·{" "}
+                  {item.role === "player"
+                    ? "Játékos"
+                    : item.role === "coach"
+                      ? "Edző"
+                      : "Szülő"}
+                </p>
+                {item.ignored ? (
+                  <p>Nem használjuk új válaszokhoz vagy a profilhoz.</p>
+                ) : (
+                  <>
+                    {item.understanding.notes.length > 0 && (
+                      <details>
+                        <summary>Megjegyzett közlések</summary>
+                        {item.understanding.notes.map((note) => (
+                          <p key={`${item.id}-${note.kind}-${note.quote}`}>
+                            {actLabels[note.kind]}: {note.quote}
+                          </p>
+                        ))}
+                      </details>
+                    )}
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() =>
+                        void run(async () => {
+                          await request("/ai-profile", {
+                            kind: "forget",
+                            targetId: `coach-message-${item.id}`,
+                            text: "",
+                            value: "",
+                            sourceRefs: [
+                              {
+                                id: `coach-message-${item.id}`,
+                                revision: 1,
+                                span: null,
+                              },
+                            ],
+                          });
+                          await refreshProfile();
+                          if (thread) await refresh(thread.id);
+                        })
+                      }
+                    >
+                      Ne használd a továbbiakban
+                    </button>
+                  </>
+                )}
+              </article>
+            ))}
+            {history.nextCursor && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    const body = await request(
+                      `/ai-profile?before=${encodeURIComponent(history.nextCursor ?? "")}`,
+                    );
+                    setHistory({
+                      items: [...history.items, ...body.history.items],
+                      nextCursor: body.history.nextCursor,
+                    });
+                  })
+                }
+              >
+                Korábbi üzenetek
+              </button>
+            )}
+          </>
+        )}
         {tab === "profile" && (
           <>
-            <h3>Amit Habi tud rólam</h3>
+            <h3>Amit Habi megjegyzett</h3>
             <p>
               A profil a számodra hozzáférhető mentett forrásokat és saját
               pontosításaidat rendezi. {profile?.sourceCount ?? 0} forrás;

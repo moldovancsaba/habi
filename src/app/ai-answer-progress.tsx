@@ -10,7 +10,9 @@ export type AnswerProgress = {
   queuedAhead: number;
 };
 const labels: Record<string, string> = {
-  queued: "A kérdésed mentve, feldolgozásra vár.",
+  queued: "Az üzeneted mentve, feldolgozásra vár.",
+  maintenance:
+    "Az AI-szolgáltatás karbantartása miatt várakozik. Az üzeneted megmaradt; automatikusan folytatjuk.",
   retrieving: "A kijelölt tartalom és a források betöltése.",
   provider_wait: "Az AI-szolgáltatás sorában várakozik.",
   generating: "Az AI összeállítja a választ.",

@@ -1,11 +1,13 @@
 import json
+import io
+import urllib.error
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from habi_worker.shared_ai import SharedAICancelled, SharedAIError, _json_answer, SERVICE_OUTPUT_LIMITS, generate, validate_service
+from habi_worker.shared_ai import _request, _Retryable, SharedAICancelled, SharedAIError, _json_answer, SERVICE_OUTPUT_LIMITS, generate, validate_service
 
 
 class SharedAIHandler(BaseHTTPRequestHandler):
@@ -89,6 +91,43 @@ class SharedAIClientTests(unittest.TestCase):
             generated, model = generate(self.config, "system", "facts", "plain-output", response_kind="plain_text")
         self.assertEqual(generated["text"], "keveset aludt.")
         self.assertEqual(len([r for r in SharedAIHandler.requests if r[0] == "POST"]), 1)
+
+    def test_conversation_preserves_true_roles_and_latest_user_message(self):
+        SharedAIHandler.outputs = ['{"text":"Köszönöm a pontosítást."}']
+        history = [{"role":"user","content":"Hogy van?"},{"role":"assistant","content":"Változott valami?"}]
+        with patch("habi_worker.shared_ai.POLL_SECONDS",0):
+            generate(self.config,"system","Jobban van.","dialogue-order",response_kind="plain_text",history=history)
+        post=next(r for r in SharedAIHandler.requests if r[0]=="POST")
+        messages=post[4]["input"]["messages"]
+        self.assertEqual([m["role"] for m in messages],["system","user","assistant","user"])
+        self.assertEqual(messages[-1]["content"],"Jobban van.")
+
+    def test_raw_conversation_does_not_request_json_or_change_default_claim_validation(self):
+        SharedAIHandler.outputs = ["Köszönöm a pontosítást. Evett már azóta?"]
+        with patch("habi_worker.shared_ai.POLL_SECONDS", 0):
+            result, _ = generate(self.config, "system", "Jobban van.", "raw-conversation", response_kind="conversation")
+        self.assertEqual(result["text"], "Köszönöm a pontosítást. Evett már azóta?")
+        post = next(r for r in SharedAIHandler.requests if r[0] == "POST")
+        self.assertNotIn("response_format", post[4]["input"])
+        with self.assertRaises(SharedAIError):
+            _json_answer(result["text"])
+
+    def test_test_purpose_is_explicit_and_never_added_to_production_by_default(self):
+        for purpose in (None, "test"):
+            self.config.shared_ai_request_purpose = purpose
+            response = unittest.mock.MagicMock()
+            response.__enter__.return_value.read.return_value = b'{}'
+            response.__enter__.return_value.status = 200
+            response.__enter__.return_value.headers = {}
+            with patch("urllib.request.urlopen", return_value=response) as request:
+                _request(self.config, "GET", "/models")
+            self.assertEqual(request.call_args.args[0].get_header("X-request-purpose"), purpose)
+
+    def test_maintenance_is_distinguished_from_an_ordinary_provider_failure(self):
+        error=urllib.error.HTTPError("http://synthetic/jobs",503,"maintenance",{"Retry-After":"10"},io.BytesIO(b'{"error":{"code":"model_storage_maintenance"}}'))
+        with patch("urllib.request.urlopen",side_effect=error):
+            with self.assertRaises(_Retryable) as raised:_request(self.config,"POST","/jobs",{})
+        self.assertEqual(raised.exception.code,"SHARED_AI_MAINTENANCE")
 
     def test_truncated_response_retries_once_with_room_and_reports_real_phases(self):
         SharedAIHandler.output_limit=1024
