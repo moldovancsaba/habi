@@ -1,0 +1,13 @@
+# Conversational continuity — 2026-10-28
+
+Repeated questions were intentional tests. The first answer was acceptable; repeating the whole answer made the coach feel unaware of the conversation.
+
+A shared conversation policy now checks verified earlier turns in the same private thread. With unchanged selected evidence, a repeated question receives an acknowledgement and one focused unresolved question instead of the original answer. Further repetitions move to the next unresolved point, then ask what the user needs from the explanation. This is based on conversation state, not random wording or invented player insights. Case, accents and punctuation are normalized for repeated-question detection. Different wording can also be caught after generation when the returned factual claims duplicate earlier output.
+
+New or revised personal sources allow a fresh answer. Intervening user messages are retained as conversation context and route the question back through generation instead of the fixed training guide. The model receives up to eight verified turns, longer answers and its earlier clarifying questions. Adaptive prompt compaction preserves the most recent dialogue within the provider budget. Instructions ask for a response to the latest message and at most one relevant unresolved question.
+
+The optional CoachConversation context and optional dialogue questions are additive API 2.4.25 changes. A continuation may complete as needs_clarification with no new factual claims and manifest habi-conversation@1. Original saved answers and source manifests remain intact. Read presentation also handles existing repeated answers; quoted evidence remains in earlier replies or the evidence disclosure. Withdrawn sources and private role/actor/player boundaries are enforced before history is used. Pagination includes preceding verified turns so a page boundary does not reset the exchange.
+
+Validation includes repeat/third-repeat progression, other topics, duplicate model output, new evidence revisions, new user context, worker context/complete, reload, pagination and cross-role access. Browser checks send three identical questions in one thread as player and coach, verifying distinct continuations, one full original answer, composer focus and reload persistence. The generic-topic browser test uses a synthetic provider response to exercise the factual fallback. No live personal records were used.
+
+Limits: this does not guarantee every model response is novel or improve reasoning by inventing new conclusions. Without new evidence the coach makes that limitation explicit and asks what is missing. Private conversation memory is bounded to recent verified turns.

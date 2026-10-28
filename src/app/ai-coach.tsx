@@ -50,6 +50,12 @@ type Turn = {
   } | null;
   progress?: AnswerProgress;
   answerMode?: string;
+  conversation?: {
+    repeated: boolean;
+    suppressRepeatedAnswer: boolean;
+    lead: string;
+    questions: string[];
+  } | null;
   pendingReview: boolean;
   reviewState: string;
   reviewRationale: string;
@@ -674,16 +680,18 @@ function CoachPanel({
                       {turn.progress && (
                         <AiAnswerProgress progress={turn.progress} />
                       )}
-                      {turn.answerMode === "source_summary" && turn.answer && (
-                        <aside className={styles.notice}>
-                          <strong>Forrásalapú összefoglaló</strong>
-                          <p>
-                            Az AI-szolgáltatás nem adott feldolgozható választ.
-                            Az alábbiak az engedélyezett, mentett források
-                            tényszerű összefoglalói.
-                          </p>
-                        </aside>
-                      )}
+                      {turn.answerMode === "source_summary" &&
+                        turn.answer &&
+                        !turn.conversation?.suppressRepeatedAnswer && (
+                          <aside className={styles.notice}>
+                            <strong>Forrásalapú összefoglaló</strong>
+                            <p>
+                              Az AI-szolgáltatás nem adott feldolgozható
+                              választ. Az alábbiak az engedélyezett, mentett
+                              források tényszerű összefoglalói.
+                            </p>
+                          </aside>
+                        )}
                       {turn.status === "failed" &&
                         turn.failureReason === "REPLACED_BY_QUESTION" && (
                           <p>
@@ -712,24 +720,30 @@ function CoachPanel({
                       {turn.answer &&
                         (() => {
                           const guidance = turn.guidance;
-                          const lead =
-                            guidance?.claim ??
-                            turn.answer.claims.find(
-                              (c) => c.kind === "general",
-                            ) ??
-                            turn.answer.claims[0];
+                          const continuation = turn.conversation;
+                          const suppress = continuation?.suppressRepeatedAnswer;
+                          const lead = suppress
+                            ? undefined
+                            : (guidance?.claim ??
+                              turn.answer.claims.find(
+                                (c) => c.kind === "general",
+                              ) ??
+                              turn.answer.claims[0]);
                           const evidence = turn.answer.claims.filter(
                             (c) => c.id !== lead?.id && c.kind !== "inference",
                           );
-                          const unknowns = [
-                            ...new Set([
-                              ...(guidance?.unknowns ?? []),
-                              ...turn.answer.unknowns,
-                            ]),
-                          ];
-                          const questions =
-                            guidance?.questions ??
-                            turn.answer.clarifyingQuestions;
+                          const unknowns = suppress
+                            ? []
+                            : [
+                                ...new Set([
+                                  ...(guidance?.unknowns ?? []),
+                                  ...turn.answer.unknowns,
+                                ]),
+                              ];
+                          const questions = continuation?.questions.length
+                            ? continuation.questions
+                            : (guidance?.questions ??
+                              turn.answer.clarifyingQuestions);
                           const fact = (claim: Claim) => (
                             <div key={claim.id}>
                               {claim.kind === "inference" && (
@@ -758,6 +772,12 @@ function CoachPanel({
                           );
                           return (
                             <>
+                              {continuation && (
+                                <div className={styles.answerLead}>
+                                  <h3>Folytassuk innen</h3>
+                                  <p>{continuation.lead}</p>
+                                </div>
+                              )}
                               {lead && (
                                 <div className={styles.answerLead}>
                                   <h3>A rövid válasz</h3>

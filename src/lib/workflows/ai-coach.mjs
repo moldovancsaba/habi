@@ -1,3 +1,4 @@
+import { coachConversation } from "./coach-conversation.mjs";
 import { randomUUID } from "node:crypto";
 import { HabiApiError } from "../api/error-response.mjs";
 import { isValidApiInput } from "../api/input-validation.mjs";
@@ -554,6 +555,50 @@ export async function readCoachThread({
     .project({ id: 1, createdAt: 1 })
     .toArray();
   const items = [];
+  const oldest = turns.at(-1);
+  const preceding = oldest
+    ? await db
+        .collection("habi_coach_turns")
+        .find({
+          ...scope,
+          threadId: id,
+          status: "answered",
+          $or: [
+            { createdAt: { $lt: oldest.createdAt } },
+            { createdAt: oldest.createdAt, id: { $lt: oldest.id } },
+          ],
+        })
+        .sort({ createdAt: -1, id: -1 })
+        .limit(8)
+        .toArray()
+    : [];
+  const conversationHistory = [];
+  const prepareConversation = (turn, guidance) =>
+    coachConversation({
+      question: turn.question,
+      answer: turn.answer,
+      previous: conversationHistory,
+      sources: available,
+      sourceRefs: turn.sourceRefs,
+      questions: guidance?.questions ?? turn.answer?.clarifyingQuestions ?? [],
+    });
+  for (const old of [...preceding.reverse(), ...turns.slice(30).reverse()]) {
+    try {
+      await verifyCoachSources(db, principal, playerId, old.sourceRefs);
+    } catch {
+      continue;
+    }
+    if (old.status !== "answered") continue;
+    const guidance = coachQuestionGuidance({
+      question: old.question,
+      role: principal.role,
+      sources: available,
+    });
+    conversationHistory.push({
+      ...old,
+      conversation: prepareConversation(old, guidance),
+    });
+  }
   for (const turn of turns.slice(0, 30).reverse()) {
     if (
       turn.profileSnapshot &&
@@ -579,8 +624,19 @@ export async function readCoachThread({
             ),
           }
         : null;
+    const guidance = current
+      ? coachQuestionGuidance({
+          question: turn.question,
+          role: principal.role,
+          sources: available,
+        })
+      : null;
+    const conversation = current ? prepareConversation(turn, guidance) : null;
+    if (current && turn.status === "answered")
+      conversationHistory.push({ ...turn, conversation });
     items.push({
       ...redactCoachDocument(turn),
+      conversation,
       answer,
       status:
         job && ["failed", "cancelled"].includes(job.status)
@@ -588,14 +644,7 @@ export async function readCoachThread({
           : turn.status,
       sourceState: current ? "current" : "withdrawn",
       failureReason: job?.reasonCode ?? null,
-      guidance: current
-        ? coachQuestionGuidance({
-            question: turn.question,
-            role: principal.role,
-            sources: available,
-            now: new Date(),
-          })
-        : null,
+      guidance: conversation?.hasNewUserContext ? null : guidance,
       progress: coachJobProgress(
         job,
         turn,
@@ -676,28 +725,48 @@ export async function coachWorkerContext({
       status: "answered",
     })
     .sort({ createdAt: -1, id: -1 })
-    .limit(4)
+    .limit(8)
     .toArray();
   const dialogue = [];
+  const verifiedPrevious = [];
   for (const old of previous.reverse()) {
     try {
       await verifyCoachSources(db, principal, job.playerId, old.sourceRefs);
     } catch {
       continue;
     }
+    const oldGuidance = coachQuestionGuidance({
+      question: old.question,
+      role: principal.role,
+      sources: snapshots,
+      now,
+    });
+    const conversation = coachConversation({
+      question: old.question,
+      answer: old.answer,
+      previous: verifiedPrevious,
+      sources: snapshots,
+      sourceRefs: old.sourceRefs,
+      questions:
+        oldGuidance?.questions ?? old.answer?.clarifyingQuestions ?? [],
+    });
+    verifiedPrevious.push({ ...old, conversation });
+    const claims =
+      old.answer?.claims.filter(
+        (c) =>
+          c.kind !== "inference" ||
+          principal.role === "coach" ||
+          old.reviewState === "approved",
+      ) ?? [];
     dialogue.push({
-      question: old.question.slice(0, 150),
-      answer: (
-        old.answer?.claims
-          .filter(
-            (c) =>
-              c.kind !== "inference" ||
-              principal.role === "coach" ||
-              old.reviewState === "approved",
-          )
-          .map((c) => c.text)
-          .join("\n") ?? ""
-      ).slice(0, 200),
+      question: old.question,
+      answer: (conversation?.suppressRepeatedAnswer
+        ? conversation.lead
+        : claims.map((c) => c.text).join("\n")
+      ).slice(0, 1400),
+      questions: conversation?.questions.length
+        ? conversation.questions
+        : (oldGuidance?.questions ?? old.answer?.clarifyingQuestions ?? []),
     });
   }
   const focusMetric =
@@ -717,7 +786,15 @@ export async function coachWorkerContext({
         now,
       })
     : null;
+  const conversation = coachConversation({
+    question: turn.question,
+    previous: verifiedPrevious,
+    sources: snapshots,
+    sourceRefs: turn.sourceRefs,
+    questions: guidance?.questions ?? [],
+  });
   return {
+    ...(conversation ? { conversation } : {}),
     ...(guidance ? { guidance } : {}),
     coachMode: true,
     viewerRole: principal.role,

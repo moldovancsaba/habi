@@ -117,6 +117,29 @@ class InterpretationEvidenceTests(unittest.TestCase):
         self.assertEqual(result["clarifyingQuestions"], ["Hogy vagy ma?"])
         self.assertTrue(any(c["kind"] == "direct" for c in result["claims"]))
 
+    def test_repeated_question_uses_conversation_without_regenerating_the_same_facts(self):
+        self.coach_context()
+        self.context["conversation"] = {"repeated": True, "suppressRepeatedAnswer": True, "lead": "Az előző adatok nem változtak.", "questions": ["Mi maradt bizonytalan?"]}
+        with patch("habi_worker.service_runtime._request_json") as local, patch("habi_worker.service_runtime.shared_ai_generate") as hosted:
+            result = _answer_for_context(self.config, self.context)
+        local.assert_not_called()
+        hosted.assert_not_called()
+        self.assertEqual(result["claims"], [])
+        self.assertEqual(result["status"], "needs_clarification")
+        self.assertEqual(result["clarifyingQuestions"], ["Mi maradt bizonytalan?"])
+        self.assertEqual(result["manifest"]["modelArtifact"], "habi-conversation@1")
+
+    def test_new_information_keeps_previous_questions_in_model_dialogue(self):
+        self.coach_context()
+        self.context["question"] = "Ma másképp érzem magam."
+        self.context["guidance"] = {"claim": {}, "unknowns": [], "questions": []}
+        self.context["conversation"] = {"repeated": True, "suppressRepeatedAnswer": False, "hasNewUserContext": True, "lead": "Közben új részletet írtál.", "questions": []}
+        self.context["dialogue"] = [{"question": "Mit mutat az alvás?", "answer": "Az alvás önbeszámoló.", "questions": ["Mi változott ma?"]}]
+        result, prompt = self.answer([{"text": "Hogyan aludtál? Keveset", "kind": "direct", "sources": ["S1"], "quote": "Hogyan aludtál? Keveset"}])
+        self.assertIn("Mi változott ma?", prompt)
+        self.assertIn("legfeljebb egy releváns", prompt)
+        self.assertEqual(result["status"], "ready")
+
     def test_compact_source_keys_restore_exact_pinned_citations(self):
         self.coach_context()
         result,prompt=self.answer([{"text":"A játékos kevés alvásról számolt be.","kind":"direct","sources":["S1"],"quote":"Hogyan aludtál? Keveset"}])

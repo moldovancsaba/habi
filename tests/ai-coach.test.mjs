@@ -370,8 +370,9 @@ test("contextual coach persists private dialogue, refreshes memory and validates
     ctx,
     kind = "general",
     refs = ctx.sourceManifest,
+    providedResult,
   ) {
-    const result = {
+    const result = providedResult ?? {
       status: "awaiting_review",
       questionRevision: ctx.turnRevision,
       claims: [
@@ -711,6 +712,84 @@ test("contextual coach persists private dialogue, refreshes memory and validates
         .findOne({ id: started.turnId });
       assert.deepEqual(after.answer, before.answer);
       assert.deepEqual(after.answer.manifest, before.answer.manifest);
+    },
+  );
+  await t.test(
+    "repeated questions continue across worker, reload and pagination without rewriting saved answers",
+    async () => {
+      let threadId = null;
+      let expectedRevision = 0;
+      const replies = [];
+      for (let index = 0; index < 3; index++) {
+        const started = await startCoachTurn({
+          ...args,
+          now: new Date(now.getTime() + 6000 + index),
+          request: request("/ai-coach", {
+            threadId,
+            question: "Menjek ma edzésre?",
+            context,
+            expectedRevision,
+          }),
+        });
+        threadId = started.threadId;
+        const job = await claim();
+        assert.equal(job.jobId, started.jobId);
+        const ctx = await workerContext(job);
+        const conversation = ctx.conversation;
+        assert.equal(!!conversation, index > 0);
+        if (index > 0) {
+          assert.equal(conversation.suppressRepeatedAnswer, true);
+          assert.equal(conversation.questions.length, 1);
+          assert.ok(ctx.dialogue[0].questions.length > 0);
+        }
+        const result = {
+          status: index ? "needs_clarification" : "ready",
+          questionRevision: ctx.turnRevision,
+          claims: index ? [] : [ctx.guidance.claim],
+          attributions: [],
+          unknowns: index ? [conversation.lead] : ctx.guidance.unknowns,
+          clarifyingQuestions: index
+            ? conversation.questions
+            : ctx.guidance.questions,
+          suggestedAction: null,
+          validity: "current",
+          manifest: {
+            ...ctx.promptManifest,
+            modelArtifact: index ? "habi-conversation@1" : "habi-guidance@1",
+          },
+        };
+        await complete(job, ctx, "general", ctx.sourceManifest, result);
+        const detail = await readCoachThread({ ...args, id: threadId });
+        expectedRevision = detail.thread.revision;
+        const item = detail.items.at(-1);
+        assert.equal(!!item.conversation, index > 0);
+        replies.push(item);
+      }
+      assert.notDeepEqual(
+        replies[1].conversation.questions,
+        replies[2].conversation.questions,
+      );
+      assert.notEqual(
+        replies[1].conversation.lead,
+        replies[2].conversation.lead,
+      );
+      const beforeRead = await db
+        .collection("habi_coach_turns")
+        .findOne({ id: replies[1].id });
+      const page = await readCoachThread({
+        ...args,
+        id: threadId,
+        before: replies[2].id,
+      });
+      assert.equal(page.items.at(-1).conversation.suppressRepeatedAnswer, true);
+      const afterRead = await db
+        .collection("habi_coach_turns")
+        .findOne({ id: replies[1].id });
+      assert.deepEqual(beforeRead.answer, afterRead.answer);
+      await assert.rejects(
+        readCoachThread({ ...args, principal: parent, id: threadId }),
+        { message: "NOT_FOUND" },
+      );
     },
   );
 });

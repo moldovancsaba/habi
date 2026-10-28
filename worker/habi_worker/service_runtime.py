@@ -143,7 +143,16 @@ def _answer_for_context(config, context, cancelled=None, on_progress=None):
     if context.get("coachMode"):
         if hashlib.sha256(system_prompt.encode("utf-8")).hexdigest() != manifest["promptHash"]:
             raise WorkerDependencyError("WORKER_PROMPT_UNAVAILABLE")
-        if context.get("guidance"):
+        conversation = context.get("conversation")
+        if conversation and conversation.get("suppressRepeatedAnswer"):
+            return {
+                "status": "needs_clarification", "questionRevision": context["turnRevision"],
+                "claims": [], "attributions": [], "unknowns": [conversation["lead"]],
+                "clarifyingQuestions": conversation["questions"],
+                "suggestedAction": None, "validity": "current",
+                "manifest": {**manifest, "modelArtifact": "habi-conversation@1"},
+            }
+        if context.get("guidance") and not (conversation and conversation.get("hasNewUserContext")):
             guidance = context["guidance"]
             facts = [
                 claim for claim in source_summary(context, "GUIDANCE_EVIDENCE")["claims"]
@@ -158,16 +167,18 @@ def _answer_for_context(config, context, cancelled=None, on_progress=None):
                 "manifest": {**manifest, "modelArtifact": "habi-guidance@1"},
             }
         snapshots = [{"key":"S"+str(i+1),"title":s.get("title",""),"kind":s.get("kind",""),"at":s.get("at",""),"role":s.get("role",""),"text":s.get("text","")} for i,s in enumerate(context["sourceSnapshots"])]
-        dialogue_items = context.get("dialogue", [])[-4:]
+        dialogue_items = context.get("dialogue", [])[-8:]
         opening = context.get("opening", "")[:300]
         for attempt in range(5):
             dialogue = json.dumps(dialogue_items, ensure_ascii=False, separators=(",", ":"))
             source_bundle = json.dumps({"SOURCES": snapshots}, ensure_ascii=False, separators=(",", ":"))
             prompt = system_prompt + "\n\nA kérdező szerepköre: " + context.get("viewerRole", "player") + "\nKijelölt tartalom: " + opening + "\nKorábbi beszélgetés (nem új bizonyíték): " + dialogue + "\nMostani kérdés: " + context["question"] + "\nSOURCE_MANIFEST és SOURCES: " + source_bundle
+            prompt += "\nBeszélgetési szabály: az előzményben szereplő válaszokat és visszakérdezéseket vedd figyelembe. Ne kezdd újra ugyanazt a magyarázatot. A felhasználó mostani válaszára reagálj; legfeljebb egy releváns, még meg nem válaszolt kérdést tegyél fel. Az előzmény nem új tényforrás. Változatlan adatokból ne találj ki új személyes következtetést."
             if len(json.dumps({"messages": [{"role":"system", "content":system_prompt}, {"role":"user", "content":prompt[len(system_prompt)+2:]}]}, ensure_ascii=False)) < 13000:
                 break
             snapshots = [{**item, "text": item.get("text", "")[:max(80, 700 // (attempt + 1))], "title": item.get("title", "")[:50]} for item in snapshots]
-            dialogue_items = dialogue_items[-2:]
+            if attempt >= 2:
+                dialogue_items = [{**item, "question": item.get("question", "")[:600], "answer": item.get("answer", "")[:700], "questions": [q[:250] for q in item.get("questions", [])[:2]]} for item in dialogue_items[-(4 if attempt < 4 else 2):]]
             opening = ""
     if config.mode == "hosted":
         try:

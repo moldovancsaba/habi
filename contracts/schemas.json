@@ -9205,6 +9205,14 @@
               "answer": {
                 "type": "string",
                 "maxLength": 4000
+              },
+              "questions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "maxItems": 5
               }
             },
             "required": [
@@ -9225,6 +9233,9 @@
         },
         "guidance": {
           "$ref": "#/$defs/CoachGuidance"
+        },
+        "conversation": {
+          "$ref": "#/$defs/CoachConversation"
         }
       },
       "required": [
@@ -9280,6 +9291,39 @@
         "questions",
         "asOfDate",
         "hasCurrentCheckin"
+      ],
+      "additionalProperties": false
+    },
+    "CoachConversation": {
+      "type": "object",
+      "properties": {
+        "repeated": {
+          "const": true
+        },
+        "suppressRepeatedAnswer": {
+          "type": "boolean"
+        },
+        "lead": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 5
+        },
+        "hasNewUserContext": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "repeated",
+        "suppressRepeatedAnswer",
+        "lead",
+        "questions"
       ],
       "additionalProperties": false
     }
