@@ -13,6 +13,7 @@ import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from habi_worker.coach_summary import source_summary
 from habi_worker.local_runtime import WorkerDependencyError, _request_json
 from habi_worker.shared_ai import SharedAIError, SharedAICancelled, generate as shared_ai_generate, validate_service as validate_shared_ai_service
 
@@ -121,7 +122,7 @@ def _scan_pdf(config, job, context, job_path):
     return verdict, scanner_version
 
 
-def _answer_for_context(config, context, cancelled=None):
+def _answer_for_context(config, context, cancelled=None, on_progress=None):
     refs = context["sourceManifest"]
     manifest = context["promptManifest"]
     if not refs:
@@ -142,12 +143,12 @@ def _answer_for_context(config, context, cancelled=None):
     if context.get("coachMode"):
         if hashlib.sha256(system_prompt.encode("utf-8")).hexdigest() != manifest["promptHash"]:
             raise WorkerDependencyError("WORKER_PROMPT_UNAVAILABLE")
-        snapshots = [dict(item) for item in context["sourceSnapshots"]]
+        snapshots = [{"key":"S"+str(i+1),"title":s.get("title",""),"kind":s.get("kind",""),"at":s.get("at",""),"role":s.get("role",""),"text":s.get("text","")} for i,s in enumerate(context["sourceSnapshots"])]
         dialogue_items = context.get("dialogue", [])[-4:]
         opening = context.get("opening", "")[:300]
         for attempt in range(5):
             dialogue = json.dumps(dialogue_items, ensure_ascii=False, separators=(",", ":"))
-            source_bundle = json.dumps({"SOURCE_MANIFEST": refs, "SOURCES": snapshots}, ensure_ascii=False, separators=(",", ":"))
+            source_bundle = json.dumps({"SOURCES": snapshots}, ensure_ascii=False, separators=(",", ":"))
             prompt = system_prompt + "\n\nA kérdező szerepköre: " + context.get("viewerRole", "player") + "\nKijelölt tartalom: " + opening + "\nKorábbi beszélgetés (nem új bizonyíték): " + dialogue + "\nMostani kérdés: " + context["question"] + "\nSOURCE_MANIFEST és SOURCES: " + source_bundle
             if len(json.dumps({"messages": [{"role":"system", "content":system_prompt}, {"role":"user", "content":prompt[len(system_prompt)+2:]}]}, ensure_ascii=False)) < 13000:
                 break
@@ -155,11 +156,22 @@ def _answer_for_context(config, context, cancelled=None):
             dialogue_items = dialogue_items[-2:]
             opening = ""
     if config.mode == "hosted":
-        generated, actual_model = shared_ai_generate(
-            config, system_prompt, prompt[len(system_prompt) + 2:],
-            str(context.get("jobId", "")) + ":" + str(context["turnRevision"]) + ":" + _sha256_json(refs),
-            **({"should_cancel": cancelled} if cancelled else {}),
-        )
+        try:
+            generated, actual_model = shared_ai_generate(
+                config, system_prompt, prompt[len(system_prompt) + 2:],
+                str(context.get("jobId", "")) + ":" + str(context["turnRevision"]) + ":" + _sha256_json(refs),
+                **({"should_cancel": cancelled} if cancelled else {}),
+                **({"on_progress": on_progress} if on_progress else {}),
+            )
+        except SharedAICancelled:
+            raise
+        except SharedAIError as error:
+            if str(error) in ("SHARED_AI_AUTHORIZATION_FAILED","SHARED_AI_TEXT_CHAT_NOT_PERMITTED","SHARED_AI_MODEL_NOT_PERMITTED"):
+                raise
+            if not context.get("coachMode"):
+                raise
+            _log("habi.worker.coach.source_summary", reason=str(error))
+            return source_summary(context, str(error))
         manifest = {**manifest, "modelArtifact": actual_model[:200]}
     else:
         result = _request_json(config.ollama_origin + "/api/generate", {
@@ -180,19 +192,43 @@ def _answer_for_context(config, context, cancelled=None):
             if not isinstance(claim, dict) or not isinstance(claim.get("text"), str) or not claim["text"].strip():
                 continue
             evidence = claim.get("evidenceRefs")
+            if context.get("coachMode") and isinstance(claim.get("sources"), list):
+                aliases = {"S"+str(i+1):next((ref for ref in refs if ref["id"]==s.get("id") and ref["revision"]==s.get("revision")),None) for i,s in enumerate(context["sourceSnapshots"])}
+                keys=claim["sources"]
+                evidence=[aliases[key] for key in keys] if keys and all(isinstance(key,str) and aliases.get(key) for key in keys) else []
             if not isinstance(evidence, list) or not evidence:
                 continue
             evidence = [allowed[(ref.get("id"), ref.get("revision"), ref.get("span"))] for ref in evidence if isinstance(ref, dict) and (ref.get("id"), ref.get("revision"), ref.get("span")) in allowed]
             if not evidence:
                 continue
             kind = claim.get("kind") if claim.get("kind") in ("direct", "general", "inference") else "inference"
-            claims.append({"id": "claim-" + str(index + 1), "text": claim["text"][:2000], "kind": kind, "evidenceRefs": evidence, "review": None})
+            text=claim["text"]
+            if context.get("coachMode"):
+                cited=[s for s in context["sourceSnapshots"] if any(r["id"]==s.get("id") and r["revision"]==s.get("revision") for r in evidence)]
+                if kind in ("direct","inference") and not any(s.get("kind")!="authored_content" for s in cited):
+                    continue
+                if kind in ("direct","general"):
+                    quote=claim.get("quote",text)
+                    if not isinstance(quote,str) or len(quote.strip())<5 or not any(quote in s.get("text","") for s in cited):
+                        continue
+                    text=quote.strip()
+            claims.append({"id": "claim-" + str(index + 1), "text": text[:2000], "kind": kind, "evidenceRefs": evidence, "review": None})
     unknowns = generated.get("unknowns", []) if isinstance(generated, dict) else []
     questions = generated.get("clarifyingQuestions", []) if isinstance(generated, dict) else []
     attributions = generated.get("attributions", []) if isinstance(generated, dict) else []
     clean_strings = lambda values, cap, length: [value.strip()[:length] for value in values[:cap] if isinstance(value, str) and value.strip()] if isinstance(values, list) else []
+    if not claims and context.get("coachMode"):
+        return source_summary(context, "MODEL_WITHOUT_VALID_CITATIONS")
     if not claims:
         return {"status": "no_evidence", "questionRevision": context["turnRevision"], "claims": [], "attributions": [], "unknowns": clean_strings(unknowns, 20, 1000) or ["A források alapján nem állítható össze ellenőrizhető válasz."], "clarifyingQuestions": clean_strings(questions, 5, 500), "suggestedAction": None, "validity": "current", "manifest": manifest}
+    if context.get("coachMode") and claims:
+        help_claims=[c for c in source_summary(context,"AUTHORED_EXPLANATION")["claims"] if c["kind"]=="general" and any(r["id"].startswith("habi-metric-") for r in c["evidenceRefs"])]
+        for help_claim in help_claims:
+            if not any(any(r in c["evidenceRefs"] for r in help_claim["evidenceRefs"]) for c in claims):
+                help_claim={**help_claim,"id":"metric-help-"+str(len(claims))};claims.append(help_claim)
+    if context.get("coachMode") and claims and not any(claim["kind"] == "direct" for claim in claims):
+        facts=[c for c in source_summary(context,"FACTS_ALONGSIDE_EXPLANATION")["claims"] if c["kind"]=="direct"]
+        claims=facts+claims[:20-len(facts)]
     if context.get("coachMode") and not any(claim["kind"] == "inference" for claim in claims):
         return {"status": "ready", "questionRevision": context["turnRevision"], "claims": claims, "attributions": clean_strings(attributions, 20, 1000), "unknowns": clean_strings(unknowns, 20, 1000), "clarifyingQuestions": clean_strings(questions, 5, 500), "suggestedAction": None, "validity": "current", "manifest": manifest}
     return {"status": "awaiting_review", "questionRevision": context["turnRevision"], "claims": claims, "attributions": clean_strings(attributions, 20, 1000), "unknowns": clean_strings(unknowns, 20, 1000), "clarifyingQuestions": clean_strings(questions, 5, 500), "suggestedAction": None, "validity": "review_required", "manifest": manifest}
@@ -214,28 +250,47 @@ def _process_one(config, claim_key):
     stop = threading.Event()
     heartbeat_error = []
 
+    phase = ["starting"]
+    progress_lock = threading.Lock()
+
+    def report_progress(code, force=False):
+        if heartbeat_error:
+            return
+        with progress_lock:
+            if phase[0] == code and not force:
+                return
+            phase[0] = code
+            try:
+                _api_call(config, job_path + "/heartbeat", {"fence": job["fence"], "leaseToken": job["leaseToken"], "progressCode": code}, {"Idempotency-Key": str(uuid.uuid4())})
+            except WorkerApiError as error:
+                if error.status in (401,403,404,409):
+                    heartbeat_error.append(error.code)
+                else:
+                    _log("habi.worker.progress.retry", jobId=job["jobId"], reason=error.code)
+
     def heartbeat_loop():
         while not stop.wait(20):
-            try:
-                _api_call(config, job_path + "/heartbeat", {"fence": job["fence"], "leaseToken": job["leaseToken"], "progressCode": "generating"}, {"Idempotency-Key": str(uuid.uuid4())})
-            except WorkerApiError as error:
-                heartbeat_error.append(error.code)
+            report_progress(phase[0], True)
+            if heartbeat_error:
                 return
 
     heartbeat = threading.Thread(target=heartbeat_loop, daemon=True)
     heartbeat.start()
     try:
+        report_progress("starting", True)
         _, context = _api_call(config, job_path + "/context", headers=headers)
         if "uploadId" in context:
             verdict, scanner_version = _scan_pdf(config, job, context, job_path)
             _log("habi.worker.report_scan.completed", jobId=job["jobId"], verdict=verdict, scannerVersion=scanner_version)
         else:
-            answer = _answer_for_context(config, context, lambda: bool(heartbeat_error))
+            answer = _answer_for_context(config, context, lambda: bool(heartbeat_error), report_progress)
+            report_progress("checking")
             if heartbeat_error:
                 _log("habi.worker.lease_lost", jobId=job["jobId"], reason=heartbeat_error[0])
                 return True, str(uuid.uuid4())
             result = {"result": answer, "sourceManifest": context["sourceManifest"]}
             payload = {"fence": job["fence"], "leaseToken": job["leaseToken"], "resultHash": _sha256_json(result), **result}
+            report_progress("uploading")
             _api_call(config, job_path + "/complete", payload, {"Idempotency-Key": str(uuid.uuid4())})
             _log("habi.worker.interpretation.completed", jobId=job["jobId"], resultStatus=answer["status"], claimCount=len(answer["claims"]))
     except SharedAICancelled:

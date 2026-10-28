@@ -21,6 +21,16 @@ import assessments from "../content/coach-assessments-v1.json" with {
   type: "json",
 };
 
+function metricFromQuestion(question) {
+  const matches = [
+    ["sleep", /alv|pihen/i],
+    ["energy", /energi/i],
+    ["focus", /figyel|koncentr/i],
+    ["mood", /hangulat|feszült|lehangolt/i],
+    ["load", /edzésterhel|edzés mennyis/i],
+  ].filter(([, pattern]) => pattern.test(question));
+  return matches.length === 1 ? matches[0][0] : null;
+}
 function authoredSources() {
   return [
     ...Object.keys(coachPages).map((page) =>
@@ -192,6 +202,15 @@ export async function startCoachTurn({
     anchor,
     10,
   );
+  const helpMetric = metricFromQuestion(question);
+  if (helpMetric) {
+    const help = contentSource({
+      kind: "metric",
+      id: helpMetric,
+      metric: helpMetric,
+    });
+    if (help && !relevant.some((s) => s.id === help.id)) relevant.push(help);
+  }
   const memoryFacts = profile.facts
     .filter(
       (f) =>
@@ -215,7 +234,10 @@ export async function startCoachTurn({
         kind: "derived_profile",
         title: "A játékos forrásolt profiljának pillanatképe",
         text: memoryFacts
-          .map((f) => `${f.at} · ${f.text}`)
+          .map(
+            (f) =>
+              `${f.at} · ${f.status === "candidate" ? "Megerősítésre váró megjegyzés: " : ""}${f.text}`,
+          )
           .join("\n\n")
           .slice(0, 4000),
         at: now.toISOString(),
@@ -432,6 +454,42 @@ export async function listCoachThreads({
     nextCursor: threads.length > 30 ? threads[29].id : null,
   };
 }
+export function coachJobProgress(job, turn, now = new Date(), queuedAhead = 0) {
+  const status =
+    job?.status ?? (turn.status === "answered" ? "succeeded" : turn.status);
+  const codes = {
+    AI_RETRIEVING: "retrieving",
+    AI_PROVIDER_QUEUED: "provider_wait",
+    AI_GENERATING: "generating",
+    AI_CHECKING: "checking",
+    AI_SAVING: "saving",
+    AI_REPAIRING: "repairing",
+  };
+  let phase =
+    status === "succeeded" || turn.status === "answered"
+      ? "completed"
+      : status === "failed" || status === "cancelled"
+        ? "failed"
+        : status === "queued"
+          ? Date.parse(job?.nextAttemptAt ?? "") > now.getTime()
+            ? "retry_wait"
+            : "queued"
+          : (codes[job?.reasonCode] ?? "retrieving");
+  if (
+    ["leased", "running"].includes(status) &&
+    Date.parse(job?.leaseUntil ?? "") < now.getTime()
+  )
+    phase = "reconnecting";
+  return {
+    phase,
+    submittedAt: turn.createdAt,
+    lastActivityAt: job?.updatedAt ?? turn.updatedAt,
+    retryAt: phase === "retry_wait" ? job.nextAttemptAt : null,
+    attempts: job?.attempts ?? 0,
+    queuedAhead,
+  };
+}
+
 export async function readCoachThread({
   db,
   principal,
@@ -464,6 +522,28 @@ export async function readCoachThread({
     .sort({ createdAt: -1, id: -1 })
     .limit(31)
     .toArray();
+  const jobDocs = await db
+    .collection("jobs")
+    .find({
+      tenantId: principal.tenantId,
+      requesterActorId: principal.actorId,
+      requesterRole: principal.role,
+      id: { $in: turns.map((t) => t.jobId) },
+    })
+    .toArray();
+  const jobsById = new Map(jobDocs.map((j) => [j.id, j]));
+  const ownQueue = await db
+    .collection("jobs")
+    .find({
+      tenantId: principal.tenantId,
+      playerId,
+      requesterActorId: principal.actorId,
+      requesterRole: principal.role,
+      kind: "coachConversation",
+      status: { $in: ["queued", "leased", "running"] },
+    })
+    .project({ id: 1, createdAt: 1 })
+    .toArray();
   const items = [];
   for (const turn of turns.slice(0, 30).reverse()) {
     if (
@@ -477,11 +557,7 @@ export async function readCoachThread({
     const current = turn.sourceRefs.every((r) =>
       available.some((s) => s.id === r.id && s.revision === r.revision),
     );
-    const job = ["queued", "failed"].includes(turn.status)
-      ? await db
-          .collection("jobs")
-          .findOne({ tenantId: principal.tenantId, id: turn.jobId })
-      : null;
+    const job = jobsById.get(turn.jobId);
     const answer =
       turn.answer && current
         ? {
@@ -503,6 +579,18 @@ export async function readCoachThread({
           : turn.status,
       sourceState: current ? "current" : "withdrawn",
       failureReason: job?.reasonCode ?? null,
+      progress: coachJobProgress(
+        job,
+        turn,
+        new Date(),
+        ownQueue.filter(
+          (j) => j.id !== turn.jobId && j.createdAt < turn.createdAt,
+        ).length,
+      ),
+      answerMode:
+        turn.answer?.manifest.modelArtifact === "habi-source-summary@1"
+          ? "source_summary"
+          : "model",
       pendingReview:
         !!turn.answer?.claims.some((c) => c.kind === "inference") &&
         !["approved", "rejected"].includes(turn.reviewState),
@@ -593,6 +681,13 @@ export async function coachWorkerContext({
       ).slice(0, 200),
     });
   }
+  const focusMetric =
+    metricFromQuestion(turn.question) ??
+    (turn.context.metric !== "all" ? turn.context.metric : null);
+  const focusLabel = focusMetric
+    ? contentSource({ kind: "metric", id: focusMetric, metric: focusMetric })
+        ?.title
+    : null;
   return {
     coachMode: true,
     viewerRole: principal.role,
@@ -604,7 +699,20 @@ export async function coachWorkerContext({
     sourceSnapshots: snapshots.map((s, i) => ({
       ...s,
       title: s.title.slice(0, 60),
-      text: s.text.slice(0, i === 0 ? 1200 : 150),
+      text: (s.kind === "checkin_results" && focusLabel
+        ? s.text
+            .split("\n")
+            .filter((line) => line.startsWith(focusLabel))
+            .join("\n") || "Ehhez a kérdéshez nincs rögzített válasz."
+        : s.text
+      ).slice(
+        0,
+        i === 0
+          ? 1200
+          : s.kind === "checkin_results" || s.id.startsWith("habi-metric-")
+            ? 700
+            : 150,
+      ),
     })),
     sourceManifest: turn.sourceRefs,
     promptManifest: { ...manifest, sourceRefs: turn.sourceRefs },

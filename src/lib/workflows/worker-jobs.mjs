@@ -396,7 +396,19 @@ export async function heartbeatWorkerJob({
       leaseUntil: { $gt: now.toISOString() },
     },
     {
-      $set: { status: "running", leaseUntil, updatedAt: now.toISOString() },
+      $set: {
+        status: "running",
+        leaseUntil,
+        updatedAt: now.toISOString(),
+        reasonCode: {
+          starting: "AI_RETRIEVING",
+          provider_queued: "AI_PROVIDER_QUEUED",
+          generating: "AI_GENERATING",
+          checking: "AI_CHECKING",
+          uploading: "AI_SAVING",
+          repairing: "AI_REPAIRING",
+        }[input.progressCode],
+      },
       $inc: { revision: 1 },
     },
     { returnDocument: "after" },
@@ -470,7 +482,8 @@ export async function deferWorkerJob({
         "AUTH_REVOKED",
         "SOURCE_INVALIDATED",
       ]);
-      const isTerminal = terminal || terminalReasons.has(input.reasonCode);
+      const isTerminal =
+        terminal || terminalReasons.has(input.reasonCode) || job.attempts >= 4;
       const retryIndex = Math.min(
         Math.max(0, job.attempts - 1),
         RETRY_DELAYS.length - 1,

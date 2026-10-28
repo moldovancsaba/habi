@@ -4535,7 +4535,9 @@
             "starting",
             "generating",
             "checking",
-            "uploading"
+            "uploading",
+            "provider_queued",
+            "repairing"
           ]
         }
       },

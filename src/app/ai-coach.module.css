@@ -238,3 +238,52 @@
     margin-left: 20px;
   }
 }
+.progressPanel {
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid #c7d9f7;
+  border-radius: 14px;
+  background: #f2f7ff;
+}
+.progressTitle {
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+.progressBar {
+  width: 100%;
+  height: 8px;
+  accent-color: #245ee7;
+}
+.progressSteps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  color: #718098;
+  font-size: 12px;
+}
+.progressSteps li {
+  padding: 5px 6px;
+  border-radius: 8px;
+  background: #e8eef8;
+}
+.progressSteps .stepDone {
+  color: #166647;
+  background: #e3f3eb;
+}
+.progressSteps .stepActive {
+  color: #214d9c;
+  background: #dce9ff;
+  font-weight: 800;
+}
+
+.liveStatus {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2853a7;
+}

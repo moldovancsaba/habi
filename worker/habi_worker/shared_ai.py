@@ -14,6 +14,7 @@ MAX_REQUEST_CHARS = 14_000
 MAX_RESPONSE_BYTES = 1_048_576
 MAX_JOB_SECONDS = 300
 POLL_SECONDS = 3
+SERVICE_OUTPUT_LIMITS = {}
 
 
 class SharedAIError(WorkerDependencyError):
@@ -93,6 +94,10 @@ def validate_service(config):
         catalog = _authorized_capabilities(config)
     except _Retryable as error:
         raise SharedAIError(error.code) from error
+    selected_model = catalog["jobTypes"]["text_chat"].get("model") if config.shared_ai_model == "auto" else config.shared_ai_model
+    model = next((m for m in catalog["models"] if m.get("id")==selected_model), {})
+    profile = model.get("rankings", {}).get("text_chat", {}).get("profile", {})
+    SERVICE_OUTPUT_LIMITS[(config.shared_ai_origin,config.shared_ai_model)] = min(max(int(profile.get("max_output_tokens",512)),128),2048)
     if config.shared_ai_model != "auto":
         available = catalog["jobTypes"]["text_chat"].get("available_models", [])
         permitted = config.shared_ai_model in available
@@ -118,64 +123,88 @@ def _create_job(config, request_body, idempotency_key):
     raise SharedAIError("SHARED_AI_JOB_CREATE_FAILED")
 
 
-def generate(config, system_prompt, user_prompt, revision_key, should_cancel=None):
-    """Run a bounded async text job; retry creation only with a stable idempotency key."""
-    if should_cancel and should_cancel():
-        raise SharedAICancelled("SHARED_AI_CANCELLED")
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt},
-    ]
-    request_body = {
-        "task": "text_chat",
-        "model": config.shared_ai_model,
-        "input": {
-            "messages": messages,
-            "response_format": {"type": "json_object"},
-            "max_tokens": 512,
-            "reasoning_effort": "none",
-        },
-    }
-    encoded = json.dumps(request_body, ensure_ascii=False, separators=(",", ":"))
-    if len(encoded) > MAX_REQUEST_CHARS:
-        raise SharedAIError("SHARED_AI_INPUT_TOO_LARGE")
-    key_hash = hashlib.sha256((revision_key + "\n" + encoded).encode("utf-8")).hexdigest()
-    idempotency_key = "habi-" + key_hash
-    job_id = _create_job(config, request_body, idempotency_key)
+def _json_answer(content):
+    """Accept a complete JSON object, including a fenced JSON response. Never repair partial JSON."""
+    text = content.strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        if len(lines) > 2 and lines[-1].strip() == "```":
+            text = "\n".join(lines[1:-1]).strip()
+    try:
+        generated = json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find("{")
+        if start < 0:
+            raise SharedAIError("SHARED_AI_RESULT_INVALID")
+        try:
+            generated, _ = json.JSONDecoder().raw_decode(text[start:])
+        except json.JSONDecodeError as error:
+            raise SharedAIError("SHARED_AI_RESULT_INVALID") from error
+    if not isinstance(generated, dict) or not isinstance(generated.get("claims"), list) or any(not isinstance(claim,dict) or not isinstance(claim.get("text"),str) or not isinstance(claim.get("sources",claim.get("evidenceRefs")),list) for claim in generated["claims"]):
+        raise SharedAIError("SHARED_AI_RESULT_INVALID")
+    return generated
+
+
+def generate(config, system_prompt, user_prompt, revision_key, should_cancel=None, on_progress=None):
+    """Run a bounded async request and retry malformed/truncated output once with more room."""
     deadline = time.monotonic() + MAX_JOB_SECONDS
-    while time.monotonic() < deadline:
+    maximum=SERVICE_OUTPUT_LIMITS.get((config.shared_ai_origin,config.shared_ai_model),512)
+    for output_attempt, token_limit in enumerate((max(128,maximum//2),maximum)):
         if should_cancel and should_cancel():
             raise SharedAICancelled("SHARED_AI_CANCELLED")
-        try:
-            _, response, _ = _request(config, "GET", "/jobs/" + urllib.parse.quote(job_id, safe=""), timeout=15)
-        except _Retryable as error:
-            _wait(error.retry_after, 0)
-            continue
-        if not isinstance(response, dict):
-            raise SharedAIError("SHARED_AI_JOB_STATUS_INVALID")
-        status = response.get("status")
-        if status == "completed":
-            result = response.get("result")
-            if not isinstance(result, dict):
-                raise SharedAIError("SHARED_AI_RESULT_INVALID")
-            choices = result.get("choices")
-            if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
-                raise SharedAIError("SHARED_AI_RESULT_INVALID")
-            message = choices[0].get("message")
-            content = message.get("content") if isinstance(message, dict) else None
-            actual_model = result.get("model") or response.get("model")
-            if not isinstance(content, str) or not isinstance(actual_model, str) or not actual_model:
-                raise SharedAIError("SHARED_AI_RESULT_INVALID")
+        if on_progress:
+            on_progress("repairing" if output_attempt else "provider_queued")
+        repair = "\nAdj teljes, érvényes JSON objektumot, legfeljebb két rövid állítással. Ne használj Markdown-kódblokkot." if output_attempt else ""
+        request_body = {
+            "task": "text_chat", "model": config.shared_ai_model,
+            "input": {"messages": [{"role":"system", "content":system_prompt}, {"role":"user", "content":user_prompt + repair}],
+                      "response_format":{"type":"json_object"}, "max_tokens":token_limit, "reasoning_effort":"none"},
+        }
+        encoded = json.dumps(request_body, ensure_ascii=False, separators=(",", ":"))
+        if len(encoded) > MAX_REQUEST_CHARS:
+            raise SharedAIError("SHARED_AI_INPUT_TOO_LARGE")
+        key_hash = hashlib.sha256((revision_key + "\n" + encoded).encode("utf-8")).hexdigest()
+        job_id = _create_job(config, request_body, "habi-" + key_hash)
+        last_status = None
+        while time.monotonic() < deadline:
+            if should_cancel and should_cancel():
+                raise SharedAICancelled("SHARED_AI_CANCELLED")
             try:
-                generated = json.loads(content)
-            except json.JSONDecodeError as error:
-                raise SharedAIError("SHARED_AI_RESULT_INVALID") from error
-            if not isinstance(generated, dict):
-                raise SharedAIError("SHARED_AI_RESULT_INVALID")
-            return generated, actual_model
-        if status == "failed":
-            raise SharedAIError("SHARED_AI_JOB_FAILED")
-        if status not in ("queued", "running"):
-            raise SharedAIError("SHARED_AI_JOB_STATUS_INVALID")
-        time.sleep(POLL_SECONDS)
-    raise SharedAIError("SHARED_AI_JOB_TIMEOUT")
+                _, response, _ = _request(config, "GET", "/jobs/" + urllib.parse.quote(job_id, safe=""), timeout=15)
+            except _Retryable as error:
+                _wait(error.retry_after, 0)
+                continue
+            if not isinstance(response, dict):
+                raise SharedAIError("SHARED_AI_JOB_STATUS_INVALID")
+            status = response.get("status")
+            if status != last_status and on_progress:
+                on_progress("provider_queued" if status == "queued" else "generating" if status == "running" else "checking")
+            last_status = status
+            if status == "completed":
+                result = response.get("result")
+                choices = result.get("choices") if isinstance(result, dict) else None
+                choice = choices[0] if isinstance(choices, list) and choices and isinstance(choices[0], dict) else {}
+                message = choice.get("message")
+                content = message.get("content") if isinstance(message, dict) else None
+                actual_model = result.get("model") or response.get("model") if isinstance(result, dict) else None
+                try:
+                    if not isinstance(content, str) or not isinstance(actual_model, str) or not actual_model:
+                        raise SharedAIError("SHARED_AI_RESULT_INVALID")
+                    generated = _json_answer(content)
+                except SharedAIError:
+                    # Log only structural metadata, never a prompt or response text.
+                    print(json.dumps({"event":"habi.worker.output.retry", "attempt":output_attempt + 1, "finishReason":str(choice.get("finish_reason", "unknown"))[:30], "responseChars":len(content) if isinstance(content,str) else 0}), flush=True)
+                    if output_attempt == 0:
+                        break
+                    raise
+                return generated, actual_model
+            if status == "failed":
+                if output_attempt == 0:
+                    break
+                raise SharedAIError("SHARED_AI_JOB_FAILED")
+            if status not in ("queued", "running"):
+                raise SharedAIError("SHARED_AI_JOB_STATUS_INVALID")
+            time.sleep(POLL_SECONDS)
+        else:
+            raise SharedAIError("SHARED_AI_JOB_TIMEOUT")
+    raise SharedAIError("SHARED_AI_RESULT_INVALID")

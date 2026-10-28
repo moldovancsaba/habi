@@ -18,9 +18,12 @@ import {
   reviewCoachTurn,
   listCoachReviews,
   verifyCoachSources,
+  coachJobProgress,
 } from "../src/lib/workflows/ai-coach.mjs";
 import {
   claimWorkerJob,
+  heartbeatWorkerJob,
+  deferWorkerJob,
   getWorkerJobContext,
   completeWorkerJob,
 } from "../src/lib/workflows/worker-jobs.mjs";
@@ -79,6 +82,21 @@ test("retrieval retains relevant older evidence instead of taking only the lates
     ),
   );
   assert.equal(contentSource({ kind: "practice", id: "forged" }), null);
+  const latestCheckin = sleep("real-checkin", "2026-10-26T09:00:00Z");
+  const chatFlood = Array.from({ length: 30 }, (_, i) => ({
+    ...latestCheckin,
+    id: `message-${i}`,
+    kind: "messages",
+    at: "2026-10-27T09:00:00Z",
+    text: "Közös beszélgetés",
+  }));
+  assert.ok(
+    selectRelevantSources(
+      [latestCheckin, ...chatFlood],
+      "Hogy áll a srác?",
+      null,
+    ).some((s) => s.id === latestCheckin.id),
+  );
 });
 test("conversation preferences stay tentative until explicitly confirmed", () => {
   const source = {
@@ -97,6 +115,45 @@ test("conversation preferences stay tentative until explicitly confirmed", () =>
     now,
   );
   assert.ok(!confirmed.facts.some((f) => f.id === `fact-${source.id}`));
+});
+test("job progress distinguishes the provider queue, repair, retry and a lost heartbeat", () => {
+  const turn = {
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
+    status: "queued",
+  };
+  const base = {
+    status: "running",
+    reasonCode: "AI_PROVIDER_QUEUED",
+    leaseUntil: new Date(now.getTime() + 90000).toISOString(),
+    updatedAt: now.toISOString(),
+    attempts: 2,
+  };
+  assert.equal(coachJobProgress(base, turn, now, 2).phase, "provider_wait");
+  assert.equal(
+    coachJobProgress({ ...base, reasonCode: "AI_REPAIRING" }, turn, now).phase,
+    "repairing",
+  );
+  assert.equal(
+    coachJobProgress(
+      {
+        ...base,
+        status: "queued",
+        nextAttemptAt: new Date(now.getTime() + 30000).toISOString(),
+      },
+      turn,
+      now,
+    ).phase,
+    "retry_wait",
+  );
+  assert.equal(
+    coachJobProgress(base, turn, new Date(now.getTime() + 100000)).phase,
+    "reconnecting",
+  );
+  assert.equal(
+    coachJobProgress({ ...base, status: "succeeded" }, turn, now).phase,
+    "completed",
+  );
 });
 test("contextual coach persists private dialogue, refreshes memory and validates reviews and exact source revisions", {
   skip: !process.env.HABI_TEST_MONGODB_URI,
@@ -359,6 +416,25 @@ test("contextual coach persists private dialogue, refreshes memory and validates
     "authored content explains without personal records and complete rejects invented citations",
     async () => {
       claimed = await claim();
+      await heartbeatWorkerJob({
+        db,
+        worker,
+        id: claimed.jobId,
+        now: new Date(now.getTime() + 20000),
+        request: new Request("http://localhost/heartbeat", {
+          method: "POST",
+          headers: { "Idempotency-Key": randomUUID() },
+          body: JSON.stringify({
+            fence: claimed.fence,
+            leaseToken: claimed.leaseToken,
+            progressCode: "provider_queued",
+          }),
+        }),
+      });
+      assert.equal(
+        (await db.collection("jobs").findOne({ id: claimed.jobId })).reasonCode,
+        "AI_PROVIDER_QUEUED",
+      );
       const ctx = await workerContext(claimed);
       assert.equal(ctx.coachMode, true);
       assert.equal(ctx.viewerRole, "player");
@@ -541,6 +617,48 @@ test("contextual coach persists private dialogue, refreshes memory and validates
       await assert.rejects(getCoachProfile({ ...args, principal: other }), {
         message: "NOT_FOUND",
       });
+    },
+  );
+  await t.test(
+    "transient jobs stop retrying after four claims instead of waiting forever",
+    async () => {
+      const next = await startCoachTurn({
+        ...args,
+        now: new Date(now.getTime() + 5000),
+        request: request("/ai-coach", {
+          threadId: null,
+          question: "Új kérdés",
+          context,
+          expectedRevision: 0,
+        }),
+      });
+      await db
+        .collection("jobs")
+        .updateOne({ id: next.jobId }, { $set: { attempts: 3 } });
+      const lease = await claim();
+      assert.equal(lease.jobId, next.jobId);
+      await deferWorkerJob({
+        client,
+        db,
+        worker,
+        id: lease.jobId,
+        now: new Date(now.getTime() + 20000),
+        request: new Request("http://localhost/defer", {
+          method: "POST",
+          headers: { "Idempotency-Key": randomUUID() },
+          body: JSON.stringify({
+            fence: lease.fence,
+            leaseToken: lease.leaseToken,
+            reasonCode: "DEPENDENCY_UNAVAILABLE",
+          }),
+        }),
+      });
+      assert.equal(
+        (await db.collection("jobs").findOne({ id: next.jobId })).status,
+        "failed",
+      );
+      const detail = await readCoachThread({ ...args, id: next.threadId });
+      assert.equal(detail.items[0].progress.phase, "failed");
     },
   );
 });

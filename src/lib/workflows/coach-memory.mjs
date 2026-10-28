@@ -131,7 +131,17 @@ export function contentSource(context) {
     item = metric
       ? [
           metric[1],
-          `A játékos eredeti válaszlehetőségei: ${metric[2].join("; ")}. A grafikon az időrendben rögzített válaszkategóriákat mutatja. Az üres nap és a kihagyott válasz nem kitöltött adat. Külön alkalmak válaszait nem keverjük össze.`,
+          {
+            sleep:
+              "Ez a játékos saját visszajelzése az alvásáról. A „Keveset” azt jelzi, hogy saját megítélése szerint kevés volt az alvása. Ez nem ad meg óraszámot vagy okot, és önmagában nem értékeli az edzésteljesítményt.",
+            energy:
+              "Ez a játékos saját megítélése az aktuális energiájáról. Az energia és az alvás külön válasz; nem következtetünk az egyikből a másikra.",
+            focus:
+              "Ez a játékos saját visszajelzése arról, mennyire tud most figyelni. A „Nehezen” aktuális tapasztalatot ír le, nem tartós képességet vagy diagnózist.",
+            mood: "Ez a játékos saját beszámolója az aktuális hangulatáról. Nem jelent állandó személyiségjellemzőt vagy diagnózist.",
+            load: "Ez a játékos saját beszámolója az edzés mennyiségéről. Nem személyre szabott edzéselőírás vagy teljesítményminősítés.",
+          }[metric[0]] +
+            ` A játékos eredeti válaszlehetőségei: ${metric[2].join("; ")}. A grafikon az időrendben rögzített válaszkategóriákat mutatja. Az üres nap és a kihagyott válasz nem kitöltött adat. Külön alkalmak válaszait nem keverjük össze.`,
         ]
       : [
           "Állapotjelzések grafikonja",
@@ -146,7 +156,7 @@ export function contentSource(context) {
   if (!item) return null;
   return {
     id,
-    revision: 1,
+    revision: id.startsWith("habi-metric-") ? 2 : 1,
     span: null,
     kind: "authored_content",
     title: item[0],
@@ -383,6 +393,19 @@ export function selectRelevantSources(sources, question, anchor, limit = 18) {
         .filter((w) => w.length > 2),
     ),
   ];
+  const recentFacts = [
+    ...sources.filter((s) => s.kind === "checkin_results").slice(-1),
+    ...sources
+      .filter((s) =>
+        [
+          "records",
+          "assessment_results",
+          "monthly_reflections",
+          "extractions",
+        ].includes(s.kind),
+      )
+      .slice(-2),
+  ];
   const latest = sources.slice(-5),
     oldRelevant = sources
       .map((s) => ({
@@ -397,7 +420,7 @@ export function selectRelevantSources(sources, question, anchor, limit = 18) {
       .slice(0, limit);
   return [
     ...new Map(
-      [anchor, ...oldRelevant.map((x) => x.s), ...latest]
+      [anchor, ...recentFacts, ...oldRelevant.map((x) => x.s), ...latest]
         .filter(Boolean)
         .map((s) => [s.id, s]),
     ).values(),

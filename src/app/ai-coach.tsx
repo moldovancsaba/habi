@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import AiAnswerProgress, { type AnswerProgress } from "./ai-answer-progress";
 import { productRequest, commandMessage } from "./product-request";
 import styles from "./ai-coach.module.css";
 export type CoachContext = {
@@ -41,6 +42,8 @@ type Turn = {
     unknowns: string[];
     clarifyingQuestions: string[];
   };
+  progress?: AnswerProgress;
+  answerMode?: string;
   pendingReview: boolean;
   reviewState: string;
   reviewRationale: string;
@@ -244,7 +247,25 @@ function CoachPanel({
     [feedbackNotes, setFeedbackNotes] = useState<Record<string, string>>({});
   const [openedSources, setOpenedSources] = useState<Set<string>>(new Set());
   const requestEpoch = useRef(0);
-  const pending = turns.some((t) => t.status === "queued");
+  const pendingTurns = turns.filter((t) => t.status === "queued");
+  const activeProgress =
+    pendingTurns.find(
+      (t) => t.progress && !["queued", "retry_wait"].includes(t.progress.phase),
+    )?.progress ?? pendingTurns[0]?.progress;
+  const liveStatus = (
+    {
+      queued: "Feldolgozásra vár",
+      retrieving: "Források betöltése",
+      provider_wait: "Várakozás az AI-ra",
+      generating: "A válasz készül",
+      repairing: "Automatikus újragenerálás",
+      checking: "Források ellenőrzése",
+      saving: "A válasz mentése",
+      retry_wait: "Újrapróbálásra vár",
+      reconnecting: "Újracsatlakozás",
+    } as Record<string, string>
+  )[activeProgress?.phase ?? "queued"];
+  const pending = pendingTurns.length > 0;
   const request = useCallback(
     (
       path: string,
@@ -486,6 +507,14 @@ function CoachPanel({
             <h2 id="ai-coach-title">
               <SmartToy /> AI-edző
             </h2>
+            {pending && (
+              <span className={styles.liveStatus} aria-hidden="true">
+                {pendingTurns.length > 1
+                  ? `${pendingTurns.length} kérdés · `
+                  : ""}
+                {liveStatus}
+              </span>
+            )}
           </div>
           <button type="button" onClick={close} className={styles.close}>
             Vissza az oldalra
@@ -592,12 +621,18 @@ function CoachPanel({
             >
               Új beszélgetés erről a tartalomról
             </button>
-            {thread && (
-              <article className={styles.assistant}>
-                <strong>Habi AI-edző</strong>
-                <p className={styles.prewrap}>{thread.opening}</p>
-              </article>
-            )}
+            {thread &&
+              (turns.length > 0 ? (
+                <details className={styles.assistant}>
+                  <summary>A kijelölt tartalom magyarázata</summary>
+                  <p className={styles.prewrap}>{thread.opening}</p>
+                </details>
+              ) : (
+                <article className={styles.assistant}>
+                  <strong>Habi AI-edző</strong>
+                  <p className={styles.prewrap}>{thread.opening}</p>
+                </article>
+              ))}
             {older && (
               <button
                 type="button"
@@ -629,11 +664,18 @@ function CoachPanel({
                     </p>
                   ) : (
                     <>
-                      {turn.status === "queued" && (
-                        <p role="status">
-                          A kérdésedet elmentettük. A válasz készül; közben
-                          újabb kérdést is küldhetsz.
-                        </p>
+                      {turn.progress && (
+                        <AiAnswerProgress progress={turn.progress} />
+                      )}
+                      {turn.answerMode === "source_summary" && turn.answer && (
+                        <aside className={styles.notice}>
+                          <strong>Forrásalapú összefoglaló</strong>
+                          <p>
+                            Az AI-szolgáltatás nem adott feldolgozható választ.
+                            Az alábbiak az engedélyezett, mentett források
+                            tényszerű összefoglalói.
+                          </p>
+                        </aside>
                       )}
                       {turn.status === "failed" &&
                         turn.failureReason === "REPLACED_BY_QUESTION" && (

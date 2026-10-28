@@ -5,10 +5,13 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from habi_worker.shared_ai import SharedAICancelled, generate, validate_service
+from habi_worker.shared_ai import SharedAICancelled, SharedAIError, _json_answer, SERVICE_OUTPUT_LIMITS, generate, validate_service
 
 
 class SharedAIHandler(BaseHTTPRequestHandler):
+    output_limit = 512
+    outputs = []
+    phases = []
     requests = []
 
     def log_message(self, *_args):
@@ -25,12 +28,15 @@ class SharedAIHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.requests.append(("GET", self.path, self.headers.get("Authorization")))
         if self.path == "/v1/job-types":
-            return self._send(200, {"job_types": {"text_chat": {"available_models": ["granite4:1b-h"]}}})
+            return self._send(200, {"job_types": {"text_chat": {"model":"granite4:1b-h","available_models": ["granite4:1b-h"]}}})
         if self.path == "/v1/models":
-            return self._send(200, {"data": [{"id": "granite4:1b-h"}]})
+            return self._send(200, {"data": [{"id": "granite4:1b-h", "rankings":{"text_chat":{"profile":{"max_output_tokens":self.output_limit}}}}]})
+        if self.phases:
+            return self._send(200,{"status":self.phases.pop(0)})
+        content=self.outputs.pop(0) if self.outputs else '{"claims":[],"unknowns":[]}'
         return self._send(200, {"status": "completed", "result": {
             "model": "granite4:1b-h",
-            "choices": [{"message": {"content": '{"claims":[],"unknowns":[]}'}}],
+            "choices": [{"message": {"content": content}}],
         }})
 
     def do_POST(self):
@@ -54,11 +60,36 @@ class SharedAIClientTests(unittest.TestCase):
 
     def setUp(self):
         SharedAIHandler.requests = []
+        SERVICE_OUTPUT_LIMITS.clear()
+        SharedAIHandler.output_limit=512
+        SharedAIHandler.outputs=[]
+        SharedAIHandler.phases=[]
         self.config = SimpleNamespace(
             shared_ai_origin="http://127.0.0.1:%s/v1" % self.server.server_port,
             shared_ai_key="synthetic-shared-key-never-log-this-value",
             shared_ai_model="auto",
         )
+
+    def test_complete_fenced_json_is_accepted_but_partial_json_is_not(self):
+        self.assertEqual(_json_answer('```json\n{"claims":[]}\n```'), {"claims":[]})
+        with self.assertRaises(SharedAIError):
+            _json_answer('{"claims":[{"text":"cut off')
+        with self.assertRaises(SharedAIError):
+            _json_answer('{"claims":["not a claim object"]}')
+
+    def test_truncated_response_retries_once_with_room_and_reports_real_phases(self):
+        SharedAIHandler.output_limit=1024
+        validate_service(self.config)
+        SharedAIHandler.outputs=['{"claims":[', '{"claims":[],"unknowns":["hiányzó adat"]}']
+        SharedAIHandler.phases=["queued","running"]
+        phases=[]
+        with patch("habi_worker.shared_ai.POLL_SECONDS",0):
+            generated,_=generate(self.config,"system","question","retry-output",on_progress=phases.append)
+        self.assertEqual(generated["unknowns"],["hiányzó adat"])
+        posts=[r for r in SharedAIHandler.requests if r[0]=="POST"]
+        self.assertEqual([p[4]["input"]["max_tokens"] for p in posts],[512,1024])
+        self.assertNotEqual(posts[0][3],posts[1][3])
+        self.assertIn("provider_queued",phases);self.assertIn("generating",phases);self.assertIn("repairing",phases);self.assertIn("checking",phases)
 
     def test_discovery_confirms_permitted_job_and_catalog(self):
         self.assertEqual(validate_service(self.config), {"task": "text_chat", "model": "auto"})

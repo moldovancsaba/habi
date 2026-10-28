@@ -24,8 +24,18 @@ A javaslat támogató, önkéntes kipróbálás, nem automatikusan elfogadott te
 
 ## Telepítés és működés
 
-- API: `2.4.22`; új utak: `ai-coach`, `ai-profile`, `ai-reviews`, `ai-sources` a kiválasztott játékos alatt.
+- API: `2.4.23`; új utak: `ai-coach`, `ai-profile`, `ai-reviews`, `ai-sources` a kiválasztott játékos alatt.
 - Additív migráció: `018-contextual-ai-coach`; négy új, validált kollekció és az új `coachConversation` jobtípus. Hitelesített új útvonal első használatakor idempotensen lefut; történeti rekordot nem ír át.
 - A meglévő Vercel/Atlas/worker sor használatos. Hosted módban a megosztott Hetzner `text_chat` szolgáltatás fut; a modell alapértelmezetten `auto`. A böngésző nem kap AI-kulcsot.
 - Külön `coach-prompt.md`; a worker a kérésben szereplő prompt-hashhez ellenőrzi a helyi fájlt. A normál felülvizsgált interpretation-folyamat megmarad.
 - A kiadás után a worker folyamatot újra kell indítani az új jobtípushoz. A produkciós és szintetikus tesztkonfiguráció elkülönül.
+
+## Válaszok és előrehaladás (2026-10-28)
+
+Minden kérdésnél a mentett jobállapotból látható az aktuális szakasz: mentve, forrásbetöltés, szolgáltatói várakozás, generálás, formátum újrapróbálása, hivatkozásellenőrzés, mentés, kész. Az eltelt idő és az automatikus újrapróbálás ideje tényleges időbélyegből származik; nincs kitalált százalék vagy befejezési idő. A korábbi, még válaszra váró saját kérdések száma elkülönül a külső szolgáltató várakozási sorától.
+
+A modell kompakt forráskulcsokat (S1, S2…) ad vissza; ezeket kizárólag a kéréshez engedélyezett, pontos verzióhivatkozásokra oldja fel a worker. A teljes, kódblokkba tett JSON olvasható; a félbevágott vagy hibás szerkezet újragenerálást indít legfeljebb egyszer, nagyobb kimeneti kerettel. A hibás modellválasz és a felhasználói forrásszöveg nem kerül naplóba; csak szerkezeti hibajelzés és próbálkozásszám.
+
+Ha a szolgáltatás továbbra sem ad használható választ, a Habi „Forrásalapú összefoglaló” jelöléssel az engedélyezett mentett adatok idézett, tényszerű összefoglalóját adja vissza. Ez nem modellkövetkeztetés. A személyes értelmezés továbbra is külön ellenőrzést igényel; annak várakozása közben is megjeleníthetők a tényszerű alapadatok. A transporthiba automatikus újrapróbálása négy worker-kísérletre korlátozott.
+
+A közvetlen állítások megjelenített szövege a megjelölt forrás ellenőrzött, szó szerinti részlete. Általános oldalleírás nem szolgálhat személyes állítás egyetlen bizonyítékául. Egyetlen állapotjelzés-területre irányuló kérdésnél az adott terület válasza kerül a modellcsomagba, hogy például az energia- és alvásválasz ne keveredjen; több területet összevető kérdésnél az eredeti, külön mezők maradnak. A magyarázó fogalmi tartalom külön, verziózott Habi-forrás. A kimeneti keret a szolgáltatás modellekre hirdetett korlátját követi, nem lépi túl azt az újrapróbálás sem.

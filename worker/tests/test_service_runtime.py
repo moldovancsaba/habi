@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from habi_worker.shared_ai import SharedAIError
 from habi_worker.service_runtime import _answer_for_context
 
 
@@ -77,6 +78,7 @@ class InterpretationEvidenceTests(unittest.TestCase):
         self.prompt_path.with_name("coach-prompt.md").write_text("synthetic coach prompt", encoding="utf-8")
         self.context["promptManifest"]["promptHash"] = hashlib.sha256(b"synthetic coach prompt").hexdigest()
         self.context.update(coachMode=True, viewerRole="player", opening="Alvás", dialogue=[{"question":"Mit jelent?", "answer":"A saját beszámolódat mutatja."}])
+        self.context["sourceSnapshots"]=[{"id":"checkin-1","revision":1,"kind":"authored_content","text":"A kijelzés saját beszámoló."}]
         result, prompt = self.answer([{"text":"A kijelzés saját beszámoló.", "kind":"general", "evidenceRefs":[self.ref]}])
         self.assertEqual(result["status"], "ready")
         self.assertIn("A saját beszámolódat mutatja.", prompt)
@@ -90,6 +92,48 @@ class InterpretationEvidenceTests(unittest.TestCase):
         result, _ = self.answer([{"text":"Lehetséges összefüggés.", "kind":"inference", "evidenceRefs":[self.ref]}])
         self.assertEqual(result["status"], "awaiting_review")
         self.assertEqual(result["validity"], "review_required")
+
+    def coach_context(self):
+        text="synthetic coach prompt"
+        self.prompt_path.with_name("coach-prompt.md").write_text(text,encoding="utf-8")
+        self.context["promptManifest"]["promptHash"]=hashlib.sha256(text.encode()).hexdigest()
+        self.context.update(coachMode=True,viewerRole="coach",opening="Állapotjelzés",dialogue=[])
+        self.context["sourceSnapshots"]=[{"id":"checkin-1","revision":1,"kind":"checkin_results","text":"Hogyan aludtál? Keveset","at":"2026-10-28T07:00:00Z","role":"player"}]
+
+    def test_compact_source_keys_restore_exact_pinned_citations(self):
+        self.coach_context()
+        result,prompt=self.answer([{"text":"A játékos kevés alvásról számolt be.","kind":"direct","sources":["S1"],"quote":"Hogyan aludtál? Keveset"}])
+        self.assertEqual(result["claims"][0]["evidenceRefs"],[self.ref])
+        self.assertIn('"key":"S1"',prompt)
+
+    def test_failed_generation_still_returns_a_labelled_factual_source_summary(self):
+        self.coach_context();self.config.mode="hosted"
+        with patch("habi_worker.service_runtime.shared_ai_generate",side_effect=SharedAIError("SHARED_AI_RESULT_INVALID")):
+            result=_answer_for_context(self.config,self.context)
+        self.assertEqual(result["status"],"ready")
+        self.assertEqual(result["manifest"]["modelArtifact"],"habi-source-summary@1")
+        self.assertIn("Keveset",result["claims"][0]["text"])
+        self.assertEqual(result["claims"][0]["evidenceRefs"],[self.ref])
+        self.assertIn("összefoglaló",result["attributions"][0])
+
+    def test_unknown_compact_source_never_becomes_a_model_claim(self):
+        self.coach_context()
+        result,_=self.answer([{"text":"Forged unsupported interpretation","kind":"inference","sources":["S999"]}])
+        self.assertFalse(any("Forged" in c["text"] for c in result["claims"]))
+        self.assertEqual(result["manifest"]["modelArtifact"],"habi-source-summary@1")
+
+    def test_personal_claim_cannot_use_a_general_page_as_its_only_evidence(self):
+        self.coach_context()
+        self.context["sourceSnapshots"].append({"id":"page","revision":1,"kind":"authored_content","text":"Az áttekintés a napló eseményeit mutatja."})
+        self.context["sourceManifest"].append({"id":"page","revision":1,"span":None})
+        result,_=self.answer([{"text":"Az alvásválasz azt jelenti, hogy megfelelő energiája van.","kind":"direct","sources":["S2"]}])
+        self.assertFalse(any("megfelelő energiája" in c["text"] for c in result["claims"]))
+        self.assertTrue(any("Keveset" in c["text"] for c in result["claims"]))
+
+    def test_direct_display_uses_the_verified_quote_instead_of_an_unsupported_paraphrase(self):
+        self.coach_context()
+        result,_=self.answer([{"text":"A játékos kipihent és biztosan készen áll.","kind":"direct","sources":["S1"],"quote":"Hogyan aludtál? Keveset"}])
+        self.assertEqual(result["claims"][0]["text"],"Hogyan aludtál? Keveset")
 
 
 if __name__ == "__main__":
