@@ -123,7 +123,7 @@ def _create_job(config, request_body, idempotency_key):
     raise SharedAIError("SHARED_AI_JOB_CREATE_FAILED")
 
 
-def _json_answer(content):
+def _json_answer(content, response_kind="claims"):
     """Accept a complete JSON object, including a fenced JSON response. Never repair partial JSON."""
     text = content.strip()
     if text.startswith("```"):
@@ -140,12 +140,16 @@ def _json_answer(content):
             generated, _ = json.JSONDecoder().raw_decode(text[start:])
         except json.JSONDecodeError as error:
             raise SharedAIError("SHARED_AI_RESULT_INVALID") from error
+    if response_kind == "plain_text":
+        if not isinstance(generated, dict) or not isinstance(generated.get("text"), str) or not generated["text"].strip():
+            raise SharedAIError("SHARED_AI_RESULT_INVALID")
+        return generated
     if not isinstance(generated, dict) or not isinstance(generated.get("claims"), list) or any(not isinstance(claim,dict) or not isinstance(claim.get("text"),str) or not isinstance(claim.get("sources",claim.get("evidenceRefs")),list) for claim in generated["claims"]):
         raise SharedAIError("SHARED_AI_RESULT_INVALID")
     return generated
 
 
-def generate(config, system_prompt, user_prompt, revision_key, should_cancel=None, on_progress=None):
+def generate(config, system_prompt, user_prompt, revision_key, should_cancel=None, on_progress=None, response_kind="claims"):
     """Run a bounded async request and retry malformed/truncated output once with more room."""
     deadline = time.monotonic() + MAX_JOB_SECONDS
     maximum=SERVICE_OUTPUT_LIMITS.get((config.shared_ai_origin,config.shared_ai_model),512)
@@ -154,7 +158,7 @@ def generate(config, system_prompt, user_prompt, revision_key, should_cancel=Non
             raise SharedAICancelled("SHARED_AI_CANCELLED")
         if on_progress:
             on_progress("repairing" if output_attempt else "provider_queued")
-        repair = "\nAdj teljes, érvényes JSON objektumot, legfeljebb két rövid állítással. Ne használj Markdown-kódblokkot." if output_attempt else ""
+        repair = ("\nAdj teljes JSON objektumot egyetlen text mezővel. Ne használj Markdown-kódblokkot." if response_kind == "plain_text" else "\nAdj teljes, érvényes JSON objektumot, legfeljebb két rövid állítással. Ne használj Markdown-kódblokkot.") if output_attempt else ""
         request_body = {
             "task": "text_chat", "model": config.shared_ai_model,
             "input": {"messages": [{"role":"system", "content":system_prompt}, {"role":"user", "content":user_prompt + repair}],
@@ -190,7 +194,7 @@ def generate(config, system_prompt, user_prompt, revision_key, should_cancel=Non
                 try:
                     if not isinstance(content, str) or not isinstance(actual_model, str) or not actual_model:
                         raise SharedAIError("SHARED_AI_RESULT_INVALID")
-                    generated = _json_answer(content)
+                    generated = _json_answer(content, response_kind)
                 except SharedAIError:
                     # Log only structural metadata, never a prompt or response text.
                     print(json.dumps({"event":"habi.worker.output.retry", "attempt":output_attempt + 1, "finishReason":str(choice.get("finish_reason", "unknown"))[:30], "responseChars":len(content) if isinstance(content,str) else 0}), flush=True)

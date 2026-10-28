@@ -77,6 +77,19 @@ class SharedAIClientTests(unittest.TestCase):
         with self.assertRaises(SharedAIError):
             _json_answer('{"claims":["not a claim object"]}')
 
+    def test_plain_rewrite_has_its_own_complete_text_contract(self):
+        self.assertEqual(_json_answer('{"text":"keveset aludt."}', "plain_text"), {"text": "keveset aludt."})
+        for text in ['{"text":"cut off', '{"text":42}', '{"claims":[]}']:
+            with self.assertRaises(SharedAIError):
+                _json_answer(text, "plain_text")
+        with self.assertRaises(SharedAIError):
+            _json_answer('{"text":"keveset aludt."}')
+        SharedAIHandler.outputs = ['{"text":"keveset aludt."}']
+        with patch("habi_worker.shared_ai.POLL_SECONDS", 0):
+            generated, model = generate(self.config, "system", "facts", "plain-output", response_kind="plain_text")
+        self.assertEqual(generated["text"], "keveset aludt.")
+        self.assertEqual(len([r for r in SharedAIHandler.requests if r[0] == "POST"]), 1)
+
     def test_truncated_response_retries_once_with_room_and_reports_real_phases(self):
         SharedAIHandler.output_limit=1024
         validate_service(self.config)

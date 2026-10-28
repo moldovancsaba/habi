@@ -692,6 +692,13 @@ function CoachPanel({
                             </p>
                           </aside>
                         )}
+                      {turn.answerMode === "plain_summary" &&
+                        turn.answer &&
+                        !turn.conversation?.suppressRepeatedAnswer && (
+                          <p className={styles.muted}>
+                            Egyszerű, forrásalapú összefoglaló
+                          </p>
+                        )}
                       {turn.status === "failed" &&
                         turn.failureReason === "REPLACED_BY_QUESTION" && (
                           <p>
@@ -726,6 +733,9 @@ function CoachPanel({
                             ? undefined
                             : (guidance?.claim ??
                               turn.answer.claims.find(
+                                (c) => c.id === "plain-checkin-v1",
+                              ) ??
+                              turn.answer.claims.find(
                                 (c) => c.kind === "general",
                               ) ??
                               turn.answer.claims[0]);
@@ -744,29 +754,30 @@ function CoachPanel({
                             ? continuation.questions
                             : (guidance?.questions ??
                               turn.answer.clarifyingQuestions);
-                          const fact = (claim: Claim) => (
+                          const fact = (claim: Claim, concise = false) => (
                             <div key={claim.id}>
                               {claim.kind === "inference" && (
                                 <strong>Személyes következtetés</strong>
                               )}
                               <p>{claim.text}</p>
-                              {claim.evidenceRefs.map((ref) => {
-                                const source = turn.sources.find(
-                                  (item) =>
-                                    item.id === ref.id &&
-                                    item.revision === ref.revision,
-                                );
-                                return source?.at ? (
-                                  <p className={styles.muted} key={ref.id}>
-                                    {source.title} ·{" "}
-                                    {new Date(source.at).toLocaleString(
-                                      "hu-HU",
-                                      { timeZone: "Europe/Budapest" },
-                                    )}{" "}
-                                    · {source.role}
-                                  </p>
-                                ) : null;
-                              })}
+                              {!concise &&
+                                claim.evidenceRefs.map((ref) => {
+                                  const source = turn.sources.find(
+                                    (item) =>
+                                      item.id === ref.id &&
+                                      item.revision === ref.revision,
+                                  );
+                                  return source?.at ? (
+                                    <p className={styles.muted} key={ref.id}>
+                                      {source.title} ·{" "}
+                                      {new Date(source.at).toLocaleString(
+                                        "hu-HU",
+                                        { timeZone: "Europe/Budapest" },
+                                      )}{" "}
+                                      · {source.role}
+                                    </p>
+                                  ) : null;
+                                })}
                               {sourcesList(claim.evidenceRefs)}
                             </div>
                           );
@@ -781,7 +792,7 @@ function CoachPanel({
                               {lead && (
                                 <div className={styles.answerLead}>
                                   <h3>A rövid válasz</h3>
-                                  {fact(lead)}
+                                  {fact(lead, lead.id === "plain-checkin-v1")}
                                 </div>
                               )}
                               {unknowns.map((text) => (
@@ -795,7 +806,7 @@ function CoachPanel({
                                     Mi alapján? · {evidence.length} kapcsolódó
                                     adat
                                   </summary>
-                                  {evidence.map(fact)}
+                                  {evidence.map((claim) => fact(claim))}
                                 </details>
                               )}
                               {turn.answer.claims
@@ -803,7 +814,7 @@ function CoachPanel({
                                   (c) =>
                                     c.kind === "inference" && c.id !== lead?.id,
                                 )
-                                .map(fact)}
+                                .map((claim) => fact(claim))}
                               {questions.length > 0 && (
                                 <div className={styles.followup}>
                                   <strong>Hogy pontosabban segíthessek:</strong>

@@ -9236,6 +9236,10 @@
         },
         "conversation": {
           "$ref": "#/$defs/CoachConversation"
+        },
+        "playerName": {
+          "type": "string",
+          "maxLength": 200
         }
       },
       "required": [

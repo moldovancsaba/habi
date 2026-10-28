@@ -97,7 +97,7 @@ class InterpretationEvidenceTests(unittest.TestCase):
         text="synthetic coach prompt"
         self.prompt_path.with_name("coach-prompt.md").write_text(text,encoding="utf-8")
         self.context["promptManifest"]["promptHash"]=hashlib.sha256(text.encode()).hexdigest()
-        self.context.update(coachMode=True,viewerRole="coach",opening="Állapotjelzés",dialogue=[])
+        self.context.update(coachMode=True,viewerRole="coach",opening="Állapotjelzés",dialogue=[],question="Ellenőrizd a bejegyzés szó szerinti idézetét.")
         self.context["sourceSnapshots"]=[{"id":"checkin-1","revision":1,"kind":"checkin_results","text":"Hogyan aludtál? Keveset","at":"2026-10-28T07:00:00Z","role":"player"}]
 
     def test_attendance_guidance_answers_without_model_and_keeps_pinned_evidence(self):
@@ -139,6 +139,36 @@ class InterpretationEvidenceTests(unittest.TestCase):
         self.assertIn("Mi változott ma?", prompt)
         self.assertIn("legfeljebb egy releváns", prompt)
         self.assertEqual(result["status"], "ready")
+
+    def test_hosted_checkin_rewrite_calls_chatbot_and_keeps_verified_human_wording(self):
+        self.coach_context()
+        self.config.mode = "hosted"
+        self.context["question"] = "Magyarázd el egyszerűbben."
+        self.context["playerName"] = "Teszt Csaba"
+        with patch("habi_worker.service_runtime.shared_ai_generate", return_value=({"claims": [], "text": "Keveset aludt."}, "synthetic-chatbot")) as api:
+            result = _answer_for_context(self.config, self.context)
+        self.assertEqual(result["manifest"]["modelArtifact"], "synthetic-chatbot")
+        self.assertIn("Teszt Csaba", result["claims"][0]["text"])
+        self.assertIn("keveset aludt.", result["claims"][0]["text"])
+        self.assertNotIn("Hogyan aludtál?", result["claims"][0]["text"])
+        self.assertEqual(result["claims"][0]["evidenceRefs"], [self.ref])
+        self.assertIn("Hogyan aludtál?", result["claims"][1]["text"])
+        self.assertIn("FACTS", api.call_args.args[2])
+        self.assertLess(len(api.call_args.args[1] + api.call_args.args[2]), 2000)
+
+    def test_unsupported_rewrite_and_service_failure_use_plain_factual_fallback(self):
+        self.coach_context()
+        self.config.mode = "hosted"
+        self.context["question"] = "Magyarázd el egyszerűbben."
+        for generated in [{"claims": [], "text": "Nem tud megfelelően edzeni, mert keveset aludt."}, {"claims": [], "text": "Jól aludt."}]:
+            with patch("habi_worker.service_runtime.shared_ai_generate", return_value=(generated, "synthetic-chatbot")):
+                result = _answer_for_context(self.config, self.context)
+            self.assertEqual(result["manifest"]["modelArtifact"], "habi-plain-checkin@1")
+            self.assertIn("keveset aludt.", result["claims"][0]["text"])
+            self.assertNotIn("nem tud", result["claims"][0]["text"])
+        with patch("habi_worker.service_runtime.shared_ai_generate", side_effect=SharedAIError("SHARED_AI_UNAVAILABLE")):
+            result = _answer_for_context(self.config, self.context)
+        self.assertEqual(result["manifest"]["modelArtifact"], "habi-plain-checkin@1")
 
     def test_compact_source_keys_restore_exact_pinned_citations(self):
         self.coach_context()

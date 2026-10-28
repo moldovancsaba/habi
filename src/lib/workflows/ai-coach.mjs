@@ -654,11 +654,13 @@ export async function readCoachThread({
         ).length,
       ),
       answerMode:
-        turn.answer?.manifest.modelArtifact === "habi-source-summary@1"
-          ? "source_summary"
-          : turn.answer?.manifest.modelArtifact === "habi-guidance@1"
-            ? "guidance"
-            : "model",
+        turn.answer?.manifest.modelArtifact === "habi-plain-checkin@1"
+          ? "plain_summary"
+          : turn.answer?.manifest.modelArtifact === "habi-source-summary@1"
+            ? "source_summary"
+            : turn.answer?.manifest.modelArtifact === "habi-guidance@1"
+              ? "guidance"
+              : "model",
       pendingReview:
         !!turn.answer?.claims.some((c) => c.kind === "inference") &&
         !["approved", "rejected"].includes(turn.reviewState),
@@ -793,7 +795,11 @@ export async function coachWorkerContext({
     sourceRefs: turn.sourceRefs,
     questions: guidance?.questions ?? [],
   });
+  const player = await db
+    .collection("players")
+    .findOne({ tenantId: principal.tenantId, id: job.playerId });
   return {
+    playerName: (player?.displayName ?? "A játékos").slice(0, 200),
     ...(conversation ? { conversation } : {}),
     ...(guidance ? { guidance } : {}),
     coachMode: true,

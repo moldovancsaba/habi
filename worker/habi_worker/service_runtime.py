@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from habi_worker.coach_summary import source_summary
+from habi_worker import plain_checkin
 from habi_worker.local_runtime import WorkerDependencyError, _request_json
 from habi_worker.shared_ai import SharedAIError, SharedAICancelled, generate as shared_ai_generate, validate_service as validate_shared_ai_service
 
@@ -166,6 +167,35 @@ def _answer_for_context(config, context, cancelled=None, on_progress=None):
                 "suggestedAction": None, "validity": "current",
                 "manifest": {**manifest, "modelArtifact": "habi-guidance@1"},
             }
+        bundle = plain_checkin.checkin_facts(context)
+        if bundle and not (conversation and conversation.get("hasNewUserContext")):
+            generated, model = None, None
+            request_key = str(context.get("jobId", "")) + ":plain-checkin-v1:" + _sha256_json(refs)
+            try:
+                if config.mode == "hosted":
+                    generated, model = shared_ai_generate(
+                        config, plain_checkin.SYSTEM_PROMPT, plain_checkin.user_prompt(bundle, context["question"]), request_key, response_kind="plain_text",
+                        **({"should_cancel": cancelled} if cancelled else {}),
+                        **({"on_progress": on_progress} if on_progress else {}),
+                    )
+                else:
+                    response = _request_json(config.ollama_origin + "/api/generate", {
+                        "model": config.model, "prompt": plain_checkin.SYSTEM_PROMPT + "\n" + plain_checkin.user_prompt(bundle, context["question"]),
+                        "stream": False, "format": "json", "options": {"temperature": 0.2, "num_predict": 512},
+                    }, timeout=120)
+                    if response.get("done") is True:
+                        generated = json.loads(response.get("response", ""))
+                        model = config.model
+            except SharedAICancelled:
+                raise
+            except SharedAIError as error:
+                if str(error) in ("SHARED_AI_AUTHORIZATION_FAILED", "SHARED_AI_TEXT_CHAT_NOT_PERMITTED", "SHARED_AI_MODEL_NOT_PERMITTED"):
+                    raise
+                _log("habi.worker.coach.plain_fallback", reason=str(error))
+            except (ValueError, TypeError):
+                pass
+            text = plain_checkin.verified_text(generated, bundle)
+            return plain_checkin.plain_answer(context, bundle, text or plain_checkin.default_text(bundle), model if text else None)
         snapshots = [{"key":"S"+str(i+1),"title":s.get("title",""),"kind":s.get("kind",""),"at":s.get("at",""),"role":s.get("role",""),"text":s.get("text","")} for i,s in enumerate(context["sourceSnapshots"])]
         dialogue_items = context.get("dialogue", [])[-8:]
         opening = context.get("opening", "")[:300]
