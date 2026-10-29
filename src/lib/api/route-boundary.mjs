@@ -73,12 +73,27 @@ export function describeFailure(error) {
   };
 }
 
+const SLOW_API_MS_DEFAULT = 3000;
+
+/**
+ * A request slower than this is logged as `habi.api.slow` (operation, request
+ * ID, status and duration only). Set `HG_SLOW_API_MS` to tune it.
+ */
+function slowThresholdMs(env) {
+  const value = Number(env.HG_SLOW_API_MS);
+  return Number.isSafeInteger(value) && value >= 1 && value <= 600_000
+    ? value
+    : SLOW_API_MS_DEFAULT;
+}
+
 function emitLog(logger, line, level) {
   if (logger) {
     logger(line, level);
     return;
   }
-  console[level === "error" ? "error" : "info"](line);
+  console[level === "error" ? "error" : level === "warn" ? "warn" : "info"](
+    line,
+  );
 }
 
 /**
@@ -158,6 +173,27 @@ export async function runApiRoute(
     return response;
   }
 
+  const startedAt = performance.now();
+  const logIfSlow = (status) => {
+    const durationMs = Math.round(performance.now() - startedAt);
+    if (durationMs < slowThresholdMs(env)) return;
+    try {
+      emitLog(
+        logger,
+        JSON.stringify({
+          event: "habi.api.slow",
+          operation: safeOperation,
+          requestId,
+          status,
+          durationMs,
+        }),
+        "warn",
+      );
+    } catch {
+      // Logging failure must not replace the API response.
+    }
+  };
+
   try {
     const response = await handler(request);
     response.headers.set("X-Request-ID", requestId);
@@ -177,6 +213,7 @@ export async function runApiRoute(
         // Logging failure must not replace the already-created API response.
       }
     }
+    logIfSlow(response.status);
     return response;
   } catch (error) {
     if (isNextControlFlow(error)) throw error;
@@ -201,6 +238,7 @@ export async function runApiRoute(
     } catch {
       // Logging failure must not replace the already-redacted API response.
     }
+    logIfSlow(response.status);
     return response;
   }
 }

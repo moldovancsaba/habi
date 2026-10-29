@@ -6,6 +6,9 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+import urllib.error
+
+from habi_worker import service_runtime
 from habi_worker.shared_ai import SharedAIError
 from habi_worker.service_runtime import _answer_for_context
 
@@ -208,3 +211,53 @@ class InterpretationEvidenceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class WorkerApiTimeoutTests(unittest.TestCase):
+    """The hosted API builds a coach context from many database round trips."""
+
+    def setUp(self):
+        self.config = SimpleNamespace(cloud_api_origin="https://habi.example", bearer_token="synthetic")
+
+    def test_calls_keep_the_short_timeout_unless_a_longer_one_is_requested(self):
+        with patch("habi_worker.service_runtime.urllib.request.urlopen") as urlopen:
+            response = urlopen.return_value.__enter__.return_value
+            response.read.return_value = b"{}"
+            response.status = 200
+            service_runtime._api_call(self.config, "/api/v1/worker/jobs/claim", {"kinds": []})
+            service_runtime._api_call(self.config, "/api/v1/worker/jobs/j/context", timeout=service_runtime.API_HEAVY_TIMEOUT_SECONDS)
+        self.assertEqual([call.kwargs["timeout"] for call in urlopen.call_args_list], [8, 25])
+
+    def test_a_timeout_is_reported_as_a_timeout_and_other_failures_as_unavailable(self):
+        cases = [
+            (TimeoutError(), "WORKER_API_TIMEOUT"),
+            (urllib.error.URLError(TimeoutError()), "WORKER_API_TIMEOUT"),
+            (urllib.error.URLError(ConnectionRefusedError()), "WORKER_API_UNAVAILABLE"),
+            (OSError("network down"), "WORKER_API_UNAVAILABLE"),
+        ]
+        for failure, code in cases:
+            with self.subTest(code=code, failure=type(failure).__name__):
+                with patch("habi_worker.service_runtime.urllib.request.urlopen", side_effect=failure):
+                    with self.assertRaises(service_runtime.WorkerApiError) as raised:
+                        service_runtime._api_call(self.config, "/api/v1/worker/jobs/j/context")
+                self.assertEqual((raised.exception.status, raised.exception.code), (503, code))
+
+    def test_only_the_context_and_complete_calls_wait_longer(self):
+        calls = []
+
+        def fake_api_call(config, path, payload=None, headers=None, method=None, timeout=service_runtime.API_TIMEOUT_SECONDS):
+            calls.append((path.rsplit("/", 1)[-1], timeout))
+            if path.endswith("/claim"):
+                return 200, {"jobId": "j", "kind": "coachConversation", "fence": 1, "leaseToken": "lease"}
+            if path.endswith("/context"):
+                return 200, {"sourceManifest": []}
+            return 200, None
+
+        answer = {"status": "ready", "claims": []}
+        with patch.object(service_runtime, "_api_call", fake_api_call), patch.object(service_runtime, "_answer_for_context", return_value=answer):
+            service_runtime._process_one(self.config, "claim-key")
+        timeouts = {name: timeout for name, timeout in calls}
+        self.assertEqual(timeouts["context"], 25)
+        self.assertEqual(timeouts["complete"], 25)
+        self.assertEqual(timeouts["claim"], 8)
+        self.assertEqual(timeouts["heartbeat"], 8)

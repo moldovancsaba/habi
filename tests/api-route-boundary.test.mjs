@@ -295,3 +295,69 @@ test("a mapped public error carries no failure descriptor", async () => {
   );
   assert.equal(Object.hasOwn(JSON.parse(lines[0]), "failure"), false);
 });
+
+test("a slow request is logged with its duration and nothing else", async () => {
+  const lines = [];
+  const response = await runApiRoute(
+    new Request("https://habi.test/api/v1/worker/jobs/secret-job/context"),
+    "worker.job.context",
+    async () => {
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      return Response.json({ private: "never-log-this" });
+    },
+    (line, level) => lines.push({ line, level }),
+    { HG_SLOW_API_MS: "10" },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0].level, "warn");
+  const entry = JSON.parse(lines[0].line);
+  assert.deepEqual(Object.keys(entry).sort(), [
+    "durationMs",
+    "event",
+    "operation",
+    "requestId",
+    "status",
+  ]);
+  assert.equal(entry.event, "habi.api.slow");
+  assert.equal(entry.operation, "worker.job.context");
+  assert.equal(entry.status, 200);
+  assert.equal(entry.requestId, response.headers.get("x-request-id"));
+  assert.ok(entry.durationMs >= 10);
+  assert.doesNotMatch(lines[0].line, /never-log-this|secret-job/);
+});
+
+test("a slow failing request is logged once more as slow, and fast or misconfigured thresholds stay quiet", async () => {
+  const slowFailure = [];
+  await runApiRoute(
+    new Request("https://habi.test/api/v1/me"),
+    "me.read",
+    async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      throw new HabiApiError("NOT_FOUND");
+    },
+    (line) => slowFailure.push(JSON.parse(line).event),
+    { HG_SLOW_API_MS: "5" },
+  );
+  assert.deepEqual(slowFailure, ["habi.api.error", "habi.api.slow"]);
+
+  for (const HG_SLOW_API_MS of [undefined, "not-a-number", "0", "-5"]) {
+    const quiet = [];
+    await runApiRoute(
+      new Request("https://habi.test/api/health"),
+      "api.health",
+      async () => {
+        await new Promise((resolve) => setTimeout(resolve, 15));
+        return Response.json({ ok: true });
+      },
+      (line) => quiet.push(line),
+      { HG_SLOW_API_MS },
+    );
+    assert.deepEqual(
+      quiet,
+      [],
+      `threshold ${HG_SLOW_API_MS} must fall back to 3000 ms`,
+    );
+  }
+});

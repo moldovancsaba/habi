@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import shutil
+import socket
 import subprocess
 import tempfile
 import threading
@@ -20,6 +21,9 @@ from habi_worker.shared_ai import SharedAIError, SharedAICancelled, generate as 
 
 
 API_TIMEOUT_SECONDS = 8
+# Building a coach context or storing an answer reads the player's records, which
+# takes many database round trips from the hosted API; the server allows 30 s.
+API_HEAVY_TIMEOUT_SECONDS = 25
 API_FILE_TIMEOUT_SECONDS = 30
 POLL_SECONDS = 5
 MAX_BACKOFF_SECONDS = 60
@@ -37,7 +41,11 @@ def _log(event, **attributes):
     print(json.dumps({"event": event, **attributes}, ensure_ascii=False, separators=(",", ":")), flush=True)
 
 
-def _api_call(config, path, payload=None, headers=None, method=None):
+def _timed_out(error):
+    return isinstance(error, (TimeoutError, socket.timeout)) or isinstance(getattr(error, "reason", None), (TimeoutError, socket.timeout))
+
+
+def _api_call(config, path, payload=None, headers=None, method=None, timeout=API_TIMEOUT_SECONDS):
     url = config.cloud_api_origin + path
     body = None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8")
     request_headers = {"Accept": "application/json", "Authorization": "Bearer " + config.bearer_token}
@@ -47,7 +55,7 @@ def _api_call(config, path, payload=None, headers=None, method=None):
         request_headers.update(headers)
     request = urllib.request.Request(url, data=body, headers=request_headers, method=method or ("GET" if payload is None else "POST"))
     try:
-        with urllib.request.urlopen(request, timeout=API_TIMEOUT_SECONDS) as response:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
             raw = response.read(1_048_577)
             if len(raw) > 1_048_576:
                 raise WorkerApiError(response.status, "WORKER_API_RESPONSE_TOO_LARGE")
@@ -60,7 +68,7 @@ def _api_call(config, path, payload=None, headers=None, method=None):
             code = None
         raise WorkerApiError(error.code, code if isinstance(code, str) else "WORKER_API_REJECTED") from error
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as error:
-        raise WorkerApiError(503, "WORKER_API_UNAVAILABLE") from error
+        raise WorkerApiError(503, "WORKER_API_TIMEOUT" if _timed_out(error) else "WORKER_API_UNAVAILABLE") from error
 
 
 def _sha256_json(value):
@@ -335,7 +343,7 @@ def _process_one(config, claim_key):
     heartbeat.start()
     try:
         report_progress("starting", True)
-        _, context = _api_call(config, job_path + "/context", headers=headers)
+        _, context = _api_call(config, job_path + "/context", headers=headers, timeout=API_HEAVY_TIMEOUT_SECONDS)
         if "uploadId" in context:
             verdict, scanner_version = _scan_pdf(config, job, context, job_path)
             _log("habi.worker.report_scan.completed", jobId=job["jobId"], verdict=verdict, scannerVersion=scanner_version)
@@ -348,7 +356,7 @@ def _process_one(config, claim_key):
             result = {"result": answer, "sourceManifest": context["sourceManifest"]}
             payload = {"fence": job["fence"], "leaseToken": job["leaseToken"], "resultHash": _sha256_json(result), **result}
             report_progress("uploading")
-            _api_call(config, job_path + "/complete", payload, {"Idempotency-Key": str(uuid.uuid4())})
+            _api_call(config, job_path + "/complete", payload, {"Idempotency-Key": str(uuid.uuid4())}, timeout=API_HEAVY_TIMEOUT_SECONDS)
             _log("habi.worker.interpretation.completed", jobId=job["jobId"], resultStatus=answer["status"], claimCount=len(answer["claims"]))
     except SharedAICancelled:
         _log("habi.worker.lease_lost", jobId=job["jobId"], reason="CANCELLED_OR_SUPERSEDED")

@@ -4,6 +4,10 @@ import {
   startCoachTurn,
   listCoachThreads,
 } from "../../../../../../lib/workflows/ai-coach.mjs";
+
+// These routes read the player's records one collection at a time, which is many
+// database round trips; allow more than the platform default instead of being cut off.
+export const maxDuration = 30;
 const route: typeof runAuthorizedHabiRoute = (request, operation, action) =>
   runAuthorizedHabiRoute(request, operation, async (args) => {
     await runMigrations(args.db, new Date(), [

@@ -48,6 +48,7 @@ A `launchd/com.doneisbetter.habi-worker.plist` fájlt a `~/Library/LaunchAgents`
 ## Hibák és helyreállítás
 
 - `HOST_LOCK_BUSY`: már fut egy worker ugyanazzal a lockfile-lal. Állítsd le a másik példányt; ne töröld a lockot élő worker mellett.
+- `WORKER_API_TIMEOUT`: a Habi API nem válaszolt időben (a coach kontextus és a válasz lezárása 25, minden más hívás 8 másodpercig vár). Ha ugyanaz a job ismétlődően ezzel defereli magát, az nem átmeneti hálózati hiba: nézd meg a Vercel `habi.api.slow` eseményeit az adott műveletre (`worker.job.context`).
 - `WORKER_API_UNAVAILABLE`, `SHARED_AI_UNAVAILABLE`, `SHARED_AI_CAPACITY` vagy ClamAV hiány: a worker késleltetve újrapróbálja vagy a Habi jobot defereli. A Hetzner job-létrehozás idempotenciakulccsal védett; a polling legfeljebb 300 másodpercig tart, majd a Habi recovery út dönt a retryról.
 - `SHARED_AI_AUTHORIZATION_FAILED`, `SHARED_AI_TEXT_CHAT_NOT_PERMITTED`: állítsd le és javítsd a szolgáltatásspecifikus kulcsot/jogosultságot; ne próbálkozz másik projekt kulcsával.
 - `SHARED_AI_RESULT_INVALID`, `SHARED_AI_JOB_EXPIRED`, `SHARED_AI_JOB_FAILED` vagy `SHARED_AI_INPUT_TOO_LARGE`: nincs válasz elfogadva; ellenőrizd a Habi worker jobját és az engedélyezett forráscsomag méretét.

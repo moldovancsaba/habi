@@ -60,19 +60,24 @@ function authoredSources() {
     ),
   ];
 }
+/**
+ * Resolve exact source references against what the principal may cite.
+ * Collecting the sources scans every record collection of the player, which is
+ * one database round trip per collection. A caller that verifies several
+ * reference sets for the same principal, player and session passes the result
+ * of one `collectCoachSources` call as `collected` instead of scanning again;
+ * the request must not write between the collection and the verifications.
+ */
 export async function verifyCoachSources(
   db,
   principal,
   playerId,
   refs,
   session,
+  collected,
 ) {
-  const { sources } = await collectCoachSources(
-    db,
-    principal,
-    playerId,
-    session,
-  );
+  const { sources } =
+    collected ?? (await collectCoachSources(db, principal, playerId, session));
   const available = [...sources, ...authoredSources()];
   for (const ref of refs.filter((r) => r.id.startsWith("profile-snapshot-"))) {
     const turn = await db.collection("habi_coach_turns").findOne(
@@ -305,6 +310,13 @@ export async function startCoachTurn({
     body: input,
     now: () => now,
     async execute({ db: tx, session }) {
+      // Nothing is written between the two checks, so one scan serves both.
+      const collected = await collectCoachSources(
+        tx,
+        principal,
+        playerId,
+        session,
+      );
       await verifyCoachSources(
         tx,
         principal,
@@ -313,6 +325,7 @@ export async function startCoachTurn({
           (r) => r.id !== profileSnapshot?.id && r.id !== currentMessage.id,
         ),
         session,
+        collected,
       );
       await verifyCoachSources(
         tx,
@@ -320,6 +333,7 @@ export async function startCoachTurn({
         playerId,
         profileSources,
         session,
+        collected,
       );
       if (existing) {
         const changed = await tx.collection("habi_coach_threads").updateOne(
@@ -567,6 +581,10 @@ export async function readCoachThread({
     readOnly ? thread : null,
   );
   const available = [...sources, ...authoredSources()];
+  // Earlier turns are checked against what the viewer may cite. For the owner
+  // that is the scan above; an observing coach needs one scan of their own,
+  // taken only when an earlier turn has to be checked.
+  let viewerSources = readOnly ? null : { sources };
   const query = { ...scope, threadId: id };
   if (before) {
     const prior = await db
@@ -636,7 +654,15 @@ export async function readCoachThread({
     });
   for (const old of [...preceding.reverse(), ...turns.slice(30).reverse()]) {
     try {
-      await verifyCoachSources(db, principal, playerId, old.sourceRefs);
+      viewerSources ??= await collectCoachSources(db, principal, playerId);
+      await verifyCoachSources(
+        db,
+        principal,
+        playerId,
+        old.sourceRefs,
+        undefined,
+        viewerSources,
+      );
     } catch {
       continue;
     }
@@ -785,11 +811,16 @@ export async function coachWorkerContext({
     turn.profileSources.some((r) => excludedRef(r.id))
   )
     throw new HabiApiError("NOT_FOUND");
+  // One scan serves the turn and every earlier turn: the build time of this
+  // context must not grow with the length of the thread.
+  const collected = await collectCoachSources(db, principal, job.playerId);
   const snapshots = await verifyCoachSources(
     db,
     principal,
     job.playerId,
     turn.sourceRefs,
+    undefined,
+    collected,
   );
   const previous = await db
     .collection("habi_coach_turns")
@@ -813,9 +844,14 @@ export async function coachWorkerContext({
       (r) => excludedRef(r.id),
     );
     try {
-      await verifyCoachSources(db, principal, job.playerId, [
-        { id: messageSourceId(old.id), revision: 1, span: null },
-      ]);
+      await verifyCoachSources(
+        db,
+        principal,
+        job.playerId,
+        [{ id: messageSourceId(old.id), revision: 1, span: null }],
+        undefined,
+        collected,
+      );
     } catch {
       continue;
     }
@@ -1200,6 +1236,7 @@ export async function listCoachReviews({ db, principal, playerId }) {
     .limit(100)
     .toArray();
   const items = [];
+  const scans = new Map();
   for (const turn of turns) {
     const actor = await db
       .collection("actors")
@@ -1213,7 +1250,18 @@ export async function listCoachReviews({ db, principal, playerId }) {
       accessRevision: actor.accessRevision,
     };
     try {
-      await verifyCoachSources(db, owner, playerId, turn.sourceRefs);
+      // The queue can hold up to 100 turns of a few owners: scan once per owner.
+      const key = `${owner.actorId}\u0000${owner.role}\u0000${owner.accessRevision}`;
+      if (!scans.has(key))
+        scans.set(key, collectCoachSources(db, owner, playerId));
+      await verifyCoachSources(
+        db,
+        owner,
+        playerId,
+        turn.sourceRefs,
+        undefined,
+        await scans.get(key),
+      );
     } catch {
       continue;
     }
