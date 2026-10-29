@@ -1,7 +1,7 @@
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
-from habi_worker.coach_dialogue import answer, conversation_request, prepare_conversation, usable_reply
+from habi_worker.coach_dialogue import answer, conversation_request, prepare_conversation, prepare_hungarian_conversation, usable_reply
 from habi_worker.shared_ai import SharedAIError, SERVICE_MODELS
 
 class CoachDialogueTests(unittest.TestCase):
@@ -122,6 +122,44 @@ class CoachDialogueTests(unittest.TestCase):
         self.context["question"] = "Nem fáj. " * 2000
         with self.assertRaisesRegex(SharedAIError, "INPUT_TOO_LARGE"):
             prepare_conversation(self.context, 2000)
+
+    def test_hungarian_context_preserves_all_checkin_values_within_byte_budget(self):
+        import json
+        self.context["question"]="Hogy van Csaba?"
+        self.context["sourceSnapshots"][0]["text"]=self.context["question"]
+        self.context["dialogue"]=[]
+        text="Mennyi energiád van? Megfelelő\nHogyan aludtál? Keveset\nMennyire tudsz figyelni? Nehezen\nHogy érzed magad? Feszült\nMennyit edzettél? Közepesen"
+        ref=self.add_source("checkin","checkin_results",text)
+        system,history,refs=prepare_hungarian_conversation(self.context)
+        self.assertIn(ref,refs)
+        for value in ("Megfelelő","Keveset","Nehezen","Feszült","Közepesen"):
+            self.assertIn(value,system)
+        self.assertIn("2026-10-27",system)
+        messages=[{"role":"system","content":system}]+history+[{"role":"user","content":self.context["question"]}]
+        self.assertLessEqual(len(json.dumps(messages,ensure_ascii=False,separators=(",",":")).encode()),608)
+
+    def test_hungarian_packer_does_not_clip_long_message_or_strip_accents(self):
+        self.context["question"]="ő"*400
+        with self.assertRaisesRegex(SharedAIError,"INPUT_TOO_LARGE"):
+            prepare_hungarian_conversation(self.context)
+
+    def test_complete_reply_may_end_with_an_emoji_but_fragment_may_not(self):
+        self.assertTrue(usable_reply("Köszönöm. Evett már azóta? 😊",self.context))
+        self.assertFalse(usable_reply("Csaba, a vacsora 😊",self.context))
+
+    def test_oversized_hungarian_message_gets_actionable_clarification_without_api_retry(self):
+        from habi_worker.shared_ai import SERVICE_TASK_MODELS
+        self.config.shared_ai_dialogue_task="text_chat_hu"
+        SERVICE_TASK_MODELS[(self.config.shared_ai_origin,"text_chat_hu")]={"synthetic"}
+        self.context["question"]="ő"*400
+        try:
+            with patch("habi_worker.coach_dialogue.generate") as api:
+                result=answer(self.config,self.context)
+            api.assert_not_called()
+            self.assertEqual(result["status"],"needs_clarification")
+            self.assertIn("rövidebb",result["unknowns"][0])
+        finally:
+            SERVICE_TASK_MODELS.pop((self.config.shared_ai_origin,"text_chat_hu"),None)
 
     def test_provider_failure_is_not_disguised_as_a_completed_summary(self):
         with patch("habi_worker.coach_dialogue.generate",side_effect=SharedAIError("SHARED_AI_MAINTENANCE")):

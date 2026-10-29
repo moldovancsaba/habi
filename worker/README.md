@@ -57,3 +57,12 @@ A `launchd/com.doneisbetter.habi-worker.plist` fájlt a `~/Library/LaunchAgents`
 - Árva vagy beragadt job: diagnosztizáld a job státuszát, attempts/fence/leaseUntil mezőit és a redaktált worker logot. Ugyanazt a workflow/API recovery utat használd; kézi counter reset vagy bulk requeue tilos.
 
 Worker JSON log nem ír promptot, személyes forrásszöveget, PDF-t vagy nyers credentialt. A Hetzner job API aszinkron sorának elérhetősége korlátozott; a job eredménye körülbelül 15 percig érhető el, ezért nem ez a Habi kanonikus tárolója. Habi ellenőrzi a source revisionöket és claim-citációkat mentés előtt. A transport teszt nem igazolja a magyar modellminőséget: eddigi szintetikus magyar válasz nem volt használható, ezért a hasznos válaszminőség külön értékelést igényel. Camera-képek Habi-ban nincsenek; a riport PDF ClamAV vizsgálata változatlan és nem AI moderáció.
+
+
+## Magyar AI-edző útvonal
+
+A hosted worker AI-edző beszélgetéseihez állítsd be: `HG_SHARED_AI_DIALOGUE_TASK=text_chat_hu`, `HG_SHARED_AI_DIALOGUE_MODEL=auto`. A többi értelmezési job továbbra is `text_chat` útvonalon fut. Az indulás ellenőrzi a jogosultságot és a feladaton belül engedélyezett modelleket; nincs csendes visszaesés az angol feladatra. A `habi.worker.shared_ai.ready` esemény tartalmazza a `dialogueTask` és `dialogueModel` mezőt, beszélgetésszöveg és kulcs nélkül.
+
+A magyar szolgáltatás kísérleti. Az adapter 128 kimeneti tokent kér, az üzenetek UTF-8 méretét ellenőrzi, a próbálkozásokhoz helyet hagy, és csak a ténylegesen átadott forrásokra hivatkozik. A kanonikus állapotjelzés kérdéscímkéit rövidíti, minden válaszértéket megtartva. Szabad szöveget és felhasználói üzenetet nem csonkít. A túl hosszú üzenet megmarad az előzményekben, és rövidítést kérő válasz jelenik meg automatikus újrapróbálkozás helyett. A feldolgozott magyar API-eredményt törli a szolgáltatásból.
+
+Szintetikus élő ellenőrzés: `PYTHONPATH=worker worker/.venv/bin/python worker/evaluations/coach_hungarian.py --task text_chat_hu` a repository gyökeréből, a worker környezetével. A teszt külön jelöli a forgalmat; éles működésben a `HG_SHARED_AI_REQUEST_PURPOSE` ne legyen beállítva. A kapcsolat működése nem jelent nyelvi vagy szakmai minőségi jóváhagyást.

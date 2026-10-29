@@ -24,6 +24,7 @@ class WorkerConfigTests(unittest.TestCase):
         self.assertNotIn("synthetic-placeholder-worker-secret", repr(config))
         self.assertNotIn("synthetic-placeholder-shared-ai-secret", repr(config))
         self.assertEqual(config.shared_ai_model, "auto")
+        self.assertEqual(config.shared_ai_dialogue_task, "text_chat")
 
     def test_dialogue_override_and_test_purpose_are_explicit(self):
         self.assertEqual(load_config(self.env).shared_ai_dialogue_model, "auto")
@@ -34,6 +35,15 @@ class WorkerConfigTests(unittest.TestCase):
         self.assertEqual(config.shared_ai_request_purpose, "test")
         self.env["HG_SHARED_AI_REQUEST_PURPOSE"] = "production"
         with self.assertRaisesRegex(ValueError, "PURPOSE"):
+            load_config(self.env)
+
+    def test_explicit_hungarian_dialogue_route_preserves_general_task(self):
+        self.env["HG_SHARED_AI_DIALOGUE_TASK"]="text_chat_hu"
+        config=load_config(self.env)
+        self.assertEqual(config.shared_ai_dialogue_task,"text_chat_hu")
+        self.assertEqual(config.shared_ai_task,"text_chat")
+        self.env["HG_SHARED_AI_DIALOGUE_TASK"]="unknown"
+        with self.assertRaisesRegex(ValueError,"DIALOGUE_TASK"):
             load_config(self.env)
 
     def test_requires_all_worker_values(self):

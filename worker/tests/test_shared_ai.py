@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from habi_worker.shared_ai import _request, _Retryable, SharedAICancelled, SharedAIError, _json_answer, SERVICE_OUTPUT_LIMITS, SERVICE_CONTEXT_LIMITS, generate, validate_service
+from habi_worker.shared_ai import _request, _Retryable, SharedAICancelled, SharedAIError, _json_answer, SERVICE_OUTPUT_LIMITS, SERVICE_CONTEXT_LIMITS, SERVICE_TASK_MODELS, generate, validate_service
 
 
 class SharedAIHandler(BaseHTTPRequestHandler):
@@ -40,6 +40,10 @@ class SharedAIHandler(BaseHTTPRequestHandler):
             "model": "granite4:1b-h",
             "choices": [{"message": {"content": content}}],
         }})
+
+    def do_DELETE(self):
+        self.requests.append(("DELETE", self.path))
+        return self._send(200, {})
 
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
@@ -142,6 +146,45 @@ class SharedAIClientTests(unittest.TestCase):
         self.assertEqual([p[4]["input"]["max_tokens"] for p in posts],[512,1024])
         self.assertNotEqual(posts[0][3],posts[1][3])
         self.assertIn("provider_queued",phases);self.assertIn("generating",phases);self.assertIn("repairing",phases);self.assertIn("checking",phases)
+
+    def test_hungarian_task_is_discovered_routed_and_deleted_without_changing_english(self):
+        self.config.shared_ai_dialogue_task = "text_chat_hu"
+        catalog = {"jobTypes": {
+            "text_chat": {"model":"english", "available_models":["english"]},
+            "text_chat_hu": {"model":"hungarian", "available_models":["hungarian"]}},
+            "models": [
+                {"id":"english", "rankings":{"text_chat":{"profile":{"num_ctx":8192, "max_output_tokens":1024}}}},
+                {"id":"hungarian", "rankings":{"text_chat_hu":{"profile":{"num_ctx":1024}}}},
+            ]}
+        with patch("habi_worker.shared_ai._authorized_capabilities", return_value=catalog):
+            validate_service(self.config)
+        from habi_worker.coach_dialogue import dialogue_config
+        from habi_worker.shared_ai import service_limits
+        selected = dialogue_config(self.config)
+        self.assertEqual(service_limits(selected), (1024,128))
+        self.assertEqual(service_limits(self.config), (8192,1024))
+        SharedAIHandler.outputs = ["Köszönöm. Mit szeretnél tudni?"]
+        with patch("habi_worker.shared_ai.POLL_SECONDS",0):
+            generate(selected,"Te Habi vagy.","Kérlek, segíts.","hungarian-wire", response_kind="conversation")
+        post = next(r for r in SharedAIHandler.requests if r[0]=="POST")
+        self.assertEqual(post[4]["task"],"text_chat_hu")
+        self.assertEqual(post[4]["model"],"auto")
+        self.assertEqual(post[4]["input"]["max_tokens"],128)
+        self.assertEqual(post[4]["input"]["temperature"],0)
+        self.assertIn(("DELETE","/v1/jobs/job-one"),SharedAIHandler.requests)
+        self.assertEqual(getattr(self.config,"shared_ai_task","text_chat"),"text_chat")
+
+    def test_missing_hungarian_permission_fails_without_falling_back_to_english(self):
+        self.config.shared_ai_dialogue_task="text_chat_hu"
+        with self.assertRaisesRegex(SharedAIError,"TASK_NOT_PERMITTED"):
+            validate_service(self.config)
+
+    def test_hungarian_limit_counts_utf8_bytes_before_submitting_job(self):
+        self.config.shared_ai_task="text_chat_hu"
+        self.config.shared_ai_output_tokens=128
+        with self.assertRaisesRegex(SharedAIError,"INPUT_TOO_LARGE"):
+            generate(self.config,"Habi","ő" * 400,"oversized-hu",response_kind="conversation")
+        self.assertFalse(any(r[0]=="POST" for r in SharedAIHandler.requests))
 
     def test_discovery_confirms_permitted_job_and_catalog(self):
         self.assertEqual(validate_service(self.config), {"task": "text_chat", "model": "auto"})

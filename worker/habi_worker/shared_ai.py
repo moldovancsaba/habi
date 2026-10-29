@@ -17,6 +17,7 @@ POLL_SECONDS = 3
 SERVICE_OUTPUT_LIMITS = {}
 SERVICE_MODELS = {}
 SERVICE_CONTEXT_LIMITS = {}
+SERVICE_TASK_MODELS = {}
 
 
 class SharedAIError(WorkerDependencyError):
@@ -103,27 +104,42 @@ def validate_service(config):
         catalog = _authorized_capabilities(config)
     except _Retryable as error:
         raise SharedAIError(error.code) from error
-    permitted_models = catalog["jobTypes"]["text_chat"].get("available_models", [])
-    SERVICE_MODELS[config.shared_ai_origin] = set(permitted_models)
-    for item in catalog["models"]:
-        profile = item.get("rankings", {}).get("text_chat", {}).get("profile", {})
-        if item.get("id") in permitted_models:
-            SERVICE_OUTPUT_LIMITS[(config.shared_ai_origin, item["id"])] = min(max(int(profile.get("max_output_tokens", 512)), 128), 2048)
-            SERVICE_CONTEXT_LIMITS[(config.shared_ai_origin, item["id"])] = int(profile.get("num_ctx", 2048))
-    selected_model = catalog["jobTypes"]["text_chat"].get("model") if config.shared_ai_model == "auto" else config.shared_ai_model
-    model = next((m for m in catalog["models"] if m.get("id")==selected_model), {})
-    profile = model.get("rankings", {}).get("text_chat", {}).get("profile", {})
-    SERVICE_OUTPUT_LIMITS[(config.shared_ai_origin,config.shared_ai_model)] = min(max(int(profile.get("max_output_tokens",512)),128),2048)
-    SERVICE_CONTEXT_LIMITS[(config.shared_ai_origin, config.shared_ai_model)] = int(profile.get("num_ctx", 2048))
-    if config.shared_ai_model != "auto":
-        available = catalog["jobTypes"]["text_chat"].get("available_models", [])
-        permitted = config.shared_ai_model in available
-        if not permitted:
+    for task, capability in catalog["jobTypes"].items():
+        if task not in ("text_chat", "text_chat_hu") or not isinstance(capability, dict):
+            continue
+        permitted = set(capability.get("available_models", []))
+        SERVICE_TASK_MODELS[(config.shared_ai_origin, task)] = permitted
+        for model in catalog["models"]:
+            if model.get("id") not in permitted:
+                continue
+            profile = model.get("rankings", {}).get(task, {}).get("profile", {})
+            output = min(max(int(profile.get("max_output_tokens", 192 if task == "text_chat_hu" else 512)), 128), 192 if task == "text_chat_hu" else 2048)
+            window = int(profile.get("num_ctx", 1024 if task == "text_chat_hu" else 2048))
+            for name in (model["id"], "auto") if model["id"] == capability.get("model") else (model["id"],):
+                SERVICE_OUTPUT_LIMITS[(config.shared_ai_origin, task, name)] = output
+                SERVICE_CONTEXT_LIMITS[(config.shared_ai_origin, task, name)] = window
+                if task == "text_chat":
+                    SERVICE_OUTPUT_LIMITS[(config.shared_ai_origin, name)] = output
+                    SERVICE_CONTEXT_LIMITS[(config.shared_ai_origin, name)] = window
+    SERVICE_MODELS[config.shared_ai_origin] = SERVICE_TASK_MODELS.get((config.shared_ai_origin, "text_chat"), set())
+    task = getattr(config, "shared_ai_task", "text_chat")
+    dialogue_task = getattr(config, "shared_ai_dialogue_task", task)
+    for requested_task, model in ((task, config.shared_ai_model), (dialogue_task, getattr(config, "shared_ai_dialogue_model", "auto"))):
+        if requested_task not in catalog["jobTypes"]:
+            raise SharedAIError("SHARED_AI_TASK_NOT_PERMITTED")
+        if model != "auto" and model not in SERVICE_TASK_MODELS.get((config.shared_ai_origin, requested_task), set()):
             raise SharedAIError("SHARED_AI_MODEL_NOT_PERMITTED")
-    dialogue_model = getattr(config, "shared_ai_dialogue_model", "auto")
-    if dialogue_model != "auto" and dialogue_model not in permitted_models:
-        raise SharedAIError("SHARED_AI_MODEL_NOT_PERMITTED")
-    return {"task": "text_chat", "model": config.shared_ai_model}
+    return {"task": task, "model": config.shared_ai_model}
+
+
+def service_limits(config):
+    task = getattr(config, "shared_ai_task", "text_chat")
+    key = (config.shared_ai_origin, task, config.shared_ai_model)
+    legacy = (config.shared_ai_origin, config.shared_ai_model)
+    output = SERVICE_OUTPUT_LIMITS.get(key, SERVICE_OUTPUT_LIMITS.get(legacy, 512) if task == "text_chat" else 192)
+    window = SERVICE_CONTEXT_LIMITS.get(key, SERVICE_CONTEXT_LIMITS.get(legacy, 2048) if task == "text_chat" else 1024)
+    cap = getattr(config, "shared_ai_output_tokens", None)
+    return window, min(output, cap) if cap else output
 
 
 def _create_job(config, request_body, idempotency_key):
@@ -176,7 +192,8 @@ def _json_answer(content, response_kind="claims"):
 def generate(config, system_prompt, user_prompt, revision_key, should_cancel=None, on_progress=None, response_kind="claims", history=None):
     """Run a bounded async request and retry malformed/truncated output once with more room."""
     deadline = time.monotonic() + MAX_JOB_SECONDS
-    maximum=SERVICE_OUTPUT_LIMITS.get((config.shared_ai_origin,config.shared_ai_model),512)
+    _, maximum = service_limits(config)
+    task = getattr(config, "shared_ai_task", "text_chat")
     for output_attempt, token_limit in enumerate((max(128,maximum//2),maximum)):
         if should_cancel and should_cancel():
             raise SharedAICancelled("SHARED_AI_CANCELLED")
@@ -184,14 +201,19 @@ def generate(config, system_prompt, user_prompt, revision_key, should_cancel=Non
             on_progress("repairing" if output_attempt else "provider_queued")
         repair = ("\nAdj teljes JSON objektumot egyetlen text mezővel. Ne használj Markdown-kódblokkot." if response_kind == "plain_text" else "\nAdj teljes, érvényes JSON objektumot, legfeljebb két rövid állítással. Ne használj Markdown-kódblokkot.") if output_attempt else ""
         if response_kind == "conversation" and output_attempt:
-            repair = "\nPlease give one complete concise reply to this latest message."
+            repair = "\nRöviden." if task == "text_chat_hu" else "\nPlease give one complete concise reply to this latest message."
         request_body = {
-            "task": "text_chat", "model": config.shared_ai_model,
+            "task": task, "model": config.shared_ai_model,
             "input": {"messages": [{"role":"system", "content":system_prompt}] + (history or []) + [{"role":"user", "content":user_prompt + repair}],
                       "response_format":{"type":"json_object"}, "max_tokens":token_limit, "reasoning_effort":"none"},
         }
         if response_kind == "conversation":
             request_body["input"].pop("response_format", None)
+        if task == "text_chat_hu":
+            request_body["input"]["temperature"] = 0
+            size = len(json.dumps(request_body["input"]["messages"], ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
+            if size > min(1000, 1024 - token_limit - 256):
+                raise SharedAIError("SHARED_AI_INPUT_TOO_LARGE")
         encoded = json.dumps(request_body, ensure_ascii=False, separators=(",", ":"))
         if len(encoded) > MAX_REQUEST_CHARS:
             raise SharedAIError("SHARED_AI_INPUT_TOO_LARGE")
@@ -212,6 +234,11 @@ def generate(config, system_prompt, user_prompt, revision_key, should_cancel=Non
             if status != last_status and on_progress:
                 on_progress("provider_queued" if status == "queued" else "generating" if status == "running" else "checking")
             last_status = status
+            if status in ("completed", "failed") and task == "text_chat_hu":
+                try:
+                    _request(config, "DELETE", "/jobs/" + urllib.parse.quote(job_id, safe=""))
+                except (SharedAIError, _Retryable):
+                    pass  # The service also expires terminal results automatically.
             if status == "completed":
                 result = response.get("result")
                 choices = result.get("choices") if isinstance(result, dict) else None

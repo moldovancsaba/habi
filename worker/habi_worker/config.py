@@ -23,6 +23,9 @@ class WorkerConfig:
     shared_ai_origin: Optional[str] = None
     shared_ai_key: Optional[str] = field(default=None, repr=False)
     shared_ai_model: str = "auto"
+    shared_ai_task: str = "text_chat"
+    shared_ai_dialogue_task: str = "text_chat"
+    shared_ai_output_tokens: Optional[int] = None
     shared_ai_dialogue_model: str = "auto"
     shared_ai_request_purpose: Optional[str] = None
 
@@ -124,6 +127,9 @@ def load_config(env):
     dialogue_model = env.get("HG_SHARED_AI_DIALOGUE_MODEL", "auto").strip()
     if not re.fullmatch(r"auto|[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}", dialogue_model):
         raise ValueError("HG_SHARED_AI_DIALOGUE_MODEL is invalid")
+    dialogue_task = env.get("HG_SHARED_AI_DIALOGUE_TASK", "text_chat").strip()
+    if dialogue_task not in ("text_chat", "text_chat_hu"):
+        raise ValueError("HG_SHARED_AI_DIALOGUE_TASK is invalid")
     purpose = env.get("HG_SHARED_AI_REQUEST_PURPOSE")
     if purpose not in (None, "test"):
         raise ValueError("HG_SHARED_AI_REQUEST_PURPOSE must be test when set")
@@ -145,5 +151,6 @@ def load_config(env):
         shared_ai_key=shared_key,
         shared_ai_model=shared_model,
         shared_ai_dialogue_model=dialogue_model,
+        shared_ai_dialogue_task=dialogue_task,
         shared_ai_request_purpose=purpose,
     )

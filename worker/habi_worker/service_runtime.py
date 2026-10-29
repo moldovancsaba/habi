@@ -144,7 +144,7 @@ def _answer_for_context(config, context, cancelled=None, on_progress=None):
     if context.get("coachMode"):
         if hashlib.sha256(system_prompt.encode("utf-8")).hexdigest() != manifest["promptHash"]:
             raise WorkerDependencyError("WORKER_PROMPT_UNAVAILABLE")
-        if context.get("dialogueVersion") == 2 and config.mode == "hosted":
+        if (context.get("dialogueVersion") == 2 or getattr(config, "shared_ai_dialogue_task", "text_chat") == "text_chat_hu") and config.mode == "hosted":
             return coach_dialogue.answer(config, context, cancelled, on_progress)
         conversation = context.get("conversation")
         if conversation and conversation.get("suppressRepeatedAnswer"):
@@ -418,7 +418,7 @@ def run_service(config):
         except SharedAIError as error:
             _log("habi.worker.shared_ai_configuration_failed", reason=str(error))
             raise
-        _log("habi.worker.shared_ai.ready", task=capabilities["task"], model=capabilities["model"])
+        _log("habi.worker.shared_ai.ready", task=capabilities["task"], model=capabilities["model"], dialogueTask=getattr(config, "shared_ai_dialogue_task", "text_chat"), dialogueModel=getattr(config, "shared_ai_dialogue_model", "auto"))
     _log("habi.worker.service.started", mode=config.mode, serviceId=config.service_id, model=config.shared_ai_model if config.mode == "hosted" else config.model, promptHash=config.prompt_hash)
     while True:
         try:
