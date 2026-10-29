@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildCheckinChart,
+  latestCompletion,
   metricGraphicLevel,
 } from "../src/lib/workflows/checkin-chart.mjs";
 
@@ -83,4 +84,32 @@ test("period filtering excludes future, invalid, and old records without fabrica
   assert.equal(result.points[0].value, null);
   assert.equal(result.path, "");
   assert.deepEqual(buildCheckinChart([], "energy", 14, now).points, []);
+});
+
+test("a check-in completed after the chart's clock was taken appears once the clock follows the newest completion", () => {
+  const before = [entry("morning", "2026-10-27T08:00:00Z", 1)];
+  const after = [...before, entry("noon", "2026-10-27T11:59:00Z", 2)];
+  const mounted = Date.parse("2026-10-27T09:00:00Z");
+
+  // The clock pinned at mount hides the check-in finished later in the session.
+  assert.equal(
+    buildCheckinChart(after, "energy", 14, mounted).points.length,
+    1,
+  );
+
+  assert.notEqual(latestCompletion(before), latestCompletion(after));
+  assert.equal(latestCompletion(after), Date.parse("2026-10-27T11:59:00Z"));
+  assert.equal(buildCheckinChart(after, "energy", 14, now).points.length, 2);
+});
+
+test("latest completion ignores missing and invalid timestamps", () => {
+  assert.equal(latestCompletion([]), 0);
+  assert.equal(
+    latestCompletion([
+      { completedAt: undefined },
+      { completedAt: "unknown" },
+      entry("valid", "2026-10-26T10:00:00Z", 1),
+    ]),
+    Date.parse("2026-10-26T10:00:00Z"),
+  );
 });

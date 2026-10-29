@@ -1,5 +1,13 @@
 # Habi — ellenőrzési napló
 
+## Check-in trend refresh and coach timeline wording · 2026-10-29
+
+- Change: findings 1 and 4 of the entry below. `CheckinTrends` (`src/app/checkin-graphics.tsx`) now takes a new clock reading when the newest completion time of its check-ins changes (`latestCompletion` in `src/lib/workflows/checkin-chart.mjs`), so a check-in or answer saved in the same page session appears without a reload. On the coach timeline (`src/app/metro-timeline.tsx`) a saved answer is labelled “Beküldött napi válasz” and shows its question and answer instead of an undescribed “Naplóesemény”, and the result card says “A napi válaszok rögzítve.” rather than the second-person “válaszaid”.
+- Automated: `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` with `HG_WORKER_BEARER_SHA256` from `.env.test.example` — 236 passed, 0 failed (two added tests cover the clock key and invalid timestamps). Without that variable, ten worker-claim tests fail with `DEPENDENCY_UNAVAILABLE`, with or without this change. `npm run lint`, `npm run typecheck`, `npm run build` and `git diff --check` passed.
+- Browser acceptance on the production build, isolated database `habi_chart_test`, synthetic accounts only: the player opened Állapotjelzés with an empty trend (“nincs rögzített válasz”), answered question 1 and then 2 without reloading, and each answer and its newer timestamp appeared on the chart at once. After finishing all five answers the coach's Idővonal listed five described “Beküldött napi válasz” rows and “A napi válaszok rögzítve.”; neither “Naplóesemény” nor “válaszaid” appeared.
+- Not verified: the unfixed build was not re-run in this pass, so the before state rests on the two earlier reproductions recorded below. The owner's live SSO session and Production were not exercised; this change is committed locally and not released.
+- Still open: findings 2 (unreproduced 500s) and 3 (decision record) below.
+
 ## Coach-wide oversight of player activity · 2026-10-29
 
 - Change: coaches with access to a player see every participant's AI questions, replies, feedback, corrections and exclusions, plus operational activity, on the Idővonal and in a read-only transcript view; successful player-scoped commands append canonical `events` and actor-linked `audit` records in their own transaction (`src/lib/database/coach-activity.mjs`). API manifest `2.5.1`. Released as commit `0f627be28428a59857afdd928849dcc8ae23b5bb` (pushed to `main` on the owner's instruction; GitHub reported the branch-protection pull-request and “CI / web” rules as bypassed).

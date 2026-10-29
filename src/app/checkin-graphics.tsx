@@ -11,6 +11,7 @@ import {
 import {
   buildCheckinChart,
   checkinMetrics,
+  latestCompletion,
   metricGraphicLevel,
   metroRoutePath,
   projectDailyCheckins,
@@ -140,7 +141,9 @@ export default function CheckinTrends({ checkins }: { checkins: Checkin[] }) {
   const [day, setDay] = useState("");
   const [now, setNow] = useState<number | null>(null);
   const id = useId();
-  useEffect(() => setNow(Date.now()), []);
+  const latest = latestCompletion(checkins);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a newly completed check-in must move the chart's clock past it.
+  useEffect(() => setNow(Date.now()), [latest]);
   const entries =
     projection === "daily" ? projectDailyCheckins(checkins) : checkins;
   const selected =

@@ -48,6 +48,8 @@ export type TimelineRecord = {
   revision?: number;
   source?: { kind: string };
   answerCodes?: Array<{ metric: string; code: number }>;
+  metric?: string | null;
+  answerCode?: number | null;
 };
 
 type Branch = {
@@ -104,6 +106,7 @@ const labels: Record<string, string> = {
   "coach.memory": "Új profil-megjegyzés",
   "coach.exclusion": "Üzenet AI-felhasználása kikapcsolva",
   checkin: "Napi állapotjelzés",
+  checkin_answer: "Beküldött napi válasz",
   "checkin.completed": "Napi állapotjelzés",
   record: "Naplóbejegyzés",
   observation: "Megfigyelés",
@@ -478,10 +481,15 @@ export default function MetroTimeline({
               (event.kind.startsWith("activity.")
                 ? "Rögzített tevékenység"
                 : "Naplóesemény");
+            const answered =
+              record?.metric && typeof record.answerCode === "number"
+                ? checkinAnswerLabel(record.metric, record.answerCode)
+                : null;
             const summary =
               event.summary?.trim() ||
               record?.text?.trim() ||
-              (record?.answerCodes?.length ? "A napi válaszaid rögzítve." : "");
+              (answered ? `${answered.question} ${answered.answer}` : "") ||
+              (record?.answerCodes?.length ? "A napi válaszok rögzítve." : "");
             const isOpen = openIds.has(event.id);
             return (
               <li

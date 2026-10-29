@@ -83,6 +83,21 @@ export function buildCheckinChart(checkins, metric, period, now) {
   };
 }
 
+/**
+ * The newest valid completion time. A chart keeps its own clock to avoid a
+ * server/client mismatch, and refreshes it when this value changes so a
+ * check-in finished during the page session is not later than that clock.
+ * @param {Array<{completedAt?: string}>} checkins
+ */
+export function latestCompletion(checkins) {
+  let latest = 0;
+  for (const item of checkins) {
+    const time = Date.parse(item.completedAt ?? "");
+    if (Number.isFinite(time) && time > latest) latest = time;
+  }
+  return latest;
+}
+
 export function metroRoutePath(points) {
   let previous = null;
   let path = "";
