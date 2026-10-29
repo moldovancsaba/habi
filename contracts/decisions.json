@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "effective": "2026-10-27",
+  "effective": "2026-10-29",
   "decisions": [
     {
       "id": "D-HG-007",
@@ -108,6 +108,15 @@
       "authority": "Owner request 2026-10-27: deliver all contextual AI coach, player memory and recommendations",
       "supersedes": [
         "D-HG-012 player direct AI deferred"
+      ]
+    },
+    {
+      "id": "D-HG-020",
+      "status": "accepted",
+      "rule": "A coach with access to a player can read every participant's AI threads, messages, feedback, corrections and exclusions for that player in a read-only view, and sees the unified activity timeline including operational activity recorded by the transactional activity ledger. Reading is not review or approval: sharing a turn for human review and accepting a personal inference stay explicit, reasoned actions. Writing to a thread stays with its owner (tenant, player, actor and active role). Parents and players of other tenants cannot read another participant's AI thread, and human family conversations stay separate. The ledger records successful player-scoped commands from 2026-10-29 on; earlier overwritten states are not reconstructed and unsent typing is not activity.",
+      "authority": "Owner instruction 2026-10-29: coaches must see all activity on any level",
+      "supersedes": [
+        "D-HG-019 AI threads private to the owner until explicitly shared"
       ]
     }
   ]
