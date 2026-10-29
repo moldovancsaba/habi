@@ -92,7 +92,7 @@ Commit `7d16d2c514ef294033c74469208f86b4fed3095a` is live as deployment `dpl_4wV
 
 ## Runtime log levels
 
-API boundary diagnostics contain only a fixed operation label, request ID, status, and public error code. Expected request denials and other handled 4xx errors are logged at informational level; 5xx responses, thrown server errors, and fail-closed dependency/configuration failures are logged at error level. Do not treat a signed-out `/api/app` 401 as a service outage. Investigate error-level events using the request ID and deployment ID; never log request bodies, credentials, or exception messages.
+API boundary diagnostics contain only a fixed operation label, request ID, status, and public error code. An unexpected failure (`INTERNAL_ERROR`) also carries a `failure` object with the error class, a numeric or upper-case symbolic code, the database code name, error labels and the first code location (function and file:line:column), so a rare 500 can be located without its message. Expected request denials and other handled 4xx errors are logged at informational level; 5xx responses, thrown server errors, and fail-closed dependency/configuration failures are logged at error level. Do not treat a signed-out `/api/app` 401 as a service outage. Investigate error-level events using the request ID and deployment ID; never log request bodies, credentials, or exception messages.
 
 Legacy browser-owner transfer is retired and blocked by the current SSO-browser route boundary. New SSO identities receive a clean owner scope; old records are not imported or required for Habi access.
 

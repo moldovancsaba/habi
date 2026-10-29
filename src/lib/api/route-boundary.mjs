@@ -37,6 +37,42 @@ function isNextControlFlow(error) {
   );
 }
 
+const NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
+const SYMBOLIC_CODE_PATTERN = /^[A-Z][A-Z0-9_]{0,63}$/;
+const CODE_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9]{0,63}$/;
+const FRAME_PATTERN =
+  /^ {4}at ([^\n()]{0,80}?) ?\(?([^\s()?]{1,200}:\d+:\d+)\)?$/;
+
+/**
+ * Describe an unexpected failure for the log without its content: the error
+ * class, a numeric or upper-case symbolic code, the database code name, error
+ * labels and the first code frame. The message and any data are never read, so
+ * a failure that only a rare timing produces can still be located afterwards.
+ */
+export function describeFailure(error) {
+  const matches = (pattern, value) =>
+    typeof value === "string" && pattern.test(value);
+  const name = error?.constructor?.name ?? error?.name;
+  const code = error?.code;
+  const labels = Array.isArray(error?.errorLabels) ? error.errorLabels : [];
+  const stack = typeof error?.stack === "string" ? error.stack.split("\n") : [];
+  const frame = stack
+    .map((line) => FRAME_PATTERN.exec(line))
+    .find((match) => match !== null);
+  return {
+    name: matches(NAME_PATTERN, name) ? name : "Unknown",
+    code:
+      Number.isSafeInteger(code) || matches(SYMBOLIC_CODE_PATTERN, code)
+        ? code
+        : null,
+    codeName: matches(CODE_NAME_PATTERN, error?.codeName)
+      ? error.codeName
+      : null,
+    labels: labels.filter((label) => matches(NAME_PATTERN, label)).slice(0, 4),
+    site: frame ? `${frame[1]} ${frame[2]}`.trim().slice(0, 240) : null,
+  };
+}
+
 function emitLog(logger, line, level) {
   if (logger) {
     logger(line, level);
@@ -156,6 +192,9 @@ export async function runApiRoute(
           requestId,
           status: response.status,
           code: payload.code,
+          ...(payload.code === "INTERNAL_ERROR"
+            ? { failure: describeFailure(error) }
+            : {}),
         }),
         response.status >= 500 ? "error" : "info",
       );

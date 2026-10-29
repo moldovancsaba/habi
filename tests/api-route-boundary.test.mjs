@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { HabiApiError } from "../src/lib/api/error-response.mjs";
-import { runApiRoute } from "../src/lib/api/route-boundary.mjs";
+import {
+  describeFailure,
+  runApiRoute,
+} from "../src/lib/api/route-boundary.mjs";
 
 test("adds a fresh request ID to successful route responses", async () => {
   const response = await runApiRoute(
@@ -234,4 +237,61 @@ test("preserves Next.js prerender control-flow signals", async () => {
     ),
     (error) => error === dynamicSignal,
   );
+});
+
+test("an unexpected failure logs its class, code and code location but never its message or data", async () => {
+  const lines = [];
+  class MongoWaitQueueTimeoutError extends Error {}
+  const failure = Object.assign(
+    new MongoWaitQueueTimeoutError("Timed out for token=never-log-this"),
+    {
+      code: 112,
+      codeName: "WriteConflict",
+      errorLabels: ["TransientTransactionError", "bad label!"],
+    },
+  );
+  const response = await runApiRoute(
+    new Request("https://habi.test/api/private?secret=never-log-this"),
+    "ai-coach.read",
+    async () => {
+      throw failure;
+    },
+    (line) => lines.push(line),
+  );
+
+  assert.equal(response.status, 500);
+  assert.equal((await response.json()).code, "INTERNAL_ERROR");
+  const log = JSON.parse(lines[0]);
+  assert.equal(log.operation, "ai-coach.read");
+  assert.equal(log.code, "INTERNAL_ERROR");
+  assert.equal(log.failure.name, "MongoWaitQueueTimeoutError");
+  assert.equal(log.failure.code, 112);
+  assert.equal(log.failure.codeName, "WriteConflict");
+  assert.deepEqual(log.failure.labels, ["TransientTransactionError"]);
+  assert.match(log.failure.site, /api-route-boundary\.test\.mjs:\d+:\d+$/);
+  assert.equal(lines[0].includes("never-log-this"), false);
+});
+
+test("describing a failure tolerates values that are not errors", () => {
+  for (const value of [undefined, null, "text", 7, { stack: 3, code: {} }]) {
+    const described = describeFailure(value);
+    assert.equal(typeof described.name, "string");
+    assert.equal(described.site, null);
+    assert.equal(described.code, null);
+    assert.deepEqual(described.labels, []);
+  }
+  assert.equal(describeFailure(new Error("x")).name, "Error");
+});
+
+test("a mapped public error carries no failure descriptor", async () => {
+  const lines = [];
+  await runApiRoute(
+    new Request("https://habi.test/api/private"),
+    "api.private",
+    async () => {
+      throw new HabiApiError("NOT_FOUND");
+    },
+    (line) => lines.push(line),
+  );
+  assert.equal(Object.hasOwn(JSON.parse(lines[0]), "failure"), false);
 });

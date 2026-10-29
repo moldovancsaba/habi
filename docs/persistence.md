@@ -127,7 +127,7 @@ Mongo TTL removal is asynchronous and is not authorization. Expired sessions mus
 
 ## API request correlation and safe failure logs
 
-`src/lib/api/route-boundary.mjs` minden auth, üzleti és operational route kéréshez friss 128 bites request ID-t készít, `X-Request-ID` fejlécben és a publikus hiba DTO-ban visszaadja, majd ugyanazt az azonosítót használja a strukturált logban. A log csak fix operation labelt, státuszt, request ID-t és engedélyezett hibakódot tartalmaz; URL, body, exception szöveg/stack, DB hiba, URI és credential kimarad. A logger hibája nem írhatja felül az API választ. Next.js prerender vezérlőjelek továbbmennek a határon.
+`src/lib/api/route-boundary.mjs` minden auth, üzleti és operational route kéréshez friss 128 bites request ID-t készít, `X-Request-ID` fejlécben és a publikus hiba DTO-ban visszaadja, majd ugyanazt az azonosítót használja a strukturált logban. A log csak fix operation labelt, státuszt, request ID-t és engedélyezett hibakódot tartalmaz; váratlan hibánál (`INTERNAL_ERROR`) ezen felül egy `failure` objektumot: a hiba osztályát, számkódját vagy nagybetűs szimbolikus kódját, az adatbázis `codeName` értékét, a hibacímkéket és az első kódhelyet (függvény, fájl:sor:oszlop). URL, body, exception szöveg, a stack szövege, DB hibaüzenet, URI és credential kimarad. A logger hibája nem írhatja felül az API választ. Next.js prerender vezérlőjelek továbbmennek a határon.
 
 ## Failures and recovery
 
