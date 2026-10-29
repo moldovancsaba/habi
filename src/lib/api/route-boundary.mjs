@@ -86,6 +86,31 @@ function slowThresholdMs(env) {
     : SLOW_API_MS_DEFAULT;
 }
 
+const TRANSIENT_DATABASE_ERRORS = new Set([
+  "MongoNetworkError",
+  "MongoNetworkTimeoutError",
+  "MongoServerSelectionError",
+  "MongoWaitQueueTimeoutError",
+  "MongoPoolClearedError",
+]);
+
+/**
+ * A database failure that retrying the same request can be expected to cure:
+ * the connection broke, no server was selectable in time, the pool had no
+ * connection to give, or a transaction asked to be retried. Such a failure is
+ * answered as DEPENDENCY_UNAVAILABLE (503 with Retry-After) instead of an
+ * opaque 500. Writes carry idempotency keys, so a retry cannot repeat them.
+ */
+export function isTransientDatabaseFailure(error) {
+  const name = error?.name ?? error?.constructor?.name;
+  if (typeof name === "string" && TRANSIENT_DATABASE_ERRORS.has(name))
+    return true;
+  return (
+    Array.isArray(error?.errorLabels) &&
+    error.errorLabels.includes("TransientTransactionError")
+  );
+}
+
 function emitLog(logger, line, level) {
   if (logger) {
     logger(line, level);
@@ -217,7 +242,13 @@ export async function runApiRoute(
     return response;
   } catch (error) {
     if (isNextControlFlow(error)) throw error;
-    const response = toHabiErrorResponse(error, { requestId });
+    const transient = isTransientDatabaseFailure(error);
+    const response = toHabiErrorResponse(
+      transient
+        ? new HabiApiError("DEPENDENCY_UNAVAILABLE", { retryAfter: 2 })
+        : error,
+      { requestId },
+    );
     response.headers.set("X-Request-ID", requestId);
     const payload = await response.clone().json();
     try {
@@ -229,7 +260,7 @@ export async function runApiRoute(
           requestId,
           status: response.status,
           code: payload.code,
-          ...(payload.code === "INTERNAL_ERROR"
+          ...(payload.code === "INTERNAL_ERROR" || transient
             ? { failure: describeFailure(error) }
             : {}),
         }),

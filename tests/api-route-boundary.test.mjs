@@ -3,6 +3,7 @@ import test from "node:test";
 import { HabiApiError } from "../src/lib/api/error-response.mjs";
 import {
   describeFailure,
+  isTransientDatabaseFailure,
   runApiRoute,
 } from "../src/lib/api/route-boundary.mjs";
 
@@ -241,13 +242,13 @@ test("preserves Next.js prerender control-flow signals", async () => {
 
 test("an unexpected failure logs its class, code and code location but never its message or data", async () => {
   const lines = [];
-  class MongoWaitQueueTimeoutError extends Error {}
+  class MongoServerError extends Error {}
   const failure = Object.assign(
-    new MongoWaitQueueTimeoutError("Timed out for token=never-log-this"),
+    new MongoServerError("Rejected for token=never-log-this"),
     {
       code: 112,
       codeName: "WriteConflict",
-      errorLabels: ["TransientTransactionError", "bad label!"],
+      errorLabels: ["RetryableWriteError", "bad label!"],
     },
   );
   const response = await runApiRoute(
@@ -264,10 +265,10 @@ test("an unexpected failure logs its class, code and code location but never its
   const log = JSON.parse(lines[0]);
   assert.equal(log.operation, "ai-coach.read");
   assert.equal(log.code, "INTERNAL_ERROR");
-  assert.equal(log.failure.name, "MongoWaitQueueTimeoutError");
+  assert.equal(log.failure.name, "MongoServerError");
   assert.equal(log.failure.code, 112);
   assert.equal(log.failure.codeName, "WriteConflict");
-  assert.deepEqual(log.failure.labels, ["TransientTransactionError"]);
+  assert.deepEqual(log.failure.labels, ["RetryableWriteError"]);
   assert.match(log.failure.site, /api-route-boundary\.test\.mjs:\d+:\d+$/);
   assert.equal(lines[0].includes("never-log-this"), false);
 });
@@ -360,4 +361,73 @@ test("a slow failing request is logged once more as slow, and fast or misconfigu
       `threshold ${HG_SLOW_API_MS} must fall back to 3000 ms`,
     );
   }
+});
+
+test("a broken database connection answers a retryable 503 and still logs what failed", async () => {
+  for (const name of [
+    "MongoNetworkError",
+    "MongoNetworkTimeoutError",
+    "MongoServerSelectionError",
+    "MongoWaitQueueTimeoutError",
+    "MongoPoolClearedError",
+  ]) {
+    const failure = new { [name]: class extends Error {} }[name](
+      "never-log-this",
+    );
+    Object.defineProperty(failure, "name", { value: name });
+    const lines = [];
+    const response = await runApiRoute(
+      new Request("https://habi.test/api/v1/me"),
+      "me.read",
+      async () => {
+        throw failure;
+      },
+      (line, level) => lines.push({ line, level }),
+    );
+    assert.equal(response.status, 503, name);
+    assert.equal(response.headers.get("retry-after"), "2", name);
+    const body = await response.json();
+    assert.equal(body.code, "DEPENDENCY_UNAVAILABLE", name);
+    assert.equal(body.retryAfter, 2, name);
+    assert.equal(lines.length, 1, name);
+    assert.equal(lines[0].level, "error", name);
+    const entry = JSON.parse(lines[0].line);
+    assert.equal(entry.code, "DEPENDENCY_UNAVAILABLE", name);
+    assert.equal(entry.failure.name, name, name);
+    assert.doesNotMatch(lines[0].line, /never-log-this/, name);
+  }
+});
+
+test("a transaction asking to be retried is transient and other database errors stay internal", async () => {
+  const transaction = Object.assign(new Error("never-log-this"), {
+    errorLabels: ["TransientTransactionError"],
+  });
+  assert.equal(isTransientDatabaseFailure(transaction), true);
+
+  const duplicate = Object.assign(new Error("never-log-this"), {
+    name: "MongoServerError",
+    code: 11000,
+  });
+  for (const unexpected of [
+    duplicate,
+    new Error("plain"),
+    new TypeError("typed"),
+    null,
+    undefined,
+    "text",
+    { name: "MongoNetworkErrorLookalike" },
+  ]) {
+    assert.equal(isTransientDatabaseFailure(unexpected), false);
+  }
+
+  const response = await runApiRoute(
+    new Request("https://habi.test/api/v1/me"),
+    "me.read",
+    async () => {
+      throw duplicate;
+    },
+    () => {},
+  );
+  assert.equal(response.status, 500);
+  assert.equal((await response.json()).code, "INTERNAL_ERROR");
 });
