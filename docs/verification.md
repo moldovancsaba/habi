@@ -1,5 +1,13 @@
 # Habi — ellenőrzési napló
 
+## Database connection failure answers 503 · 2026-10-29
+
+- Change: `getClientPromise` (`src/lib/database/mongo.ts`) threw `new Error("DEPENDENCY_UNAVAILABLE")` without a `.code`, so `toHabiErrorResponse` mapped a failed database connection to 500 `INTERNAL_ERROR` although the name, the readiness endpoint and the web client's “átmenetileg nem érhető el” message all treat it as 503. The error now comes from `dependencyUnavailableError()` (`src/lib/database/dependency-error.mjs`): same bare message (the OAuth callback still compares it), plus the public code. One test checks the message, the code and the 503 body.
+- Not a diagnosis of finding 2: this covers only a failed connect. The unconfirmed pool wait-queue timeout candidate is a different error class raised later by an operation; it is not mapped and the pool settings are unchanged.
+- Automated: `HABI_TEST_MONGODB_URI=mongodb://127.0.0.1:27099/?replicaSet=habiTestRs npm test` with `HG_WORKER_BEARER_SHA256` from `.env.test.example` — 240 passed, 0 failed. `npm run lint`, `npm run typecheck` and `npm run build` passed.
+- Real run: the production build started against a closed database port (isolated test config, synthetic only). `GET /api/v1/me` with a placeholder session cookie returned 503 `{"code":"DEPENDENCY_UNAVAILABLE"}` and logged a mapped `habi.api.error` without a `failure` object; the old error shape, run through the same mapper, gives 500. `/api/ready` was 503 as before. `/api/test/session` (a test-only route outside `runApiRoute`) still answers a bare 500 in that state; it is not a production route and was left alone.
+- Not verified: the recovery path after the database returns (the failed promise is dropped, as before this change, but it was not exercised), and nothing was released; the change is committed locally only.
+
 ## Oversight decision record and 500 diagnostics · 2026-10-29
 
 - Decision: `contracts/decisions.json` now records the owner's coach-visibility instruction as D-HG-020 (reading is not review; writes stay with the thread owner; parents and other tenants stay excluded; the ledger starts 2026-10-29). D-HG-019 is unchanged and D-HG-020 supersedes only its “private until shared” clause; `docs/ai-coach.md` links the decision. Correction to the entry below: nothing pins `decisions.json` (no test, manifest, hook or other file holds its hash, and earlier commits edited it freely), so “hash-pinned” was wrong.

@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readAtlasConfig } from "../src/lib/database/config.mjs";
 import { evaluateDatabaseReadiness } from "../src/lib/database/readiness.mjs";
+import { dependencyUnavailableError } from "../src/lib/database/dependency-error.mjs";
+import { toHabiErrorResponse } from "../src/lib/api/error-response.mjs";
 import { readLocalTestTarget } from "../scripts/database-target.mjs";
 import { hashRequestBody } from "../src/lib/database/idempotent-command.mjs";
 
@@ -145,5 +147,19 @@ test("idempotency request hashing canonicalizes JSON keys and rejects non-JSON v
   });
   assert.throws(() => hashRequestBody(new Date()), {
     message: "IDEMPOTENCY_BODY_NOT_JSON",
+  });
+});
+
+test("a database connection failure answers 503 and keeps the bare message", async () => {
+  const error = dependencyUnavailableError();
+  assert.equal(error.message, "DEPENDENCY_UNAVAILABLE");
+  assert.equal(error.code, "DEPENDENCY_UNAVAILABLE");
+
+  const response = toHabiErrorResponse(error, { requestId: "req-1" });
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {
+    code: "DEPENDENCY_UNAVAILABLE",
+    requestId: "req-1",
+    retryAfter: null,
   });
 });

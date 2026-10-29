@@ -2,6 +2,7 @@ import "server-only";
 
 import { MongoClient, ServerApiVersion, type Db } from "mongodb";
 import { readAtlasConfig } from "./config.mjs";
+import { dependencyUnavailableError } from "./dependency-error.mjs";
 
 type MongoGlobal = typeof globalThis & {
   _habiMongoClientPromise?: Promise<MongoClient>;
@@ -36,7 +37,7 @@ function getClientPromise(): Promise<MongoClient> {
       delete mongoGlobal._habiMongoClientPromise;
     }
     await client.close().catch(() => undefined);
-    throw new Error("DEPENDENCY_UNAVAILABLE");
+    throw dependencyUnavailableError();
   });
   mongoGlobal._habiMongoClientPromise = promise;
   return promise;
