@@ -1,4 +1,5 @@
 "use client";
+import { AiCoachButton } from "./ai-coach";
 import { useCallback, useEffect, useState } from "react";
 import { commandMessage, productRequest } from "./product-request";
 import styles from "./workspace.module.css";
@@ -9,6 +10,7 @@ type Thread = {
   latestActivityAt: string;
 };
 type Message = {
+  revision?: number;
   id: string;
   text: string;
   replyTo: string | null;
@@ -204,6 +206,13 @@ export default function SharedConversations({
           <ol className={styles.messageList}>
             {messages.map((m) => (
               <li key={m.id}>
+                <AiCoachButton
+                  context={{
+                    kind: "message",
+                    id: m.id,
+                    revision: m.revision ?? 1,
+                  }}
+                />
                 <span className={`role-badge actor-${m.recordedBy.role}`}>
                   {m.recordedBy.role === "coach"
                     ? "Edző"

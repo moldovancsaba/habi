@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.5.0",
+    "version": "2.5.1",
     "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
@@ -12197,7 +12197,7 @@
     "/v1/players/{playerId}/ai-coach": {
       "get": {
         "operationId": "coach_get_ai-coach_list",
-        "description": "Coach a verziózott eredeti kérdéssorból kérdőívet, interjút vagy riportértéket ment belső megfigyelésként. Az eredeti kérdés, válasz és forrásverzió változatlan, pontszámot nem képez.",
+        "description": "Az edző a kiválasztott játékos összes szerepkörének AI-beszélgetéseit megtekintheti. Más résztvevő nevében nem írhat; a játékos és szülő csak a saját AI-beszélgetéseit olvashatja.",
         "security": [
           {
             "sessionCookie": []
@@ -12454,7 +12454,7 @@
     "/v1/players/{playerId}/ai-coach/{id}": {
       "get": {
         "operationId": "coach_get_ai-coach_item",
-        "description": "Coach a verziózott eredeti kérdéssorból kérdőívet, interjút vagy riportértéket ment belső megfigyelésként. Az eredeti kérdés, válasz és forrásverzió változatlan, pontszámot nem képez.",
+        "description": "Az edző a kiválasztott játékos összes szerepkörének AI-beszélgetéseit megtekintheti. Más résztvevő nevében nem írhat; a játékos és szülő csak a saját AI-beszélgetéseit olvashatja.",
         "security": [
           {
             "sessionCookie": []
@@ -13124,6 +13124,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "threadId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Edzői megtekintésnél a beszélgetés azonosítója; csak az ahhoz kapcsolt forrás nyitható meg."
           }
         ],
         "responses": {

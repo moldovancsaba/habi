@@ -6,7 +6,7 @@ A 2026-10-27-i tulajdonosi kérés engedélyezi a játékos, szülő és edző k
 
 Minden aktív szerepköri oldalon állandó `smart_toy` alakú AI-edző gomb jelenik meg. A szakaszok, mentett bejegyzések, grafikonok, kérdések, gyakorlatok és felmérések saját belépőt kapnak. A panel az oldal állapotának elvesztése nélkül nyílik meg; a visszalépés az eredeti oldalra visz. A cím megmutatja a kijelölt tartalmat. Az első üzenet a szerver által feloldott, engedélyezett tartalmat magyarázza; a tényleges AI-válasz a felhasználó kérdésére készül az aszinkron worker útvonalán. A megnyitás önmagában nem indít háttérgenerálást.
 
-A thread tulajdonosa tenant + játékos + actor + aktív szerepkör. Szülő/edző nem olvashatja a játékos privát AI-threadjét. A családi emberi beszélgetések külön maradnak. A kérdés és munka az indítástól tartós, az ismétlés idempotens, új kérdés folyamatban lévő válasz mellett is beküldhető és tartósan sorba kerül. A korábbi automatikus bevezető helyett a felhasználó saját kérdése kap elsőbbséget; a megszakított bevezető előzménye megmarad. A korábbi threadek és üzenetek lapozhatók. A következő kérdés a legutóbbi négy, még engedélyezett válasz kérdését és látható válaszát is megkapja; a korábbi AI-szöveg nem új bizonyíték.
+A thread tulajdonosa tenant + játékos + actor + aktív szerepkör. A thread írása és folytatása csak a tulajdonosé. A játékoshoz hozzáférő edző – a 2026-10-29-i tulajdonosi utasítás szerint – minden résztvevő AI-threadjét, üzenetét, visszajelzését és eredményét olvasási nézetben megnyithatja; a szülő és a játékos más résztvevő threadjét nem látja. A családi emberi beszélgetések külön maradnak. A kérdés és munka az indítástól tartós, az ismétlés idempotens, új kérdés folyamatban lévő válasz mellett is beküldhető és tartósan sorba kerül. A korábbi automatikus bevezető helyett a felhasználó saját kérdése kap elsőbbséget; a megszakított bevezető előzménye megmarad. A korábbi threadek és üzenetek lapozhatók. A következő kérdés a legutóbbi négy, még engedélyezett válasz kérdését és látható válaszát is megkapja; a korábbi AI-szöveg nem új bizonyíték.
 
 ## Játékosmemória
 
@@ -20,11 +20,11 @@ A kérdéshez a teljes előzményhalmazból releváns korábbi források és kö
 
 A javaslatok az eredeti szerzői gyakorlattárból, a játékos mentett saját beszámolóihoz és aktív saját céljaihoz kapcsolódnak. A kártya megmutatja a gyakorlatot, kapcsolódásának indokát, a pontos forrásokat, a bizonytalanságot és az újranézés dátumát. Választható: kipróbálom, módosítanám, most nem kérem, segített, nem segített, még nem próbáltam; szabad megjegyzés is rögzíthető. A visszajelzés tartós, a profilban megjelenik és a javaslatok rendezését befolyásolja. Az újranézés az alkalmazásban látható, nem külső értesítés.
 
-A javaslat támogató, önkéntes kipróbálás, nem automatikusan elfogadott terv vagy edzésterhelési előírás. A modell személyes következtetése külön `inference`; játékos/szülő számára edzői ellenőrzésig elkülönül. A felhasználó külön megoszthatja az adott kérdést, választ és pontos forrásait ellenőrzésre; a teljes privát dialógus továbbra sem látható. Az edzői döntés indoklással és revision-ellenőrzéssel mentődik.
+A javaslat támogató, önkéntes kipróbálás, nem automatikusan elfogadott terv vagy edzésterhelési előírás. A modell személyes következtetése külön `inference`; játékos/szülő számára edzői ellenőrzésig elkülönül. A felhasználó külön megoszthatja az adott kérdést, választ és pontos forrásait ellenőrzésre. A thread edzői olvasása nem jóváhagyás: a személyes következtetés elfogadása továbbra is külön, indokolt edzői döntés. Az edzői döntés indoklással és revision-ellenőrzéssel mentődik.
 
 ## Telepítés és működés
 
-- API: `2.4.23`; új utak: `ai-coach`, `ai-profile`, `ai-reviews`, `ai-sources` a kiválasztott játékos alatt.
+- API: `2.5.1`; új utak: `ai-coach`, `ai-profile`, `ai-reviews`, `ai-sources` a kiválasztott játékos alatt.
 - Additív migráció: `018-contextual-ai-coach`; négy új, validált kollekció és az új `coachConversation` jobtípus. Hitelesített új útvonal első használatakor idempotensen lefut; történeti rekordot nem ír át.
 - A meglévő Vercel/Atlas/worker sor használatos. Hosted módban a megosztott Hetzner `text_chat` szolgáltatás fut; a modell alapértelmezetten `auto`. A böngésző nem kap AI-kulcsot.
 - Külön `coach-prompt.md`; a worker a kérésben szereplő prompt-hashhez ellenőrzi a helyi fájlt. A normál felülvizsgált interpretation-folyamat megmarad.
@@ -39,3 +39,9 @@ A modell kompakt forráskulcsokat (S1, S2…) ad vissza; ezeket kizárólag a k�
 Ha a szolgáltatás továbbra sem ad használható választ, a Habi „Forrásalapú összefoglaló” jelöléssel az engedélyezett mentett adatok idézett, tényszerű összefoglalóját adja vissza. Ez nem modellkövetkeztetés. A személyes értelmezés továbbra is külön ellenőrzést igényel; annak várakozása közben is megjeleníthetők a tényszerű alapadatok. A transporthiba automatikus újrapróbálása négy worker-kísérletre korlátozott.
 
 A közvetlen állítások megjelenített szövege a megjelölt forrás ellenőrzött, szó szerinti részlete. Általános oldalleírás nem szolgálhat személyes állítás egyetlen bizonyítékául. Egyetlen állapotjelzés-területre irányuló kérdésnél az adott terület válasza kerül a modellcsomagba, hogy például az energia- és alvásválasz ne keveredjen; több területet összevető kérdésnél az eredeti, külön mezők maradnak. A magyarázó fogalmi tartalom külön, verziózott Habi-forrás. A kimeneti keret a szolgáltatás modellekre hirdetett korlátját követi, nem lépi túl azt az újrapróbálás sem.
+
+## Edzői átláthatóság és tevékenységnapló (2026-10-29)
+
+A játékoshoz hozzáférő edző az Idővonalon és a korábbi AI-beszélgetések között minden résztvevő AI-kérdését, válaszát, visszajelzését, pontosítását és kizárását látja, az eredeti üzenetek módosítása nélkül. Más résztvevő threadjét csak olvasási nézetben nyithatja meg: nincs üzenetmező, a címkék a szerzőt nevezik meg („Játékos üzenete”), és a folytatás vagy a szál bármilyen írása elutasított (a tulajdonos hatóköre nem változik). A szülő és a más bérlő játékosa az ilyen szálat nem éri el, és az Idővonalán nem jelenik meg.
+
+A sikeres, játékosra vonatkozó workflow-parancsok a meglévő tranzakcióban kanonikus `events` és aktorhoz kötött `audit` rekordot is írnak (`src/lib/database/coach-activity.mjs`). Az idempotens újrajátszás nem ad második tevékenységet, a sikertelen tranzakció nem hagy nyomot, a piszkozat tartalma és a nyers kérés nem kerül a naplóba. A napló az ezt a kiadást megelőző állapotokat nem rekonstruálja; a begépelt, el nem küldött szöveg nem tevékenység.

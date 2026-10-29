@@ -297,6 +297,8 @@ export async function startCoachTurn({
     tenantId: principal.tenantId,
     retentionPolicyId: principal.retentionPolicyId,
     actorOrClientId: principal.actorId,
+    actorRole: principal.role,
+    activityPlayerId: principal.playerId ?? null,
     method: request.method,
     path: new URL(request.url).pathname,
     key: keyFor(request),
@@ -468,7 +470,10 @@ export async function listCoachThreads({
   before = /** @type {string | null} */ (null),
 }) {
   await requireCoachPlayer(db, principal, playerId);
-  const query = ownerScope(principal, playerId);
+  const query =
+    principal.role === "coach"
+      ? { tenantId: principal.tenantId, playerId }
+      : ownerScope(principal, playerId);
   if (before) {
     const prior = await db
       .collection("habi_coach_threads")
@@ -486,7 +491,11 @@ export async function listCoachThreads({
     .limit(31)
     .toArray();
   return {
-    items: threads.slice(0, 30).map(redactCoachDocument),
+    items: threads.slice(0, 30).map((thread) => ({
+      ...redactCoachDocument(thread),
+      readOnly:
+        thread.actorId !== principal.actorId || thread.role !== principal.role,
+    })),
     nextCursor: threads.length > 30 ? threads[29].id : null,
   };
 }
@@ -536,12 +545,27 @@ export async function readCoachThread({
   before = /** @type {string | null} */ (null),
 }) {
   await requireCoachPlayer(db, principal, playerId);
-  const scope = ownerScope(principal, playerId);
+  const lookupScope =
+    principal.role === "coach"
+      ? { tenantId: principal.tenantId, playerId }
+      : ownerScope(principal, playerId);
   const thread = await db
     .collection("habi_coach_threads")
-    .findOne({ ...scope, id });
+    .findOne({ ...lookupScope, id });
   if (!thread) throw new HabiApiError("NOT_FOUND");
-  const { sources } = await collectCoachSources(db, principal, playerId);
+  const scope = ownerScope(
+    { ...principal, actorId: thread.actorId, role: thread.role },
+    playerId,
+  );
+  const readOnly =
+    thread.actorId !== principal.actorId || thread.role !== principal.role;
+  const { sources } = await collectCoachSources(
+    db,
+    principal,
+    playerId,
+    undefined,
+    readOnly ? thread : null,
+  );
   const available = [...sources, ...authoredSources()];
   const query = { ...scope, threadId: id };
   if (before) {
@@ -564,8 +588,8 @@ export async function readCoachThread({
     .collection("jobs")
     .find({
       tenantId: principal.tenantId,
-      requesterActorId: principal.actorId,
-      requesterRole: principal.role,
+      requesterActorId: thread.actorId,
+      requesterRole: thread.role,
       id: { $in: turns.map((t) => t.jobId) },
     })
     .toArray();
@@ -575,8 +599,8 @@ export async function readCoachThread({
     .find({
       tenantId: principal.tenantId,
       playerId,
-      requesterActorId: principal.actorId,
-      requesterRole: principal.role,
+      requesterActorId: thread.actorId,
+      requesterRole: thread.role,
       kind: "coachConversation",
       status: { $in: ["queued", "leased", "running"] },
     })
@@ -653,7 +677,7 @@ export async function readCoachThread({
           }
         : null;
     const guidance =
-      current && !turn.answer?.reply
+      current && !turn.answer?.reply && !readOnly
         ? coachQuestionGuidance({
             question: turn.question,
             role: principal.role,
@@ -661,7 +685,7 @@ export async function readCoachThread({
           })
         : null;
     const conversation =
-      current && !turn.answer?.reply
+      current && !turn.answer?.reply && !readOnly
         ? prepareConversation(turn, guidance)
         : null;
     if (current && turn.status === "answered")
@@ -720,6 +744,7 @@ export async function readCoachThread({
   }
   return {
     thread: { ...redactCoachDocument(thread), opening },
+    readOnly,
     items,
     nextCursor: turns.length > 30 ? turns[29].id : null,
   };
@@ -1093,6 +1118,8 @@ export async function writeCoachEvent({
     tenantId: principal.tenantId,
     retentionPolicyId: principal.retentionPolicyId,
     actorOrClientId: principal.actorId,
+    actorRole: principal.role,
+    activityPlayerId: principal.playerId ?? null,
     method: request.method,
     path: new URL(request.url).pathname,
     key: keyFor(request),
@@ -1213,6 +1240,8 @@ export async function reviewCoachTurn({
     tenantId: principal.tenantId,
     retentionPolicyId: principal.retentionPolicyId,
     actorOrClientId: principal.actorId,
+    actorRole: principal.role,
+    activityPlayerId: principal.playerId ?? null,
     method: request.method,
     path: new URL(request.url).pathname,
     key: keyFor(request),
@@ -1314,5 +1343,40 @@ export async function readCoachReviewSource({
     playerId,
     [{ id, revision, span: null }],
   );
+  return source;
+}
+
+export async function readObservedCoachSource({
+  db,
+  principal,
+  playerId,
+  threadId,
+  id,
+  revision,
+}) {
+  if (principal.role !== "coach") throw new HabiApiError("ACCESS_DENIED");
+  await requireCoachPlayer(db, principal, playerId);
+  const thread = await db
+    .collection("habi_coach_threads")
+    .findOne({ tenantId: principal.tenantId, playerId, id: threadId });
+  if (!thread) throw new HabiApiError("NOT_FOUND");
+  const turn = await db.collection("habi_coach_turns").findOne({
+    tenantId: principal.tenantId,
+    playerId,
+    threadId,
+    sourceRefs: { $elemMatch: { id, revision } },
+  });
+  if (!turn) throw new HabiApiError("NOT_FOUND");
+  const { sources } = await collectCoachSources(
+    db,
+    principal,
+    playerId,
+    undefined,
+    thread,
+  );
+  const source =
+    sources.find((s) => s.id === id && s.revision === revision) ??
+    (turn.profileSnapshot?.id === id ? turn.profileSnapshot : null);
+  if (!source) throw new HabiApiError("NOT_FOUND");
   return source;
 }

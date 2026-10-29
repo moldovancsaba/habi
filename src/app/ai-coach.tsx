@@ -25,6 +25,8 @@ export type CoachContext = {
 };
 type Ref = { id: string; revision: number; span: null };
 type Thread = {
+  readOnly?: boolean;
+  role?: string;
   id: string;
   revision: number;
   opening: string;
@@ -79,6 +81,7 @@ type MessageHistory = {
     at: string;
     role: string;
     ignored: boolean;
+    canManage?: boolean;
     understanding: {
       acts: string[];
       subject: string;
@@ -128,7 +131,7 @@ type Profile = {
 };
 const CoachEntry = createContext<null | {
   page: string;
-  open: (context?: Partial<CoachContext>) => void;
+  open: (context?: Partial<CoachContext>, threadId?: string) => void;
 }>(null);
 export function SmartToy() {
   return (
@@ -148,9 +151,11 @@ export function SmartToy() {
 }
 export function AiCoachButton({
   context,
+  threadId,
   label = "Kérdezd a Habi AI-edzőt",
 }: {
   context?: Partial<CoachContext>;
+  threadId?: string;
   label?: string;
 }) {
   const entry = useContext(CoachEntry);
@@ -161,7 +166,7 @@ export function AiCoachButton({
       className={styles.contextButton}
       aria-label={label}
       title={label}
-      onClick={() => entry.open(context)}
+      onClick={() => entry.open(context, threadId)}
     >
       <SmartToy />
       <span className={styles.buttonText}>AI-edző</span>
@@ -188,12 +193,14 @@ export function AiCoachProvider({
   const [selection, setSelection] = useState<{
     owner: string;
     target: CoachContext;
+    threadId?: string;
   } | null>(null);
   const identity = `${actorId}:${role}:${playerId}`;
   const context = selection?.owner === identity ? selection.target : null;
-  const open = (input?: Partial<CoachContext>) =>
+  const open = (input?: Partial<CoachContext>, threadId?: string) =>
     setSelection({
       owner: identity,
+      threadId,
       target: {
         page,
         kind: "page",
@@ -220,12 +227,18 @@ export function AiCoachProvider({
       )}
       {enabled && context && (
         <CoachPanel
-          key={identity}
+          key={`${identity}:${selection?.threadId ?? "current"}:${context.kind}:${context.id}`}
+          initialThreadId={selection?.threadId}
           role={role}
           playerId={playerId as string}
           csrfToken={csrfToken}
           context={context}
-          onClose={() => setSelection(null)}
+          onClose={() => {
+            setSelection(null);
+            window.dispatchEvent(
+              new CustomEvent("habi:activity", { detail: { playerId } }),
+            );
+          }}
         />
       )}
     </CoachEntry.Provider>
@@ -247,12 +260,14 @@ const feedbackLabels: Record<string, string> = {
   not_yet: "Még nem próbáltam",
 };
 function CoachPanel({
+  initialThreadId,
   role,
   playerId,
   csrfToken,
   context,
   onClose,
 }: {
+  initialThreadId?: string;
   role: string;
   playerId: string;
   csrfToken: string;
@@ -263,12 +278,21 @@ function CoachPanel({
   const dialog = useRef<HTMLDialogElement>(null),
     end = useRef<HTMLDivElement>(null);
   const base = `/api/v1/players/${encodeURIComponent(playerId)}`;
+  const [readOnly, setReadOnly] = useState(false);
   const [tab, setTab] = useState("chat"),
     [threads, setThreads] = useState<Thread[]>([]),
     [thread, setThread] = useState<Thread | null>(null),
     [turns, setTurns] = useState<Turn[]>([]),
     [older, setOlder] = useState<string | null>(null),
     [olderThreads, setOlderThreads] = useState<string | null>(null);
+  const ownerLabel =
+    readOnly && thread?.role
+      ? thread.role === "player"
+        ? "Játékos"
+        : thread.role === "parent"
+          ? "Szülő"
+          : "Edző"
+      : null;
   const [history, setHistory] = useState<MessageHistory>({
     items: [],
     nextCursor: null,
@@ -322,6 +346,7 @@ function CoachPanel({
   async function refresh(id: string) {
     const body = await request(`/ai-coach/${encodeURIComponent(id)}`);
     setThread(body.thread);
+    setReadOnly(body.readOnly === true);
     setTurns(body.items);
     setOlder(body.nextCursor);
   }
@@ -350,7 +375,7 @@ function CoachPanel({
     const result = await request("/ai-coach", {
       threadId: newThread ? null : (thread?.id ?? null),
       question: text,
-      context,
+      context: !newThread && thread ? thread.context : context,
       expectedRevision: newThread ? 0 : (thread?.revision ?? 0),
     });
     await refresh(result.threadId);
@@ -382,13 +407,17 @@ function CoachPanel({
       if (!current) return;
       setThreads(list.items);
       setOlderThreads(list.nextCursor);
-      const match = list.items.find(
-        (t: Thread) => JSON.stringify(t.context) === contextKey,
-      );
+      const match = initialThreadId
+        ? { id: initialThreadId }
+        : list.items.find(
+            (t: Thread) =>
+              !t.readOnly && JSON.stringify(t.context) === contextKey,
+          );
       if (match) {
         const body = await request(`/ai-coach/${match.id}`);
         if (!current) return;
         setThread(body.thread);
+        setReadOnly(body.readOnly === true);
         setTurns(body.items);
         setOlder(body.nextCursor);
       } else {
@@ -402,6 +431,7 @@ function CoachPanel({
         const body = await request(`/ai-coach/${result.threadId}`);
         if (!current) return;
         setThread(body.thread);
+        setReadOnly(body.readOnly === true);
         setTurns(body.items);
         setOlder(body.nextCursor);
       }
@@ -420,7 +450,7 @@ function CoachPanel({
     return () => {
       current = false;
     };
-  }, [contextKey, context, request]); // Scope changes remount the panel.
+  }, [contextKey, context, request, initialThreadId]); // Scope changes remount the panel.
   useEffect(() => {
     if (!thread?.id || !pending) return;
     let current = true;
@@ -459,7 +489,7 @@ function CoachPanel({
   }
   async function openSource(ref: Ref, reviewId?: string) {
     const body = await request(
-      `/ai-sources/${encodeURIComponent(ref.id)}?revision=${ref.revision}${reviewId ? `&reviewId=${reviewId}` : ""}`,
+      `/ai-sources/${encodeURIComponent(ref.id)}?revision=${ref.revision}${reviewId ? `&reviewId=${reviewId}` : readOnly && thread ? `&threadId=${encodeURIComponent(thread.id)}` : ""}`,
     );
     setSource(body.source);
     setOpenedSources((old) => new Set([...old, `${ref.id}:${ref.revision}`]));
@@ -574,15 +604,27 @@ function CoachPanel({
           {thread?.opening.split("\n")[0] ?? "Kiválasztott tartalom"}
           {context.days ? ` · ${context.days} nap` : ""}
         </p>
-        <p className={styles.privacy}>
-          Ez a beszélgetés a saját{" "}
-          {role === "player"
-            ? "játékosi"
-            : role === "parent"
-              ? "szülői"
-              : "edzői"}{" "}
-          nézetedhez tartozik. A családi beszélgetés külön marad.
-        </p>
+        {!readOnly && (
+          <p className={styles.privacy}>
+            Ez a beszélgetés a saját{" "}
+            {role === "player"
+              ? "játékosi"
+              : role === "parent"
+                ? "szülői"
+                : "edzői"}{" "}
+            nézetedhez tartozik. Az edző a játékoshoz tartozó beszélgetéseket és
+            eseményeket megtekintheti.
+          </p>
+        )}
+        {readOnly && (
+          <p role="status" className={styles.muted}>
+            {ownerLabel
+              ? `${ownerLabel} beszélgetését tekinted meg.`
+              : "Másik résztvevő beszélgetését tekinted meg."}{" "}
+            Az eredeti üzenetek és válaszok változatlanok; saját kérdéshez
+            indíts új beszélgetést.
+          </p>
+        )}
         <nav className={styles.tabs} aria-label="AI-edző nézetek">
           {[
             ["chat", "Beszélgetés"],
@@ -633,7 +675,11 @@ function CoachPanel({
         {tab === "chat" && (
           <>
             <details>
-              <summary>Korábbi AI-beszélgetéseim</summary>
+              <summary>
+                {role === "coach"
+                  ? "A játékoshoz tartozó AI-beszélgetések"
+                  : "Korábbi AI-beszélgetéseim"}
+              </summary>
               <div className={styles.history}>
                 {threads.map((t) => (
                   <button
@@ -646,6 +692,9 @@ function CoachPanel({
                       })
                     }
                   >
+                    {t.readOnly
+                      ? `${t.role === "player" ? "Játékos" : t.role === "parent" ? "Szülő" : "Edző"} · `
+                      : ""}
                     {t.opening.split("\n")[0]} ·{" "}
                     {new Date(t.updatedAt).toLocaleString("hu-HU")}
                   </button>
@@ -706,7 +755,9 @@ function CoachPanel({
             {turns.map((turn) => (
               <section key={turn.id} className={styles.turn}>
                 <article className={styles.user}>
-                  <strong>Üzeneted</strong>
+                  <strong>
+                    {ownerLabel ? `${ownerLabel} üzenete` : "Üzeneted"}
+                  </strong>
                   <p>{turn.question}</p>
                   <small className={styles.muted}>
                     Mentve az előzményekhez ·{" "}
@@ -725,7 +776,10 @@ function CoachPanel({
                   ) : (
                     <>
                       {turn.progress && (
-                        <AiAnswerProgress progress={turn.progress} />
+                        <AiAnswerProgress
+                          progress={turn.progress}
+                          observer={readOnly}
+                        />
                       )}
                       {turn.answerMode === "source_summary" &&
                         turn.answer &&
@@ -762,7 +816,7 @@ function CoachPanel({
                             </p>
                             <button
                               type="button"
-                              disabled={busy}
+                              disabled={busy || readOnly}
                               onClick={() =>
                                 void run(() => send(turn.question))
                               }
@@ -776,6 +830,16 @@ function CoachPanel({
                           <p className={styles.prewrap}>
                             {turn.answer.reply.text}
                           </p>
+                          {readOnly && (
+                            <AiCoachButton
+                              label="Kérdezek erről edzőként"
+                              context={{
+                                kind: "record",
+                                id: `coach-message-${turn.id}`,
+                                revision: 1,
+                              }}
+                            />
+                          )}
                           {turn.answer.reply.sourceRefs.length > 0 && (
                             <details className={styles.evidence}>
                               <summary>Kapcsolódó előzmények</summary>
@@ -947,55 +1011,59 @@ function CoachPanel({
               </section>
             ))}
             <div ref={end} />
-            <form
-              className={styles.composer}
-              onSubmit={(e) => {
-                e.preventDefault();
-                void run(() => send(question));
-              }}
-            >
-              <label htmlFor="coach-question">Írj a Habi AI-edzőnek</label>
-              <textarea
-                ref={composer}
-                id="coach-question"
-                disabled={busy}
-                value={question}
-                maxLength={2000}
-                rows={3}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="Kérdezz, mondd el, mi változott, vagy jelezd, mi segített."
-              />
-              <div className={styles.suggestions}>
-                {[
-                  "Magyarázd el egyszerűbben.",
-                  "Milyen korábbi adatok kapcsolódnak ehhez?",
-                  "Mit próbálhatnék ki?",
-                ].map((text) => (
-                  <button
-                    type="button"
-                    key={text}
-                    onClick={() => setQuestion(text)}
-                  >
-                    {text}
-                  </button>
-                ))}
-              </div>
-              <button
-                className={styles.primary}
-                type="submit"
-                disabled={busy || !question.trim()}
+            {!readOnly && (
+              <form
+                className={styles.composer}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void run(() => send(question));
+                }}
               >
-                Üzenet elküldése
-              </button>
-            </form>
+                <label htmlFor="coach-question">Írj a Habi AI-edzőnek</label>
+                <textarea
+                  ref={composer}
+                  id="coach-question"
+                  disabled={busy}
+                  value={question}
+                  maxLength={2000}
+                  rows={3}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder="Kérdezz, mondd el, mi változott, vagy jelezd, mi segített."
+                />
+                <div className={styles.suggestions}>
+                  {[
+                    "Magyarázd el egyszerűbben.",
+                    "Milyen korábbi adatok kapcsolódnak ehhez?",
+                    "Mit próbálhatnék ki?",
+                  ].map((text) => (
+                    <button
+                      type="button"
+                      key={text}
+                      onClick={() => setQuestion(text)}
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  className={styles.primary}
+                  type="submit"
+                  disabled={busy || !question.trim()}
+                >
+                  Üzenet elküldése
+                </button>
+              </form>
+            )}
           </>
         )}
         {tab === "history" && (
           <>
             <h3>Üzenetek és visszajelzések</h3>
             <p>
-              A saját, ehhez a játékoshoz és szerepkörhöz tartozó üzeneteid. A
-              beszámoló a közlő állítása; a kérdés és a feltételezés nem
+              {role === "coach"
+                ? "A játékoshoz tartozó üzenetek minden résztvevőtől."
+                : "A saját, ehhez a játékoshoz és szerepkörhöz tartozó üzeneteid."}{" "}
+              A beszámoló a közlő állítása; a kérdés és a feltételezés nem
               bizonyított tény. Az eredeti szöveg megmarad, a javítás külön
               előzmény.
             </p>
@@ -1008,6 +1076,11 @@ function CoachPanel({
                     .join(" · ")}
                 </p>
                 <p className={styles.prewrap}>{item.text}</p>
+                <AiCoachButton
+                  threadId={item.threadId}
+                  context={context}
+                  label="Beszélgetés megtekintése"
+                />
                 <p className={styles.muted}>
                   {new Date(item.at).toLocaleString("hu-HU", {
                     timeZone: "Europe/Budapest",
@@ -1033,31 +1106,33 @@ function CoachPanel({
                         ))}
                       </details>
                     )}
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() =>
-                        void run(async () => {
-                          await request("/ai-profile", {
-                            kind: "forget",
-                            targetId: `coach-message-${item.id}`,
-                            text: "",
-                            value: "",
-                            sourceRefs: [
-                              {
-                                id: `coach-message-${item.id}`,
-                                revision: 1,
-                                span: null,
-                              },
-                            ],
-                          });
-                          await refreshProfile();
-                          if (thread) await refresh(thread.id);
-                        })
-                      }
-                    >
-                      Ne használd a továbbiakban
-                    </button>
+                    {item.canManage !== false && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() =>
+                          void run(async () => {
+                            await request("/ai-profile", {
+                              kind: "forget",
+                              targetId: `coach-message-${item.id}`,
+                              text: "",
+                              value: "",
+                              sourceRefs: [
+                                {
+                                  id: `coach-message-${item.id}`,
+                                  revision: 1,
+                                  span: null,
+                                },
+                              ],
+                            });
+                            await refreshProfile();
+                            if (thread) await refresh(thread.id);
+                          })
+                        }
+                      >
+                        Ne használd a továbbiakban
+                      </button>
+                    )}
                   </>
                 )}
               </article>

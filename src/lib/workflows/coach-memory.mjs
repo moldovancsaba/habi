@@ -258,7 +258,28 @@ function readableText(collection, doc) {
 }
 export const coachContextEligible = (source) =>
   !source.kind.startsWith("retired_") && !source.kind.startsWith("ignored_");
-export async function collectCoachSources(db, principal, playerId, session) {
+export async function collectCoachSources(
+  db,
+  principal,
+  playerId,
+  session,
+  conversationOwner = null,
+) {
+  if (conversationOwner && principal.role !== "coach")
+    throw new HabiApiError("ACCESS_DENIED");
+  const conversationScope =
+    principal.role === "coach" && !conversationOwner
+      ? { tenantId: principal.tenantId, playerId }
+      : ownerScope(
+          conversationOwner
+            ? {
+                ...principal,
+                actorId: conversationOwner.actorId,
+                role: conversationOwner.role,
+              }
+            : principal,
+          playerId,
+        );
   await requireCoachPlayer(db, principal, playerId, session);
   const options = session ? { session } : undefined;
   const publications = await db
@@ -318,7 +339,7 @@ export async function collectCoachSources(db, principal, playerId, session) {
   }
   const events = await db
     .collection("habi_coach_profile_events")
-    .find(ownerScope(principal, playerId), options)
+    .find(conversationScope, options)
     .sort({ createdAt: 1, id: 1 })
     .toArray();
   const ignored = new Set(
@@ -331,7 +352,7 @@ export async function collectCoachSources(db, principal, playerId, session) {
   );
   for await (const turn of db
     .collection("habi_coach_turns")
-    .find(ownerScope(principal, playerId), options)) {
+    .find(conversationScope, options)) {
     const rawId = messageSourceId(turn.id);
     sources.push({
       id: rawId,
@@ -345,7 +366,7 @@ export async function collectCoachSources(db, principal, playerId, session) {
         : "Saját beszélgetési üzenet · nem ellenőrzött állítás",
       text: turn.question,
       at: turn.createdAt,
-      role: principal.role,
+      role: turn.role,
     });
     // Keep old source identities readable, without promoting them to new facts.
     if (
@@ -363,7 +384,7 @@ export async function collectCoachSources(db, principal, playerId, session) {
         title: "Korábbi saját üzenet",
         text: turn.question,
         at: turn.createdAt,
-        role: principal.role,
+        role: turn.role,
       });
     if (turn.status === "queued") continue;
     const understanding = messageUnderstanding(
@@ -383,13 +404,17 @@ export async function collectCoachSources(db, principal, playerId, session) {
             ? "ignored_conversation_note"
             : corrected.has(id)
               ? "retired_conversation_note"
-              : note.kind === "hypothesis"
-                ? "conversation_hypothesis"
-                : "conversation_note",
+              : understanding.subject === "author" &&
+                  turn.actorId !== principal.actorId &&
+                  !conversationOwner
+                ? "conversation_participant"
+                : note.kind === "hypothesis"
+                  ? "conversation_hypothesis"
+                  : "conversation_note",
         title: `${corrected.has(id) ? "Korábbi, pontosított közlés · " : ""}Felhasználói ${note.kind} · ${understanding.subject} · ${day ?? "eseményidő nincs megadva"}`,
         text: note.quote,
         at: turn.createdAt,
-        role: principal.role,
+        role: turn.role,
       });
     });
   }
@@ -406,7 +431,7 @@ export async function collectCoachSources(db, principal, playerId, session) {
             ? `Saját pontosítás (${e.targetId}): ${e.text}`
             : e.text,
         at: e.createdAt,
-        role: principal.role,
+        role: e.role,
       });
   return {
     sources: sources.sort(
@@ -444,7 +469,12 @@ export async function resolveCoachContext(
       s.id === context.id &&
       s.revision === context.revision &&
       (s.kind === collection ||
-        (context.kind === "record" && s.kind === "follow_ups")),
+        (context.kind === "record" &&
+          [
+            "follow_ups",
+            "conversation_message",
+            "ignored_conversation_message",
+          ].includes(s.kind))),
   );
   if (!found) throw new HabiApiError("NOT_FOUND");
   return found;

@@ -1417,6 +1417,78 @@ export default function HabiWorkspace() {
     return () => controller.abort();
   }, [playerId, questionJob?.jobId, questionJob?.status, timelineDayFilter]);
 
+  useEffect(() => {
+    if (
+      !playerId ||
+      !active?.actorId ||
+      !active?.activeRole ||
+      tab !== "timeline"
+    )
+      return;
+    const controller = new AbortController();
+    let inFlight = false;
+    const refresh = async () => {
+      if (document.hidden || inFlight) return;
+      inFlight = true;
+      try {
+        const query = new URLSearchParams({
+          playerId,
+          limit: "50",
+          ...(localDayBounds(timelineDayFilter) ?? {}),
+        });
+        const response = await fetch(`/api/v1/timeline?${query}`, {
+          cache: "no-store",
+          credentials: "same-origin",
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const fresh = (await response.json()) as TimelineResponse;
+        if (controller.signal.aborted) return;
+        setTimeline((current) => {
+          if (!current || current.nodes.length <= 50) return fresh;
+          const nodes = new Map(current.nodes.map((node) => [node.id, node]));
+          for (const node of fresh.nodes) nodes.set(node.id, node);
+          const processes = new Map(
+            current.processes.map((process) => [process.id, process]),
+          );
+          for (const process of fresh.processes)
+            processes.set(process.id, process);
+          const edges = new Map(
+            [...current.edges, ...fresh.edges].map((edge) => [
+              `${edge.from}:${edge.to}:${edge.kind}`,
+              edge,
+            ]),
+          );
+          return {
+            ...current,
+            nodes: [...nodes.values()].sort(
+              (a, b) =>
+                b.submittedAt.localeCompare(a.submittedAt) ||
+                b.id.localeCompare(a.id),
+            ),
+            processes: [...processes.values()],
+            edges: [...edges.values()],
+          };
+        });
+      } catch {
+        /* Keep the last readable history during temporary disconnection. */
+      } finally {
+        inFlight = false;
+      }
+    };
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 12000);
+    const changed = () => void refresh();
+    window.addEventListener("focus", changed);
+    window.addEventListener("habi:activity", changed);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+      window.removeEventListener("focus", changed);
+      window.removeEventListener("habi:activity", changed);
+    };
+  }, [playerId, active?.actorId, active?.activeRole, tab, timelineDayFilter]);
+
   async function switchMembership(membershipId: string) {
     if (
       !window.dispatchEvent(
@@ -4435,6 +4507,15 @@ export default function HabiWorkspace() {
                           <option key={kind} value={kind}>
                             {(
                               {
+                                "coach.message": "AI-kérdés vagy üzenet",
+                                "coach.update": "AI-beszélgetési közlés",
+                                "coach.feedback": "AI-visszajelzés",
+                                "coach.correction": "Pontosítás",
+                                "coach.answer": "AI-válasz",
+                                "coach.failed": "Sikertelen AI-válasz",
+                                "coach.exclusion":
+                                  "AI-felhasználás kikapcsolva",
+                                "coach.memory": "Profil-megjegyzés",
                                 record: "Bejegyzés",
                                 checkin: "Állapotjelzés",
                                 "checkin.completed": "Lezárt állapotjelzés",

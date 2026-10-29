@@ -24,6 +24,11 @@ const labels: Record<string, string> = {
   completed: "A válasz elkészült.",
   failed: "A feldolgozás megállt.",
 };
+const observerLabels: Record<string, string> = {
+  queued: "A kérdés mentve, feldolgozásra vár.",
+  maintenance:
+    "Az AI-szolgáltatás karbantartása miatt várakozik. A kérdés megmaradt; automatikusan folytatódik.",
+};
 const positions: Record<string, number> = {
   queued: 0,
   retrieving: 1,
@@ -45,8 +50,10 @@ function duration(ms: number) {
 }
 export default function AiAnswerProgress({
   progress,
+  observer = false,
 }: {
   progress: AnswerProgress;
+  observer?: boolean;
 }) {
   const [now, setNow] = useState(() => Date.now());
   const finished = ["completed", "failed"].includes(progress.phase);
@@ -72,7 +79,9 @@ export default function AiAnswerProgress({
       aria-label="A válasz feldolgozása"
     >
       <p role="status" className={styles.progressTitle}>
-        {labels[progress.phase] ?? labels.queued}
+        {(observer ? observerLabels[progress.phase] : undefined) ??
+          labels[progress.phase] ??
+          labels.queued}
       </p>
       {!finished && (
         <progress
@@ -105,7 +114,9 @@ export default function AiAnswerProgress({
       </p>
       {!finished && progress.queuedAhead > 0 && (
         <p className={styles.muted}>
-          Még {progress.queuedAhead} korábbi saját kérdésed vár válaszra.
+          {observer
+            ? `Még ${progress.queuedAhead} korábbi kérdés vár válaszra.`
+            : `Még ${progress.queuedAhead} korábbi saját kérdésed vár válaszra.`}
         </p>
       )}
       {!finished && progress.retryAt && (
@@ -115,7 +126,10 @@ export default function AiAnswerProgress({
         </p>
       )}
       {!finished && Number.isFinite(last) && now - last > 90000 && (
-        <p>A feldolgozó új állapotjelzésére várunk. A kérdésed mentve van.</p>
+        <p>
+          A feldolgozó új állapotjelzésére várunk.{" "}
+          {observer ? "A kérdés mentve van." : "A kérdésed mentve van."}
+        </p>
       )}
     </section>
   );

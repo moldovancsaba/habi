@@ -63,6 +63,61 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
     await client.close();
   });
 
+  await t.test(
+    "activity is atomic, idempotent and does not copy draft contents",
+    async () => {
+      const key = crypto.randomUUID();
+      const at = new Date("2026-10-29T10:00:00Z");
+      let calls = 0;
+      const command = {
+        client,
+        db,
+        tenantId: "activity-tenant",
+        retentionPolicyId: "synthetic-retention-v1",
+        actorOrClientId: "activity-parent",
+        actorRole: "parent",
+        activityPlayerId: "activity-player",
+        method: "PUT",
+        path: "/api/v1/players/activity-player/drafts/player-workspace",
+        key,
+        body: { payload: { secret: "Unsubmitted private draft contents" } },
+        now: () => at,
+        execute: async () => {
+          calls++;
+          return { status: 200, resultRef: null };
+        },
+      };
+      await runIdempotentCommand(command);
+      await runIdempotentCommand(command);
+      assert.equal(calls, 1);
+      const events = await db
+        .collection("events")
+        .find({ tenantId: "activity-tenant" })
+        .toArray();
+      assert.equal(events.length, 1);
+      assert.equal(events[0].kind, "activity.drafts.put");
+      assert.equal(events[0].actorRole, "parent");
+      assert.ok(!JSON.stringify(events[0]).includes("private draft contents"));
+      const audit = await db
+        .collection("audit")
+        .findOne({ requestId: events[0].id });
+      assert.equal(audit.actorOrClientId, "activity-parent");
+      await assert.rejects(
+        runIdempotentCommand({
+          ...command,
+          key: crypto.randomUUID(),
+          actorOrClientId: "invalid actor",
+        }),
+        /DOCUMENT_CONTRACT_INVALID/,
+      );
+      assert.equal(
+        await db
+          .collection("events")
+          .countDocuments({ tenantId: "activity-tenant" }),
+        1,
+      );
+    },
+  );
   await t.test("migration is versioned and safe to apply twice", async () => {
     assert.deepEqual(
       await runMigrations(db, new Date("2026-10-25T00:00:00.000Z")),

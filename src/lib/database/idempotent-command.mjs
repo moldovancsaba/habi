@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { recordCoachActivity } from "./coach-activity.mjs";
 import { validateContractDocument } from "./contract-validation.mjs";
 
 export function hashRequestBody(body) {
@@ -36,6 +37,8 @@ export async function runIdempotentCommand({
   tenantId,
   retentionPolicyId,
   actorOrClientId,
+  actorRole = null,
+  activityPlayerId = null,
   method,
   path,
   key,
@@ -75,6 +78,20 @@ export async function runIdempotentCommand({
 
           const result = await execute({ db, session });
           const completedAt = now();
+          await recordCoachActivity({
+            db,
+            session,
+            tenantId,
+            retentionPolicyId,
+            actorId: actorOrClientId,
+            actorRole,
+            playerId: activityPlayerId,
+            method,
+            path,
+            body,
+            resultRef: result.resultRef ?? null,
+            at: completedAt.toISOString(),
+          });
           const record = {
             id: randomUUID(),
             tenantId,

@@ -39,7 +39,7 @@ Jóváhagyandó modell:
 | Játékos napi önreflexiója | Napi válaszok, idő, minimális folyamat- és verziómetaadat | A játékos válaszát nem szabad diagnózisként vagy automatikus teljesítmény-pontszámként felhasználni. |
 | Szülői és edzői megfigyelés | Megfigyelés, forrás, rögzítő, jogosultság és publikációs státusz | Forrás/író megkülönböztetése kötelező. Edzői adat csak pontos revision publikálása után válik szülő számára láthatóvá. |
 | Riport mezőinek rögzítése | Feltöltött fájl, jóváhagyott mezők, kézi ellenőrzés és forráskapcsolat | Csak engedélyezett dokumentum és minimálisan szükséges mező. Az eredeti fájlt a retention-tervezet szerint törölni kell. |
-| Szülői kérdés és helyi AI-magyarázat | Kiválasztott, a kérő számára látható Habi-források és forrásolt válasz | Kizárólag helyi Ollama; nincs külső AI, modelltréning vagy korlátlan adatküldés. A tartalomhoz emberi review szükséges a szerződés szerinti esetekben. |
+| Szülői/edzői kérdés és AI-magyarázat | Kiválasztott, a kérő számára látható Habi-források és forrásolt válasz | A Mac worker szerveroldali, aszinkron kérést küld a megosztott Hetzner `text_chat` API-nak; csak az adott kéréshez kiválasztott forráscsomag kerül továbbításra. A job körülbelül 15 percig érhető el a szolgáltatónál. A szolgáltatói adatkezelési, régiós, naplózási és törlési feltételek ellenőrzése nyitott. A claim-eket Habi újraellenőrzi, és szükség esetén edzői review szükséges. |
 | Biztonság, csalásmegelőzés és helyreállítás | Minimális request/audit esemény, session- és törlési állapot | Naplóba nem kerülhet kérdésszöveg, jelentés, egészségügyi adat, token vagy titok. |
 
 A fenti célok nem határoznak meg jogalapot. Minden célhoz külön meg kell nevezni a GDPR 6. cikk szerinti jogalapot. Egészségi állapotra utaló tartalomnál külön dokumentálni kell, hogy a feldolgozás a 9. cikk szerint megengedett-e. A szülő meghívása vagy SSO-szerepe önmagában nem bizonyít jogalapot, szülői felügyeletet, képviseleti jogosultságot vagy hozzájárulást.
@@ -52,9 +52,9 @@ Az adatkezelőnek ki kell jelölnie egy ellenőrzött kérelmi csatornát, felel
 
 ## 5. Szolgáltatók, hozzáférés és adattovábbítás
 
-Tervezett technikai szereplők: Vercel az alkalmazás hosztolásához; MongoDB Atlas a kanonikus tároláshoz; DoneIsBetter az SSO-hoz; a Habi által működtetett Mac a kizárólag helyi AI-workerhez. A szerepek, adatfeldolgozási szerződések, régiók, al-adatfeldolgozók, nemzetközi adattovábbítások, incidensvállalások, törlési képesség és mentés-megőrzés tényleges feltételeit még ellenőrizni kell. A szolgáltató neve vagy a Vercel/Atlas env-beállítás nem bizonyít önmagában GDPR-szerződéses megfelelést.
+Tervezett technikai szereplők: Vercel az alkalmazás hosztolásához; MongoDB Atlas a kanonikus tároláshoz; DoneIsBetter az SSO-hoz; a Habi által működtetett Mac a workerhez; a megosztott Hetzner AI API a hosztolt `text_chat` feladatokhoz. A szerepek, adatfeldolgozási szerződések, régiók, al-adatfeldolgozók, nemzetközi adattovábbítások, incidensvállalások, törlési képesség és mentés-megőrzés tényleges feltételeit még ellenőrizni kell. A szolgáltató neve vagy a Vercel/Atlas env-beállítás nem bizonyít önmagában GDPR-szerződéses megfelelést.
 
-Habi műszaki korlátok: böngésző nem kap Atlas-hozzáférést; a Mac worker nem kap közvetlen Atlas-kapcsolatot; külső AI ki van kapcsolva; a worker csak rövid életű, korlátozott, auditált jobon keresztül férhet hozzá engedélyezett adatokhoz. Ezeket a korlátokat release és működési bizonyítékkal kell megerősíteni.
+Habi műszaki korlátok: böngésző nem kap Atlas- vagy AI-szolgáltató credentialt; a Mac worker nem kap közvetlen Atlas-kapcsolatot; a worker csak rövid életű, korlátozott Habi-jobon keresztül fér hozzá engedélyezett adatokhoz, majd az adott forráscsomagot elküldi a megosztott AI API-nak. A külső szolgáltató szerződéses, megőrzési és adatkezelési feltételei nyitottak, és személyes adatos pilot előtt ellenőrzendők.
 
 ## 6. Kockázatfelmérés és incidenskezelés
 

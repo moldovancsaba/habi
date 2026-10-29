@@ -4,6 +4,7 @@ import { HabiApiError } from "../../../../../../../lib/api/error-response.mjs";
 import {
   verifyCoachSources,
   readCoachReviewSource,
+  readObservedCoachSource,
 } from "../../../../../../../lib/workflows/ai-coach.mjs";
 const route: typeof runAuthorizedHabiRoute = (request, operation, action) =>
   runAuthorizedHabiRoute(request, operation, async (args) => {
@@ -33,6 +34,18 @@ export async function GET(
           id,
           revision,
           reviewId,
+        }),
+      });
+    const threadId = new URL(request.url).searchParams.get("threadId");
+    if (threadId)
+      return Response.json({
+        source: await readObservedCoachSource({
+          db,
+          principal,
+          playerId,
+          threadId,
+          id,
+          revision,
         }),
       });
     const items = await verifyCoachSources(db, principal, playerId, [

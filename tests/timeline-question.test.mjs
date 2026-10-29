@@ -218,3 +218,378 @@ test("timeline can be filtered to a time window and its cursor is bound to that 
     { message: "CURSOR_EXPIRED" },
   );
 });
+
+test("coaches see every role's AI messages, feedback and outcomes while other viewers retain their own scope", async () => {
+  const base = {
+    tenantId: "habi",
+    playerId: "player-1",
+    revision: 1,
+    createdAt: "2026-10-29T09:00:00.000Z",
+    updatedAt: "2026-10-29T09:01:00.000Z",
+  };
+  const turns = [
+    {
+      ...base,
+      id: "player-turn",
+      threadId: "player-thread",
+      actorId: "player-actor",
+      role: "player",
+      question: "Jobban érzem magam.",
+      status: "answered",
+      answer: {
+        reply: { text: "Mi segített?" },
+        claims: [],
+        unknowns: [],
+        clarifyingQuestions: [],
+      },
+    },
+    {
+      ...base,
+      id: "parent-turn",
+      threadId: "parent-thread",
+      actorId: "parent-actor",
+      role: "parent",
+      question: "Rövidebb válaszokat szeretnék.",
+      status: "failed",
+      jobId: "parent-job",
+    },
+    {
+      ...base,
+      id: "coach-turn",
+      threadId: "coach-thread",
+      actorId: "coach-actor",
+      role: "coach",
+      question: "Hogy van ma?",
+      status: "queued",
+    },
+    {
+      ...base,
+      id: "foreign-turn",
+      tenantId: "other",
+      threadId: "foreign-thread",
+      actorId: "foreign",
+      role: "player",
+      question: "Másik család",
+      status: "queued",
+    },
+  ];
+  const events = [
+    {
+      ...base,
+      id: "exclusion-event",
+      actorId: "parent-actor",
+      role: "parent",
+      kind: "forget",
+      text: "",
+      sourceRefs: [{ id: "coach-message-parent-turn", revision: 1 }],
+    },
+  ];
+  const db = {
+    collection: (name) =>
+      collection(
+        {
+          habi_coach_turns: turns,
+          habi_coach_profile_events: events,
+          jobs: [
+            {
+              ...base,
+              id: "parent-job",
+              requesterActorId: "parent-actor",
+              requesterRole: "parent",
+              kind: "coachConversation",
+              status: "failed",
+            },
+          ],
+        }[name] ?? [],
+      ),
+  };
+  const args = {
+    db,
+    playerId: "player-1",
+    cursorHmacKey: "x".repeat(40),
+    now: new Date("2026-10-30"),
+    limit: 50,
+  };
+  const coach = await readTimeline({
+    ...args,
+    principal: {
+      tenantId: "habi",
+      actorId: "coach-actor",
+      role: "coach",
+      accessRevision: 1,
+    },
+  });
+  assert.ok(
+    coach.nodes.some(
+      (n) => n.id === "player-turn" && n.kind === "coach.update",
+    ),
+  );
+  assert.ok(
+    coach.nodes.some(
+      (n) => n.id === "parent-turn" && n.kind === "coach.feedback",
+    ),
+  );
+  assert.ok(
+    coach.nodes.some(
+      (n) => n.kind === "coach.answer" && n.replyTo === "player-turn",
+    ),
+  );
+  assert.ok(
+    coach.nodes.some(
+      (n) => n.kind === "coach.failed" && n.processId === "parent-thread",
+    ),
+  );
+  assert.ok(
+    coach.nodes.some(
+      (n) => n.kind === "coach.exclusion" && n.processId === "parent-thread",
+    ),
+  );
+  assert.ok(!coach.nodes.some((n) => n.id === "foreign-turn"));
+  const parent = await readTimeline({
+    ...args,
+    principal: {
+      tenantId: "habi",
+      playerId: "player-1",
+      actorId: "parent-actor",
+      role: "parent",
+      accessRevision: 1,
+    },
+  });
+  assert.ok(
+    !parent.nodes.some((n) => n.id === "player-turn" || n.id === "coach-turn"),
+  );
+  assert.ok(parent.nodes.some((n) => n.id === "parent-turn"));
+});
+
+test("timeline pagination reaches records older than the per-query sample size", async () => {
+  const records = Array.from({ length: 245 }, (_, i) => ({
+    id: `record-${String(i).padStart(3, "0")}`,
+    tenantId: "habi",
+    playerId: "player-1",
+    revision: 1,
+    kind: "diary",
+    sharingClass: "player_direct",
+    source: { kind: "self" },
+    recordedBy: { actorId: "player-actor", role: "player" },
+    submittedAt: new Date(
+      Date.parse("2026-10-28T09:00:00Z") + i * 1000,
+    ).toISOString(),
+  }));
+  const db = {
+    collection: (name) => collection(name === "records" ? records : []),
+  };
+  const args = {
+    db,
+    principal: {
+      tenantId: "habi",
+      playerId: "player-1",
+      actorId: "player-actor",
+      role: "player",
+      accessRevision: 1,
+    },
+    cursorHmacKey: "x".repeat(40),
+    now: new Date("2026-10-30"),
+    limit: 20,
+  };
+  let cursor = null;
+  const seen = new Set();
+  do {
+    const page = await readTimeline({ ...args, cursor });
+    for (const node of page.nodes) {
+      assert.ok(!seen.has(node.id));
+      seen.add(node.id);
+    }
+    cursor = page.nextCursor;
+  } while (cursor);
+  assert.equal(seen.size, 245);
+});
+
+test("coach activity includes operational documents, unpublished versions and recorded plan decisions", async () => {
+  const base = {
+    tenantId: "habi",
+    playerId: "player-1",
+    revision: 1,
+    createdAt: "2026-10-29T08:00:00.000Z",
+    updatedAt: "2026-10-29T09:00:00.000Z",
+  };
+  const data = {
+    reports: [{ ...base, id: "report-one", status: "restricted" }],
+    extractions: [
+      {
+        ...base,
+        id: "extraction-one",
+        reportRef: { id: "report-one", revision: 1 },
+        status: "awaiting_review",
+      },
+    ],
+    assessment_results: [{ ...base, id: "assessment-one" }],
+    coach_materials: [
+      {
+        ...base,
+        id: "material-one",
+        materialId: "material-root",
+        title: "Edzői piszkozat",
+        status: "draft",
+      },
+    ],
+    publications: [
+      {
+        ...base,
+        id: "publication-one",
+        status: "withdrawn",
+        resourceRef: { id: "material-one", revision: 1 },
+      },
+    ],
+    plans: [
+      {
+        ...base,
+        id: "plan-one",
+        status: "active",
+        acceptances: [
+          {
+            actorId: "parent-one",
+            role: "parent",
+            revision: 1,
+            decision: "accept",
+            at: "2026-10-29T08:30:00.000Z",
+          },
+        ],
+      },
+    ],
+    checkin_sessions: [
+      {
+        ...base,
+        id: "checkin-one",
+        startedAt: base.createdAt,
+        completedAt: null,
+      },
+    ],
+  };
+  const args = {
+    db: { collection: (name) => collection(data[name] ?? []) },
+    playerId: "player-1",
+    cursorHmacKey: "x".repeat(40),
+    now: new Date("2026-10-30"),
+    limit: 50,
+  };
+  const page = await readTimeline({
+    ...args,
+    principal: {
+      tenantId: "habi",
+      actorId: "coach-one",
+      role: "coach",
+      accessRevision: 1,
+    },
+  });
+  for (const kind of [
+    "report.activity",
+    "extraction.activity",
+    "assessment_result.activity",
+    "coach_material.activity",
+    "publication.activity",
+    "plan.accepted",
+    "checkin.started",
+  ])
+    assert.ok(
+      page.nodes.some((n) => n.kind === kind),
+      kind,
+    );
+  const decision = page.nodes.find((n) => n.kind === "plan.accepted");
+  assert.equal(decision.actorRole, "parent");
+  assert.equal(decision.submittedAt, "2026-10-29T08:30:00.000Z");
+  const parent = await readTimeline({
+    ...args,
+    principal: {
+      tenantId: "habi",
+      playerId: "player-1",
+      actorId: "parent-one",
+      role: "parent",
+      accessRevision: 1,
+    },
+  });
+  assert.ok(
+    !parent.nodes.some(
+      (n) => n.kind.endsWith(".activity") || n.kind === "checkin.started",
+    ),
+  );
+});
+
+test("coach activity keeps prior plan transitions and draft-save metadata without duplicating current source rows", async () => {
+  const base = {
+    tenantId: "habi",
+    playerId: "player-1",
+    revision: 1,
+    createdAt: "2026-10-29T08:00:00.000Z",
+    updatedAt: "2026-10-29T08:00:00.000Z",
+    actorRole: "player",
+    sourceKind: "self",
+    replyTo: null,
+    relatedId: null,
+  };
+  const events = [
+    {
+      ...base,
+      id: "draft-saved",
+      kind: "activity.drafts.put",
+      submittedAt: base.createdAt,
+      resourceRef: { id: "draft-one", revision: 1 },
+      processId: "draft-one",
+    },
+    {
+      ...base,
+      id: "plan-paused",
+      kind: "activity.plans.paused",
+      submittedAt: "2026-10-29T08:15:00.000Z",
+      actorRole: "coach",
+      resourceRef: { id: "plan-one", revision: 2 },
+      processId: "plan-one",
+    },
+    {
+      ...base,
+      id: "plan-resumed",
+      kind: "activity.plans.active",
+      submittedAt: "2026-10-29T08:20:00.000Z",
+      actorRole: "coach",
+      resourceRef: { id: "plan-one", revision: 3 },
+      processId: "plan-one",
+    },
+  ];
+  const plans = [
+    {
+      ...base,
+      id: "plan-one",
+      revision: 3,
+      status: "active",
+      updatedAt: "2026-10-29T08:20:00.000Z",
+      acceptances: [],
+    },
+  ];
+  const args = {
+    db: { collection: (name) => collection({ events, plans }[name] ?? []) },
+    principal: {
+      tenantId: "habi",
+      actorId: "coach-one",
+      role: "coach",
+      accessRevision: 1,
+    },
+    playerId: "player-1",
+    cursorHmacKey: "x".repeat(40),
+    now: new Date("2026-10-30"),
+    limit: 50,
+  };
+  const page = await readTimeline(args);
+  assert.ok(
+    page.nodes.some(
+      (n) => n.id === "draft-saved" && n.summary.includes("Piszkozat"),
+    ),
+  );
+  assert.ok(
+    page.nodes.some(
+      (n) => n.id === "plan-paused" && n.summary.includes("szüneteltetve"),
+    ),
+  );
+  assert.ok(!page.nodes.some((n) => n.id === "plan-resumed"));
+  assert.ok(
+    page.nodes.some((n) => n.id === "plan-one" && n.kind === "plan.active"),
+  );
+});

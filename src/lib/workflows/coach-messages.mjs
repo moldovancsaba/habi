@@ -173,7 +173,10 @@ export async function coachMessageHistory({
   before = /** @type {string | null} */ (null),
 }) {
   await requireCoachPlayer(db, principal, playerId);
-  const scope = ownerScope(principal, playerId),
+  const scope =
+      principal.role === "coach"
+        ? { tenantId: principal.tenantId, playerId }
+        : ownerScope(principal, playerId),
     query = { ...scope };
   if (before) {
     const cursor = await db
@@ -199,6 +202,7 @@ export async function coachMessageHistory({
     items: turns.slice(0, 40).map((t) => ({
       id: t.id,
       threadId: t.threadId,
+      canManage: t.actorId === principal.actorId && t.role === principal.role,
       text: t.question,
       at: t.createdAt,
       role: t.role,

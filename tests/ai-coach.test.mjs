@@ -14,6 +14,7 @@ import {
 import {
   startCoachTurn,
   readCoachThread,
+  readObservedCoachSource,
   listCoachThreads,
   writeCoachEvent,
   reviewCoachTurn,
@@ -480,7 +481,7 @@ test("contextual coach persists private dialogue, refreshes memory and validates
     },
   );
   await t.test(
-    "only explicitly requested answers enter coach review, without exposing the private thread",
+    "coach oversight can read a participant thread while formal review remains explicit and authorship remains fenced",
     async () => {
       assert.equal(
         (await listCoachReviews({ ...args, principal: coach })).items.length,
@@ -499,9 +500,49 @@ test("contextual coach persists private dialogue, refreshes memory and validates
       });
       const queue = await listCoachReviews({ ...args, principal: coach });
       assert.equal(queue.items.length, 1);
+      const observed = await readCoachThread({
+        ...args,
+        principal: coach,
+        id: first.threadId,
+      });
+      assert.equal(observed.readOnly, true);
+      const history = await coachMessageHistory({ ...args, principal: coach });
+      assert.equal(
+        history.items.find((item) => item.id === second.turnId).canManage,
+        false,
+      );
+      assert.ok(observed.items.some((item) => item.id === second.turnId));
+      const source = await readObservedCoachSource({
+        ...args,
+        principal: coach,
+        threadId: first.threadId,
+        id: `coach-message-${second.turnId}`,
+        revision: 1,
+      });
+      assert.equal(source.role, "player");
+      assert.equal(source.text, turn.question);
       await assert.rejects(
-        readCoachThread({ ...args, principal: coach, id: first.threadId }),
+        startCoachTurn({
+          ...args,
+          principal: coach,
+          request: request("/ai-coach", {
+            threadId: first.threadId,
+            question: "Nem írhatok a játékos nevében.",
+            context,
+            expectedRevision: observed.thread.revision,
+          }),
+        }),
         { message: "NOT_FOUND" },
+      );
+      await assert.rejects(
+        readObservedCoachSource({
+          ...args,
+          principal: parent,
+          threadId: first.threadId,
+          id: `coach-message-${second.turnId}`,
+          revision: 1,
+        }),
+        { message: "ACCESS_DENIED" },
       );
       await reviewCoachTurn({
         ...args,

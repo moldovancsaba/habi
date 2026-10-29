@@ -88,6 +88,21 @@ const rolePaths: Record<HabiRole, string> = {
   parent: "M21 11a9 8 0 0 1-13 7l-5 3 1-6A8 8 0 1 1 21 11",
 };
 const labels: Record<string, string> = {
+  "report.activity": "Felmérési dokumentum",
+  "extraction.activity": "Riportadatok és ellenőrzés",
+  "assessment_result.activity": "Felmérési eredmény",
+  "coach_material.activity": "Edzői anyag",
+  "publication.activity": "Megosztás állapota",
+  "checkin.started": "Állapotjelzés elkezdve",
+  "plan.declined": "Elutasított közös terv",
+  "coach.message": "AI-kérdés vagy üzenet",
+  "coach.update": "Új közlés az AI-beszélgetésben",
+  "coach.correction": "Pontosítás",
+  "coach.feedback": "Visszajelzés az AI-nak",
+  "coach.answer": "AI-válasz · nem edzői értékelés",
+  "coach.failed": "Az AI-válasz nem készült el",
+  "coach.memory": "Új profil-megjegyzés",
+  "coach.exclusion": "Üzenet AI-felhasználása kikapcsolva",
   checkin: "Napi állapotjelzés",
   "checkin.completed": "Napi állapotjelzés",
   record: "Naplóbejegyzés",
@@ -458,7 +473,11 @@ export default function MetroTimeline({
                 timeZone: "Europe/Budapest",
               },
             );
-            const title = labels[record?.kind ?? event.kind] ?? "Naplóesemény";
+            const title =
+              labels[record?.kind ?? event.kind] ??
+              (event.kind.startsWith("activity.")
+                ? "Rögzített tevékenység"
+                : "Naplóesemény");
             const summary =
               event.summary?.trim() ||
               record?.text?.trim() ||
@@ -481,23 +500,44 @@ export default function MetroTimeline({
                         · játékosazonosító {playerId}
                       </span>
                       <AiCoachButton
+                        threadId={
+                          (event.kind.startsWith("coach.") ||
+                            event.kind.startsWith("activity.ai-coach.")) &&
+                          event.processId !== event.id
+                            ? event.processId
+                            : undefined
+                        }
+                        label={
+                          event.kind.startsWith("coach.")
+                            ? "AI-beszélgetés megtekintése"
+                            : undefined
+                        }
                         context={{
-                          kind:
-                            event.kind === "thread.message"
-                              ? "message"
-                              : event.kind.startsWith("interpretation.")
-                                ? "interpretation"
-                                : event.kind.startsWith("plan.") &&
-                                    event.kind !== "plan.follow_up"
-                                  ? "plan"
-                                  : event.kind === "plan.follow_up"
-                                    ? "record"
-                                    : record?.answerCodes
-                                      ? "checkin_result"
-                                      : record?.text
-                                        ? "record"
-                                        : "page",
+                          kind: [
+                            "report.activity",
+                            "extraction.activity",
+                            "assessment_result.activity",
+                            "coach_material.activity",
+                          ].includes(event.kind)
+                            ? event.kind.split(".")[0]
+                            : event.kind === "publication.activity"
+                              ? "record"
+                              : event.kind === "thread.message"
+                                ? "message"
+                                : event.kind.startsWith("interpretation.")
+                                  ? "interpretation"
+                                  : event.kind.startsWith("plan.") &&
+                                      event.kind !== "plan.follow_up"
+                                    ? "plan"
+                                    : event.kind === "plan.follow_up"
+                                      ? "record"
+                                      : record?.answerCodes
+                                        ? "checkin_result"
+                                        : record?.text
+                                          ? "record"
+                                          : "page",
                           id:
+                            event.kind.endsWith(".activity") ||
                             event.kind === "thread.message" ||
                             event.kind === "plan.follow_up" ||
                             event.kind.startsWith("interpretation.") ||

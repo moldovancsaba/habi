@@ -60,6 +60,8 @@ export async function createCoachMaterial({
     tenantId: principal.tenantId,
     retentionPolicyId: principal.retentionPolicyId,
     actorOrClientId: principal.actorId,
+    actorRole: principal.role,
+    activityPlayerId: principal.playerId ?? null,
     method: request.method,
     path: new URL(request.url).pathname,
     key,
