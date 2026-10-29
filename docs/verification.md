@@ -1,5 +1,14 @@
 # Habi — ellenőrzési napló
 
+## Vercel functions move to Frankfurt, next to the Atlas cluster · 2026-10-29
+
+- Change: `"regions": ["fra1"]` in `vercel.json`. The functions have run in `iad1` (Washington); every database command from there cost about 95 ms, so a thread poll (25 commands) took about 2.4 s of pure waiting and a question POST (52 commands) about 5 s. The owner confirmed that the Atlas cluster is in Frankfurt, which is also what 92–95 ms from `iad1` suggested. The region is set in `vercel.json` (the route-level `preferredRegion` export is deprecated in this Next.js version).
+- Baseline before the change, from the live site on 2026-10-29: `/api/ready` minus `/api/health` has a median of 98 ms over 24 samples (the minimum is noisy because of client-side jitter and cold starts, so the median is the figure to compare).
+- What to check after the deploy: the same median should fall to a few milliseconds, and `vercel inspect <url>` should list the function region as `fra1`. If the median does not fall, the cluster is not in Frankfurt or the region was not applied, and this change should be reverted.
+- Nothing else calls an external service from the functions (the only `fetch` in `src` is the browser's `product-request.ts`), so the move has no second latency to account for. The worker runs on the Mac and calls the public host, which is unaffected apart from being served from Frankfurt.
+- Automated: no test covers `vercel.json` (it parses as JSON and the build does not read `regions`). The suite is unchanged: 248 app tests passed, 75 worker tests passed, `npm run lint`, `npm run typecheck`, `npm run build` and `git diff --check` clean.
+- Not verified: Production. Nothing was released; the region takes effect only on the next deployment, and the effect on request time is unmeasured until then.
+
 ## Transient database failures answer 503; the remaining slowness is the function region · 2026-10-29
 
 - Change: `isTransientDatabaseFailure` (`src/lib/api/route-boundary.mjs`). An error named `MongoNetworkError`, `MongoNetworkTimeoutError`, `MongoServerSelectionError`, `MongoWaitQueueTimeoutError` or `MongoPoolClearedError`, or carrying the `TransientTransactionError` label, is answered `DEPENDENCY_UNAVAILABLE` (503, `Retry-After: 2`) instead of 500 `INTERNAL_ERROR`; the log line keeps the content-free `failure` object. Every other error, including a duplicate-key server error, stays a 500. Writes carry idempotency keys, so a retry cannot repeat them. Two tests cover the five classes (status, header, body, log, no message text) and the cases that must stay internal; an earlier test that used a wait-queue error as its “unexpected” example now uses a server error with a different label.
