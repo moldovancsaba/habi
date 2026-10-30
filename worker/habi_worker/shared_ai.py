@@ -2,6 +2,7 @@
 import hashlib
 import json
 import random
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -14,6 +15,9 @@ MAX_REQUEST_CHARS = 14_000
 MAX_RESPONSE_BYTES = 1_048_576
 MAX_JOB_SECONDS = 300
 POLL_SECONDS = 3
+# A conversation reply cut by the token limit is kept only if a whole answer remains.
+MIN_TRIMMED_REPLY_CHARS = 20
+_SENTENCE_END = re.compile(r"[.!?…]+(?:[^\w\s]|\s(?=[^\w\s]))*(?=\s|$)")
 SERVICE_OUTPUT_LIMITS = {}
 SERVICE_MODELS = {}
 SERVICE_CONTEXT_LIMITS = {}
@@ -159,6 +163,27 @@ def _create_job(config, request_body, idempotency_key):
     raise SharedAIError("SHARED_AI_JOB_CREATE_FAILED")
 
 
+def _ends_sentence(text, match):
+    # "1." and "5." are list markers and Hungarian ordinals ("október 5."), not sentence ends.
+    if not match.group().startswith("."):
+        return True
+    words = text[:match.start()].split()
+    return not (words and words[-1].isdigit())
+
+
+def _complete_sentences(text):
+    """The complete sentences of a reply that the token limit cut off, or None.
+
+    The cut text ends mid-word, so only a sentence end followed by a space can be
+    trusted; a decimal point (7.5) is not one. A remainder too short to stand as
+    an answer is refused, so the caller retries instead of showing "Igen."."""
+    ends = [match.end() for match in _SENTENCE_END.finditer(text) if _ends_sentence(text, match)]
+    if not ends:
+        return None
+    kept = text[:ends[-1]].strip()
+    return kept if len(kept) >= MIN_TRIMMED_REPLY_CHARS else None
+
+
 def _json_answer(content, response_kind="claims"):
     """Accept a complete JSON object, including a fenced JSON response. Never repair partial JSON."""
     text = content.strip()
@@ -250,8 +275,17 @@ def generate(config, system_prompt, user_prompt, revision_key, should_cancel=Non
                     if not isinstance(content, str) or not isinstance(actual_model, str) or not actual_model:
                         raise SharedAIError("SHARED_AI_RESULT_INVALID")
                     if response_kind == "conversation":
-                        if choice.get("finish_reason") == "length" or not content.strip():
+                        if not content.strip():
                             raise SharedAIError("SHARED_AI_RESULT_INVALID")
+                        if choice.get("finish_reason") == "length":
+                            # The retry has the same token limit and was cut off again every
+                            # time it was seen, so keep the complete sentences instead. A cut
+                            # JSON object is never trimmed into a fragment.
+                            kept = None if content.lstrip().startswith("{") else _complete_sentences(content)
+                            if kept is None:
+                                raise SharedAIError("SHARED_AI_RESULT_INVALID")
+                            print(json.dumps({"event":"habi.worker.output.trimmed", "attempt":output_attempt + 1, "responseChars":len(content), "keptChars":len(kept)}), flush=True)
+                            content = kept
                         try:
                             decoded = json.loads(content)
                             generated = decoded if isinstance(decoded, dict) and isinstance(decoded.get("text"), str) else {"text": content.strip()}

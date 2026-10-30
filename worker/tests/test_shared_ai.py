@@ -7,12 +7,13 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from habi_worker.shared_ai import _request, _Retryable, SharedAICancelled, SharedAIError, _json_answer, SERVICE_OUTPUT_LIMITS, SERVICE_CONTEXT_LIMITS, SERVICE_TASK_MODELS, generate, validate_service
+from habi_worker.shared_ai import _complete_sentences, _request, _Retryable, SharedAICancelled, SharedAIError, _json_answer, SERVICE_OUTPUT_LIMITS, SERVICE_CONTEXT_LIMITS, SERVICE_TASK_MODELS, generate, validate_service
 
 
 class SharedAIHandler(BaseHTTPRequestHandler):
     output_limit = 512
     outputs = []
+    finish_reasons = []
     phases = []
     requests = []
 
@@ -36,9 +37,12 @@ class SharedAIHandler(BaseHTTPRequestHandler):
         if self.phases:
             return self._send(200,{"status":self.phases.pop(0)})
         content=self.outputs.pop(0) if self.outputs else '{"claims":[],"unknowns":[]}'
+        choice={"message": {"content": content}}
+        if self.finish_reasons:
+            choice["finish_reason"]=self.finish_reasons.pop(0)
         return self._send(200, {"status": "completed", "result": {
             "model": "granite4:1b-h",
-            "choices": [{"message": {"content": content}}],
+            "choices": [choice],
         }})
 
     def do_DELETE(self):
@@ -69,6 +73,7 @@ class SharedAIClientTests(unittest.TestCase):
         SERVICE_OUTPUT_LIMITS.clear()
         SharedAIHandler.output_limit=512
         SharedAIHandler.outputs=[]
+        SharedAIHandler.finish_reasons=[]
         SharedAIHandler.phases=[]
         self.config = SimpleNamespace(
             shared_ai_origin="http://127.0.0.1:%s/v1" % self.server.server_port,
@@ -115,6 +120,47 @@ class SharedAIClientTests(unittest.TestCase):
         self.assertNotIn("response_format", post[4]["input"])
         with self.assertRaises(SharedAIError):
             _json_answer(result["text"])
+
+    def test_conversation_reply_cut_by_the_token_limit_keeps_its_complete_sentences(self):
+        # The Hungarian route allows 128 tokens, about 270 characters; a longer
+        # reply used to fail twice (the retry has the same limit) and no answer
+        # was ever shown. The complete sentences are a valid, shorter answer.
+        SharedAIHandler.outputs = ["Feszültnek tűnsz, és keveset aludtál. Próbálj ma korábban lefeküdni, mert a figyelmed is ettől függ, és a"]
+        SharedAIHandler.finish_reasons = ["length"]
+        with patch("habi_worker.shared_ai.POLL_SECONDS", 0):
+            result, _ = generate(self.config, "system", "Hogy állok?", "cut-conversation", response_kind="conversation")
+        self.assertEqual(result["text"], "Feszültnek tűnsz, és keveset aludtál.")
+        self.assertEqual(len([r for r in SharedAIHandler.requests if r[0] == "POST"]), 1)
+
+    def test_conversation_reply_cut_before_any_complete_sentence_is_still_retried_then_refused(self):
+        SharedAIHandler.outputs = ["Feszültnek tűnsz, és keveset aludtál, ezért a figyelmed", "Feszültnek tűnsz, és keveset aludtál, ezért a figyelmed is"]
+        SharedAIHandler.finish_reasons = ["length", "length"]
+        with patch("habi_worker.shared_ai.POLL_SECONDS", 0), self.assertRaises(SharedAIError) as raised:
+            generate(self.config, "system", "Hogy állok?", "cut-no-sentence", response_kind="conversation")
+        self.assertEqual(str(raised.exception), "SHARED_AI_RESULT_INVALID")
+        self.assertEqual(len([r for r in SharedAIHandler.requests if r[0] == "POST"]), 2)
+
+    def test_conversation_reply_that_finished_normally_is_never_trimmed(self):
+        SharedAIHandler.outputs = ["Jó, köszönöm"]
+        SharedAIHandler.finish_reasons = ["stop"]
+        with patch("habi_worker.shared_ai.POLL_SECONDS", 0):
+            result, _ = generate(self.config, "system", "Hogy vagy?", "whole-conversation", response_kind="conversation")
+        self.assertEqual(result["text"], "Jó, köszönöm")
+
+    def test_complete_sentences_cuts_only_at_a_real_sentence_end(self):
+        self.assertEqual(_complete_sentences("Jól vagy, ez szép nap. Aludj többet, mert a"), "Jól vagy, ez szép nap.")
+        self.assertEqual(_complete_sentences("Rendben van ez így! 😊 Holnap folytat"), "Rendben van ez így! 😊")
+        self.assertEqual(_complete_sentences("Biztos vagy ebben a dologban? Mesélj róla, mert \"nem"), "Biztos vagy ebben a dologban?")
+        self.assertEqual(_complete_sentences("Két mondat is kell. Hárombetűs szó... és a"), "Két mondat is kell. Hárombetűs szó...")
+        # A list marker or an ordinal ("1.", "október 5.") is not a sentence end.
+        self.assertIsNone(_complete_sentences("Habár nem tudok sokat, a következőkkel kezdheted:\n\n1."))
+        self.assertEqual(_complete_sentences("Fontos a pihenés és az alvás. Október 5. után aludj többet, mert a"), "Fontos a pihenés és az alvás.")
+        # A decimal point or a number's end is not a sentence end, and a cut text needs a whole sentence.
+        self.assertIsNone(_complete_sentences("Az érték 7.5 volt és a"))
+        self.assertIsNone(_complete_sentences("Feszültnek tűnsz, és keveset aludtál, ezért a figyelmed"))
+        # Too short to be an answer on its own.
+        self.assertIsNone(_complete_sentences("Igen. Mert a figyelmed"))
+        self.assertIsNone(_complete_sentences(""))
 
     def test_test_purpose_is_explicit_and_never_added_to_production_by_default(self):
         for purpose in (None, "test"):
