@@ -41,6 +41,20 @@ def _log(event, **attributes):
     print(json.dumps({"event": event, **attributes}, ensure_ascii=False, separators=(",", ":")), flush=True)
 
 
+_dialogue_model_seen = []
+
+
+def _note_dialogue_model(artifact):
+    """Log, without any text, when the model behind the coach changes: with model "auto" the provider can change it unannounced."""
+    if artifact.startswith("habi-") or not artifact:
+        return
+    if _dialogue_model_seen and _dialogue_model_seen[-1] != artifact:
+        _log("habi.worker.coach.model_changed", previous=_dialogue_model_seen[-1], current=artifact)
+    if not _dialogue_model_seen or _dialogue_model_seen[-1] != artifact:
+        _dialogue_model_seen.append(artifact)
+        del _dialogue_model_seen[:-2]
+
+
 def _timed_out(error):
     return isinstance(error, (TimeoutError, socket.timeout)) or isinstance(getattr(error, "reason", None), (TimeoutError, socket.timeout))
 
@@ -336,7 +350,9 @@ def _process_one(config, claim_key):
             verdict, scanner_version = _scan_pdf(config, job, context, job_path)
             _log("habi.worker.report_scan.completed", jobId=job["jobId"], verdict=verdict, scannerVersion=scanner_version)
         else:
+            answer_started = time.monotonic()
             answer = _answer_for_context(config, context, lambda: bool(heartbeat_error), report_progress)
+            answer_seconds = round(time.monotonic() - answer_started, 1)
             report_progress("checking")
             if heartbeat_error:
                 _log("habi.worker.lease_lost", jobId=job["jobId"], reason=heartbeat_error[0])
@@ -345,7 +361,10 @@ def _process_one(config, claim_key):
             payload = {"fence": job["fence"], "leaseToken": job["leaseToken"], "resultHash": _sha256_json(result), **result}
             report_progress("uploading")
             _api_call(config, job_path + "/complete", payload, {"Idempotency-Key": str(uuid.uuid4())}, timeout=API_HEAVY_TIMEOUT_SECONDS)
-            _log("habi.worker.interpretation.completed", jobId=job["jobId"], resultStatus=answer["status"], claimCount=len(answer["claims"]))
+            artifact = str(answer.get("manifest", {}).get("modelArtifact", ""))[:100]
+            _log("habi.worker.interpretation.completed", jobId=job["jobId"], resultStatus=answer["status"], claimCount=len(answer["claims"]), artifact=artifact, answerSeconds=answer_seconds)
+            if context.get("coachMode"):
+                _note_dialogue_model(artifact)
     except SharedAICancelled:
         _log("habi.worker.lease_lost", jobId=job["jobId"], reason="CANCELLED_OR_SUPERSEDED")
         return True, str(uuid.uuid4())

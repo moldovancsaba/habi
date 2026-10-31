@@ -55,3 +55,10 @@ Ha a modell válaszát kétszer elutasítja az ellenőrzés, a kérdés nem mara
 Egészségi, fájdalmi vagy biztonsági jelzésre utaló üzenetet (a [guided-chat-routing](../src/lib/content/guided-chat-routing-v1.json) `safetyKeywords` listája és a fájdalom, reménytelenség kifejezései) egyetlen szabály sem válaszol meg, és a tartalék válasz sem; ezeknél a korábbi működés marad. A biztonsági válasz és az edzői értesítés külön döntés (lásd az [elemzés](ai-coach-analysis-2026-10-30.md) 2. pontját). A szabályok szövege másolati ellenőrzésre vár.
 
 A worker és az API szerződése: a `worker/tests/fixtures/coach-worker-context.json` rögzíti a `coachWorkerContext` kulcsait; a `tests/ai-coach.test.mjs` hibázik, ha az API kulcsai eltérnek, a `worker/tests/test_coach_router.py` pedig ugyanezzel az alakkal (`dialogueVersion: 2`, a játékos üzenete az első forrás) futtatja az útválasztót, így a szabályok megkerülése tesztet bukik.
+
+### Mérés és minőségkapu
+
+A worker minden AI-edző válaszról tartalom nélküli naplóeseményt ír: `habi.worker.interpretation.completed` (`artifact`: melyik szabály vagy modell válaszolt, `answerSeconds`: a válasz előállításának ideje), `habi.worker.coach.rules_answer` (szabályalapú válasz), `habi.worker.coach.reply_refused` (a modell válaszát az ellenőrzés elutasította: `attempt` és `reason` kód, például `unfinished`, `invented_cause`, `unsourced_number`; a szöveg soha nem kerül a naplóba). Ha a szolgáltató `auto` módban másik modellre vált, a `habi.worker.coach.model_changed` esemény mutatja az előzőt és az újat; rögzíteni a `HG_SHARED_AI_DIALOGUE_MODEL` változóval lehet.
+
+Útválasztási, prompt- vagy modellváltoztatás előtt a `worker/evaluations/replay/` visszajátszás a kapu: ugyanaz a 26 szál, 39 forduló a valódi API-környezettel (`REPLAY_ARMS=D`), majd `score.py`. A 2026-10-31-i alap: 39 fordulóból 6 jelzett (mind modellfordulók), 29 szabályalapú. Egy változtatás ne növelje a jelzett fordulók számát; a kapu az automatikus jelzések mellett magyar nyelvi átolvasást nem helyettesít.
+

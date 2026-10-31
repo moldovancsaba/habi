@@ -166,28 +166,29 @@ def prepare_hungarian_conversation(context):
     return system, history, refs
 
 
-def usable_reply(text, context):
+def reply_problem(text, context):
+    """The first reason a model reply is refused, or None when it is usable. Codes only: they go to the log."""
     if not isinstance(text, str) or not 3 <= len(text.strip()) <= 4000:
-        return False
+        return "length"
     stripped = text.strip()
     while stripped and (unicodedata.category(stripped[-1]) in ("So", "Sk", "Mn") or stripped[-1] == "\u200d"):
         stripped = stripped[:-1].rstrip()
     if not re.search(r'[.!?…]["”\')]*$', stripped):
-        return False
+        return "unfinished"
     lowered = norm(text)
     if lowered.strip(" .!?…") == norm(context.get("playerName", "")).strip(" .!?…"):
-        return False
+        return "name_only"
     if re.search(r"biztosan .{0,40}(beteg|okoz)|diagnozis|diagnosztizal|nem (mehet|tud megfeleloen) edz|javaslom.{0,30}egyeni edzesterv", lowered):
-        return False
+        return "diagnosis_or_clearance"
     if context.get("viewerRole") != "player" and not re.search(r"vagyok|erzem|nekem|nem ettem", norm(context["question"])) and re.search(r"energiad|figyelmed|aludtal|feszult vagy", lowered):
-        return False
+        return "wrong_audience"
     if SequenceMatcher(None, lowered.strip(" .!?"), norm(context["question"]).strip(" .!?")).ratio() > .88:
-        return False
+        return "echo_of_question"
     if re.search(r"okozza|kozepesen sikerult|nem sikerult az edzes", lowered):
-        return False
+        return "invented_cause"
     sentences = [norm(part).strip() for part in re.split(r"[.!?]+", text) if len(part.strip()) > 12]
     if len(sentences) != len(set(sentences)):
-        return False
+        return "repeated_sentence"
     earlier = [norm(t.get("answer", "")) for t in context.get("dialogue", []) if t.get("answer")]
     words = re.findall(r"\w+", lowered)
     grams = set(zip(words, words[1:], words[2:]))
@@ -195,18 +196,22 @@ def usable_reply(text, context):
         old_words = re.findall(r"\w+", old)
         similarity = SequenceMatcher(None, words, old_words, autojunk=False).ratio()
         if similarity > .9:
-            return False
+            return "repeats_earlier_answer"
         old_grams = set(zip(old_words, old_words[1:], old_words[2:]))
         shared = len(grams & old_grams) / max(1, min(len(grams), len(old_grams)))
         # Catch a repeated long reply with only a few nouns swapped. Short
         # acknowledgements and naturally repeated player names are not enough.
         if min(len(lowered), len(old)) > 120 and similarity > .76 and shared > .6:
-            return False
+            return "recycles_earlier_answer"
     # Dates/IDs/numeric scores cannot appear out of nowhere.
     authorised = " ".join([context["question"], *[s.get("text", "") + " " + s.get("at", "") for s in context["sourceSnapshots"]], *[t.get("question", "") + " " + t.get("answer", "") for t in context.get("dialogue", [])]])
     if any(n not in authorised for n in re.findall(r"\b\d{2,}\b", text)):
-        return False
-    return True
+        return "unsourced_number"
+    return None
+
+
+def usable_reply(text, context):
+    return reply_problem(text, context) is None
 
 
 def answer(config, context, cancelled=None, on_progress=None):
@@ -230,8 +235,10 @@ def answer(config, context, cancelled=None, on_progress=None):
         generated, model = generate(chosen, system, request, str(context["jobId"]) + ":dialogue-v2:" + str(attempt), response_kind="conversation", history=history, should_cancel=cancelled, on_progress=on_progress)
         supplied = {**context, "dialogue": [{"answer": t["content"]} for t in history if t["role"] == "assistant"],
                     "sourceSnapshots": [s for s in context["sourceSnapshots"] if any(r["id"] == s["id"] and r["revision"] == s["revision"] for r in refs)]}
-        if usable_reply(generated.get("text"), supplied):
+        problem = reply_problem(generated.get("text"), supplied)
+        if problem is None:
             break
+        print(json.dumps({"event": "habi.worker.coach.reply_refused", "attempt": attempt + 1, "reason": problem}), flush=True)
     else:
         fallback = coach_router.fallback(context)
         if fallback is None:
