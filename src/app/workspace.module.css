@@ -434,6 +434,9 @@
   border: 0;
 }
 .questionChoice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   min-width: 0;
   min-height: 56px;
   padding: 12px 16px;
@@ -447,11 +450,16 @@
   overflow-wrap: anywhere;
   cursor: pointer;
 }
-.questionChoice:hover,
 .questionChoice[aria-pressed="true"] {
   border-color: #3266df;
   background: #edf3ff;
   color: #234f9e;
+}
+/* A tap answers at once, so the card under a resting pointer on the next question must not look chosen: hover is only an outline, and only where a hover exists. */
+@media (hover: hover) and (pointer: fine) {
+  .questionChoice:hover:not(:disabled) {
+    border-color: #3266df;
+  }
 }
 .questionActions {
   display: flex;
@@ -478,6 +486,35 @@
 .textButton:focus-visible {
   outline: 3px solid #87a8f5;
   outline-offset: 3px;
+}
+.questionChoices + p {
+  margin: 16px 0 12px;
+}
+.checkinFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e3ebf6;
+}
+.checkinFooter .textButton {
+  padding: 8px 4px;
+  text-decoration: none;
+}
+.checkinFooter .textButton:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.checkinFooter .secondary {
+  min-height: 44px;
+  padding: 0 18px;
+}
+.checkinFooterEnd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-inline-start: auto;
 }
 .questions {
   display: grid;

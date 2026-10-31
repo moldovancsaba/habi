@@ -30,7 +30,7 @@ export default function DailyCheckin({
   const [sessions, setSessions] = useState<Session[]>([]),
     [session, setSession] = useState<Session | null>(null),
     [step, setStep] = useState(0),
-    [selection, setSelection] = useState<number | null>(null),
+    [chosen, setChosen] = useState<number | null>(null),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState("");
   const pending = useRef<{ fingerprint: string; key: string } | null>(null);
@@ -114,7 +114,7 @@ export default function DailyCheckin({
         {session ? "Elmondhatod, hogy vagy." : "Egy rövid megálló magadra."}
       </h2>
       <p>
-        A beküldött válasz azonnal mentődik, és a jogosult szüleid és edzőid
+        A megérintett válasz azonnal mentődik, és a jogosult szüleid és edzőid
         láthatják. A félbehagyott jelzés később folytatható.
       </p>
       {notice && <p role="status">{notice}</p>}
@@ -135,7 +135,7 @@ export default function DailyCheckin({
                 );
                 setSession(value);
                 setStep(0);
-                setSelection(null);
+                setChosen(null);
               })
             }
           >
@@ -159,7 +159,7 @@ export default function DailyCheckin({
                         !current.answers.some((a) => a.metric === metric),
                     );
                     setStep(index < 0 ? checkinMetrics.length : index);
-                    setSelection(null);
+                    setChosen(null);
                   })
                 }
               >
@@ -199,16 +199,35 @@ export default function DailyCheckin({
                 key={label}
                 disabled={busy || Boolean(saved)}
                 aria-pressed={
-                  saved ? saved.answerCode === code : selection === code
+                  saved ? saved.answerCode === code : chosen === code
                 }
-                onClick={() => setSelection(code)}
+                onClick={() => {
+                  setChosen(code);
+                  void run(async () => {
+                    try {
+                      await send(
+                        `/api/v1/checkin-sessions/${encodeURIComponent(session.id)}/answers`,
+                        {
+                          expectedRevision: session.revision,
+                          metric: question[0],
+                          answerCode: code,
+                        },
+                      );
+                      await refresh(session.id);
+                      setStep(step + 1);
+                      onSaved();
+                    } finally {
+                      setChosen(null);
+                    }
+                  });
+                }}
               >
                 <MetricGraphic metric={question[0]} code={code} />
                 {label}
               </button>
             ))}
           </fieldset>
-          {saved ? (
+          {saved && (
             <>
               <p>A korábban beküldött válasz megmaradt.</p>
               <button
@@ -216,84 +235,64 @@ export default function DailyCheckin({
                 type="button"
                 onClick={() => {
                   setStep(step + 1);
-                  setSelection(null);
+                  setChosen(null);
                 }}
               >
                 Következő kérdés
               </button>
             </>
-          ) : (
-            <button
-              className={styles.primary}
-              type="button"
-              disabled={busy || selection === null}
-              onClick={() =>
-                void run(async () => {
-                  await send(
-                    `/api/v1/checkin-sessions/${encodeURIComponent(session.id)}/answers`,
-                    {
-                      expectedRevision: session.revision,
-                      metric: question[0],
-                      answerCode: selection,
-                    },
-                  );
-                  await refresh(session.id);
+          )}
+          <div className={styles.checkinFooter}>
+            {step > 0 && (
+              <button
+                className={styles.textButton}
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setStep(step - 1);
+                  setChosen(null);
+                }}
+              >
+                Vissza
+              </button>
+            )}
+            {!saved && (
+              <button
+                className={styles.textButton}
+                type="button"
+                disabled={busy}
+                onClick={() => {
                   setStep(step + 1);
-                  setSelection(null);
-                  onSaved();
-                })
-              }
-            >
-              Válasz beküldése
-            </button>
-          )}
-          {!saved && (
-            <button
-              className={styles.textButton}
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setStep(step + 1);
-                setSelection(null);
-              }}
-            >
-              Most kihagyom
-            </button>
-          )}
-          <button
-            className={styles.secondary}
-            type="button"
-            disabled={busy}
-            onClick={() =>
-              void run(async () => {
-                setSession(null);
-                await load();
-              })
-            }
-          >
-            Később folytatom
-          </button>
-          <button
-            className={styles.secondary}
-            type="button"
-            disabled={busy}
-            onClick={() => void run(finish)}
-          >
-            Most befejezem
-          </button>
-          {step > 0 && (
-            <button
-              className={styles.textButton}
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setStep(step - 1);
-                setSelection(null);
-              }}
-            >
-              Vissza
-            </button>
-          )}
+                  setChosen(null);
+                }}
+              >
+                Most kihagyom
+              </button>
+            )}
+            <span className={styles.checkinFooterEnd}>
+              <button
+                className={styles.secondary}
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    setSession(null);
+                    await load();
+                  })
+                }
+              >
+                Később folytatom
+              </button>
+              <button
+                className={styles.secondary}
+                type="button"
+                disabled={busy}
+                onClick={() => void run(finish)}
+              >
+                Most befejezem
+              </button>
+            </span>
+          </div>
         </>
       ) : (
         <>
@@ -323,7 +322,7 @@ export default function DailyCheckin({
             disabled={busy}
             onClick={() => {
               setStep(0);
-              setSelection(null);
+              setChosen(null);
             }}
           >
             Átnézem a válaszaimat
