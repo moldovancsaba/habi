@@ -48,7 +48,8 @@ def checkin_facts(context):
     if not explanation_requested(context.get("question", "")):
         return None
     refs = context["sourceManifest"]
-    primary = next((s for s in context["sourceSnapshots"] if s.get("kind") not in ("authored_content", "derived_profile")), None)
+    # The player's own message is always the first source of a coach turn; it is not the thread's opening source.
+    primary = next((s for s in context["sourceSnapshots"] if s.get("kind") not in ("authored_content", "derived_profile", "conversation_message")), None)
     if primary and primary.get("kind") != "checkin_results":
         return None
 

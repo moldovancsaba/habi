@@ -25,8 +25,10 @@ class CoachDialogueTests(unittest.TestCase):
             self.assertTrue(usable_reply(text,self.context))
         repeated=self.context["dialogue"][0]["answer"]
         with patch("habi_worker.coach_dialogue.generate",return_value=({"text":repeated},"synthetic-model")) as api:
-            with self.assertRaises(SharedAIError):answer(self.config,self.context)
+            result=answer(self.config,self.context)
         self.assertEqual(api.call_count,2)
+        self.assertEqual(result["manifest"]["modelArtifact"],"habi-rules-fallback@1")
+        self.assertNotIn(repeated,result["reply"]["text"])
     def test_author_preferences_and_other_thread_updates_are_available_as_attributed_context(self):
         self.add_source("preference", "conversation_note", "Rövid válaszokat szeretnék.", "Felhasználói preference · author")
         system,history=conversation_request(self.context)
@@ -100,8 +102,9 @@ class CoachDialogueTests(unittest.TestCase):
     def test_omitted_evidence_cannot_authorize_a_numeric_claim(self):
         self.add_source("oversized", "record", "42 perce evett. " * 2000)
         with patch("habi_worker.coach_dialogue.generate", return_value=({"text":"42 perce evett."}, "synthetic")):
-            with self.assertRaises(SharedAIError):
-                answer(self.config, self.context)
+            result = answer(self.config, self.context)
+        self.assertEqual(result["manifest"]["modelArtifact"], "habi-rules-fallback@1")
+        self.assertNotIn("42", result["reply"]["text"])
 
     def test_long_recycled_answer_with_swapped_nouns_is_not_a_new_reply(self):
         self.context["dialogue"] = [{"question":"Mi változott?", "answer":
@@ -114,9 +117,10 @@ class CoachDialogueTests(unittest.TestCase):
         for fragment in ("Csaba", "Csaba, a vacsora", "A javulás azért", "Teszt Csaba."):
             self.assertFalse(usable_reply(fragment, self.context))
         with patch("habi_worker.coach_dialogue.generate", return_value=({"text":"Csaba, a vacsora"}, "synthetic")) as api:
-            with self.assertRaises(SharedAIError):
-                answer(self.config, self.context)
+            result = answer(self.config, self.context)
         self.assertEqual(api.call_count, 2)
+        self.assertEqual(result["manifest"]["modelArtifact"], "habi-rules-fallback@1")
+        self.assertNotIn("a vacsora", result["reply"]["text"])
 
     def test_oversized_current_message_is_never_silently_shortened(self):
         self.context["question"] = "Nem fáj. " * 2000

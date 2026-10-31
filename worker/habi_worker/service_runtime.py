@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from habi_worker.coach_summary import source_summary
-from habi_worker import plain_checkin, coach_dialogue
+from habi_worker import plain_checkin, coach_dialogue, coach_router
 from habi_worker.local_runtime import WorkerDependencyError, _request_json
 from habi_worker.shared_ai import SharedAIError, SharedAICancelled, generate as shared_ai_generate, validate_service as validate_shared_ai_service
 
@@ -153,30 +153,18 @@ def _answer_for_context(config, context, cancelled=None, on_progress=None):
         if hashlib.sha256(system_prompt.encode("utf-8")).hexdigest() != manifest["promptHash"]:
             raise WorkerDependencyError("WORKER_PROMPT_UNAVAILABLE")
         if (context.get("dialogueVersion") == 2 or getattr(config, "shared_ai_dialogue_task", "text_chat") == "text_chat_hu") and config.mode == "hosted":
-            return coach_dialogue.answer(config, context, cancelled, on_progress)
+            result = coach_router.route(context) or coach_dialogue.answer(config, context, cancelled, on_progress)
+            artifact = result["manifest"]["modelArtifact"]
+            if artifact.startswith("habi-rules") or artifact in ("habi-guidance@1", "habi-conversation@1", "habi-plain-checkin@1"):
+                _log("habi.worker.coach.rules_answer", artifact=artifact)
+            return result
         conversation = context.get("conversation")
-        if conversation and conversation.get("suppressRepeatedAnswer"):
-            return {
-                "status": "needs_clarification", "questionRevision": context["turnRevision"],
-                "claims": [], "attributions": [], "unknowns": [conversation["lead"]],
-                "clarifyingQuestions": conversation["questions"],
-                "suggestedAction": None, "validity": "current",
-                "manifest": {**manifest, "modelArtifact": "habi-conversation@1"},
-            }
-        if context.get("guidance") and not (conversation and conversation.get("hasNewUserContext")):
-            guidance = context["guidance"]
-            facts = [
-                claim for claim in source_summary(context, "GUIDANCE_EVIDENCE")["claims"]
-                if claim["kind"] == "direct"
-            ][:2]
-            return {
-                "status": "ready", "questionRevision": context["turnRevision"],
-                "claims": [guidance["claim"]] + facts,
-                "attributions": ["Verziózott Habi-útmutatás, a kérdéshez kapcsolódó adatokkal."],
-                "unknowns": guidance["unknowns"], "clarifyingQuestions": guidance["questions"],
-                "suggestedAction": None, "validity": "current",
-                "manifest": {**manifest, "modelArtifact": "habi-guidance@1"},
-            }
+        repeated = coach_router.repeated_answer(context)
+        if repeated:
+            return repeated
+        guidance = coach_router.guidance_answer(context)
+        if guidance:
+            return guidance
         bundle = plain_checkin.checkin_facts(context)
         if bundle and not (conversation and conversation.get("hasNewUserContext")):
             generated, model = None, None

@@ -1,5 +1,6 @@
 import { coachMessageHistory } from "../src/lib/workflows/coach-messages.mjs";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { MongoClient } from "mongodb";
 import { randomUUID } from "node:crypto";
@@ -899,6 +900,26 @@ test("contextual coach persists private dialogue, refreshes memory and validates
         assert.equal(job.jobId, created.jobId);
         const ctx = await workerContext(job);
         assert.equal(ctx.dialogueVersion, 2);
+        // The Python worker routes this exact shape (worker/tests/test_coach_router.py).
+        const contract = JSON.parse(
+          readFileSync(
+            new URL(
+              "../worker/tests/fixtures/coach-worker-context.json",
+              import.meta.url,
+            ),
+            "utf8",
+          ),
+        );
+        const keys = Object.keys(ctx);
+        assert.deepEqual(
+          keys.filter((k) => !contract.optionalKeys.includes(k)).sort(),
+          [...contract.requiredKeys].sort(),
+        );
+        assert.ok(
+          keys.every((k) =>
+            [...contract.requiredKeys, ...contract.optionalKeys].includes(k),
+          ),
+        );
         assert.ok(
           ctx.sourceManifest.some(
             (r) => r.id === `coach-message-${created.turnId}`,
