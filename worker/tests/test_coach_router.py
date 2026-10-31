@@ -182,6 +182,18 @@ class RulesFirstRoutingTests(unittest.TestCase):
         self.assertEqual(result["manifest"]["modelArtifact"], "habi-rules-safety@1")
         self.assertEqual(result["reply"]["sourceRefs"], [FIXTURE["context"]["sourceManifest"][0]])
 
+    def test_a_player_pain_message_gets_exactly_the_authored_pain_stance_and_safety_wins_over_it(self):
+        text = "Köszönöm, hogy megírtad. Ha fáj valamid, ne erőltesd az edzést."
+        context = self.context("Nagyon fáj a térdem, de ma is edzésre kell mennem.", pain={"text": text})
+        result, model = self.answer(context)
+        model.assert_not_called()
+        self.assertEqual(result["reply"]["text"], text)
+        self.assertEqual(result["manifest"]["modelArtifact"], "habi-rules-pain@1")
+        both = coach_router.route(self.context("Fáj, és semmi értelme az egésznek.", safety={"text": "Biztonságban vagy most?"}, pain={"text": text}))
+        self.assertEqual(both["manifest"]["modelArtifact"], "habi-rules-safety@1")
+        self.assertIsNone(coach_router.route(self.context("Nagyon fáj a térdem.", pain={"text": text}, viewerRole="parent")))
+        self.assertIsNone(coach_router.route(self.context("Nagyon fáj a térdem.")))
+
     def test_the_authored_safety_copy_is_only_for_a_player_and_never_blocks_the_hold(self):
         context = self.context("Semmi értelme az egésznek.", safety={"text": "Biztonságban vagy most?"}, viewerRole="coach")
         self.assertIsNone(coach_router.route(context))
@@ -255,6 +267,11 @@ class RulesFirstRoutingTests(unittest.TestCase):
             with self.subTest(keyword=keyword):
                 self.assertTrue(coach_router.safety_hold(keyword), keyword)
                 self.assertTrue(coach_router.safety_hold("Azt hiszem, " + keyword.upper() + "!"))
+
+    def test_every_authored_pain_keyword_holds_the_rules_back(self):
+        for keyword in ROUTING["painKeywords"]:
+            with self.subTest(keyword=keyword):
+                self.assertTrue(coach_router.safety_hold("Azt írtam, hogy " + keyword + " ma"), keyword)
 
     def test_pain_and_hopelessness_are_held_back_from_every_rule(self):
         for message in ("Semmi értelme az egésznek, nem akarok már edzésre járni.", "Fáj a térdem, és rosszul vagyok.", "Nem bírom tovább, jobban érzem magam?"):

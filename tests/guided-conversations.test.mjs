@@ -6,6 +6,7 @@ import {
   createGuidedConversationSummary,
   guidedConversationSafetyReply,
   isGuidedConversationSafetyInput,
+  isPainOrIllnessInput,
   isValidGuidedConversationDraft,
   rankGuidedCategories,
   resolveGuidedConversation,
@@ -175,4 +176,23 @@ test("hopelessness phrases route to safety and the AI coach gets the authored sa
     "Válassz ma egy nyugodt pillanatot egy szülőddel vagy megbízható felnőttel.",
   ])
     assert.ok(reply.includes(authored), authored);
+});
+
+test("pain and illness phrases are detected without being treated as safety messages", () => {
+  for (const input of [
+    "Nagyon fáj a térdem, de ma is edzésre kell mennem.",
+    "Szédültem az edzésen",
+    "Rosszul vagyok",
+    "Megsérültem a bokám",
+  ]) {
+    assert.equal(isPainOrIllnessInput(input), true, input);
+    assert.equal(isGuidedConversationSafetyInput(input), false, input);
+  }
+  for (const input of [
+    "Menjek ma edzésre?",
+    "Hogy állok most?",
+    "Ez a fájl nem nyílik meg",
+    "Semmi értelme az egésznek",
+  ])
+    assert.equal(isPainOrIllnessInput(input), false, input);
 });

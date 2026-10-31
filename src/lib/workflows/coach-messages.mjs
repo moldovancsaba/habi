@@ -1,4 +1,5 @@
 import { ownerScope, requireCoachPlayer } from "./coach-memory.mjs";
+import { isGuidedConversationSafetyInput } from "./guided-conversations.mjs";
 export const messageSourceId = (id) => `coach-message-${id}`;
 const plain = (text) =>
   text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
@@ -206,6 +207,9 @@ export async function coachMessageHistory({
       text: t.question,
       at: t.createdAt,
       role: t.role,
+      // Derived from the one authored keyword list, never stored: a coach sees it next to the message.
+      safetySignal:
+        t.role === "player" && isGuidedConversationSafetyInput(t.question),
       ignored: events.some(
         (e) => e.kind === "forget" && e.targetId === messageSourceId(t.id),
       ),

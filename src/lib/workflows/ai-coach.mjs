@@ -27,12 +27,24 @@ import assessments from "../content/coach-assessments-v1.json" with {
 import {
   guidedConversationSafetyReply,
   isGuidedConversationSafetyInput,
+  isPainOrIllnessInput,
 } from "./guided-conversations.mjs";
 import {
+  painGuidanceReply,
   isTrainingAttendanceQuestion,
   trainingGuidanceSource,
   coachQuestionGuidance,
 } from "./coach-guidance.mjs";
+
+/** How an answer was produced, from the artifact the worker recorded. "model" is the only experimental one. */
+export function coachAnswerMode(artifact) {
+  if (artifact === "habi-plain-checkin@1") return "plain_summary";
+  if (artifact === "habi-source-summary@1") return "source_summary";
+  if (artifact === "habi-guidance@1") return "guidance";
+  if (typeof artifact === "string" && artifact.startsWith("habi-"))
+    return "rules";
+  return "model";
+}
 
 function metricFromQuestion(question) {
   const matches = [
@@ -739,14 +751,7 @@ export async function readCoachThread({
           (j) => j.id !== turn.jobId && j.createdAt < turn.createdAt,
         ).length,
       ),
-      answerMode:
-        turn.answer?.manifest.modelArtifact === "habi-plain-checkin@1"
-          ? "plain_summary"
-          : turn.answer?.manifest.modelArtifact === "habi-source-summary@1"
-            ? "source_summary"
-            : turn.answer?.manifest.modelArtifact === "habi-guidance@1"
-              ? "guidance"
-              : "model",
+      answerMode: coachAnswerMode(turn.answer?.manifest.modelArtifact),
       pendingReview:
         !!turn.answer?.claims.some((c) => c.kind === "inference") &&
         !["approved", "rejected"].includes(turn.reviewState),
@@ -954,11 +959,13 @@ export async function coachWorkerContext({
     messageHistory,
     ...(conversation ? { conversation } : {}),
     ...(guidance ? { guidance } : {}),
-    // The authored safety copy speaks to the player, so only a player's own message gets it.
+    // The authored safety and pain copy speaks to the player, so only a player's own message gets it.
     ...(principal.role === "player" &&
     isGuidedConversationSafetyInput(turn.question)
       ? { safety: guidedConversationSafetyReply() }
-      : {}),
+      : principal.role === "player" && isPainOrIllnessInput(turn.question)
+        ? { pain: painGuidanceReply() }
+        : {}),
     coachMode: true,
     viewerRole: principal.role,
     jobId: job.id,

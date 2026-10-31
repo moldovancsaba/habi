@@ -81,6 +81,7 @@ type MessageHistory = {
     at: string;
     role: string;
     ignored: boolean;
+    safetySignal?: boolean;
     canManage?: boolean;
     understanding: {
       acts: string[];
@@ -800,6 +801,14 @@ function CoachPanel({
                             Egyszerű, forrásalapú összefoglaló
                           </p>
                         )}
+                      {turn.answerMode === "model" &&
+                        turn.answer &&
+                        !turn.conversation?.suppressRepeatedAnswer && (
+                          <p className={styles.muted}>
+                            Kísérleti AI-válasz: nem ellenőrzött. Fontos
+                            kérdésben kérdezd az edződet.
+                          </p>
+                        )}
                       {turn.status === "failed" &&
                         turn.failureReason === "REPLACED_BY_QUESTION" && (
                           <p>
@@ -1068,8 +1077,24 @@ function CoachPanel({
               előzmény.
             </p>
             {!history.items.length && <p>Még nincs mentett üzenet.</p>}
+            {role === "coach" &&
+              history.items.some((item) => item.safetySignal) && (
+                <aside className={styles.notice}>
+                  <strong>Biztonsági jelzés</strong>
+                  <p>
+                    {history.items.filter((item) => item.safetySignal).length}{" "}
+                    játékosüzenet biztonságra utaló kifejezést tartalmaz. Olvasd
+                    el az üzenetet, és keresd meg a játékost személyesen.
+                  </p>
+                </aside>
+              )}
             {history.items.map((item) => (
               <article className={styles.card} key={item.id}>
+                {role === "coach" && item.safetySignal && (
+                  <p>
+                    <strong>Biztonsági jelzés</strong>
+                  </p>
+                )}
                 <p className={styles.eyebrow}>
                   {item.understanding.acts
                     .map((act) => actLabels[act] ?? act)

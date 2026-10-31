@@ -22,6 +22,7 @@ import {
   listCoachReviews,
   verifyCoachSources,
   coachJobProgress,
+  coachAnswerMode,
 } from "../src/lib/workflows/ai-coach.mjs";
 import {
   claimWorkerJob,
@@ -1067,6 +1068,39 @@ test("contextual coach persists private dialogue, refreshes memory and validates
       const unsafeContext = await finishMessage(unsafe, "Fontos.");
       assert.ok(unsafeContext.safety.text.includes("Biztonságban vagy most?"));
       assert.ok(unsafeContext.safety.text.includes("megbízható felnőtthöz"));
+      assert.equal(unsafeContext.pain, undefined);
+      // Pain or illness gets the authored attendance stance, not the safety copy.
+      const pain = await sendMessage(
+        "Nagyon fáj a térdem, de ma is edzésre kell mennem.",
+      );
+      const painContext = await finishMessage(pain, "Értem.");
+      assert.equal(painContext.safety, undefined);
+      assert.ok(painContext.pain.text.includes("ne erőltesd az edzést"));
+      // The coach sees the signal next to the player's message, derived from the one keyword list.
+      const coachView = await coachMessageHistory({
+        ...args,
+        principal: coach,
+      });
+      const flagged = coachView.items.filter((item) => item.safetySignal);
+      assert.deepEqual(
+        flagged.map((item) => item.text),
+        ["Semmi értelme az egésznek."],
+      );
+      assert.ok(coachView.items.length > flagged.length);
     },
   );
+});
+
+test("the answer mode separates rule answers from the experimental model", () => {
+  assert.equal(coachAnswerMode("habi-rules-ack@1"), "rules");
+  assert.equal(coachAnswerMode("habi-rules-safety@1"), "rules");
+  assert.equal(coachAnswerMode("habi-conversation@1"), "rules");
+  assert.equal(coachAnswerMode("habi-plain-checkin@1"), "plain_summary");
+  assert.equal(coachAnswerMode("habi-source-summary@1"), "source_summary");
+  assert.equal(coachAnswerMode("habi-guidance@1"), "guidance");
+  assert.equal(
+    coachAnswerMode("hf.co/unsloth/Qwen3-4B-Instruct-2507-GGUF:Q3_K_M"),
+    "model",
+  );
+  assert.equal(coachAnswerMode(undefined), "model");
 });

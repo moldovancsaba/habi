@@ -17,5 +17,10 @@
         "url": "https://www.newcastle-hospitals.nhs.uk/services/newcastle-occupational-health-service/information-for-staff/physiotherapy/self-help-leaflets/exercise-and-your-health-a-guide-to-getting-started/"
       }
     ]
+  },
+  "pain-or-illness": {
+    "title": "Fájdalom vagy rosszullét",
+    "player": "Köszönöm, hogy megírtad. Ha fáj valamid, beteg vagy vagy rosszul vagy, előbb egyeztess az edződdel vagy egy megbízható felnőttel, és ne erőltesd az edzést. Ha erős a fájdalom, szédülsz vagy nehezen kapsz levegőt, szólj azonnal egy felnőttnek.",
+    "boundary": "Ez feltételes döntési segítség, nem egészségügyi alkalmasság, diagnózis vagy személyre szabott edzésterhelési előírás. A mai közérzetet, új panaszokat és a megbeszélt programot külön kell tisztázni. Egy rekord szövegében szereplő „ma” a rekord eredeti dátumához tartozik."
   }
 }

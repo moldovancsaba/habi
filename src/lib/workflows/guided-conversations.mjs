@@ -55,6 +55,11 @@ export function isGuidedConversationSafetyInput(input) {
   return routing.safetyKeywords.some((term) => matchesTerm(normalized, term));
 }
 
+export function isPainOrIllnessInput(input) {
+  const normalized = normalizeInput(input);
+  return routing.painKeywords.some((term) => matchesTerm(normalized, term));
+}
+
 // One-message form of the authored safety node (response, question and both outcomes), for the AI coach.
 export function guidedConversationSafetyReply() {
   const tree = Object.values(content.trees).find((item) => item.nodes.safety);

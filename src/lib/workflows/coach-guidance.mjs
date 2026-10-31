@@ -12,6 +12,9 @@ export function isTrainingAttendanceQuestion(question) {
     /menj|mehe|menni|edzhet|kihagy|reszt vegy|should|attend|skip/.test(q)
   );
 }
+export function painGuidanceReply() {
+  return { text: content["pain-or-illness"].player };
+}
 export function trainingGuidanceSource() {
   const item = content["training-attendance"];
   return {
