@@ -55,6 +55,16 @@ export function isGuidedConversationSafetyInput(input) {
   return routing.safetyKeywords.some((term) => matchesTerm(normalized, term));
 }
 
+// One-message form of the authored safety node (response, question and both outcomes), for the AI coach.
+export function guidedConversationSafetyReply() {
+  const tree = Object.values(content.trees).find((item) => item.nodes.safety);
+  const node = tree.nodes.safety;
+  const outcome = (id) => tree.outcomes[id].text;
+  return {
+    text: `${node.response} ${node.question} Ha nem, vagy nem tudod biztosan: ${outcome("immediate-adult")} Ha igen, de beszélnél róla: ${outcome("adult-today")}`,
+  };
+}
+
 export function resolveGuidedConversation(payload) {
   if (
     !payload ||

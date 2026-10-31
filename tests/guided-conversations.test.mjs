@@ -4,6 +4,7 @@ import {
   advanceGuidedConversation,
   createSavedConversationExport,
   createGuidedConversationSummary,
+  guidedConversationSafetyReply,
   isGuidedConversationSafetyInput,
   isValidGuidedConversationDraft,
   rankGuidedCategories,
@@ -151,4 +152,27 @@ test("completed topic exports preserve the exact authored exchange", () => {
     createGuidedConversationSummary({ categoryId: "dreams", turns: [] }),
     null,
   );
+});
+
+test("hopelessness phrases route to safety and the AI coach gets the authored safety copy in one message", () => {
+  for (const input of [
+    "Semmi értelme az egésznek, nem akarok már edzésre járni.",
+    "Nincs értelme edzeni",
+    "Utálom magam",
+  ])
+    assert.equal(isGuidedConversationSafetyInput(input), true, input);
+  for (const input of [
+    "Feladom a versenyt",
+    "Menjek ma edzésre?",
+    "Nem érzem jól magam az edzésen",
+  ])
+    assert.equal(isGuidedConversationSafetyInput(input), false, input);
+  const reply = guidedConversationSafetyReply().text;
+  for (const authored of [
+    "Fontos, amit írtál.",
+    "Biztonságban vagy most?",
+    "Most rögtön menj egy szülődhöz vagy más megbízható felnőtthöz.",
+    "Válassz ma egy nyugodt pillanatot egy szülőddel vagy megbízható felnőttel.",
+  ])
+    assert.ok(reply.includes(authored), authored);
 });

@@ -6,9 +6,13 @@ authored or source-bound rule, and None when the model should answer. fallback()
 is the answer used when the model's reply was refused, so a turn never ends in
 silence.
 
-A message that may be about safety or pain is never answered by a rule here:
-route() and fallback() both abstain and the existing behaviour applies. The
-safety response and the coach alert are a separate decision (docs/ai-coach-analysis-2026-10-30.md, item 2).
+Safety. A player's message that matches the authored safety keywords arrives with
+context["safety"] (the authored safety copy, built by the API from the one keyword
+list and the one authored node) and is answered with exactly that. Any other message
+that may be about safety or pain (the wider list below, or a non-player author) gets no
+rule answer and no fallback: route() and fallback() abstain and the old behaviour
+applies. No coach alert is raised yet; that waits on the owner's decision
+(docs/ai-coach-analysis-2026-10-30.md, item 2).
 """
 import re
 import unicodedata
@@ -24,12 +28,17 @@ NOTE_QUOTE_LIMIT = 300
 SAFETY_OR_PAIN = re.compile("|".join([
     r"nem vagyok biztonsagban", r"nem erzem magam biztonsagban", r"bantanak", r"megut", r"bantom magam",
     r"bantani magam", r"artani magamnak", r"nem akarok elni", r"meg akarok halni", r"hurt myself", r"kill myself",
-    r"not safe", r"being hurt", r"being bullied",
+    r"not safe", r"being hurt", r"being bullied", r"nem erdemes elni", r"nem akarok igy elni",
     r"semmi ertelme", r"nincs ertelme", r"nem akarok mar", r"nem birom", r"feladom", r"utalom magam",
     r"\bfaj\b", r"fajok", r"fajdalom", r"serul", r"szedul", r"rosszul vagyok", r"ajul", r"mellkas", r"legszomj", r"eszmeletem",
 ]))
-# Questions that ask for advice, a reason or an opinion are not answered by a recorded fact.
-NEEDS_JUDGEMENT = re.compile(r"tanacs|kellene|tegyek|csinaljak|gondolsz|szerinted|javit|miert|segits|mi alapjan|honnan")
+# Advice or an opinion is not something a recorded fact can answer.
+ADVICE = re.compile(r"tanacs|kellene|tegyek|csinaljak|gondolsz|szerinted|javith|javitan|javitsak|javitsam")
+# A reason asked for, or the source of what was just said.
+WHY_OR_SOURCE = re.compile(r"^(miert|mi alapjan|honnan)\b")
+NEEDS_JUDGEMENT = re.compile(ADVICE.pattern + "|javit|segits|miert|mi alapjan|honnan")
+GREETING = re.compile(r"^(szia|szevasz|hello|hali|jo napot|jo reggelt|jo estet|udv)( habi)?[ !.,]*$")
+CONFIRMATION = re.compile(r"^(tenyleg|biztos|biztos vagy ebben|komolyan|ugye)[ ?!.]*$|^(mi alapjan|honnan)\b")
 
 
 def fold(text):
@@ -123,6 +132,56 @@ def status_answer(context):
     return _reply(context, text, _current_message_refs(context), "habi-rules-no-data@1")
 
 
+def safety_answer(context):
+    """The authored safety copy, for a player's message the API matched against the authored safety keywords."""
+    safety = context.get("safety")
+    if context.get("viewerRole") != "player" or not isinstance(safety, dict) or not safety.get("text"):
+        return None
+    return _reply(context, safety["text"], _current_message_refs(context), "habi-rules-safety@1")
+
+
+def _last_answer_was_a_checkin_summary(context):
+    last = (context.get("dialogue") or [{}])[-1].get("answer", "")
+    return bool(re.search(r"beszámoló\w* azt jelez", last))
+
+
+def confirmation_answer(context):
+    """'Tényleg?', 'Biztos?', 'Mi alapján?' right after a check-in summary: say where it comes from, add nothing."""
+    if not CONFIRMATION.search(fold(context["question"])) or not _last_answer_was_a_checkin_summary(context):
+        return None
+    bundle = plain_checkin.checkin_facts(context, require_question=False)
+    if not bundle:
+        return None
+    date = bundle["date"]
+    text = (f"Igen, ez a {date.year}. {plain_checkin.MONTHS[date.month - 1]} {date.day}-i beszámolóból következik, mást nem tudok róla. "
+            "Ha azóta változott valami, írd meg, és azt veszem figyelembe.")
+    return _reply(context, text, _current_message_refs(context) + [bundle["ref"]], "habi-rules-source@1")
+
+
+def advice_answer(context):
+    """No personal advice from the coach: say so, and show what is recorded."""
+    acts = (context.get("messageUnderstanding") or {}).get("acts", [])
+    if not ADVICE.search(fold(context["question"])) or any(act in acts for act in ("correction", "feedback", "preference", "goal")):
+        return None
+    text = ("Személyre szabott tanácsot nem adok. Az edzéssel, alvással vagy étkezéssel kapcsolatos kérdést érdemes az edzővel és a szülőkkel megbeszélni.")
+    refs = _current_message_refs(context)
+    bundle = plain_checkin.checkin_facts(context, require_question=False)
+    if bundle:
+        recorded = plain_checkin.plain_answer(context, bundle, plain_checkin.default_text(bundle))["claims"][0]["text"]
+        text += " Ennyi van mentve: " + recorded[0].lower() + recorded[1:]
+        refs = refs + [bundle["ref"]]
+    else:
+        text += " Kérdezhetsz a mentett állapotjelzésekről."
+    return _reply(context, text, refs, "habi-rules-advice@1")
+
+
+def greeting_answer(context):
+    if not GREETING.search(fold(context["question"])):
+        return None
+    return _reply(context, "Szia! A mentett állapotjelzésekről, az edzésre menésről és a Habi használatáról tudok beszélgetni. Miben segíthetek?",
+                  _current_message_refs(context), "habi-rules-greeting@1")
+
+
 ACKNOWLEDGEMENTS = {
     "correction": "Köszönöm a pontosítást, az üzenetedet külön elmentettem. A korábbi bejegyzések az előzményekben megmaradnak.",
     "feedback": "Rendben, a kérésedet elmentettem.",
@@ -150,9 +209,11 @@ def acknowledgement(context):
 
 def route(context):
     """The rule-based answer for this turn, or None when the model should answer."""
-    if safety_hold(context["question"]):
-        return None
-    return repeated_answer(context) or guidance_answer(context) or status_answer(context) or acknowledgement(context)
+    safety = safety_answer(context)
+    if safety or safety_hold(context["question"]):
+        return safety
+    return (repeated_answer(context) or guidance_answer(context) or confirmation_answer(context) or advice_answer(context)
+            or status_answer(context) or greeting_answer(context) or acknowledgement(context))
 
 
 def fallback(context):

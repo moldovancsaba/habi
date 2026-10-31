@@ -75,6 +75,7 @@ def run_thread(tid, src, role, profile, messages, kinds, cfgA, cfgB):
             if arm == "D":
                 h = node_helper({"question": message, "role": role, "sources": snaps, "now": NOW, "previous": prevB, "sourceRefs": refs})
                 ctx["messageUnderstanding"] = h["understanding"]
+                if h["safety"]: ctx["safety"] = h["safety"]
                 if h["guidance"]: ctx["guidance"] = h["guidance"]
                 if h["conversation"]: ctx["conversation"] = h["conversation"]
             if arm == "B":

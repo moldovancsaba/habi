@@ -1,5 +1,9 @@
 # AI coach: replay of the recorded conversations and a plan for a better coach · 2026-10-30
 
+## Status 2026-10-31, later: the remaining model turns were reduced to 4 of 39 (safety copy, follow-up, advice and greeting rules)
+
+The owner then asked to fix what still went to the model. Added: the authored safety copy for a player's matching message (the API attaches `safety.text`; the keyword list gained five hopelessness phrases; **no coach alert yet**, and the two joining phrases are new wording), a follow-up rule (“Tényleg?”, “Mi alapján?”), an advice rule that declines personal advice and shows the recorded check-in, and a greeting rule. Same 39 turns, live, with the API's context shape: 1 turn flagged (the over-long message, markdown from the model), 35 answered by rules, 4 by the model: pain (“Nagyon fáj a térdem…”, the model tells the player to ease off, unchecked), off-topic (“Paris.”), the product question (a generic model answer I did not check against the product) and the over-long message (it mentions dizziness, so it is held back from the rules). Pain and dizziness have no authored response, so they stay with the model until a reviewer provides one. The advice rule was narrowed after this run (corrections and help requests are not advice); the affected messages were checked offline, not replayed live.
+
 ## Status 2026-10-31: items 1, 3 and 8 are built (local commit, not deployed)
 
 Everything below describes the state before this change. The owner approved items 1, 3 and 8; they are in `worker/habi_worker/coach_router.py` with tests (`worker/tests/test_coach_router.py`, the shared context fixture and the assertion in `tests/ai-coach.test.mjs`). Not built: item 2 (safety response and coach alert, awaiting decisions 2 and 3 below), 4, 5, 6 and 7.

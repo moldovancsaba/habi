@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = json.loads((Path(__file__).parent / "fixtures" / "coach-worker-context.json").read_text(encoding="utf-8"))
 ROUTING = json.loads((ROOT / "src" / "lib" / "content" / "guided-chat-routing-v1.json").read_text(encoding="utf-8"))
 COACH_PROMPT = "synthetic coach prompt"
-OPEN_QUESTION = "Mit gondolsz a hétvégi meccsről?"
+OPEN_QUESTION = "Hogyan ment a hétvégi meccs?"
 GUIDANCE_REF = {"id": "habi-guidance-training-attendance", "revision": 1, "span": None}
 
 
@@ -170,6 +170,65 @@ class RulesFirstRoutingTests(unittest.TestCase):
     def test_a_long_report_is_acknowledged_without_a_memory_note(self):
         result = coach_router.acknowledgement(self.context("Jobban érzem magam. " * 40, acts=("update",)))
         self.assertEqual(result["messageUnderstanding"]["notes"], [])
+
+    # -- what used to fall through to the unchecked model ---------------------------------------
+
+    def test_a_player_message_matched_by_the_api_gets_exactly_the_authored_safety_copy(self):
+        copy_text = "Fontos, amit írtál. Biztonságban vagy most? Most rögtön menj egy szülődhöz vagy más megbízható felnőtthöz."
+        context = self.context("Semmi értelme az egésznek.", acts=("other",), safety={"text": copy_text})
+        result, model = self.answer(context)
+        model.assert_not_called()
+        self.assertEqual(result["reply"]["text"], copy_text)
+        self.assertEqual(result["manifest"]["modelArtifact"], "habi-rules-safety@1")
+        self.assertEqual(result["reply"]["sourceRefs"], [FIXTURE["context"]["sourceManifest"][0]])
+
+    def test_the_authored_safety_copy_is_only_for_a_player_and_never_blocks_the_hold(self):
+        context = self.context("Semmi értelme az egésznek.", safety={"text": "Biztonságban vagy most?"}, viewerRole="coach")
+        self.assertIsNone(coach_router.route(context))
+        self.assertIsNone(coach_router.fallback(context))
+        self.assertIsNone(coach_router.safety_answer(self.context("Hogy állok most?")))
+
+    def test_a_confirmation_after_a_checkin_summary_names_the_source_and_adds_nothing(self):
+        summary = "A 2026. október 27-i beszámolódban azt jelezted, hogy keveset aludtál. Most is így érzed magad?"
+        for question in ("Tényleg?", "Biztos vagy ebben?", "Mi alapján?"):
+            with self.subTest(question=question):
+                result, model = self.answer(self.context(question, dialogue=[{"question": "Hogy állok?", "answer": summary, "questions": []}]))
+                model.assert_not_called()
+                self.assertEqual(result["manifest"]["modelArtifact"], "habi-rules-source@1")
+                self.assertIn("2026. október 27-i beszámolóból következik", result["reply"]["text"])
+        self.assertIsNone(coach_router.confirmation_answer(self.context("Tényleg?")))
+        self.assertIsNone(coach_router.confirmation_answer(self.context("Tényleg?", dialogue=[{"question": "Hogy ment?", "answer": "Jól ment.", "questions": []}])))
+
+    def test_advice_is_declined_and_the_recorded_checkin_is_shown_instead(self):
+        result, model = self.answer(self.context("Mit tanácsolsz, ha feszült vagyok és keveset alszom?", acts=("question", "update")))
+        model.assert_not_called()
+        text = result["reply"]["text"]
+        self.assertEqual(result["manifest"]["modelArtifact"], "habi-rules-advice@1")
+        self.assertIn("Személyre szabott tanácsot nem adok.", text)
+        self.assertIn("Ennyi van mentve: a 2026. október 27-i beszámolódban azt jelezted, hogy keveset aludtál", text)
+        self.assertNotRegex(text, r"\d\s*[–-]\s*\d|óra")
+        self.assertIn(FIXTURE["context"]["sourceManifest"][1], result["reply"]["sourceRefs"])
+        without_checkin = coach_router.route(self.context("Mit tanácsolsz a következő hétre?", checkin=False))
+        self.assertIn("Kérdezhetsz a mentett állapotjelzésekről.", without_checkin["reply"]["text"])
+
+    def test_corrections_preferences_and_help_requests_are_not_mistaken_for_advice_questions(self):
+        correction = coach_router.route(self.context("Javítás: nem a reggeli maradt ki, hanem a vacsora.", acts=("correction", "update")))
+        self.assertEqual(correction["manifest"]["modelArtifact"], "habi-rules-ack@1")
+        self.assertIsNone(coach_router.advice_answer(self.context("Javítsd ki a válaszodat, kérlek.")))
+        self.assertIsNone(coach_router.advice_answer(self.context("Segíts megérteni a grafikont.")))
+        self.assertIsNone(coach_router.route(self.context("Segíts megérteni a grafikont.")))
+        long_ask = "Mesélj részletesen arról, hogyan javíthatnám az alvásomat, az energiaszintemet és a figyelmemet az edzések mellett."
+        self.assertEqual(coach_router.route(self.context(long_ask))["manifest"]["modelArtifact"], "habi-rules-advice@1")
+
+    def test_advice_mixed_with_pain_is_still_held_back(self):
+        self.assertIsNone(coach_router.route(self.context("Fáj a térdem, mit tanácsolsz?")))
+
+    def test_a_greeting_gets_a_scope_statement_but_a_question_after_it_does_not(self):
+        result, model = self.answer(self.context("Szia!"))
+        model.assert_not_called()
+        self.assertEqual(result["manifest"]["modelArtifact"], "habi-rules-greeting@1")
+        self.assertNotRegex(result["reply"]["text"], "[\U0001F300-\U0001FAFF]")
+        self.assertIsNone(coach_router.greeting_answer(self.context("Szia, hogy ment a meccs?")))
 
     # -- open conversation still reaches the model; its failure no longer ends in silence ---------
 

@@ -1059,6 +1059,14 @@ test("contextual coach persists private dialogue, refreshes memory and validates
         }),
         { message: "NOT_FOUND" },
       );
+      // A player's hopeless message carries the authored safety copy to the worker; an ordinary one does not.
+      const ordinary = await sendMessage("Hogy állok most?");
+      const ordinaryContext = await finishMessage(ordinary, "Rendben.");
+      assert.equal(ordinaryContext.safety, undefined);
+      const unsafe = await sendMessage("Semmi értelme az egésznek.");
+      const unsafeContext = await finishMessage(unsafe, "Fontos.");
+      assert.ok(unsafeContext.safety.text.includes("Biztonságban vagy most?"));
+      assert.ok(unsafeContext.safety.text.includes("megbízható felnőtthöz"));
     },
   );
 });

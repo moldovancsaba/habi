@@ -1,14 +1,39 @@
 {
   "note": "Shape of the context the Habi API gives the worker for a coachConversation job (coachWorkerContext in src/lib/workflows/ai-coach.mjs). tests/ai-coach.test.mjs fails when the API's keys differ from requiredKeys/optionalKeys; worker/tests/test_coach_router.py routes this exact shape. Update all three together.",
   "requiredKeys": [
-    "coachMode", "deadline", "dialogue", "dialogueVersion", "fence", "jobId", "messageHistory", "messageUnderstanding",
-    "opening", "playerName", "promptManifest", "question", "sourceManifest", "sourceSnapshots", "turnId", "turnRevision", "viewerRole"
+    "coachMode",
+    "deadline",
+    "dialogue",
+    "dialogueVersion",
+    "fence",
+    "jobId",
+    "messageHistory",
+    "messageUnderstanding",
+    "opening",
+    "playerName",
+    "promptManifest",
+    "question",
+    "sourceManifest",
+    "sourceSnapshots",
+    "turnId",
+    "turnRevision",
+    "viewerRole"
   ],
-  "optionalKeys": ["conversation", "guidance"],
+  "optionalKeys": [
+    "conversation",
+    "guidance",
+    "safety"
+  ],
   "context": {
     "playerName": "Teszt Csaba",
     "dialogueVersion": 2,
-    "messageUnderstanding": {"acts": ["other"], "subject": "player", "notes": []},
+    "messageUnderstanding": {
+      "acts": [
+        "other"
+      ],
+      "subject": "player",
+      "notes": []
+    },
     "messageHistory": [],
     "coachMode": true,
     "viewerRole": "player",
@@ -18,17 +43,53 @@
     "question": "Magyarázd el egyszerűbben.",
     "fence": 1,
     "sourceSnapshots": [
-      {"id": "coach-message-turn-1", "revision": 1, "span": null, "kind": "conversation_message", "title": "Mostani saját üzenet", "text": "Magyarázd el egyszerűbben.", "at": "2026-10-28T09:00:00.000Z", "role": "player"},
-      {"id": "checkin-1", "revision": 1, "span": null, "kind": "checkin_results", "title": "Tegnapi saját beszámoló", "text": "Mennyi energiád van? Megfelelő\nHogyan aludtál? Keveset\nMennyire tudsz figyelni? Nehezen\nHogy érzed magad? Feszült\nMennyit edzettél? Közepesen", "at": "2026-10-27T10:28:14Z", "role": "player"}
+      {
+        "id": "coach-message-turn-1",
+        "revision": 1,
+        "span": null,
+        "kind": "conversation_message",
+        "title": "Mostani saját üzenet",
+        "text": "Magyarázd el egyszerűbben.",
+        "at": "2026-10-28T09:00:00.000Z",
+        "role": "player"
+      },
+      {
+        "id": "checkin-1",
+        "revision": 1,
+        "span": null,
+        "kind": "checkin_results",
+        "title": "Tegnapi saját beszámoló",
+        "text": "Mennyi energiád van? Megfelelő\nHogyan aludtál? Keveset\nMennyire tudsz figyelni? Nehezen\nHogy érzed magad? Feszült\nMennyit edzettél? Közepesen",
+        "at": "2026-10-27T10:28:14Z",
+        "role": "player"
+      }
     ],
     "sourceManifest": [
-      {"id": "coach-message-turn-1", "revision": 1, "span": null},
-      {"id": "checkin-1", "revision": 1, "span": null}
+      {
+        "id": "coach-message-turn-1",
+        "revision": 1,
+        "span": null
+      },
+      {
+        "id": "checkin-1",
+        "revision": 1,
+        "span": null
+      }
     ],
-    "promptManifest": {"sourceRefs": [
-      {"id": "coach-message-turn-1", "revision": 1, "span": null},
-      {"id": "checkin-1", "revision": 1, "span": null}
-    ]},
+    "promptManifest": {
+      "sourceRefs": [
+        {
+          "id": "coach-message-turn-1",
+          "revision": 1,
+          "span": null
+        },
+        {
+          "id": "checkin-1",
+          "revision": 1,
+          "span": null
+        }
+      ]
+    },
     "dialogue": [],
     "opening": "Állapotjelzések",
     "deadline": "2026-10-28T09:04:00.000Z"

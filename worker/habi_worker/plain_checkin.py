@@ -44,8 +44,8 @@ def explanation_requested(question):
     return bool(re.search(r"egyszer|magyaraz|osszefoglal|allapot|alud|alvas|energia|figyel|kozerzet|hogy (van|all)|mit (tud|mutat|jelent)", plain))
 
 
-def checkin_facts(context):
-    if not explanation_requested(context.get("question", "")):
+def checkin_facts(context, require_question=True):
+    if require_question and not explanation_requested(context.get("question", "")):
         return None
     refs = context["sourceManifest"]
     # The player's own message is always the first source of a coach turn; it is not the thread's opening source.

@@ -25,6 +25,10 @@ import assessments from "../content/coach-assessments-v1.json" with {
 };
 
 import {
+  guidedConversationSafetyReply,
+  isGuidedConversationSafetyInput,
+} from "./guided-conversations.mjs";
+import {
   isTrainingAttendanceQuestion,
   trainingGuidanceSource,
   coachQuestionGuidance,
@@ -950,6 +954,11 @@ export async function coachWorkerContext({
     messageHistory,
     ...(conversation ? { conversation } : {}),
     ...(guidance ? { guidance } : {}),
+    // The authored safety copy speaks to the player, so only a player's own message gets it.
+    ...(principal.role === "player" &&
+    isGuidedConversationSafetyInput(turn.question)
+      ? { safety: guidedConversationSafetyReply() }
+      : {}),
     coachMode: true,
     viewerRole: principal.role,
     jobId: job.id,
