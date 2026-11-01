@@ -13,6 +13,7 @@ import {
   checkinMetrics,
   latestCompletion,
   metricGraphicLevel,
+  metroGapPath,
   metroRoutePath,
   projectDailyCheckins,
 } from "../lib/workflows/checkin-chart.mjs";
@@ -179,6 +180,7 @@ export default function CheckinTrends({ checkins }: { checkins: Checkin[] }) {
       options,
       points,
       path: metroRoutePath(points),
+      gapPath: metroGapPath(points),
       width: chart.width,
     };
   });
@@ -253,7 +255,8 @@ export default function CheckinTrends({ checkins }: { checkins: Checkin[] }) {
         {projection === "daily"
           ? "Naponta a legutolsó teljes kitöltést mutatjuk; ha nincs teljes, a legutolsó részleges alkalmat. A válaszokat nem keverjük különböző alkalmakból."
           : "Minden ténylegesen rögzített alkalom külön állomás, időrendben."}{" "}
-        A hiányzó napokat és válaszokat nem kötjük össze.
+        A hiányzó napokat és válaszokat szaggatott vonal jelzi a rögzített
+        pontok között.
       </p>
       <fieldset className={styles.metrics} aria-label="Megjelenített kérdés">
         <button
@@ -333,6 +336,11 @@ export default function CheckinTrends({ checkins }: { checkins: Checkin[] }) {
                 {series.map((line) => (
                   <g key={line.key} style={{ color: `var(--${line.key})` }}>
                     <path className={styles.route} d={line.path} />
+                    <path
+                      className={styles.route}
+                      d={line.gapPath}
+                      strokeDasharray="6 6"
+                    />
                     {line.points
                       .filter((p) => p.y !== null)
                       .map((p) => (

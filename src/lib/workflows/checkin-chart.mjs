@@ -79,6 +79,7 @@ export function buildCheckinChart(checkins, metric, period, now) {
   return {
     points,
     path: metroRoutePath(points),
+    gapPath: metroGapPath(points),
     width: Math.max(600, 192 + (entries.length - 1) * 90),
   };
 }
@@ -116,6 +117,36 @@ export function metroRoutePath(points) {
       path += ` H ${middle - 8} Q ${middle} ${previous.y} ${middle} ${previous.y + direction * 8} V ${point.y - direction * 8} Q ${middle} ${point.y} ${middle + 8} ${point.y} H ${point.x}`;
     }
     previous = point;
+  }
+  return path.trim();
+}
+
+/** Connect recorded stations across missing days or answers, without adding stations. */
+export function metroGapPath(points) {
+  let previous = null;
+  let missingAnswer = false;
+  let path = "";
+  for (const point of points) {
+    if (point.y === null) {
+      missingAnswer = true;
+      continue;
+    }
+    if (
+      previous &&
+      (missingAnswer ||
+        calendarDay(point.date) - calendarDay(previous.date) > 1)
+    ) {
+      path += ` M ${previous.x} ${previous.y}`;
+      if (previous.y === point.y) {
+        path += ` H ${point.x}`;
+      } else {
+        const middle = (previous.x + point.x) / 2;
+        const direction = point.y > previous.y ? 1 : -1;
+        path += ` H ${middle - 8} Q ${middle} ${previous.y} ${middle} ${previous.y + direction * 8} V ${point.y - direction * 8} Q ${middle} ${point.y} ${middle + 8} ${point.y} H ${point.x}`;
+      }
+    }
+    previous = point;
+    missingAnswer = false;
   }
   return path.trim();
 }

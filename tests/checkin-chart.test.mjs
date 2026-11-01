@@ -51,7 +51,7 @@ test("chart sorts actual timestamps and retains separate same-day submissions", 
   assert.doesNotMatch(result.path, /[LC]/);
 });
 
-test("missing days and unanswered questions break the metro route", () => {
+test("missing days and unanswered questions use separate dashed connectors", () => {
   const result = buildCheckinChart(
     [
       entry("one", "2026-10-23T10:00:00Z", 1),
@@ -66,6 +66,25 @@ test("missing days and unanswered questions break the metro route", () => {
   assert.equal(result.points[2].y, null);
   assert.equal(result.path.split("M ").length - 1, 3);
   assert.doesNotMatch(result.path, /[HQV]/);
+  assert.equal(result.gapPath.split("M ").length - 1, 2);
+  assert.match(result.gapPath, /M 160 96 .*H 250/);
+  assert.match(result.gapPath, /M 250 32 .*H 430/);
+  assert.equal(result.points.filter((point) => point.y !== null).length, 3);
+});
+
+test("consecutive days stay solid and equal levels across a gap connect horizontally", () => {
+  const result = buildCheckinChart(
+    [
+      entry("first", "2026-10-23T10:00:00Z", 2),
+      entry("next", "2026-10-24T10:00:00Z", 2),
+      entry("after-gap", "2026-10-27T10:00:00Z", 2),
+    ],
+    "energy",
+    14,
+    now,
+  );
+  assert.equal(result.path, "M 160 160 H 250 M 340 160");
+  assert.equal(result.gapPath, "M 250 160 H 340");
 });
 
 test("period filtering excludes future, invalid, and old records without fabricating points", () => {
@@ -83,6 +102,7 @@ test("period filtering excludes future, invalid, and old records without fabrica
   assert.equal(result.points.length, 1);
   assert.equal(result.points[0].value, null);
   assert.equal(result.path, "");
+  assert.equal(result.gapPath, "");
   assert.deepEqual(buildCheckinChart([], "energy", 14, now).points, []);
 });
 
