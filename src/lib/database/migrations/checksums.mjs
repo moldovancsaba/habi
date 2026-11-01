@@ -5,6 +5,16 @@
  * source path at runtime, where Next's traced deployment assets are renamed.
  */
 export const migrationChecksums = Object.freeze({
+  "021-record-correction-lineage": Object.freeze({
+    file: "021-record-correction-lineage.mjs",
+    checksum:
+      "199a7e45e3b0cb50364b29ad01f912ffdadcf4523d8f24c09dc4ce5eeaac7cd4",
+  }),
+  "020-durable-assessment-attempts": Object.freeze({
+    file: "020-durable-assessment-attempts.mjs",
+    checksum:
+      "9dd034021e97cd596031cd3c13961022945956c29856f23a653d62567652fe2a",
+  }),
   "019-coach-message-understanding": Object.freeze({
     file: "019-coach-message-understanding.mjs",
     checksum:

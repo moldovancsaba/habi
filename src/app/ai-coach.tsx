@@ -1,5 +1,9 @@
 "use client";
 import {
+  FloatingActionPlacement,
+  SemanticButton,
+} from "@sovereignsquad/gds/client";
+import {
   createContext,
   useCallback,
   useContext,
@@ -65,6 +69,7 @@ type Turn = {
   reviewRationale: string;
   sourceState: string;
   failureReason?: string | null;
+  cancellableJob?: { id: string; revision: number } | null;
   sources: {
     id: string;
     revision: number;
@@ -162,16 +167,13 @@ export function AiCoachButton({
   const entry = useContext(CoachEntry);
   if (!entry) return null;
   return (
-    <button
-      type="button"
-      className={styles.contextButton}
+    <SemanticButton
+      action="help"
+      label="AI-edző"
       aria-label={label}
       title={label}
       onClick={() => entry.open(context, threadId)}
-    >
-      <SmartToy />
-      <span className={styles.buttonText}>AI-edző</span>
-    </button>
+    />
   );
 }
 export function AiCoachProvider({
@@ -216,15 +218,14 @@ export function AiCoachProvider({
     <CoachEntry.Provider value={enabled ? { page, open } : null}>
       {children}
       {enabled && (
-        <button
-          type="button"
-          className={styles.launcher}
-          onClick={() => open()}
-          aria-label="AI-edző megnyitása"
-        >
-          <SmartToy />
-          <span>AI-edző</span>
-        </button>
+        <FloatingActionPlacement position="bottom-end">
+          <SemanticButton
+            action="help"
+            label="AI-edző"
+            aria-label="AI-edző megnyitása"
+            onClick={() => open()}
+          />
+        </FloatingActionPlacement>
       )}
       {enabled && context && (
         <CoachPanel
@@ -809,7 +810,36 @@ function CoachPanel({
                             kérdésben kérdezd az edződet.
                           </p>
                         )}
+                      {turn.cancellableJob && !readOnly && (
+                        <SemanticButton
+                          action="close"
+                          label="Válasz feldolgozásának leállítása"
+                          disabled={busy}
+                          onClick={() =>
+                            void run(async () => {
+                              await productRequest(
+                                `/api/v1/jobs/${turn.cancellableJob?.id}/cancel`,
+                                csrfToken,
+                                {
+                                  expectedRevision:
+                                    turn.cancellableJob?.revision,
+                                },
+                              );
+                              const body = await request(
+                                `/ai-coach/${thread?.id}`,
+                              );
+                              setTurns(body.items);
+                            })
+                          }
+                        />
+                      )}
+                      {turn.failureReason === "USER_CANCELLED" && (
+                        <p>
+                          A feldolgozást leállítottad. Az üzeneted megmaradt.
+                        </p>
+                      )}
                       {turn.status === "failed" &&
+                        turn.failureReason !== "USER_CANCELLED" &&
                         turn.failureReason === "REPLACED_BY_QUESTION" && (
                           <p>
                             Az automatikus magyarázat helyett a saját kérdésedre
@@ -817,6 +847,7 @@ function CoachPanel({
                           </p>
                         )}
                       {turn.status === "failed" &&
+                        turn.failureReason !== "USER_CANCELLED" &&
                         turn.failureReason !== "REPLACED_BY_QUESTION" && (
                           <>
                             <p>

@@ -1,5 +1,6 @@
 "use client";
 import { AiCoachButton } from "./ai-coach";
+import RecordCorrection from "./record-correction";
 import { useCallback, useEffect, useState } from "react";
 import { productRequest, commandMessage } from "./product-request";
 import styles from "./workspace.module.css";
@@ -8,7 +9,11 @@ type Record = {
   revision?: number;
   text?: string | null;
   occurredAt?: string;
-  recordedBy?: { role: string };
+  kind?: string;
+  recordedBy?: { role: string; actorId?: string };
+  supersedesId?: string | null;
+  supersededByRef?: { id: string; revision: number } | null;
+  correctionReason?: string | null;
 };
 type Publication = {
   id: string;
@@ -20,10 +25,14 @@ export default function CoachRecords({
   records,
   playerId,
   csrfToken,
+  actorId,
+  onSaved,
 }: {
   records: Record[];
   playerId: string;
   csrfToken: string;
+  actorId: string;
+  onSaved: () => void;
 }) {
   const [publications, setPublications] = useState<Publication[]>([]),
     [busy, setBusy] = useState(false),
@@ -76,6 +85,15 @@ export default function CoachRecords({
                 {publication ? "SZÜLŐKKEL MEGOSZTVA" : "BELSŐ EDZŐI ANYAG"}
               </p>
               <p style={{ whiteSpace: "pre-wrap" }}>{r.text}</p>
+              {r.recordedBy?.actorId === actorId &&
+                ["diary", "observation"].includes(r.kind ?? "") && (
+                  <RecordCorrection
+                    playerId={playerId}
+                    source={{ ...r, revision: r.revision ?? 1 }}
+                    csrfToken={csrfToken}
+                    onSaved={onSaved}
+                  />
+                )}
               {r.occurredAt && (
                 <time dateTime={r.occurredAt}>
                   {new Date(r.occurredAt).toLocaleString("hu-HU")}

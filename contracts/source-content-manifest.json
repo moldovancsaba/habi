@@ -1,0 +1,1168 @@
+{
+  "version": 1,
+  "baseline": "673d6c7",
+  "sources": [
+    {
+      "id": "HABI-coach-assessments-v1",
+      "title": "Native assessment catalogue",
+      "path": "src/lib/content/coach-assessments-v1.json",
+      "version": "0.2.0",
+      "sha256": "46be0b8f23c818a8b5ea63a4b3fff99ac81dbf85f4a172c8a3ebe987b17d98c9",
+      "availability": "available",
+      "sectionsEnumerated": true,
+      "relationship": "Available product content; not evidence of parity with unavailable third-party originals."
+    },
+    {
+      "id": "HABI-journeys-v1",
+      "title": "Owner journey explanations",
+      "path": "src/lib/content/journeys-v1.json",
+      "version": "1",
+      "sha256": "e8ed6427b64d1253cf534bc1327556dc74e017d5711244e384774ec7491ebc58",
+      "availability": "available",
+      "sectionsEnumerated": true,
+      "relationship": "Available product content; not evidence of parity with unavailable third-party originals."
+    },
+    {
+      "id": "HABI-practices-v2",
+      "title": "Owner practice catalogue",
+      "path": "src/lib/content/practices-v2.json",
+      "version": "2",
+      "sha256": "5e89d866d07b278821a43654566d72462330af1135f706638586800411f5221d",
+      "availability": "available",
+      "sectionsEnumerated": true,
+      "relationship": "Available product content; not evidence of parity with unavailable third-party originals."
+    },
+    {
+      "id": "HABI-guided-conversations-v2",
+      "title": "Authored guided conversations",
+      "path": "src/lib/content/guided-conversations-v2.json",
+      "version": "2",
+      "sha256": "479631a6988cb0cf0615be83f82607f21725529544264a49313b97e855a3d782",
+      "availability": "available",
+      "sectionsEnumerated": true,
+      "relationship": "Available product content; not evidence of parity with unavailable third-party originals."
+    },
+    {
+      "id": "HBG-C001",
+      "title": "TTM mental coach HTML guide",
+      "path": null,
+      "version": "unconfirmed",
+      "sha256": null,
+      "availability": "unavailable",
+      "sectionsEnumerated": false,
+      "reason": "Referenced by the Habigoal source register; original bytes not found in the supplied attachment directory or preserved Habigoal checkout. Section count, provenance and rights remain unresolved.",
+      "relatedProductSources": [
+        "HABI-coach-assessments-v1"
+      ]
+    },
+    {
+      "id": "HBG-C004",
+      "title": "CogLeague report source family",
+      "path": null,
+      "version": "unconfirmed",
+      "sha256": null,
+      "availability": "unavailable",
+      "sectionsEnumerated": false,
+      "reason": "Referenced by the Habigoal source register; original bytes not found in the supplied attachment directory or preserved Habigoal checkout. Section count, provenance and rights remain unresolved.",
+      "relatedProductSources": [
+        "HABI-coach-assessments-v1"
+      ]
+    },
+    {
+      "id": "HBG-C006",
+      "title": "Science-based mental coach knowledge base",
+      "path": null,
+      "version": "unconfirmed",
+      "sha256": null,
+      "availability": "unavailable",
+      "sectionsEnumerated": false,
+      "reason": "Referenced by the Habigoal source register; original bytes not found in the supplied attachment directory or preserved Habigoal checkout. Section count, provenance and rights remain unresolved.",
+      "relatedProductSources": [
+        "HABI-coach-assessments-v1"
+      ]
+    },
+    {
+      "id": "HBG-C007",
+      "title": "CogMap attribute guide v1",
+      "path": null,
+      "version": "unconfirmed",
+      "sha256": null,
+      "availability": "unavailable",
+      "sectionsEnumerated": false,
+      "reason": "Referenced by the Habigoal source register; original bytes not found in the supplied attachment directory or preserved Habigoal checkout. Section count, provenance and rights remain unresolved.",
+      "relatedProductSources": [
+        "HABI-coach-assessments-v1"
+      ]
+    },
+    {
+      "id": "HBG-C008",
+      "title": "CogMap detailed guide v2",
+      "path": null,
+      "version": "unconfirmed",
+      "sha256": null,
+      "availability": "unavailable",
+      "sectionsEnumerated": false,
+      "reason": "Referenced by the Habigoal source register; original bytes not found in the supplied attachment directory or preserved Habigoal checkout. Section count, provenance and rights remain unresolved.",
+      "relatedProductSources": [
+        "HABI-coach-assessments-v1"
+      ]
+    },
+    {
+      "id": "HBG-C009",
+      "title": "Attributes and position insights",
+      "path": null,
+      "version": "unconfirmed",
+      "sha256": null,
+      "availability": "unavailable",
+      "sectionsEnumerated": false,
+      "reason": "Referenced by the Habigoal source register; original bytes not found in the supplied attachment directory or preserved Habigoal checkout. Section count, provenance and rights remain unresolved.",
+      "relatedProductSources": [
+        "HABI-coach-assessments-v1"
+      ]
+    },
+    {
+      "id": "HBG-C010",
+      "title": "Position-specific profiles",
+      "path": null,
+      "version": "unconfirmed",
+      "sha256": null,
+      "availability": "unavailable",
+      "sectionsEnumerated": false,
+      "reason": "Referenced by the Habigoal source register; original bytes not found in the supplied attachment directory or preserved Habigoal checkout. Section count, provenance and rights remain unresolved.",
+      "relatedProductSources": [
+        "HABI-coach-assessments-v1"
+      ]
+    },
+    {
+      "id": "HBG-C011",
+      "title": "Bilingual terminology guides",
+      "path": null,
+      "version": "unconfirmed",
+      "sha256": null,
+      "availability": "unavailable",
+      "sectionsEnumerated": false,
+      "reason": "Referenced by the Habigoal source register; original bytes not found in the supplied attachment directory or preserved Habigoal checkout. Section count, provenance and rights remain unresolved.",
+      "relatedProductSources": [
+        "HABI-coach-assessments-v1"
+      ]
+    },
+    {
+      "id": "HBG-C012",
+      "title": "Data-to-soccer translation guide",
+      "path": null,
+      "version": "unconfirmed",
+      "sha256": null,
+      "availability": "unavailable",
+      "sectionsEnumerated": false,
+      "reason": "Referenced by the Habigoal source register; original bytes not found in the supplied attachment directory or preserved Habigoal checkout. Section count, provenance and rights remain unresolved.",
+      "relatedProductSources": [
+        "HABI-coach-assessments-v1"
+      ]
+    },
+    {
+      "id": "HBG-C013",
+      "title": "Mental-performance masterclass",
+      "path": null,
+      "version": "unconfirmed",
+      "sha256": null,
+      "availability": "unavailable",
+      "sectionsEnumerated": false,
+      "reason": "Referenced by the Habigoal source register; original bytes not found in the supplied attachment directory or preserved Habigoal checkout. Section count, provenance and rights remain unresolved.",
+      "relatedProductSources": []
+    },
+    {
+      "id": "HBG-C014",
+      "title": "Additional CogLeague report sample",
+      "path": null,
+      "version": "unconfirmed",
+      "sha256": null,
+      "availability": "unavailable",
+      "sectionsEnumerated": false,
+      "reason": "Referenced by the Habigoal source register; original bytes not found in the supplied attachment directory or preserved Habigoal checkout. Section count, provenance and rights remain unresolved.",
+      "relatedProductSources": [
+        "HABI-coach-assessments-v1"
+      ]
+    },
+    {
+      "id": "HBG-C015",
+      "title": "Duplicate coach-guide archive",
+      "path": null,
+      "version": "unconfirmed",
+      "sha256": null,
+      "availability": "unavailable",
+      "sectionsEnumerated": false,
+      "reason": "Referenced by the Habigoal source register; original bytes not found in the supplied attachment directory or preserved Habigoal checkout. Section count, provenance and rights remain unresolved.",
+      "relatedProductSources": []
+    }
+  ],
+  "sections": [
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C01",
+      "title": "Éberség",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C01.01",
+      "title": "Reakciógyorsaság és pontosság",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C01.02",
+      "title": "A reakciók egyenletessége",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C02",
+      "title": "Válaszgátlás",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C02.01",
+      "title": "Reakcióidő",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C02.02",
+      "title": "A válaszgátlás pontossága",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C02.03",
+      "title": "A jelzések megkülönböztetése",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C03",
+      "title": "Figyelem",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C03.01",
+      "title": "Válaszgyorsaság a célinger megjelenésekor",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C03.02",
+      "title": "Válaszgyorsaság a célinger hiányakor",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C03.03",
+      "title": "Figyelmi pontosság",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C03.04",
+      "title": "A koncentráció egyenletessége",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C03.05",
+      "title": "Tartós figyelem",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C03.06",
+      "title": "A figyelem hatékonysága zavaró ingerek mellett",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C03.07",
+      "title": "Tanulási gyorsaság a feladatban",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C03.08",
+      "title": "Figyelemváltás",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C03.09",
+      "title": "Mentális állóképesség a feladatban",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C03.10",
+      "title": "Válaszadási óvatosság",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C03.11",
+      "title": "A szűk és tág figyelmi fókusz aránya",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C04",
+      "title": "Munkamemória",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C04.01",
+      "title": "Memória, 1. rész: gyorsaság",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C04.02",
+      "title": "Memória, 1. rész: pontosság",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C04.03",
+      "title": "Alkalmazkodás a memóriaterheléshez",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C05",
+      "title": "Kockázatvállalás",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C05.01",
+      "title": "Korrigált erőkifejtés",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C05.02",
+      "title": "A kockázati döntések változékonysága",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C06",
+      "title": "Mérlegelés és döntéshozatal",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C06.01",
+      "title": "Döntéshozatali gyorsaság",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C06.02",
+      "title": "A döntéshozatal minősége",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C06.03",
+      "title": "Kockázathoz igazítás",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C06.04",
+      "title": "Döntési pontosság",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C06.05",
+      "title": "A döntések következetessége hiba után",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "C06.06",
+      "title": "Mérlegelési idő kockázat szerint",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "P01",
+      "title": "Nyitottság és kíváncsiság",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "P02",
+      "title": "Lelkiismeretesség és felelősségvállalás",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "P03",
+      "title": "Társas nyitottság és önkifejezés",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "P04",
+      "title": "Együttműködés, tisztelet és bizalom",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "P05",
+      "title": "Érzelmi érzékenység és aggodalomra való hajlam",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M01",
+      "title": "Feladathoz kapcsolódó önbizalom",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M02",
+      "title": "Motiváció és saját célok",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M03",
+      "title": "A figyelem tudatos irányítása",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M04",
+      "title": "Felkészülés és rutinok",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M05",
+      "title": "Célkitűzés és tervezés",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M06",
+      "title": "Segítő belső beszéd",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M07",
+      "title": "Elképzelés és gondolatbeli gyakorlás",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M08",
+      "title": "Az edzői visszajelzés megértése és használata",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M09",
+      "title": "A tanultak megtartása és alkalmazása",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M10",
+      "title": "Taktikai alkalmazkodás",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M11",
+      "title": "Fenntartható kitartás",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M12",
+      "title": "Csapatkommunikáció és együttműködés",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M13",
+      "title": "Felelősségvállalás és támogató vezetés",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "M14",
+      "title": "Önreflexió és önismeret",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "E01",
+      "title": "Az érzelmek felismerése",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "E02",
+      "title": "Az érzelmek elfogadása és tudatos választás",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "E03",
+      "title": "Energiaszint és nyomás kezelése",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "E04",
+      "title": "A frusztráció kezelése",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "E05",
+      "title": "Visszatérés a feladathoz hiba után",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "E06",
+      "title": "Kritika és értékelés fogadása",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "E07",
+      "title": "Az események rugalmas értelmezése",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "E08",
+      "title": "Talpra állás kudarcok után",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "E09",
+      "title": "Segítségkérés és kapcsolatok rendezése",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-coach-assessments-v1",
+      "sectionId": "E10",
+      "title": "Kikapcsolódás és érzelmi feltöltődés",
+      "version": "0.2.0",
+      "disposition": "mapped",
+      "destination": "src/app/coach-assessments.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-journeys-v1",
+      "sectionId": "ready",
+      "title": "Ráhangolódom",
+      "version": "1",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-journeys-v1",
+      "sectionId": "pause",
+      "title": "Adok magamnak egy pillanatot",
+      "version": "1",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-journeys-v1",
+      "sectionId": "focus",
+      "title": "Egy dologra figyelek",
+      "version": "1",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-journeys-v1",
+      "sectionId": "instructions",
+      "title": "Kisebb részekben könnyebb",
+      "version": "1",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-journeys-v1",
+      "sectionId": "confidence",
+      "title": "Kipróbálhatok valami újat",
+      "version": "1",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-journeys-v1",
+      "sectionId": "options",
+      "title": "Megnézek két lehetőséget",
+      "version": "1",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-journeys-v1",
+      "sectionId": "selfTalk",
+      "title": "A saját oldalamon állok",
+      "version": "1",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-journeys-v1",
+      "sectionId": "communication",
+      "title": "Elmondom, mi segítene",
+      "version": "1",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-journeys-v1",
+      "sectionId": "restart",
+      "title": "Újrakezdhetem",
+      "version": "1",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-journeys-v1",
+      "sectionId": "pressure",
+      "title": "Ami most rajtam múlik",
+      "version": "1",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-journeys-v1",
+      "sectionId": "sleep",
+      "title": "Helyet adok a pihenésnek",
+      "version": "1",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-journeys-v1",
+      "sectionId": "rehearsal",
+      "title": "Előre kipróbálhatom fejben",
+      "version": "1",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-practices-v2",
+      "sectionId": "focus",
+      "title": "Egy figyelmi kapaszkodó",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-practices-v2",
+      "sectionId": "sleep",
+      "title": "Nyugodtabb este",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-practices-v2",
+      "sectionId": "restart",
+      "title": "Újrakezdés egy hiba után",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-practices-v2",
+      "sectionId": "pressure",
+      "title": "Ami most rajtam múlik",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-practices-v2",
+      "sectionId": "pause",
+      "title": "Egy rövid megálló",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-practices-v2",
+      "sectionId": "rehearsal",
+      "title": "Fejben kipróbálom",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-practices-v2",
+      "sectionId": "instructions",
+      "title": "Két kis részben",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-practices-v2",
+      "sectionId": "options",
+      "title": "Két lehetőség közül",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-practices-v2",
+      "sectionId": "selfTalk",
+      "title": "Segítő mondatom",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-practices-v2",
+      "sectionId": "communication",
+      "title": "Elmondom, mi segítene",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-guided-conversations-v2",
+      "sectionId": "labels",
+      "title": "labels",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-guided-conversations-v2",
+      "sectionId": "categories",
+      "title": "categories",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-guided-conversations-v2",
+      "sectionId": "openers",
+      "title": "openers",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    },
+    {
+      "sourceId": "HABI-guided-conversations-v2",
+      "sectionId": "trees",
+      "title": "trees",
+      "version": "2",
+      "disposition": "mapped",
+      "destination": "src/app/workspace.tsx",
+      "rightsState": "unverified",
+      "reviewState": "pending",
+      "reason": "Content and entry component exist; third-party equivalence, professional approval and rights are not inferred from code presence."
+    }
+  ]
+}

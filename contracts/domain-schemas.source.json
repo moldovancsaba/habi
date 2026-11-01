@@ -1114,6 +1114,11 @@
               "type": "null"
             }
           ]
+        },
+        "correctionReason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1500
         }
       },
       "required": [
@@ -1298,6 +1303,130 @@
             "$ref": "#/$defs/Ref"
           },
           "maxItems": 200
+        },
+        "actorId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "capture": {
+          "type": "object",
+          "properties": {
+            "topicId": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "mode": {
+              "enum": [
+                "questionnaire",
+                "interview",
+                "cognitive"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "context": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "example": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "reflection": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "scenarioId": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "value": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "scale": {
+              "type": "string",
+              "maxLength": 150
+            },
+            "source": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "reference": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "answers": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "required": [
+            "topicId",
+            "mode",
+            "date"
+          ],
+          "additionalProperties": false
+        },
+        "submittedItems": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "type": "object",
+            "properties": {
+              "itemId": {
+                "type": "string"
+              },
+              "itemVersion": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "value": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 5
+              },
+              "submittedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "itemId",
+              "itemVersion",
+              "value",
+              "submittedAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "resultRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [

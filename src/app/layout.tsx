@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import "@sovereignsquad/gds-theme/styles.css";
 import "./globals.css";
+import HabiGdsProvider from "./gds-provider";
 
 export const metadata: Metadata = {
   title: "Habi · Sportolói támogatás",
@@ -10,7 +12,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="hu">
-      <body>{children}</body>
+      <body>
+        <HabiGdsProvider>{children}</HabiGdsProvider>
+      </body>
     </html>
   );
 }

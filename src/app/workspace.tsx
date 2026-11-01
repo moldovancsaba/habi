@@ -17,6 +17,7 @@ import { useContinuityDraft } from "./use-continuity-draft";
 import DailyCheckin from "./daily-checkin";
 import SharedConversations from "./shared-conversations";
 import CoachAssessments from "./coach-assessments";
+import RecordCorrection from "./record-correction";
 import CoachRecords from "./coach-records";
 import InterpretationReviews from "./interpretation-reviews";
 import KnowledgeWorkspace from "./knowledge-workspace";
@@ -92,7 +93,10 @@ type RecordItem = {
   completedAt?: string;
   revision?: number;
   answerCodes?: Array<{ metric: string; code: number }>;
-  recordedBy?: { role: Role };
+  recordedBy?: { role: Role; actorId?: string };
+  supersedesId?: string | null;
+  supersededByRef?: { id: string; revision: number } | null;
+  correctionReason?: string | null;
 };
 type PlayerData = PlayerProfile & {
   checkins: RecordItem[];
@@ -2697,8 +2701,10 @@ export default function HabiWorkspace() {
       <main className={styles.page}>
         <div className={styles.shell}>
           <header className={styles.header}>
-            <a className={styles.brand} href="/" aria-label="Habi kezdőlap">
-              <span className={styles.brandMark}>H</span>
+            <a className={styles.brand} href="/">
+              <span className={styles.brandMark} aria-hidden="true">
+                H
+              </span>
               <span>Habi</span>
             </a>
             <span className={styles.headerLabel}>
@@ -3909,6 +3915,21 @@ export default function HabiWorkspace() {
                               : "Saját megfigyelés"}
                         </p>
                         <p style={{ whiteSpace: "pre-wrap" }}>{record.text}</p>
+                        {record.recordedBy?.actorId === active.actorId &&
+                          ["diary", "observation"].includes(
+                            record.kind ?? "",
+                          ) && (
+                            <RecordCorrection
+                              playerId={selectedPlayer.id}
+                              source={{
+                                ...record,
+                                revision: record.revision ?? 1,
+                              }}
+                              csrfToken={active.csrfToken}
+                              onSaved={() => void load()}
+                            />
+                          )}
+
                         {record.occurredAt && (
                           <time dateTime={record.occurredAt}>
                             {new Date(record.occurredAt).toLocaleString(
@@ -4376,6 +4397,8 @@ export default function HabiWorkspace() {
                     records={data[0]?.records ?? []}
                     playerId={selectedPlayer.id}
                     csrfToken={active.csrfToken}
+                    actorId={active.actorId}
+                    onSaved={() => void load()}
                   />
                 )}
               {tab === "knowledge" && active.activeRole === "coach" && (

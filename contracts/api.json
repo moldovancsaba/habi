@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.5.1",
+    "version": "2.5.2",
     "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
@@ -185,7 +185,7 @@
     "/v1/assessment-attempts/{id}/answers": {
       "post": {
         "operationId": "post_v1_assessment_attempts_id_answers",
-        "description": "write; cloud-only; tenant and resource authorization required.",
+        "description": "Implemented, actor-owned durable command with tenant and player fences, Idempotency-Key and revision checking. Assessment interruption/expiry is terminal. Cancellation preserves original questions and invalidates in-flight worker leases.",
         "security": [
           {
             "sessionCookie": []
@@ -272,6 +272,16 @@
                 }
               }
             }
+          },
+          "200": {
+            "description": "Durable authorised command receipt. Retry with the same idempotency key; later state may already be terminal.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/DurableAssessmentReadDTO"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -299,7 +309,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "./schemas.json#/$defs/AssessmentAnswerInput"
+                "$ref": "./schemas.json#/$defs/DurableAssessmentAnswerInput"
               }
             }
           }
@@ -309,7 +319,7 @@
     "/v1/assessment-attempts/{id}/complete": {
       "post": {
         "operationId": "post_v1_assessment_attempts_id_complete",
-        "description": "write; cloud-only; tenant and resource authorization required.",
+        "description": "Implemented, actor-owned durable command with tenant and player fences, Idempotency-Key and revision checking. Assessment interruption/expiry is terminal. Cancellation preserves original questions and invalidates in-flight worker leases.",
         "security": [
           {
             "sessionCookie": []
@@ -318,11 +328,11 @@
         "x-domain-action": "write",
         "responses": {
           "200": {
-            "description": "Committed authorized response",
+            "description": "Durable authorised command receipt. Retry with the same idempotency key; later state may already be terminal.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/AssessmentAttempt"
+                  "$ref": "./schemas.json#/$defs/DurableAssessmentReadDTO"
                 }
               }
             }
@@ -423,7 +433,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "./schemas.json#/$defs/RevisionInput"
+                "$ref": "./schemas.json#/$defs/DurableAssessmentCompleteInput"
               }
             }
           }
@@ -433,7 +443,7 @@
     "/v1/assessment-attempts/{id}/interrupt": {
       "post": {
         "operationId": "post_v1_assessment_attempts_id_interrupt",
-        "description": "write; cloud-only; tenant and resource authorization required.",
+        "description": "Implemented, actor-owned durable command with tenant and player fences, Idempotency-Key and revision checking. Assessment interruption/expiry is terminal. Cancellation preserves original questions and invalidates in-flight worker leases.",
         "security": [
           {
             "sessionCookie": []
@@ -442,11 +452,11 @@
         "x-domain-action": "write",
         "responses": {
           "200": {
-            "description": "Committed authorized response",
+            "description": "Durable authorised command receipt. Retry with the same idempotency key; later state may already be terminal.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/AssessmentAttempt"
+                  "$ref": "./schemas.json#/$defs/DurableAssessmentReadDTO"
                 }
               }
             }
@@ -547,7 +557,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "./schemas.json#/$defs/RevisionInput"
+                "$ref": "./schemas.json#/$defs/RevisionCommandInput"
               }
             }
           }
@@ -1965,7 +1975,7 @@
     "/v1/jobs/{id}/cancel": {
       "post": {
         "operationId": "post_v1_jobs_id_cancel",
-        "description": "write; cloud-only; tenant and resource authorization required.",
+        "description": "Implemented, actor-owned durable command with tenant and player fences, Idempotency-Key and revision checking. Assessment interruption/expiry is terminal. Cancellation preserves original questions and invalidates in-flight worker leases.",
         "security": [
           {
             "sessionCookie": []
@@ -1974,11 +1984,11 @@
         "x-domain-action": "write",
         "responses": {
           "200": {
-            "description": "Committed authorized response",
+            "description": "Durable authorised command receipt. Retry with the same idempotency key; later state may already be terminal.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/JobStatus"
+                  "$ref": "./schemas.json#/$defs/CancelledJobReadDTO"
                 }
               }
             }
@@ -2079,7 +2089,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "./schemas.json#/$defs/RevisionInput"
+                "$ref": "./schemas.json#/$defs/RevisionCommandInput"
               }
             }
           }
@@ -3859,7 +3869,7 @@
     "/v1/players/{playerId}/assessment-attempts": {
       "post": {
         "operationId": "post_v1_players_playerId_assessment_attempts",
-        "description": "write; cloud-only; tenant and resource authorization required.",
+        "description": "Implemented, actor-owned durable command with tenant and player fences, Idempotency-Key and revision checking. Assessment interruption/expiry is terminal. Cancellation preserves original questions and invalidates in-flight worker leases.",
         "security": [
           {
             "sessionCookie": []
@@ -3868,11 +3878,11 @@
         "x-domain-action": "write",
         "responses": {
           "201": {
-            "description": "Committed authorized response",
+            "description": "Durable authorised command receipt. Retry with the same idempotency key; later state may already be terminal.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/AssessmentAttempt"
+                  "$ref": "./schemas.json#/$defs/DurableAssessmentReadDTO"
                 }
               }
             }
@@ -3973,7 +3983,50 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "./schemas.json#/$defs/AttemptInput"
+                "$ref": "./schemas.json#/$defs/DurableAssessmentStartInput"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "get_v1_players_playerId_assessment_attempts",
+        "description": "Coach-scoped assessment history/read. A different eligible coach observes; only the capturing actor can mutate. History returns the newest 100 attempts.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorised persisted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "./schemas.json#/$defs/DurableAssessmentReadDTO"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
               }
             }
           }
@@ -6270,7 +6323,7 @@
     "/v1/players/{playerId}/records/{id}/corrections": {
       "post": {
         "operationId": "post_v1_players_playerId_records_id_corrections",
-        "description": "correct; server-derived tenant/actor; no SSO secrets or cross-family links.",
+        "description": "Owner/role-authorised immutable correction. Original text and revision stay unchanged; one successor per record; current projections retire the old fact; exact previous publications do not publish a new revision.",
         "security": [
           {
             "sessionCookie": []
@@ -6279,11 +6332,11 @@
         "x-domain-action": "correct",
         "responses": {
           "201": {
-            "description": "Committed authorized response",
+            "description": "Linked replacement, original preserved",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "./schemas.json#/$defs/Record"
+                  "$ref": "./schemas.json#/$defs/RecordReadDTO"
                 }
               }
             }
@@ -13228,6 +13281,39 @@
           }
         },
         "summary": "Role-authorized private AI coach, source-backed player memory and explicit review"
+      }
+    },
+    "/v1/assessment-attempts/{id}": {
+      "get": {
+        "operationId": "get_v1_assessment_attempts_id",
+        "description": "Coach-scoped assessment history/read. A different eligible coach observes; only the capturing actor can mutate. History returns the newest 100 attempts.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorised persisted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/DurableAssessmentReadDTO"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },

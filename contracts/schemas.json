@@ -5905,12 +5905,38 @@
           "type": "integer",
           "minimum": 1
         },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1500
+        },
         "replacement": {
-          "$ref": "#/$defs/RecordInput"
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            },
+            "occurredAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "timeZone": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
         "expectedRevision",
+        "reason",
         "replacement"
       ],
       "additionalProperties": false
@@ -6114,6 +6140,28 @@
           "type": [
             "string",
             "null"
+          ]
+        },
+        "supersedesId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "correctionReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "supersededByRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Ref"
+            },
+            {
+              "type": "null"
+            }
           ]
         }
       },
@@ -9525,6 +9573,364 @@
       "required": [
         "text",
         "sourceRefs"
+      ],
+      "additionalProperties": false
+    },
+    "DurableAssessmentStartInput": {
+      "type": "object",
+      "properties": {
+        "topicId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "mode": {
+          "enum": [
+            "questionnaire",
+            "interview",
+            "cognitive"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "context": {
+          "type": "string",
+          "maxLength": 700
+        },
+        "example": {
+          "type": "string",
+          "maxLength": 700
+        },
+        "reflection": {
+          "type": "string",
+          "maxLength": 700
+        },
+        "scenarioId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "scale": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "reference": {
+          "type": "string",
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "topicId",
+        "mode",
+        "date"
+      ],
+      "additionalProperties": false
+    },
+    "DurableAssessmentAnswerInput": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "value": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 5
+        }
+      },
+      "required": [
+        "expectedRevision",
+        "itemId",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "DurableAssessmentCompleteInput": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "context": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "example": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "reflection": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "scenarioId": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "value": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "scale": {
+              "type": "string",
+              "maxLength": 150
+            },
+            "source": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "reference": {
+              "type": "string",
+              "maxLength": 500
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "RevisionCommandInput": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "DurableAssessmentReadDTO": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "playerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "started",
+            "completed",
+            "interrupted",
+            "expired"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "capture": {
+          "type": "object",
+          "properties": {
+            "topicId": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "mode": {
+              "enum": [
+                "questionnaire",
+                "interview",
+                "cognitive"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "context": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "example": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "reflection": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "scenarioId": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "value": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "scale": {
+              "type": "string",
+              "maxLength": 150
+            },
+            "source": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "reference": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "answers": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "required": [
+            "topicId",
+            "mode",
+            "date"
+          ],
+          "additionalProperties": false
+        },
+        "submittedItems": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "type": "object",
+            "properties": {
+              "itemId": {
+                "type": "string"
+              },
+              "itemVersion": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "value": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 5
+              },
+              "submittedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "itemId",
+              "itemVersion",
+              "value",
+              "submittedAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "actorId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resultRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "playerId",
+        "status",
+        "createdAt",
+        "expiresAt",
+        "capture",
+        "submittedItems",
+        "actorId",
+        "resultRef"
+      ],
+      "additionalProperties": false
+    },
+    "CancelledJobReadDTO": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "type": "string"
+        },
+        "reasonCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "turnId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "status",
+        "reasonCode",
+        "turnId"
       ],
       "additionalProperties": false
     }

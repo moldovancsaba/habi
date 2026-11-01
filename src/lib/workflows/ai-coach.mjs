@@ -742,6 +742,14 @@ export async function readCoachThread({
           : turn.status,
       sourceState: current ? "current" : "withdrawn",
       failureReason: job?.reasonCode ?? null,
+      cancellableJob:
+        !readOnly &&
+        job &&
+        !["succeeded", "failed", "cancelled", "awaiting_review"].includes(
+          job.status,
+        )
+          ? { id: job.id, revision: job.revision }
+          : null,
       guidance: conversation?.hasNewUserContext ? null : guidance,
       progress: coachJobProgress(
         job,

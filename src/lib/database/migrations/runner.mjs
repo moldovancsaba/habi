@@ -1,3 +1,5 @@
+import { migration as recordCorrectionLineage } from "./021-record-correction-lineage.mjs";
+import { migration as durableAssessmentAttempts } from "./020-durable-assessment-attempts.mjs";
 import { migrationChecksums } from "./checksums.mjs";
 import { migration as initialSchema } from "./001-initial-schema.mjs";
 import { migration as authTransactions } from "./002-auth-transactions.mjs";
@@ -41,6 +43,8 @@ const MIGRATIONS = [
   playerContinuityDrafts,
   contextualAiCoach,
   coachMessageUnderstanding,
+  durableAssessmentAttempts,
+  recordCorrectionLineage,
 ];
 
 /** @param {string[] | null} migrationIds */

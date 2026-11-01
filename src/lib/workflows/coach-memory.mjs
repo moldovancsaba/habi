@@ -286,6 +286,21 @@ export async function collectCoachSources(
     .collection("publications")
     .find({ tenantId: principal.tenantId, playerId, status: "active" }, options)
     .toArray();
+  const supersededRecords = new Set(
+    (
+      await db
+        .collection("records")
+        .find(
+          {
+            tenantId: principal.tenantId,
+            playerId,
+            supersedesId: { $type: "string" },
+          },
+          { ...options, projection: { supersedesId: 1 } },
+        )
+        .toArray()
+    ).map((r) => r.supersedesId),
+  );
   const sources = [];
   for (const collection of collections) {
     for await (const doc of db
@@ -298,7 +313,10 @@ export async function collectCoachSources(
         id: doc.id,
         revision: doc.revision,
         span: null,
-        kind: collection,
+        kind:
+          collection === "records" && supersededRecords.has(doc.id)
+            ? "retired_records"
+            : collection,
         eventKind:
           collection === "records"
             ? doc.kind
@@ -525,6 +543,7 @@ export function selectRelevantSources(sources, question, anchor, limit = 18) {
   ].slice(0, limit);
 }
 export function buildCoachProfile(sources, events, now = new Date()) {
+  sources = sources.filter(coachContextEligible);
   const corrections = new Map(
     events.filter((e) => e.kind === "correction").map((e) => [e.targetId, e]),
   );

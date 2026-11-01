@@ -1,0 +1,922 @@
+{
+  "version": 1,
+  "apiVersion": "2.5.2",
+  "baseline": "673d6c7",
+  "operations": [
+    {
+      "operationId": "get_auth_callback",
+      "method": "GET",
+      "path": "/api/oauth/callback",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_auth_login",
+      "method": "GET",
+      "path": "/auth/login",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_auth_logout",
+      "method": "POST",
+      "path": "/auth/logout",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_assessment_attempts_id_answers",
+      "method": "POST",
+      "path": "/v1/assessment-attempts/{id}/answers",
+      "state": "implemented",
+      "reason": "Runtime method persists the authorised durable workflow; functional acceptance is tracked in the owning issue.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/576"
+    },
+    {
+      "operationId": "post_v1_assessment_attempts_id_complete",
+      "method": "POST",
+      "path": "/v1/assessment-attempts/{id}/complete",
+      "state": "implemented",
+      "reason": "Runtime method persists the authorised durable workflow; functional acceptance is tracked in the owning issue.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/576"
+    },
+    {
+      "operationId": "post_v1_assessment_attempts_id_interrupt",
+      "method": "POST",
+      "path": "/v1/assessment-attempts/{id}/interrupt",
+      "state": "implemented",
+      "reason": "Runtime method persists the authorised durable workflow; functional acceptance is tracked in the owning issue.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/576"
+    },
+    {
+      "operationId": "get_v1_checkin_results_id",
+      "method": "GET",
+      "path": "/v1/checkin-results/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_checkin_sessions_id",
+      "method": "GET",
+      "path": "/v1/checkin-sessions/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_checkin_sessions_id_answers",
+      "method": "POST",
+      "path": "/v1/checkin-sessions/{id}/answers",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_checkin_sessions_id_complete",
+      "method": "POST",
+      "path": "/v1/checkin-sessions/{id}/complete",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_checkin_sessions_id_interrupt",
+      "method": "POST",
+      "path": "/v1/checkin-sessions/{id}/interrupt",
+      "state": "deprecated",
+      "reason": "Use durable per-answer persistence and partial completion, or leave the open session for resumption. No explicit interrupt endpoint is served.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_extractions_id",
+      "method": "GET",
+      "path": "/v1/extractions/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_extractions_id_review",
+      "method": "POST",
+      "path": "/v1/extractions/{id}/review",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_follow_ups_id",
+      "method": "GET",
+      "path": "/v1/follow-ups/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_handoffs",
+      "method": "POST",
+      "path": "/v1/handoffs",
+      "state": "pending",
+      "reason": "Specified but not implemented. Linked delivery issue owns the real workflow; this disposition does not claim availability.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/583"
+    },
+    {
+      "operationId": "post_v1_handoffs_id_acknowledge",
+      "method": "POST",
+      "path": "/v1/handoffs/{id}/acknowledge",
+      "state": "pending",
+      "reason": "Specified but not implemented. Linked delivery issue owns the real workflow; this disposition does not claim availability.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/583"
+    },
+    {
+      "operationId": "get_v1_interpretations_id",
+      "method": "GET",
+      "path": "/v1/interpretations/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_interpretations_id_review",
+      "method": "POST",
+      "path": "/v1/interpretations/{id}/review",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_jobs_id",
+      "method": "GET",
+      "path": "/v1/jobs/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_jobs_id_cancel",
+      "method": "POST",
+      "path": "/v1/jobs/{id}/cancel",
+      "state": "implemented",
+      "reason": "Runtime method persists the authorised durable workflow; functional acceptance is tracked in the owning issue.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/580"
+    },
+    {
+      "operationId": "post_v1_knowledge_candidates",
+      "method": "POST",
+      "path": "/v1/knowledge-candidates",
+      "state": "replacement",
+      "reason": "Use the existing advertised replacement operation; old path is not served.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/589",
+      "replacement": "POST /v1/knowledge"
+    },
+    {
+      "operationId": "post_v1_knowledge_candidates_id_review",
+      "method": "POST",
+      "path": "/v1/knowledge-candidates/{id}/review",
+      "state": "replacement",
+      "reason": "Use the existing advertised replacement operation; old path is not served.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/587",
+      "replacement": "POST /v1/knowledge/{id}/review"
+    },
+    {
+      "operationId": "post_v1_knowledge_versions_id_withdraw",
+      "method": "POST",
+      "path": "/v1/knowledge-versions/{id}/withdraw",
+      "state": "pending",
+      "reason": "Specified but not implemented. Linked delivery issue owns the real workflow; this disposition does not claim availability.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/587"
+    },
+    {
+      "operationId": "get_v1_materials_id",
+      "method": "GET",
+      "path": "/v1/materials/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_me",
+      "method": "GET",
+      "path": "/v1/me",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_me_scope",
+      "method": "POST",
+      "path": "/v1/me/scope",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_memberships",
+      "method": "POST",
+      "path": "/v1/memberships",
+      "state": "deprecated",
+      "reason": "D-HG-016 replaces role onboarding with SSO app-admin invitations and membership revocation; these historical direct-provisioning paths must not be called.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_memberships_id_revoke",
+      "method": "POST",
+      "path": "/v1/memberships/{id}/revoke",
+      "state": "deprecated",
+      "reason": "D-HG-016 replaces role onboarding with SSO app-admin invitations and membership revocation; these historical direct-provisioning paths must not be called.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_parents",
+      "method": "POST",
+      "path": "/v1/parents",
+      "state": "deprecated",
+      "reason": "D-HG-016 replaces role onboarding with SSO app-admin invitations and membership revocation; these historical direct-provisioning paths must not be called.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_plans_id",
+      "method": "GET",
+      "path": "/v1/plans/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_plans_id_acceptance",
+      "method": "POST",
+      "path": "/v1/plans/{id}/acceptance",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_plans_id_state",
+      "method": "POST",
+      "path": "/v1/plans/{id}/state",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_players",
+      "method": "POST",
+      "path": "/v1/players",
+      "state": "deprecated",
+      "reason": "D-HG-016 replaces role onboarding with SSO app-admin invitations and membership revocation; these historical direct-provisioning paths must not be called.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players",
+      "method": "GET",
+      "path": "/v1/players",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players_playerId",
+      "method": "GET",
+      "path": "/v1/players/{playerId}",
+      "state": "deprecated",
+      "reason": "Current clients use the authorised player/publication lists. No exact single-resource runtime route is served; this is not asserted as equivalent contract semantics.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_players_playerId_assessment_attempts",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/assessment-attempts",
+      "state": "implemented",
+      "reason": "Runtime method persists the authorised durable workflow; functional acceptance is tracked in the owning issue.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/576"
+    },
+    {
+      "operationId": "get_v1_players_playerId_checkin_results",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/checkin-results",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_players_playerId_checkin_sessions",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/checkin-sessions",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players__playerId__checkin_sessions",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/checkin-sessions",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_players_playerId_feedback",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/feedback",
+      "state": "pending",
+      "reason": "Specified but not implemented. Linked delivery issue owns the real workflow; this disposition does not claim availability.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/585"
+    },
+    {
+      "operationId": "post_v1_players_playerId_follow_ups",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/follow-ups",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players_playerId_follow_ups",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/follow-ups",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_players_playerId_interpretations",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/interpretations",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players_playerId_interpretations",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/interpretations",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_players_playerId_materials",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/materials",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players_playerId_materials",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/materials",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_players_playerId_plans",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/plans",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players_playerId_plans",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/plans",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players_playerId_publications",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/publications",
+      "state": "replacement",
+      "reason": "Use the existing advertised replacement operation; old path is not served.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572",
+      "replacement": "GET /v1/publications"
+    },
+    {
+      "operationId": "post_v1_players_playerId_records",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/records",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players_playerId_records",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/records",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players_playerId_records_id",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/records/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_players_playerId_records_id_corrections",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/records/{id}/corrections",
+      "state": "implemented",
+      "reason": "Authorised immutable correction handler with unique successor and transactional activity.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/578"
+    },
+    {
+      "operationId": "get_v1_players_playerId_reports",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/reports",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players_playerId_threads",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/threads",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_players__playerId__threads",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/threads",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_players_playerId_uploads",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/uploads",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_privacy_requests",
+      "method": "POST",
+      "path": "/v1/privacy-requests",
+      "state": "pending",
+      "reason": "Specified but not implemented. Linked delivery issue owns the real workflow; this disposition does not claim availability.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/597"
+    },
+    {
+      "operationId": "get_v1_privacy_requests_id",
+      "method": "GET",
+      "path": "/v1/privacy-requests/{id}",
+      "state": "pending",
+      "reason": "Specified but not implemented. Linked delivery issue owns the real workflow; this disposition does not claim availability.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/597"
+    },
+    {
+      "operationId": "post_v1_publications",
+      "method": "POST",
+      "path": "/v1/publications",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_publications",
+      "method": "GET",
+      "path": "/v1/publications",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_publications_id",
+      "method": "GET",
+      "path": "/v1/publications/{id}",
+      "state": "deprecated",
+      "reason": "Current clients use the authorised player/publication lists. No exact single-resource runtime route is served; this is not asserted as equivalent contract semantics.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_publications__id__withdraw",
+      "method": "POST",
+      "path": "/v1/publications/{id}/withdraw",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_reports_id",
+      "method": "GET",
+      "path": "/v1/reports/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_reports_id_download",
+      "method": "GET",
+      "path": "/v1/reports/{id}/download",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_reports_id_extractions",
+      "method": "POST",
+      "path": "/v1/reports/{id}/extractions",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_reports_id_extractions",
+      "method": "GET",
+      "path": "/v1/reports/{id}/extractions",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_threads_id",
+      "method": "GET",
+      "path": "/v1/threads/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_threads_id_close",
+      "method": "POST",
+      "path": "/v1/threads/{id}/close",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_threads_id_messages",
+      "method": "POST",
+      "path": "/v1/threads/{id}/messages",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_threads_id_messages",
+      "method": "GET",
+      "path": "/v1/threads/{id}/messages",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_threads_id_reopen",
+      "method": "POST",
+      "path": "/v1/threads/{id}/reopen",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_timeline",
+      "method": "GET",
+      "path": "/v1/timeline",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_uploads_id",
+      "method": "GET",
+      "path": "/v1/uploads/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_uploads_id_abort",
+      "method": "POST",
+      "path": "/v1/uploads/{id}/abort",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "put_v1_uploads_id_chunks_index",
+      "method": "PUT",
+      "path": "/v1/uploads/{id}/chunks/{index}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_uploads_id_finalize",
+      "method": "POST",
+      "path": "/v1/uploads/{id}/finalize",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_worker_jobs_claim",
+      "method": "POST",
+      "path": "/v1/worker/jobs/claim",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_worker_jobs_id_cancel",
+      "method": "POST",
+      "path": "/v1/worker/jobs/{id}/cancel",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_worker_jobs_id_complete",
+      "method": "POST",
+      "path": "/v1/worker/jobs/{id}/complete",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_worker_jobs_id_content",
+      "method": "GET",
+      "path": "/v1/worker/jobs/{id}/content",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_worker_jobs_id_context",
+      "method": "GET",
+      "path": "/v1/worker/jobs/{id}/context",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_worker_jobs_id_defer",
+      "method": "POST",
+      "path": "/v1/worker/jobs/{id}/defer",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_worker_jobs_id_fail",
+      "method": "POST",
+      "path": "/v1/worker/jobs/{id}/fail",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_worker_jobs_id_heartbeat",
+      "method": "POST",
+      "path": "/v1/worker/jobs/{id}/heartbeat",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_worker_jobs_id_scan",
+      "method": "POST",
+      "path": "/v1/worker/jobs/{id}/scan",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_auth_legacy_handoff",
+      "method": "GET",
+      "path": "/api/auth/legacy-handoff",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_auth_legacy_handoff_accept",
+      "method": "POST",
+      "path": "/api/auth/legacy-handoff/accept",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_identity_activate_role",
+      "method": "POST",
+      "path": "/api/identity/activate-role",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_identity_role_requests",
+      "method": "GET",
+      "path": "/api/identity/role-requests",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_identity_role_requests",
+      "method": "POST",
+      "path": "/api/identity/role-requests",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_admin_role_requests",
+      "method": "GET",
+      "path": "/api/admin/role-requests",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_admin_role_request_invitation",
+      "method": "POST",
+      "path": "/api/admin/role-requests",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players_playerId_drafts_draftKey",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/drafts/{draftKey}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "put_v1_players_playerId_drafts_draftKey",
+      "method": "PUT",
+      "path": "/v1/players/{playerId}/drafts/{draftKey}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "delete_v1_players_playerId_drafts_draftKey",
+      "method": "DELETE",
+      "path": "/v1/players/{playerId}/drafts/{draftKey}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players_playerId_monthly_reflections",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/monthly-reflections",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_players_playerId_monthly_reflections",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/monthly-reflections",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_players__playerId__coach_assessments",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/coach-assessments",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players__playerId__sources__id",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/sources/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_knowledge",
+      "method": "GET",
+      "path": "/v1/knowledge",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_knowledge",
+      "method": "POST",
+      "path": "/v1/knowledge",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "post_v1_knowledge__id__review",
+      "method": "POST",
+      "path": "/v1/knowledge/{id}/review",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players__playerId__participants",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/participants",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "coach_get_ai-coach_list",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/ai-coach",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "coach_post_ai-coach_list",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/ai-coach",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "coach_get_ai-coach_item",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/ai-coach/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "coach_get_ai-profile_list",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/ai-profile",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "coach_post_ai-profile_list",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/ai-profile",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "coach_get_ai-reviews_list",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/ai-reviews",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "coach_post_ai-reviews_item",
+      "method": "POST",
+      "path": "/v1/players/{playerId}/ai-reviews/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "coach_get_ai-sources_item",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/ai-sources/{id}",
+      "state": "implemented",
+      "reason": "Runtime route exports the documented method. Handler existence does not certify business acceptance.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/572"
+    },
+    {
+      "operationId": "get_v1_players_playerId_assessment_attempts",
+      "method": "GET",
+      "path": "/v1/players/{playerId}/assessment-attempts",
+      "state": "implemented",
+      "reason": "Runtime read adapter for durable coach assessment state.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/576"
+    },
+    {
+      "operationId": "get_v1_assessment_attempts_id",
+      "method": "GET",
+      "path": "/v1/assessment-attempts/{id}",
+      "state": "implemented",
+      "reason": "Runtime read adapter for durable coach assessment state.",
+      "ownerIssue": "https://github.com/moldovancsaba/habi/issues/576"
+    }
+  ]
+}

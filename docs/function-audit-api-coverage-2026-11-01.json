@@ -1,0 +1,120 @@
+{
+  "auditDate": "2026-11-01",
+  "commit": "673d6c754e87de9f09bbdac2d1a1c7de0d68ef28",
+  "method": "Static OpenAPI path/method comparison against Next route files; absence is not proof of missing capability when a replacement route exists. No authenticated production actions performed.",
+  "documentedOperations": 112,
+  "missingRouteFileOperations": [
+    {
+      "method": "POST",
+      "path": "/v1/assessment-attempts/{id}/answers",
+      "expectedHandler": "src/app/api/v1/assessment-attempts/[id]/answers/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/assessment-attempts/{id}/complete",
+      "expectedHandler": "src/app/api/v1/assessment-attempts/[id]/complete/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/assessment-attempts/{id}/interrupt",
+      "expectedHandler": "src/app/api/v1/assessment-attempts/[id]/interrupt/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/checkin-sessions/{id}/interrupt",
+      "expectedHandler": "src/app/api/v1/checkin-sessions/[id]/interrupt/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/handoffs",
+      "expectedHandler": "src/app/api/v1/handoffs/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/handoffs/{id}/acknowledge",
+      "expectedHandler": "src/app/api/v1/handoffs/[id]/acknowledge/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/jobs/{id}/cancel",
+      "expectedHandler": "src/app/api/v1/jobs/[id]/cancel/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/knowledge-candidates",
+      "expectedHandler": "src/app/api/v1/knowledge-candidates/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/knowledge-candidates/{id}/review",
+      "expectedHandler": "src/app/api/v1/knowledge-candidates/[id]/review/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/knowledge-versions/{id}/withdraw",
+      "expectedHandler": "src/app/api/v1/knowledge-versions/[id]/withdraw/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/memberships",
+      "expectedHandler": "src/app/api/v1/memberships/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/memberships/{id}/revoke",
+      "expectedHandler": "src/app/api/v1/memberships/[id]/revoke/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/parents",
+      "expectedHandler": "src/app/api/v1/parents/route.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/players/{playerId}",
+      "expectedHandler": "src/app/api/v1/players/[playerId]/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/players/{playerId}/assessment-attempts",
+      "expectedHandler": "src/app/api/v1/players/[playerId]/assessment-attempts/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/players/{playerId}/feedback",
+      "expectedHandler": "src/app/api/v1/players/[playerId]/feedback/route.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/players/{playerId}/publications",
+      "expectedHandler": "src/app/api/v1/players/[playerId]/publications/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/players/{playerId}/records/{id}/corrections",
+      "expectedHandler": "src/app/api/v1/players/[playerId]/records/[id]/corrections/route.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/privacy-requests",
+      "expectedHandler": "src/app/api/v1/privacy-requests/route.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/privacy-requests/{id}",
+      "expectedHandler": "src/app/api/v1/privacy-requests/[id]/route.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/publications/{id}",
+      "expectedHandler": "src/app/api/v1/publications/[id]/route.ts"
+    }
+  ],
+  "methodExportNotFound": [
+    {
+      "method": "POST",
+      "path": "/v1/players",
+      "handler": "src/app/api/v1/players/route.ts"
+    }
+  ]
+}

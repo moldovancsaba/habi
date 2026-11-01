@@ -90,6 +90,7 @@ const rolePaths: Record<HabiRole, string> = {
   parent: "M21 11a9 8 0 0 1-13 7l-5 3 1-6A8 8 0 1 1 21 11",
 };
 const labels: Record<string, string> = {
+  "record.correction": "Naplóbejegyzés pontosítása",
   "report.activity": "Felmérési dokumentum",
   "extraction.activity": "Riportadatok és ellenőrzés",
   "assessment_result.activity": "Felmérési eredmény",

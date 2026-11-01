@@ -299,7 +299,7 @@ export async function readTimeline({
       submittedAt: item.submittedAt,
       actorRole: item.recordedBy.role,
       sourceKind: item.source.kind,
-      kind: item.kind,
+      kind: item.supersedesId ? "record.correction" : item.kind,
       resourceRef: { id: item.id, revision: item.revision },
       processId: item.sessionId ?? item.id,
       replyTo: null,

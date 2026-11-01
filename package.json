@@ -15,9 +15,13 @@
     "start:test": "next start --hostname 127.0.0.1",
     "db:test:start": "node scripts/test-mongodb.mjs start",
     "db:test:stop": "node scripts/test-mongodb.mjs stop",
-    "test:workflow:local": "node scripts/database-reset-test.mjs && node scripts/database-migrate.mjs && node scripts/database-seed.mjs && node scripts/test-workflow-local.mjs"
+    "test:workflow:local": "node scripts/database-reset-test.mjs && node scripts/database-migrate.mjs && node scripts/database-seed.mjs && node scripts/test-workflow-local.mjs",
+    "test:api-coverage": "node scripts/check-api-coverage.mjs",
+    "test:source-content": "node scripts/verify-source-content.mjs",
+    "test:gds-audit": "node scripts/check-audited-gds.mjs"
   },
   "dependencies": {
+    "@sovereignsquad/gds": "6.8.0",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "mongodb": "^7.7.0",
@@ -28,9 +32,12 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.3",
+    "@sovereignsquad/gds-a11y": "6.8.0",
+    "@sovereignsquad/gds-compliance": "6.8.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "axe-core": "4.14.0",
     "typescript": "^5"
   }
 }

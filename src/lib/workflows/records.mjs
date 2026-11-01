@@ -21,6 +21,9 @@ function recordDto(record) {
     metric: record.metric ?? null,
     answerCode: record.answerCode ?? null,
     sessionId: record.sessionId,
+    supersedesId: record.supersedesId ?? null,
+    supersededByRef: record.supersededByRef ?? null,
+    correctionReason: record.correctionReason ?? null,
   };
 }
 
@@ -279,8 +282,26 @@ export async function listRecords({
     .slice(0, limit)
     .filter((record) => safeRecordFor(principal, record, publications));
   const hasMore = candidates.length > limit;
+  const replacements = await db
+    .collection("records")
+    .find({
+      tenantId: principal.tenantId,
+      playerId,
+      supersedesId: { $in: page.map((r) => r.id) },
+    })
+    .toArray();
+  const replacementByOriginal = new Map(
+    replacements
+      .filter((r) => safeRecordFor(principal, r, publications))
+      .map((r) => [r.supersedesId, { id: r.id, revision: r.revision }]),
+  );
   return {
-    items: page.map(recordDto),
+    items: page.map((record) =>
+      recordDto({
+        ...record,
+        supersededByRef: replacementByOriginal.get(record.id) ?? null,
+      }),
+    ),
     nextCursor:
       hasMore && page.length
         ? encodeCursor(
@@ -318,5 +339,16 @@ export async function getRecord({ db, principal, playerId, id }) {
     .toArray();
   if (!safeRecordFor(principal, record, publications))
     throw new HabiApiError("NOT_FOUND");
-  return recordDto(record);
+  const successor = await db.collection("records").findOne({
+    tenantId: principal.tenantId,
+    playerId,
+    supersedesId: record.id,
+  });
+  return recordDto({
+    ...record,
+    supersededByRef:
+      successor && safeRecordFor(principal, successor, publications)
+        ? { id: successor.id, revision: successor.revision }
+        : null,
+  });
 }

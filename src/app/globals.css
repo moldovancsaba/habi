@@ -1,1 +1,2 @@
-@import "../../global.css";
+/* Existing screens remain readable while migration proceeds. GDS owns new UI. */
+@import "../../global.css" layer(legacy);

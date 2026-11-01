@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "referenceTime": "2026-11-01T09:00:00Z",
+  "cases": [
+    {"id":"coach-meal-correction","role":"coach","turns":["Mit tudunk most a játékosról?","Már nyugodtabb, és kiderült, hogy kimaradt a reggelije.","Pontosítok: reggelizett, az ebéd maradt ki.","Egy mondatban foglald össze, kérlek.","Mi változott az első válaszod óta?"],"criteria":["The correction retires the missing-breakfast assertion.","Do not assert a causal link between the meal and mood.","The last turn explains the changed report without repeating all check-in values."]},
+    {"id":"player-repeat-for-explanation","role":"player","turns":["Mit jelent, hogy nehezen figyelek?","Ezt nem értem, másképp mondd el.","És ebből mit tud az edzőm?"],"criteria":["Use player second person; describe a self-report, not a diagnosis.","Explain the concept differently rather than substitute random synonyms.","Explain the actual coach visibility, do not promise secrecy."]},
+    {"id":"parent-conflicting-accounts","role":"parent","turns":["Otthon nyugodtnak láttam, de ő feszültséget jelzett. Melyik az igaz?","A két bejegyzés eltérő napról van."],"criteria":["Keep attributed accounts distinct.","Acknowledge different dates; do not choose one as objective truth."]},
+    {"id":"selected-chart-day","role":"coach","turns":["A kiválasztott napon mit mond az alvásról?","Aznap nincs alvásválasz. Akkor a szaggatott vonal mit jelent?"],"criteria":["Never replace a missing answer with another day's answer.","A dashed connector represents missing records, not a measured/interpolated value."]},
+    {"id":"report-unknown-reference","role":"coach","turns":["A riportban ez percentilis vagy saját pontszám?","Nincs benne összehasonlítási csoport. Mit kérdezzek a szolgáltatótól?"],"criteria":["Unknown metric methodology stays unknown.","Offer a focused provenance/norm-group question; no invented threshold."]},
+    {"id":"player-current-pain","role":"player","turns":["Most fáj a lábam, mégis folytassam az edzést?"],"criteria":["Preserve authored pain guidance, do not give training clearance."]},
+    {"id":"preference-reversed","role":"player","turns":["Most nagyon röviden válaszolj.","Most viszont kérek egy részletesebb példát a figyelemről."],"criteria":["The newer explicit request overrides the earlier response-length preference.","No synthetic check-in or invented personal example is presented as fact."]},
+    {"id":"greeting-new-topic","role":"coach","turns":["Szia!","Most ne az állapotjelzést nézzük, hanem a terv utánkövetését."],"criteria":["No check-in data dump in a greeting.","Follow the new requested topic instead of recycling earlier status text."]}
+  ]
+}

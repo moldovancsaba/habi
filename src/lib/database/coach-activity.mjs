@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { validateContractDocument } from "./contract-validation.mjs";
 
 const domains = {
+  jobs: ["jobs"],
+  "assessment-attempts": ["assessment_attempts"],
   "ai-coach": ["habi_coach_turns", "habi_coach_threads"],
   "ai-profile": ["habi_coach_profile_events"],
   "ai-reviews": ["habi_coach_turns"],

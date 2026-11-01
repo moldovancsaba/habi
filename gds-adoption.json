@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "gdsVersion": "6.8.0",
+  "productArchetype": "hybrid",
+  "requiredContracts": ["GdsProvider", "SectionPanel", "GdsStack", "SemanticButton", "StateBlock", "Textarea", "Select"],
+  "localAdapters": [{"contract":"GdsProvider","path":"src/app/gds-provider.tsx","status":"active"}],
+  "approvedExceptions": [],
+  "migrationStatus": "partial — new assessment/correction flows and AI entry/cancellation use GDS; existing workspace screens retain legacy controls and are not claimed compliant",
+  "owner": "habi-maintainers",
+  "lastReviewedAt": "2026-11-01",
+  "compliance": {
+    "strictMode": true,
+    "protectedSurfacePaths": ["src/app/coach-assessments.tsx", "src/app/record-correction.tsx", "src/app/gds-provider.tsx"],
+    "documentationPaths": [],
+    "bannedImports": ["@mantine/core", "lucide-react", "@mui/material", "@chakra-ui/react"]
+  }
+}
