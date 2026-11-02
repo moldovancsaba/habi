@@ -44,6 +44,7 @@ function bounds(at, id, stream, position, from, upper) {
 
 const fields = {
   records: [
+    "text",
     "submittedAt",
     "kind",
     "sharingClass",

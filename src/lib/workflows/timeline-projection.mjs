@@ -77,6 +77,9 @@ export function projectTimelineNodes({
       actorRole: item.recordedBy.role,
       sourceKind: item.source.kind,
       kind: item.supersedesId ? "record.correction" : item.kind,
+      ...(typeof item.text === "string"
+        ? { summary: item.text.slice(0, 4000) }
+        : {}),
       resourceRef: { id: item.id, revision: item.revision },
       processId: item.sessionId ?? item.id,
       replyTo: null,

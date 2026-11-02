@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { adaptTimelinePage } from "../src/lib/client/timeline-view-model.mjs";
+import {
+  adaptTimelinePage,
+  timelineDirectSource,
+} from "../src/lib/client/timeline-view-model.mjs";
 
 function page(overrides = {}) {
   return {
@@ -112,4 +115,43 @@ test("adapter rejects malformed page/event data instead of dropping records", ()
       ),
     { message: "TIMELINE_PAGE_INVALID" },
   );
+});
+
+test("older record and check-in AI context uses the exact event resource without a recent-record cache", () => {
+  const event = {
+    ...page().nodes[0],
+    id: "synthetic-event",
+    revision: 99,
+    resourceRef: { id: "original-source", revision: 4 },
+  };
+  for (const kind of [
+    "diary",
+    "observation",
+    "checkin_answer",
+    "record.correction",
+  ]) {
+    assert.deepEqual(timelineDirectSource({ ...event, kind }), {
+      kind: "record",
+      id: "original-source",
+      revision: 4,
+    });
+  }
+  assert.deepEqual(
+    timelineDirectSource({ ...event, kind: "checkin.completed" }),
+    { kind: "checkin_result", id: "original-source", revision: 4 },
+  );
+  assert.equal(timelineDirectSource({ ...event, kind: "coach.answer" }), null);
+});
+
+test("invalid exact timeline source refs fail instead of substituting general page context", () => {
+  for (const resourceRef of [
+    null,
+    { id: "../other", revision: 1 },
+    { id: "record", revision: 0 },
+  ]) {
+    assert.throws(
+      () => timelineDirectSource({ ...page().nodes[0], resourceRef }),
+      /TIMELINE_EVENT_INVALID/,
+    );
+  }
 });

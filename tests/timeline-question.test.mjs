@@ -620,6 +620,7 @@ function diary(id, submittedAt = tiedAt) {
     id,
     kind: "diary",
     submittedAt,
+    text: `Szintetikus bejegyzés ${id}`,
     sharingClass: "player_direct",
     source: { kind: "self" },
     recordedBy: { actorId: "player-actor", role: "player" },
@@ -672,6 +673,9 @@ test(
         .reverse(),
     );
     assert.ok(nodes.every((n) => !n.id.includes("foreign")));
+    assert.ok(
+      nodes.every((n) => n.summary === `Szintetikus bejegyzés ${n.id}`),
+    );
   },
 );
 

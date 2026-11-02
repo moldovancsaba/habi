@@ -1,6 +1,6 @@
 # Timeline pagination and recovery
 
-Delivery issue: [HABI-AUDIT-34 / #581](https://github.com/moldovancsaba/habi/issues/581). API contract: **2.5.3**. This change owns the existing read API and its consumer contract; it introduces no screen, athlete scoring, model change or player-data mutation.
+Delivery issue: [HABI-AUDIT-34 / #581](https://github.com/moldovancsaba/habi/issues/581). API contract: **2.5.3**. This change owns the existing read API and its consumer contract; it introduces no new screen/control, athlete scoring, model change or player-data mutation.
 
 ## Runtime and ordering
 
@@ -13,6 +13,8 @@ For each source, at most the first `limit + 1` eligible events can contribute to
 AI questions use their creation time; answers use completion time; failed/cancelled outcomes use the job outcome time. Plan current states and operational documents use update time, while each plan decision uses its own decision time. An answer/decision remains discoverable inside the requested window even when its parent was created months earlier. Original resource, process, reply and derivation references remain intact.
 
 Current canonical resources suppress only the matching revision's activity-ledger row. This deduplication occurs against the scoped database before limiting, rather than against the page's incidental sample. Prior ledger transitions remain available on later pages. Missing collections contribute no events; a dependency error is not treated as a missing collection or empty history.
+
+Authorised record text is carried in the existing optional event summary, bounded to 4,000 characters. Existing cards use GDS `BodyText` for details and avoid repeating the same text from both the event and the record cache. Ordinary record/check-in AI entry uses the event's exact resource ID/revision, rather than depending on the workspace's newest-50 record cache or silently falling back to general page context. A retired/ineligible source can still be rejected by the existing AI source guard; this change does not resurrect it.
 
 ## Filters and visibility
 
@@ -57,9 +59,9 @@ npm run typecheck
 npm run build
 ```
 
-Tests create uniquely named `_test` databases and drop only those databases. The timeline tests now use real Mongo rather than an in-memory imitation that could not exercise aggregation bounds. Coverage includes the existing 245-record case, 650 equal-timestamp records, 380 mixed-source projections, old parent/new outcome windows, kind filtering with sparse Hungarian feedback, actor/role/tenant/player/access/window binding, old/tampered/expired cursors, missing collections, publication withdrawal, later/backdated arrivals, equal IDs across collections, query fanout/index use and explicit timeout errors.
+Tests create uniquely named `_test` databases and drop only those databases. The timeline tests now use real Mongo rather than an in-memory imitation that could not exercise aggregation bounds. Coverage includes the existing 245-record case, 650 equal-timestamp records, 380 mixed-source projections, old parent/new outcome windows, kind filtering with sparse Hungarian feedback, actor/role/tenant/player/access/window binding, old/tampered/expired cursors, missing collections, publication withdrawal, later/backdated arrivals, equal IDs across collections, query fanout/index use and explicit timeout errors. Consumer tests pin exact record/check-in resource references independently of node revisions or recent-record cache availability, and reject malformed references.
 
-The first focused local run on the existing localhost replica set measured **12 ms** for a 13-item native page, **15 source queries**, at most **14 rows returned per source**, and **27 record documents examined**. These are reproducible test diagnostics for that environment, not production timing or a language-quality result. Full current application regression: **275 passed, zero failed or skipped** before release verification; exact CI/release evidence is attached to #581.
+The first focused local run on the existing localhost replica set measured **12 ms** for a 13-item native page, **15 source queries**, at most **14 rows returned per source**, and **27 record documents examined**. These are reproducible test diagnostics for that environment, not production timing or a language-quality result. Full current application regression: **277 passed, zero failed or skipped** before release verification; exact CI/release evidence is attached to #581.
 
 GitHub Actions also runs the entire application suite against an ephemeral `mongo:8` replica set on loopback, then lint/types/build. Its test step sources the checked-in synthetic `.env.test.example`, matching the documented local invocation and supplying the existing fake worker identity. Test flags do not carry into the separate build step. Bootstrap accepts only GitHub CI and a fixed local address; it cannot use production connection strings. The workflow removes the container afterwards and has a ten-minute job timeout. The independent contract/source/GDS integrity job remains in place. All packages continue to install from npmjs without package-registry credentials.
 
@@ -67,7 +69,7 @@ The database regression job pins the Ubuntu 22.04 runner lane. The first remote 
 
 `npm run typecheck` runs `next typegen` before TypeScript, as required by the installed Next.js CLI contract. Clean CI checkouts therefore generate `RouteContext` without relying on a previous local build's ignored `.next` files.
 
-Authenticated localhost acceptance also traversed all **650** equal-time records through **29 HTTP pages** (page size 23), checked private/no-store, changed-filter 410 and first-page recovery, and verified anonymous 401. The existing 390px mobile timeline reached all 650 records with **12 load-more actions**, no duplicate event rows, no browser exceptions and no horizontal overflow. Its unique synthetic database and test server were removed afterwards. No new UI was introduced and no whole-product accessibility certification is claimed.
+Authenticated localhost acceptance also traversed all **650** equal-time records through **29 HTTP pages** (page size 23), checked private/no-store, changed-filter 410 and first-page recovery, and verified anonymous 401. The existing 390px mobile timeline reached all 650 records with **12 load-more actions**, no duplicate event rows, no browser exceptions and no horizontal overflow. The oldest record's text remained readable, and opening its existing GDS AI action then sending a question persisted that exact record ID/revision in the thread and turn. The opened timeline passed the official GDS axe scan at the moderate-or-higher threshold (zero reported violations) and contrast gate. Its unique synthetic database and test server were removed afterwards. This is verification of the changed card/read flow, not whole-product accessibility or language-quality certification; no model was called.
 
 ## Operations and rollback
 

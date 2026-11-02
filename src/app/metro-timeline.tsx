@@ -1,4 +1,6 @@
 "use client";
+import { BodyText } from "@sovereignsquad/gds/client";
+import { timelineDirectSource } from "../lib/client/timeline-view-model.mjs";
 import { AiCoachButton } from "./ai-coach";
 import styles from "./metro-timeline.module.css";
 import {
@@ -492,6 +494,7 @@ export default function MetroTimeline({
               (answered ? `${answered.question} ${answered.answer}` : "") ||
               (record?.answerCodes?.length ? "A napi válaszok rögzítve." : "");
             const isOpen = openIds.has(event.id);
+            const exactSource = timelineDirectSource(event);
             return (
               <li
                 key={event.id}
@@ -522,30 +525,33 @@ export default function MetroTimeline({
                             : undefined
                         }
                         context={{
-                          kind: [
-                            "report.activity",
-                            "extraction.activity",
-                            "assessment_result.activity",
-                            "coach_material.activity",
-                          ].includes(event.kind)
-                            ? event.kind.split(".")[0]
-                            : event.kind === "publication.activity"
-                              ? "record"
-                              : event.kind === "thread.message"
-                                ? "message"
-                                : event.kind.startsWith("interpretation.")
-                                  ? "interpretation"
-                                  : event.kind.startsWith("plan.") &&
-                                      event.kind !== "plan.follow_up"
-                                    ? "plan"
-                                    : event.kind === "plan.follow_up"
-                                      ? "record"
-                                      : record?.answerCodes
-                                        ? "checkin_result"
-                                        : record?.text
-                                          ? "record"
-                                          : "page",
+                          kind:
+                            exactSource?.kind ??
+                            ([
+                              "report.activity",
+                              "extraction.activity",
+                              "assessment_result.activity",
+                              "coach_material.activity",
+                            ].includes(event.kind)
+                              ? event.kind.split(".")[0]
+                              : event.kind === "publication.activity"
+                                ? "record"
+                                : event.kind === "thread.message"
+                                  ? "message"
+                                  : event.kind.startsWith("interpretation.")
+                                    ? "interpretation"
+                                    : event.kind.startsWith("plan.") &&
+                                        event.kind !== "plan.follow_up"
+                                      ? "plan"
+                                      : event.kind === "plan.follow_up"
+                                        ? "record"
+                                        : record?.answerCodes
+                                          ? "checkin_result"
+                                          : record?.text
+                                            ? "record"
+                                            : "page"),
                           id:
+                            exactSource ||
                             event.kind.endsWith(".activity") ||
                             event.kind === "thread.message" ||
                             event.kind === "plan.follow_up" ||
@@ -554,8 +560,11 @@ export default function MetroTimeline({
                               event.kind !== "plan.follow_up")
                               ? event.resourceRef.id
                               : (record?.id ?? "timeline"),
-                          revision:
-                            record?.revision ?? event.resourceRef.revision ?? 1,
+                          revision: exactSource
+                            ? exactSource.revision
+                            : (record?.revision ??
+                              event.resourceRef.revision ??
+                              1),
                         }}
                       />
                     </div>
@@ -582,8 +591,12 @@ export default function MetroTimeline({
                         <span>{summary}</span>
                       </summary>
                       <div className="event-details">
-                        {event.summary ? <p>{event.summary}</p> : null}
-                        {record?.text ? <p>{record.text}</p> : null}
+                        {event.summary ? (
+                          <BodyText>{event.summary}</BodyText>
+                        ) : null}
+                        {record?.text && record.text !== event.summary ? (
+                          <BodyText>{record.text}</BodyText>
+                        ) : null}
                         {record?.source && (
                           <p className="event-meta">
                             {record.source.kind === "proxy"

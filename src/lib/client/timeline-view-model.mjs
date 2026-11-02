@@ -11,6 +11,36 @@ function isDateTime(value) {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
 }
 
+/**
+ * Exact event refs remain usable when the linked record is outside the UI cache.
+ * @returns {{kind: "record" | "checkin_result", id: string, revision: number} | null}
+ */
+export function timelineDirectSource(event) {
+  const kind =
+    event.kind === "checkin.completed"
+      ? "checkin_result"
+      : [
+            "diary",
+            "observation",
+            "checkin_answer",
+            "record.correction",
+          ].includes(event.kind)
+        ? "record"
+        : null;
+  if (!kind) return null;
+  if (
+    !isId(event.resourceRef?.id) ||
+    !Number.isSafeInteger(event.resourceRef?.revision) ||
+    event.resourceRef.revision < 1
+  )
+    throw new Error("TIMELINE_EVENT_INVALID");
+  return {
+    kind,
+    id: event.resourceRef.id,
+    revision: event.resourceRef.revision,
+  };
+}
+
 function requirePage(page) {
   if (!isTimelinePageResponse(page)) {
     throw new Error("TIMELINE_PAGE_INVALID");
