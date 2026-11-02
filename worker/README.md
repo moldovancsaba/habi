@@ -33,7 +33,7 @@ macOS-en telepítés: `brew install clamav`, majd a Homebrew által jelzett `fre
    uv run python -m habi_worker.cli run-service
    ```
 
-3. Külön repo-root terminálban, ugyanazzal a `.env.test.example` beállítással futtasd a `npm run test:workflow:local` folyamatot. Ez kizárólag az explicit `habi_workflow_test` localhost adatbázist törli, 001–009 migrációt futtat, majd új szintetikus adatokat tölt vissza.
+3. Külön repo-root terminálban, ugyanazzal a `.env.test.example` beállítással futtasd a `npm run test:workflow:local` folyamatot. Ez kizárólag az explicit `habi_workflow_test` localhost adatbázist törli, az összes regisztrált migrációt futtat, majd új szintetikus adatokat tölt vissza.
 4. A worker JSON állapotüzeneteit figyeld. API- vagy függőséghibánál a job késleltetetten visszakerül a sorba; hálózati kiesés nem jelenik meg hamis üzleti hibaként. Az átmeneti hibák retryja 5 másodperctől legfeljebb 5 percig növekvő backoffot használ, majd tovább vár és próbálkozik. Csak végleges input/jogosultság/forrás hibák zárják le a jobot.
 5. Leállítás: worker és app `Ctrl-C`, majd `npm run db:test:stop`.
 

@@ -2,30 +2,32 @@
 
 A Habi fiatal sportolók, jogosult szülők és edzők közös támogatási terméke. **Habigoal** a kliensbemutató prototípus és a specifikáció neve; a leszállítandó termék neve **Habi**. Ez a repository a Habi alkalmazás forrása.
 
+A következő fejlesztő számára: [fejlesztői projektátadás és üzemeltetési tudnivalók](HANDOVER.md) (2026. november 2.).
+
 ## Állapot
 
-A kiválasztott termékcím [habigoal.com](https://habigoal.com); a `www` cím erre irányít át. A gyökéroldal a játékos/szülő/edző Habi-munkaterületre vezet, az adminisztráció címe [habigoal.com/admin](https://habigoal.com/admin). A szerepkör-hozzárendelés DoneIsBetter adminengedélyhez kötött meghívással és a meghívott ellenőrzött SSO-identitásának claimjével működik. A production tenant azonosítója `habi`, adatbázisa `habi`; a régi naplóadatok migrációja nem szükséges. A Habi worker a Macről HTTPS-en hívja a hosted API-t, és a helyi Ollamát használja. Lásd a [felhasználói útmutatót](docs/user-guide.md), az [ellenőrzési naplót](docs/verification.md) és a [telepítési állapotot](docs/deployment.md).
+A kiválasztott termékcím [habigoal.com](https://habigoal.com); a `www` cím erre irányít át. A gyökéroldal a játékos/szülő/edző Habi-munkaterületre vezet, az adminisztráció címe [habigoal.com/admin](https://habigoal.com/admin). A szerepkör-hozzárendelés DoneIsBetter adminengedélyhez kötött meghívással és a meghívott ellenőrzött SSO-identitásának claimjével működik. A production tenant azonosítója `habi`, adatbázisa `habi`; a régi naplóadatok migrációja nem szükséges. A Habi worker a Macről HTTPS-en hívja a Habi API-t és a megosztott chatbot API-t; a production beszélgetések a `text_chat_hu` magyar nyelvű útvonalat használják. A helyi szintetikus mód Ollamával működik. Lásd a [felhasználói útmutatót](docs/user-guide.md), az [ellenőrzési naplót](docs/verification.md) és a [telepítési állapotot](docs/deployment.md).
 
 - a játékos napi állapotjelzése, a válaszok mentése, az idempotens újrapróbálás és a változatlan lezárt visszajelzés;
 - a szülői és edzői megfigyelések külön rögzítővel és forrásmegjelöléssel;
 - az edzői megfigyelés szülői láthatósága kizárólag az adott revision külön publikálása után;
 - a szerepkör szerinti láthatóság, az aláírt lapozókurzor és a tenantok közötti hozzáférés megtagadása (korábbi ellenőrzött alap);
 - edzői tervjavaslat, szülői/játékosi elfogadás és vállalt tervhez kapcsolt utánkövetés;
-- tartós szülői kérdés/thread/job; a Mac worker helyi Ollamával dolgozik, internet/API/AI függőséghibánál késleltetetten újrapróbálja a jobot, bizonyíték nélküli választ pedig `no_evidence` állapotban tart;
+- tartós szülői kérdés/thread/job; a Mac worker a konfigurált AI-szolgáltatással dolgozik, internet/API/AI függőséghibánál késleltetetten újrapróbálja a jobot, bizonyíték nélküli választ pedig `no_evidence` állapotban tart;
 - szerepkör szerinti áttekintés, napló, állapotjelzés, beszélgetés, metróvonalas idővonal, riport-/terv- és felmérésfelület, valamint kereshető Tudástár;
 - verziózott edzői anyag és pontos verzió publikálása;
-- PDF chunk-feltöltés GridFS karanténba, ClamAV-vizsgálat, kézi extraction és coach-review; ellenőrzött extractionből forrásolt kérés a helyi AI felé, állapotkövetéssel.
+- PDF chunk-feltöltés GridFS karanténba, ClamAV-vizsgálat, kézi extraction és coach-review; ellenőrzött extractionből forrásolt kérés az AI-worker felé, állapotkövetéssel.
 - Verziózott játékosi gyakorlatkönyvtár; a játékos visszajelzése újratölthető, saját diary rekordként mentődik.
 - Feladatok és visszajelzések a natív, szerepkörös munkaterületen: elfogadható/elutasítható edzői feladatok, mentett utánkövetés és feladathoz rendelt visszajelzési előzmény. Edzői kérdőív-PDF feltöltése, mérési adatok kézi rögzítése és jóváhagyása.
 
-> **MVP:** a játékos napi állapotjelzést küldhet; a szülő és edző megfigyelést rögzíthet; a szülő forrásolt kérdést küldhet a helyi AI-nak; a riportfeltöltést helyi worker vizsgálja; az edző anyagokat publikálhat és vállalásokat követhet. A személyes AI-magyarázatok edzői ellenőrzésig nem jelennek meg kész válaszként. A `/admin` felület kezeli a meghívásokat és szerepkörök visszavonását.
+> **MVP:** a játékos napi állapotjelzést küldhet; a szülő és edző megfigyelést rögzíthet; a szülő forrásolt kérdést küldhet az AI-workernek; a riportfeltöltést helyi worker vizsgálja; az edző anyagokat publikálhat és vállalásokat követhet. A személyes AI-magyarázatok edzői ellenőrzésig nem jelennek meg kész válaszként. A `/admin` felület kezeli a meghívásokat és szerepkörök visszavonását.
 
 ## Szükséges eszközök
 
 - Node.js 20.19+, 22.13+ vagy 24+
 - MongoDB `mongod`, amely támogatja a helyi replica setet
 - npm
-- A worker ellenőrzéséhez: Python/uv és helyi Ollama. Lásd a [`worker/README.md`](worker/README.md) útmutatót.
+- A worker ellenőrzéséhez: Python/uv; a helyi modellfolyamatokhoz Ollama, PDF-vizsgálathoz ClamAV. Lásd a [`worker/README.md`](worker/README.md) útmutatót.
 
 ## Helyi, szintetikus tesztkörnyezet
 
@@ -42,7 +44,7 @@ A `habi` repository gyökeréből:
 8. Nyisd meg a `http://127.0.0.1:3000` címet, és vizsgáld meg a magyar nyelvű tesztfelületet billentyűzettel és keskeny képernyőn.
 9. Leállítás: a worker és fejlesztői szerveren `Ctrl-C`, majd a tesztbeállításokkal: `npm run db:test:stop`.
 
-`test:workflow:local` kizárólag a localhoston futó `habi_workflow_test` adatbázist törli. Ezután az 001–009 migrációkat, a szintetikus seedet és a HTTP-folyamatot futtatja. A védett script visszautasítja a távoli URI-t, az Atlas-kapcsolatot és a `_test` végződés nélküli adatbázist. A teszt-worker az `.env.test.example` kizárólag szintetikus bearer tokenjét használja, a lokális Ollamát és ClamAV-ot; nem használ Vercel-környezetet, Atlas titkot, felhasználói SSO-t vagy külső AI-szolgáltatást.
+`test:workflow:local` kizárólag a localhoston futó `habi_workflow_test` adatbázist törli. Ezután az összes regisztrált migrációt, a szintetikus seedet és a HTTP-folyamatot futtatja. A védett script visszautasítja a távoli URI-t, az Atlas-kapcsolatot és a `_test` végződés nélküli adatbázist. A teszt-worker az `.env.test.example` kizárólag szintetikus bearer tokenjét használja, a lokális Ollamát és ClamAV-ot; nem használ Vercel-környezetet, Atlas titkot, felhasználói SSO-t vagy külső AI-szolgáltatást.
 
 ## Ellenőrző parancsok
 
