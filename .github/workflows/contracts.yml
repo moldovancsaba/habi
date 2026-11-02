@@ -19,7 +19,9 @@ jobs:
       - run: npm run test:gds-audit
       - run: node --test tests/api-coverage.test.mjs tests/api-contract-manifest.test.mjs tests/source-content.test.mjs
   application-regression:
-    runs-on: ubuntu-latest
+    # Mongo 8 currently refuses Linux >=6.19 (SERVER-121912).
+    # Keep this lane on the supported 22.04 / 6.8 runner until that pairing is verified.
+    runs-on: ubuntu-22.04
     timeout-minutes: 10
     env:
       HABI_TEST_MONGODB_URI: mongodb://127.0.0.1:27099/?replicaSet=habiTestRs
