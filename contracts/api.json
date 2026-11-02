@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Habi cloud API contract",
-    "version": "2.5.2",
+    "version": "2.5.3",
     "description": "Habi product API contract, maintained in the Habi repository. Relative same-origin servers; no deployment is implied."
   },
   "servers": [
@@ -8870,7 +8870,7 @@
     "/v1/timeline": {
       "get": {
         "operationId": "get_v1_timeline",
-        "description": "read; cloud-only; tenant and resource authorization required. Returns only the explicit timeline read DTO; storage-only tenant and retention fields are never serialized. Optional from/to query bounds filter timeline events by submission time; a continuation cursor is bound to the same window.",
+        "description": "Authorised, private/no-store timeline read DTO. Stable binary descending order by event submission time, public event ID and source tie-breaker. Each authorised source applies bounds before its page limit; delayed AI outcomes and plan decisions use their own event time. Opaque signed v2 cursors bind actor, role, tenant, player, access revision, kind, date window, snapshot and a fixed 30-minute expiry. Old cursor versions or changed bindings return CURSOR_EXPIRED (410); restart with the same filters and no cursor. Source query budget exhaustion returns DEPENDENCY_UNAVAILABLE (503), never an unexplained partial page. Current source visibility is rechecked; this is not a historical database snapshot.",
         "security": [
           {
             "sessionCookie": []
@@ -8957,6 +8957,16 @@
                 }
               }
             }
+          },
+          "410": {
+            "description": "CURSOR_EXPIRED: old cursor version, expired/changed viewer or filters, or a changed source projection. Discard accumulated pagination and request the first page with the same filters and no cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas.json#/$defs/Error"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -8988,7 +8998,8 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 2000
-            }
+            },
+            "description": "Opaque signed continuation; do not decode or reuse across viewers, roles, access revisions or filters. Restart without cursor on HTTP 410."
           },
           {
             "name": "limit",

@@ -1,3 +1,4 @@
+import { migration as stableTimelineOrder } from "./022-stable-timeline-order.mjs";
 import { migration as recordCorrectionLineage } from "./021-record-correction-lineage.mjs";
 import { migration as durableAssessmentAttempts } from "./020-durable-assessment-attempts.mjs";
 import { migrationChecksums } from "./checksums.mjs";
@@ -45,6 +46,7 @@ const MIGRATIONS = [
   coachMessageUnderstanding,
   durableAssessmentAttempts,
   recordCorrectionLineage,
+  stableTimelineOrder,
 ];
 
 /** @param {string[] | null} migrationIds */

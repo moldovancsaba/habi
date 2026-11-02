@@ -18,3 +18,27 @@ jobs:
       - run: npm run test:source-content
       - run: npm run test:gds-audit
       - run: node --test tests/api-coverage.test.mjs tests/api-contract-manifest.test.mjs tests/source-content.test.mjs
+  application-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      HABI_TEST_MONGODB_URI: mongodb://127.0.0.1:27099/?replicaSet=habiTestRs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Start ephemeral localhost replica set
+        run: docker run --detach --name habi-ci-mongo --network host mongo:8 --replSet habiTestRs --bind_ip 127.0.0.1 --port 27099
+      - run: node scripts/ci-mongodb-ready.mjs
+      - run: npm test
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Remove ephemeral database
+        if: always()
+        run: docker rm --force habi-ci-mongo

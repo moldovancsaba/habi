@@ -1,5 +1,6 @@
 import { runAuthorizedHabiRoute } from "../../../../lib/api/runtime-route";
 import { readTimeline } from "../../../../lib/workflows/timeline.mjs";
+import { runMigrations } from "../../../../lib/database/migrations/runner.mjs";
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -7,6 +8,7 @@ export async function GET(request: Request): Promise<Response> {
     request,
     "timeline.read",
     async ({ db, principal, cursorHmacKey }) => {
+      await runMigrations(db, new Date(), ["022-stable-timeline-order"]);
       const rawLimit = url.searchParams.get("limit");
       const result = await readTimeline({
         db,

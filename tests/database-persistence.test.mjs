@@ -144,15 +144,16 @@ test("Atlas persistence integration on an isolated Mongo replica set", {
           "019-coach-message-understanding",
           "020-durable-assessment-attempts",
           "021-record-correction-lineage",
+          "022-stable-timeline-order",
         ],
-        current: "021-record-correction-lineage",
+        current: "022-stable-timeline-order",
       },
     );
     assert.deepEqual(
       await runMigrations(db, new Date("2026-10-25T00:00:01.000Z")),
       {
         applied: [],
-        current: "021-record-correction-lineage",
+        current: "022-stable-timeline-order",
       },
     );
     const draftIndexes = (
