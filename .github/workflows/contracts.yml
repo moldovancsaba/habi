@@ -39,6 +39,9 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
+      - name: Database startup diagnostics
+        if: failure()
+        run: docker logs --tail 100 habi-ci-mongo
       - name: Remove ephemeral database
         if: always()
         run: docker rm --force habi-ci-mongo

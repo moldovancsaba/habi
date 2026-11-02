@@ -4,18 +4,24 @@ import { MongoClient } from "mongodb";
 // No production connection string or external database can be selected here.
 if (process.env.CI !== "true" || process.env.GITHUB_ACTIONS !== "true")
   throw new Error("GITHUB_CI_ONLY");
-const client = new MongoClient("mongodb://127.0.0.1:27099/?directConnection=true", {
-  serverSelectionTimeoutMS: 500,
-  connectTimeoutMS: 500,
-});
+let client;
 try {
   let ready = false;
   for (let attempt = 0; attempt < 60; attempt++) {
+    client = new MongoClient("mongodb://127.0.0.1:27099/?directConnection=true", {
+      serverSelectionTimeoutMS: 500,
+      connectTimeoutMS: 500,
+    });
     try {
+      await client.connect();
       await client.db("admin").command({ ping: 1 });
       ready = true;
       break;
     } catch {
+      // A failed implicit connection leaves a closed topology. A fresh client
+      // retries the container, rather than retrying that permanently closed pool.
+      await client.close();
+      client = undefined;
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
@@ -34,5 +40,5 @@ try {
   if (!ready) throw new Error("CI_MONGO_PRIMARY_TIMEOUT");
   console.log("Ephemeral localhost replica set ready.");
 } finally {
-  await client.close();
+  await client?.close();
 }
