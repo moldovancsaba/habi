@@ -65,6 +65,8 @@ GitHub Actions also runs the entire application suite against an ephemeral `mong
 
 The database regression job pins the Ubuntu 22.04 runner lane. The first remote runs exposed MongoDB's explicit startup refusal on the newer `ubuntu-latest` kernel; [MongoDB SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912) describes the 6.19+ incompatibility. The [current official 22.04 runner inventory](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2204-Readme.md) uses the 6.8 kernel lane. Revisit this runner pin before its announced retirement or when a newer Mongo/kernel pairing has been verified. Startup retries create a fresh driver client after a failed connection, and CI preserves database startup diagnostics on failure.
 
+`npm run typecheck` runs `next typegen` before TypeScript, as required by the installed Next.js CLI contract. Clean CI checkouts therefore generate `RouteContext` without relying on a previous local build's ignored `.next` files.
+
 Authenticated localhost acceptance also traversed all **650** equal-time records through **29 HTTP pages** (page size 23), checked private/no-store, changed-filter 410 and first-page recovery, and verified anonymous 401. The existing 390px mobile timeline reached all 650 records with **12 load-more actions**, no duplicate event rows, no browser exceptions and no horizontal overflow. Its unique synthetic database and test server were removed afterwards. No new UI was introduced and no whole-product accessibility certification is claimed.
 
 ## Operations and rollback
