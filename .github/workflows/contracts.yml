@@ -37,7 +37,12 @@ jobs:
       - name: Start ephemeral localhost replica set
         run: docker run --detach --name habi-ci-mongo --network host mongo:8 --replSet habiTestRs --bind_ip 127.0.0.1 --port 27099
       - run: node scripts/ci-mongodb-ready.mjs
-      - run: npm test
+      - name: Run application tests with the checked-in synthetic configuration
+        run: |
+          set -a
+          source .env.test.example
+          set +a
+          npm test
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
