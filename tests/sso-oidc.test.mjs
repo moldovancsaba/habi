@@ -462,3 +462,111 @@ test("first login keeps a pre-existing approved SSO admin permission", async () 
   );
   assert.deepEqual(permission, { status: "approved", role: "admin" });
 });
+
+test("first-login approval accepts the real SSO PUT acknowledgement for a new or pending user", async () => {
+  for (const status of ["none", "pending"]) {
+    const subject = `invited-${status}`,
+      clientId = `habi-invite-${status}`;
+    let writes = 0;
+    const permission = await fetchAppPermission(
+      { issuer, token_endpoint: `${issuer}/api/oauth/token` },
+      {
+        subject,
+        clientId,
+        clientSecret: "test-only-secret",
+        accessToken: "test-user-token",
+      },
+      async (url, init = {}) => {
+        if (new URL(url).pathname === "/api/oauth/token")
+          return response({ access_token: "test-machine-token" });
+        if (init.method === "PUT") {
+          writes++;
+          assert.deepEqual(JSON.parse(init.body), {
+            role: "user",
+            status: "approved",
+          });
+          return response({
+            success: true,
+            permission: {
+              userId: subject,
+              clientId,
+              status: "approved",
+              role: "user",
+              hasAccess: true,
+            },
+          });
+        }
+        return status === "none"
+          ? response({ status: "none" }, 404)
+          : response({ status: "pending", role: "none", hasAccess: false });
+      },
+    );
+    assert.deepEqual(permission, { status: "approved", role: "user" });
+    assert.equal(writes, 1);
+  }
+});
+
+test("automatic approval rejects failed, malformed, unapproved or foreign SSO acknowledgements", async () => {
+  const invalid = [
+    { permission: { status: "approved", role: "user" } },
+    {
+      success: true,
+      permission: { status: "approved", role: "user", hasAccess: false },
+    },
+    { success: false, permission: { status: "approved", role: "user" } },
+    { success: true, permission: null },
+    { success: true, permission: [] },
+    { success: true, permission: { status: "pending", role: "user" } },
+    { success: true, permission: { status: "revoked", role: "user" } },
+    { success: true, permission: { status: "approved", role: "superadmin" } },
+    {
+      success: true,
+      permission: { status: "approved", role: "user", userId: "someone-else" },
+    },
+    {
+      success: true,
+      permission: { status: "approved", role: "user", clientId: "another-app" },
+    },
+  ];
+  for (const [index, acknowledgement] of invalid.entries()) {
+    await assert.rejects(
+      fetchAppPermission(
+        { issuer, token_endpoint: `${issuer}/api/oauth/token` },
+        {
+          subject: "test-subject",
+          clientId: `habi-invalid-ack-${index}`,
+          clientSecret: "test-only-secret",
+          accessToken: "test-user-token",
+        },
+        async (url, init = {}) => {
+          if (new URL(url).pathname === "/api/oauth/token")
+            return response({ access_token: "test-machine-token" });
+          if (init.method === "PUT") return response(acknowledgement);
+          return response({}, 404);
+        },
+      ),
+      /SSO_APP_PERMISSION_SETUP_REQUIRED/,
+    );
+  }
+});
+
+test("explicitly revoked app access cannot be automatically approved", async () => {
+  let calls = 0;
+  await assert.rejects(
+    fetchAppPermission(
+      { issuer },
+      {
+        subject: "revoked-subject",
+        clientId: "habi-revoked",
+        clientSecret: "test-only-secret",
+        accessToken: "test-user-token",
+      },
+      async () => {
+        calls++;
+        return response({ status: "revoked", role: "none", hasAccess: false });
+      },
+    ),
+    /SSO_PERMISSION_DENIED/,
+  );
+  assert.equal(calls, 1);
+});

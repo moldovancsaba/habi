@@ -532,7 +532,7 @@ async function provisionSsoAppUserPermission(
     }
     throw error;
   }
-  const updated = await updateResponse.json().catch(() => null);
+  const updateResult = await updateResponse.json().catch(() => null);
   if (!updateResponse.ok) {
     throw new Error(
       updateResponse.status >= 500
@@ -540,7 +540,19 @@ async function provisionSsoAppUserPermission(
         : "SSO_APP_PERMISSION_SETUP_REQUIRED",
     );
   }
+  // DoneIsBetter GET returns the permission DTO directly; PUT acknowledges it
+  // as { success: true, permission: DTO }. Keep older direct DTOs compatible.
+  const wrapped = updateResult && Object.hasOwn(updateResult, "permission");
+  const updated = wrapped ? updateResult.permission : updateResult;
   if (
+    (wrapped && updateResult.success !== true) ||
+    updateResult?.success === false ||
+    !updated ||
+    typeof updated !== "object" ||
+    Array.isArray(updated) ||
+    updated.hasAccess === false ||
+    (Object.hasOwn(updated, "userId") && updated.userId !== subject) ||
+    (Object.hasOwn(updated, "clientId") && updated.clientId !== clientId) ||
     updated?.status !== "approved" ||
     !["user", "admin"].includes(updated?.role)
   ) {
