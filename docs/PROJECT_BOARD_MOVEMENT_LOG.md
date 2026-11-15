@@ -445,3 +445,5 @@ Read the issue and actual board before each future proposal. Retain previous obs
 Verification: lint and typecheck passed; application suite passed with 23 skipped cases (including integration coverage unavailable without the isolated replica set). Source-to-outcome authenticated browser, worker, personal-data and live-AI acceptance remain unverified. Installation initially hit ENOSPC, then succeeded after removing disposable prior-check artifacts.
 
 The production build also passed. No deployment or authenticated production acceptance was inspected or triggered directly; the review is submitted through a PR.
+
+Publication status: PR #608 has successful api-coverage/application-regression CI checks. Normal merge was rejected: “the base branch policy prohibits the merge.” Reading the branch-protection details returned HTTP 403, “Resource not accessible by integration”; the exact unsatisfied policy cannot be verified here. No administrator bypass or protection change was attempted. The documentation is available on the PR branch, not main.
