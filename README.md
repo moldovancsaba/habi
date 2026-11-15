@@ -68,3 +68,5 @@ A `habi` repository gyökeréből:
 A tervezett architektúrában a Vercel futtatja a Habi webalkalmazást és API-t, a MongoDB Atlas az alapértelmezett adattár, a Mac pedig csak kimenő kapcsolatot kezdeményező AI-workert futtat közvetlen Atlas-hozzáférés nélkül. A mostani lokális end-to-end próba nem használja a Vercelt vagy az Atlást; izolált, szintetikus MongoDB-t használ. Személyes tartalomhoz külső AI nem használható.
 
 Részletek: [architektúra](docs/architecture.md), [perzisztencia](docs/persistence.md), [telepítés](docs/deployment.md), [ellenőrzési napló](docs/verification.md), [korábbi funkciók migrációja](docs/legacy-feature-migration.md) és [worker](worker/README.md).
+
+[Projektboard áttekintés és kézi kártyamozgatási napló](docs/PROJECT_BOARD_MOVEMENT_LOG.md).

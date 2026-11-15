@@ -251,3 +251,7 @@ Rollback generally redeploys the previous compatible app and retains additive in
 - [ ] The next issue is selected from actual dependency/readiness state, with a concrete acceptance case and no blanket claim that prototype parity is complete.
 
 For a short starting sequence: read this document → reproduce setup → read #576–580 and their current evidence → confirm missing-source/quality-review ownership → select the next unblocked issue from the board.
+
+## 2026-11-15 — Read-only portfolio board review
+
+[Manual movement journal](docs/PROJECT_BOARD_MOVEMENT_LOG.md): full issue/board snapshot, conditional status proposals, modernization clusters and verification limits. No board write, runtime/data change or worker restart. This is review documentation, not closure of audit acceptance.
